@@ -1,5 +1,7 @@
 # Http Component
 
+[![Build Status](https://secure.travis-ci.org/reactphp/http.png?branch=master)](http://travis-ci.org/reactphp/http)
+
 Library for building an evented http server.
 
 This component builds on top of the `Socket` component to implement HTTP. Here
@@ -16,7 +18,7 @@ are the main concepts:
 ## Usage
 
 This is an HTTP server which responds with `Hello World` to every request.
-
+```php
     $loop = React\EventLoop\Factory::create();
     $socket = new React\Socket\Server($loop);
 
@@ -28,3 +30,4 @@ This is an HTTP server which responds with `Hello World` to every request.
 
     $socket->listen(1337);
     $loop->run();
+```
