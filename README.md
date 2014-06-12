@@ -28,6 +28,6 @@ This is an HTTP server which responds with `Hello World` to every request.
         $response->end("Hello World!\n");
     });
 
-    $socket->listen(1337);
+    $socket->listen('127.0.0.1:1337');
     $loop->run();
 ```
