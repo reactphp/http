@@ -107,7 +107,7 @@ class Response extends EventEmitter implements WritableStreamInterface
         return $flushed;
     }
 
-    public function end($data = null)
+    public function end($data = null, $keepAlive = false)
     {
         if (null !== $data) {
             $this->write($data);
@@ -119,7 +119,10 @@ class Response extends EventEmitter implements WritableStreamInterface
 
         $this->emit('end');
         $this->removeAllListeners();
-        $this->conn->end();
+
+        if (!$keepAlive) {
+          $this->conn->end();
+        }
     }
 
     public function close()

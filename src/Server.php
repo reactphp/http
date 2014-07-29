@@ -16,7 +16,6 @@ class Server extends EventEmitter implements ServerInterface
         $this->io = $io;
 
         $this->io->on('connection', function ($conn) {
-            // TODO: http 1.1 keep-alive
             // TODO: chunked transfer encoding (also for outgoing data)
             // TODO: multipart parsing
 
@@ -24,8 +23,6 @@ class Server extends EventEmitter implements ServerInterface
             $parser->on('headers', function (Request $request, $bodyBuffer) use ($conn, $parser) {
                 // attach remote ip to the request as metadata
                 $request->remoteAddress = $conn->getRemoteAddress();
-
-                $this->handleRequest($conn, $request, $bodyBuffer);
 
                 $conn->removeListener('data', array($parser, 'feed'));
                 $conn->on('end', function () use ($request) {
@@ -40,13 +37,15 @@ class Server extends EventEmitter implements ServerInterface
                 $request->on('resume', function () use ($conn) {
                     $conn->emit('resume');
                 });
+
+                $this->handleRequest($conn, $parser, $request, $bodyBuffer);
             });
 
             $conn->on('data', array($parser, 'feed'));
         });
     }
 
-    public function handleRequest(ConnectionInterface $conn, Request $request, $bodyBuffer)
+    public function handleRequest(ConnectionInterface $conn, RequestHeaderParser $parser, Request $request, $bodyBuffer)
     {
         $response = new Response($conn);
         $response->on('close', array($request, 'close'));
@@ -56,6 +55,11 @@ class Server extends EventEmitter implements ServerInterface
 
             return;
         }
+
+        $response->on('end', function () use ($conn, $parser) {
+          $conn->removeAllListeners(); // stop data being sent to this Request instance
+          $conn->on('data', array($parser, 'feed')); // resume sending data to RequestHeaderParser
+        });
 
         $this->emit('request', array($request, $response));
         $request->emit('data', array($bodyBuffer));
