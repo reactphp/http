@@ -93,7 +93,7 @@ class ResponseTest extends TestCase
         $conn
             ->expects($this->at(3))
             ->method('write')
-            ->with("HTTP/1.1 100 Continue\r\n");
+            ->with("HTTP/1.1 100 Continue\r\n\r\n");
         $conn
             ->expects($this->at(4))
             ->method('write')
