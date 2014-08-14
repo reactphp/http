@@ -121,7 +121,7 @@ class Response extends EventEmitter implements WritableStreamInterface
         $this->removeAllListeners();
 
         if (!$keepAlive) {
-          $this->conn->end();
+            $this->conn->end();
         }
     }
 
