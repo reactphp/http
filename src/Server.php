@@ -57,8 +57,8 @@ class Server extends EventEmitter implements ServerInterface
         }
 
         $response->on('end', function () use ($conn, $parser) {
-          $conn->removeAllListeners(); // stop data being sent to this Request instance
-          $conn->on('data', array($parser, 'feed')); // resume sending data to RequestHeaderParser
+            $conn->removeAllListeners(); // stop data being sent to this Request instance
+            $conn->on('data', array($parser, 'feed')); // resume sending data to RequestHeaderParser
         });
 
         $this->emit('request', array($request, $response));
