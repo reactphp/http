@@ -42,6 +42,9 @@ class Server extends EventEmitter implements ServerInterface
             });
 
             $conn->on('data', array($parser, 'feed'));
+            $conn->on('end', function () use ($parser) {
+                $parser->removeAllListeners();
+            });
         });
     }
 
@@ -56,9 +59,17 @@ class Server extends EventEmitter implements ServerInterface
             return;
         }
 
-        $response->on('end', function () use ($conn, $parser) {
+        $response->on('end', function ($keepAlive) use ($conn, $parser) {
             $conn->removeAllListeners(); // stop data being sent to this Request instance
-            $conn->on('data', array($parser, 'feed')); // resume sending data to RequestHeaderParser
+            if ($keepAlive) {
+                $conn->on('data', array($parser, 'feed')); // resume sending data to RequestHeaderParser
+                $conn->on('end', function () use ($parser) {
+                    $parser->removeAllListeners();
+                });
+            }
+            else {
+                $parser->removeAllListeners();
+            }
         });
 
         $this->emit('request', array($request, $response));
