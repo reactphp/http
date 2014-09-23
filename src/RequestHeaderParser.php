@@ -26,9 +26,8 @@ class RequestHeaderParser extends EventEmitter
 
         if (false !== strpos($this->buffer, "\r\n\r\n")) {
             list($request, $bodyBuffer) = $this->parseRequest($this->buffer);
-
+            $this->buffer = '';
             $this->emit('headers', array($request, $bodyBuffer));
-            $this->removeAllListeners();
         }
     }
 
