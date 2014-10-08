@@ -11,21 +11,25 @@ class Request extends EventEmitter implements ReadableStreamInterface
 {
     private $readable = true;
     private $method;
-    private $path;
+    private $url;
     private $query;
     private $httpVersion;
     private $headers;
+    private $body;
+    private $post = [];
+    private $files = [];
 
     // metadata, implicitly added externally
     public $remoteAddress;
 
-    public function __construct($method, $path, $query = array(), $httpVersion = '1.1', $headers = array())
+    public function __construct($method, $url, $query = array(), $httpVersion = '1.1', $headers = array(), $body = '')
     {
         $this->method = $method;
-        $this->path = $path;
+        $this->url = $url;
         $this->query = $query;
         $this->httpVersion = $httpVersion;
         $this->headers = $headers;
+        $this->body = $body;
     }
 
     public function getMethod()
@@ -35,7 +39,12 @@ class Request extends EventEmitter implements ReadableStreamInterface
 
     public function getPath()
     {
-        return $this->path;
+        return $this->url['path'];
+    }
+
+    public function getUrl()
+    {
+        return $this->url;
     }
 
     public function getQuery()
@@ -51,6 +60,41 @@ class Request extends EventEmitter implements ReadableStreamInterface
     public function getHeaders()
     {
         return $this->headers;
+    }
+
+    public function getBody()
+    {
+        return $this->body;
+    }
+
+    public function setBody($body)
+    {
+        $this->body = $body;
+    }
+
+    public function getFiles()
+    {
+        return $this->files;
+    }
+
+    public function setFiles($files)
+    {
+        $this->files = $files;
+    }
+
+    public function getPost()
+    {
+        return $this->post;
+    }
+
+    public function setPost($post)
+    {
+        $this->post = $post;
+    }
+
+    public function getRemoteAddress()
+    {
+        return $this->remoteAddress;
     }
 
     public function expectsContinue()
