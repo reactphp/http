@@ -2,13 +2,13 @@
 
 namespace React\Tests\Http;
 
-use React\Http\RequestHeaderParser;
+use React\Http\RequestParser;
 
-class RequestHeaderParserTest extends TestCase
+class RequestParserTest extends TestCase
 {
     public function testSplitShouldHappenOnDoubleCrlf()
     {
-        $parser = new RequestHeaderParser();
+        $parser = new RequestParser();
         $parser->on('headers', $this->expectCallableNever());
 
         $parser->feed("GET / HTTP/1.1\r\n");
@@ -23,7 +23,7 @@ class RequestHeaderParserTest extends TestCase
 
     public function testFeedInOneGo()
     {
-        $parser = new RequestHeaderParser();
+        $parser = new RequestParser();
         $parser->on('headers', $this->expectCallableOnce());
 
         $data = $this->createGetRequest();
@@ -35,7 +35,7 @@ class RequestHeaderParserTest extends TestCase
         $request = null;
         $bodyBuffer = null;
 
-        $parser = new RequestHeaderParser();
+        $parser = new RequestParser();
         $parser->on('headers', function ($parsedRequest, $parsedBodyBuffer) use (&$request, &$bodyBuffer) {
             $request = $parsedRequest;
             $bodyBuffer = $parsedBodyBuffer;
@@ -59,7 +59,7 @@ class RequestHeaderParserTest extends TestCase
     {
         $bodyBuffer = null;
 
-        $parser = new RequestHeaderParser();
+        $parser = new RequestParser();
         $parser->on('headers', function ($parsedRequest, $parsedBodyBuffer) use (&$bodyBuffer) {
             $bodyBuffer = $parsedBodyBuffer;
         });
@@ -75,7 +75,7 @@ class RequestHeaderParserTest extends TestCase
     {
         $request = null;
 
-        $parser = new RequestHeaderParser();
+        $parser = new RequestParser();
         $parser->on('headers', function ($parsedRequest, $parsedBodyBuffer) use (&$request) {
             $request = $parsedRequest;
         });
@@ -100,7 +100,7 @@ class RequestHeaderParserTest extends TestCase
     {
         $error = null;
 
-        $parser = new RequestHeaderParser();
+        $parser = new RequestParser();
         $parser->on('headers', $this->expectCallableNever());
         $parser->on('error', function ($message) use (&$error) {
             $error = $message;
