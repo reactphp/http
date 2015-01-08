@@ -10,7 +10,7 @@ class RequestTest extends TestCase
     public function expectsContinueShouldBeFalseByDefault()
     {
         $headers = array();
-        $request = new Request('GET', '/', array(), '1.1', $headers);
+        $request = new Request('GET', '/', array(), array(), array(), '1.1', $headers);
 
         $this->assertFalse($request->expectsContinue());
     }
@@ -19,7 +19,7 @@ class RequestTest extends TestCase
     public function expectsContinueShouldBeTrueIfContinueExpected()
     {
         $headers = array('Expect' => '100-continue');
-        $request = new Request('GET', '/', array(), '1.1', $headers);
+        $request = new Request('GET', '/', array(), array(), array(), '1.1', $headers);
 
         $this->assertTrue($request->expectsContinue());
     }

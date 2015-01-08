@@ -8,26 +8,24 @@ class ServerTest extends TestCase
 {
     public function testRequestEventIsEmitted()
     {
-        $io = new ServerStub();
-
-        $server = new Server($io);
+        $server = new Server();
         $server->on('request', $this->expectCallableOnce());
 
         $conn = new ConnectionStub();
-        $io->emit('connection', array($conn));
+        $server->handleConnection($conn);
 
         $data = $this->createGetRequest();
         $conn->emit('data', array($data));
+
+        $server->stop();
     }
 
     public function testRequestEvent()
     {
-        $io = new ServerStub();
-
         $i = 0;
 
-        $server = new Server($io);
-        $server->on('request', function ($request, $response) use (&$i) {
+        $server = new Server();
+        $server->on('request', function ($request, $response) use (&$i, $server) {
             $i++;
 
             $this->assertInstanceOf('React\Http\Request', $request);
@@ -36,10 +34,12 @@ class ServerTest extends TestCase
             $this->assertSame('127.0.0.1', $request->remoteAddress);
 
             $this->assertInstanceOf('React\Http\Response', $response);
+
+            $server->stop();
         });
 
         $conn = new ConnectionStub();
-        $io->emit('connection', array($conn));
+        $server->handleConnection($conn);
 
         $data = $this->createGetRequest();
         $conn->emit('data', array($data));
@@ -49,21 +49,21 @@ class ServerTest extends TestCase
 
     public function testResponseContainsPoweredByHeader()
     {
-        $io = new ServerStub();
-
-        $server = new Server($io);
-        $server->on('request', function ($request, $response) {
+        $server = new Server();
+        $server->on('request', function ($request, $response) use($server) {
             $response->writeHead();
             $response->end();
         });
 
         $conn = new ConnectionStub();
-        $io->emit('connection', array($conn));
+        $server->handleConnection($conn);
 
         $data = $this->createGetRequest();
         $conn->emit('data', array($data));
 
         $this->assertContains("\r\nX-Powered-By: React/alpha\r\n", $conn->getData());
+
+        $server->stop();
     }
 
     private function createGetRequest()

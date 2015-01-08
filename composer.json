@@ -8,6 +8,7 @@
         "guzzle/parser": "~3.0",
         "react/socket": "0.4.*",
         "react/stream": "0.4.*",
+        "react/filesystem": "dev-master",
         "evenement/evenement": "~2.0"
     },
     "autoload": {

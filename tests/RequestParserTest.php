@@ -2,29 +2,29 @@
 
 namespace React\Tests\Http;
 
-use React\Http\RequestHeaderParser;
+use React\Http\RequestParser;
 
-class RequestHeaderParserTest extends TestCase
+class RequestParserTest extends TestCase
 {
     public function testSplitShouldHappenOnDoubleCrlf()
     {
-        $parser = new RequestHeaderParser();
-        $parser->on('headers', $this->expectCallableNever());
+        $parser = new RequestParser();
+        $parser->on('request', $this->expectCallableNever());
 
         $parser->feed("GET / HTTP/1.1\r\n");
         $parser->feed("Host: example.com:80\r\n");
         $parser->feed("Connection: close\r\n");
 
         $parser->removeAllListeners();
-        $parser->on('headers', $this->expectCallableOnce());
+        $parser->on('request', $this->expectCallableOnce());
 
         $parser->feed("\r\n");
     }
 
     public function testFeedInOneGo()
     {
-        $parser = new RequestHeaderParser();
-        $parser->on('headers', $this->expectCallableOnce());
+        $parser = new RequestParser();
+        $parser->on('request', $this->expectCallableOnce());
 
         $data = $this->createGetRequest();
         $parser->feed($data);
@@ -35,10 +35,10 @@ class RequestHeaderParserTest extends TestCase
         $request = null;
         $bodyBuffer = null;
 
-        $parser = new RequestHeaderParser();
-        $parser->on('headers', function ($parsedRequest, $parsedBodyBuffer) use (&$request, &$bodyBuffer) {
+        $parser = new RequestParser();
+        $parser->on('request', function ($parsedRequest) use (&$request, &$bodyBuffer) {
             $request = $parsedRequest;
-            $bodyBuffer = $parsedBodyBuffer;
+            $bodyBuffer = $request->body;
         });
 
         $data = $this->createGetRequest();
@@ -59,9 +59,9 @@ class RequestHeaderParserTest extends TestCase
     {
         $bodyBuffer = null;
 
-        $parser = new RequestHeaderParser();
-        $parser->on('headers', function ($parsedRequest, $parsedBodyBuffer) use (&$bodyBuffer) {
-            $bodyBuffer = $parsedBodyBuffer;
+        $parser = new RequestParser();
+        $parser->on('request', function ($parsedRequest) use (&$bodyBuffer) {
+            $bodyBuffer = $parsedRequest->body;
         });
 
         $data = $this->createGetRequest();
@@ -75,8 +75,8 @@ class RequestHeaderParserTest extends TestCase
     {
         $request = null;
 
-        $parser = new RequestHeaderParser();
-        $parser->on('headers', function ($parsedRequest, $parsedBodyBuffer) use (&$request) {
+        $parser = new RequestParser();
+        $parser->on('request', function ($parsedRequest) use (&$request) {
             $request = $parsedRequest;
         });
 
@@ -100,8 +100,8 @@ class RequestHeaderParserTest extends TestCase
     {
         $error = null;
 
-        $parser = new RequestHeaderParser();
-        $parser->on('headers', $this->expectCallableNever());
+        $parser = new RequestParser();
+        $parser->on('request', $this->expectCallableNever());
         $parser->on('error', function ($message) use (&$error) {
             $error = $message;
         });
