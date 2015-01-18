@@ -3,6 +3,7 @@
 namespace React\Http;
 
 use Evenement\EventEmitter;
+use Guzzle\Parser\Message\PeclHttpMessageParser;
 use Guzzle\Parser\Message\MessageParser;
 
 /**
@@ -13,6 +14,7 @@ class RequestHeaderParser extends EventEmitter
 {
     private $buffer = '';
     private $maxSize = 4096;
+    private static $parser;
 
     public function feed($data)
     {
@@ -36,8 +38,15 @@ class RequestHeaderParser extends EventEmitter
     {
         list($headers, $bodyBuffer) = explode("\r\n\r\n", $data, 2);
 
-        $parser = new MessageParser();
-        $parsed = $parser->parseRequest($headers."\r\n\r\n");
+        if (!self::$parser) {
+            if ( function_exists('http_parse_message') ) {
+                self::$parser = new PeclHttpMessageParser();
+            } else {
+                self::$parser = new MessageParser();
+            }
+        }
+
+        $parsed = self::$parser->parseRequest($headers."\r\n\r\n");
 
         $parsedQuery = array();
         if ($parsed['request_url']['query']) {
