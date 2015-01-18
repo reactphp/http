@@ -46,7 +46,6 @@ class RequestHeaderParser extends EventEmitter
             }
         }
 
-        self::$parser = new MessageParser();
         $parsed = self::$parser->parseRequest($headers."\r\n\r\n");
 
         $parsedQuery = array();
