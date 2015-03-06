@@ -135,4 +135,15 @@ class Response extends EventEmitter implements WritableStreamInterface
         $this->removeAllListeners();
         $this->conn->close();
     }
+
+    /**
+     * Get connected client
+     *
+     * @return ConnectionInterface
+     */
+    public function getConnection()
+    {
+        return $this->conn;
+    }
+
 }
