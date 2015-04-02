@@ -11,16 +11,19 @@ class Server extends EventEmitter implements ServerInterface
 {
     private $io;
 
-    public function __construct(SocketServerInterface $io)
+    private $maxHeaderSize;
+
+    public function __construct(SocketServerInterface $io, $maxHeaderSize = 4096 /* 4 KiB */)
     {
         $this->io = $io;
+        $this->maxHeaderSize = $maxHeaderSize;
 
         $this->io->on('connection', function (ConnectionInterface $conn) {
             // TODO: http 1.1 keep-alive
             // TODO: chunked transfer encoding (also for outgoing data)
             // TODO: multipart parsing
 
-            $parser = new RequestHeaderParser();
+            $parser = new RequestHeaderParser($this->maxHeaderSize);
             $parser->on('headers', function (Request $request, $bodyBuffer) use ($conn, $parser) {
                 // attach remote ip to the request as metadata
                 $request->remoteAddress = $conn->getRemoteAddress();
@@ -40,6 +43,9 @@ class Server extends EventEmitter implements ServerInterface
                 $request->on('resume', function () use ($conn) {
                     $conn->emit('resume');
                 });
+            });
+            $parser->on('error', function (\Exception $e) {
+                $this->emit('error', [$e]);
             });
 
             $conn->on('data', array($parser, 'feed'));

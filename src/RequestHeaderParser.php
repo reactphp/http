@@ -12,7 +12,12 @@ use Guzzle\Parser\Message\MessageParser;
 class RequestHeaderParser extends EventEmitter
 {
     private $buffer = '';
-    private $maxSize = 4096;
+    private $maxSize;
+
+    public function __construct($maxSize = 4096 /* 4 KiB */)
+    {
+        $this->maxSize = $maxSize;
+    }
 
     public function feed($data)
     {
@@ -37,7 +42,7 @@ class RequestHeaderParser extends EventEmitter
         list($headers, $bodyBuffer) = explode("\r\n\r\n", $data, 2);
 
         $parser = new MessageParser();
-        $parsed = $parser->parseRequest($headers."\r\n\r\n");
+        $parsed = $parser->parseRequest($headers . "\r\n\r\n");
 
         $parsedQuery = array();
         if ($parsed['request_url']['query']) {
