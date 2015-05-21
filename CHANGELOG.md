@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.1 (2014-05-21)
+* Replaced guzzle/parser with guzzlehttp/psr7 by @cboden 
+* FIX Continue Header by @iannsp
+* Missing type hint by @marenzo
+
 ## 0.4.0 (2014-02-02)
 
 * BC break: Bump minimum PHP version to PHP 5.4, remove 5.3 specific hacks
