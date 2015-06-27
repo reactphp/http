@@ -53,7 +53,7 @@ class RequestHeaderParser extends EventEmitter
 
         $request = new Request(
             $psrRequest->getMethod(),
-            $psrRequest ->getUri()->getPath(),
+            $psrRequest->getUri()->getPath(),
             $parsedQuery,
             $psrRequest->getProtocolVersion(),
             $headers
