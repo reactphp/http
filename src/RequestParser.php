@@ -121,6 +121,7 @@ class RequestParser extends EventEmitter
 
         if (array_key_exists('Content-Type', $headers)) {
             if (strpos($headers['Content-Type'], 'multipart/') === 0) {
+                //TODO :: parse the content while it is streaming
                 preg_match("/boundary=\"?(.*)\"?$/", $headers['Content-Type'], $matches);
                 $boundary = $matches[1];
 
