@@ -142,16 +142,26 @@ class MultipartParser
         $content = preg_replace('/Content-Type: (.*)[^\n\r]/', '', $match[3]);
         $content = ltrim($content, "\r\n");
 
-        $path = tempnam(sys_get_temp_dir(), "php");
-        $err = file_put_contents($path, $content);
+        // Put content in a stream
+        $stream = fopen('php://memory', 'r+');
+        if ($content !== '') {
+            fwrite($stream, $content);
+            fseek($stream, 0);
+        }
 
         $data = [
             'name' => $match[2],
             'type' => trim($mime[1]),
-            'tmp_name' => $path,
-            'error' => ($err === false) ? UPLOAD_ERR_NO_FILE : UPLOAD_ERR_OK,
-            'size' => filesize($path),
+            'stream' => $stream, // Instead of writing to a file, we write to a stream.
+            'error' => UPLOAD_ERR_OK,
+            'size' => function_exists('mb_strlen')? mb_strlen($content, '8bit') : strlen($content),
         ];
+
+        //TODO :: have an option to write to files to emulate the same functionality as a real php server
+        //$path = tempnam(sys_get_temp_dir(), "php");
+        //$err = file_put_contents($path, $content);
+        //$data['tmp_name'] = $path;
+        //$data['error'] = ($err === false) ? UPLOAD_ERR_NO_FILE : UPLOAD_ERR_OK;
 
         $this->addResolved('files', $match[1], $data);
     }
