@@ -39,7 +39,7 @@ class Request extends EventEmitter implements ReadableStreamInterface
 
     public function getPath()
     {
-        return $this->url['path'];
+        return $this->url->getPath();
     }
 
     public function getUrl()
