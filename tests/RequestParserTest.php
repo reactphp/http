@@ -252,7 +252,7 @@ class RequestParserTest extends TestCase
         $data .= "Host: localhost:8080\r\n";
         $data .= "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:32.0) Gecko/20100101 Firefox/32.0\r\n";
         $data .= "Connection: close\r\n";
-        $data .= "Content-Type: application/x-www-form-urlencoded\r\n";
+        $data .= "Content-Type: application/x-www-form-urlencoded; charset=utf-8\r\n";
         $data .= "Content-Length: 79\r\n";
         $data .= "\r\n";
         $data .= "user=single&user2=second&users%5B%5D=first+in+array&users%5B%5D=second+in+array\r\n";

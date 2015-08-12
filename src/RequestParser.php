@@ -133,7 +133,7 @@ class RequestParser extends EventEmitter
                 return;
             }
 
-            if (strtolower($headers['Content-Type']) == 'application/x-www-form-urlencoded') {
+            elseif (strpos(strtolower($headers['Content-Type']), 'application/x-www-form-urlencoded') == 0) {
                 parse_str(urldecode($content), $result);
                 $this->request->setPost($result);
 
