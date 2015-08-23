@@ -3,7 +3,7 @@
 namespace React\Http;
 
 use Evenement\EventEmitter;
-use GuzzleHttp\Psr7 as g7;
+use GuzzleHttp\Psr7 as gPsr;
 
 /**
  * @event headers
@@ -91,7 +91,7 @@ class RequestParser extends EventEmitter
 
     public function parseHeaders($data)
     {
-        $psrRequest = g7\parse_request($data);
+        $psrRequest = gPsr\parse_request($data);
 
         $parsedQuery = [];
         $queryString = $psrRequest->getUri()->getQuery();
@@ -99,12 +99,13 @@ class RequestParser extends EventEmitter
             parse_str($queryString, $parsedQuery);
         }
 
-        $headers = $psrRequest->getHeaders();
-        array_walk($headers, function(&$val) {
+        $headers = array_map(function(&$val) {
             if (1 === count($val)) {
                 $val = $val[0];
             }
-        });
+
+            return $val;
+        }, $psrRequest->getHeaders());
 
         return new Request(
             $psrRequest->getMethod(),
