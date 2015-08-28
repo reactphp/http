@@ -26,7 +26,7 @@ class Request extends EventEmitter implements ReadableStreamInterface
     private $method;
 
     /**
-     * @var UriInterface|null
+     * @var mixed
      */
     private $url;
 
