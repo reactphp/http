@@ -5,8 +5,8 @@ namespace React\Http;
 use Evenement\EventEmitter;
 use Psr\Http\Message\UriInterface;
 use React\Stream\ReadableStreamInterface;
-use React\Stream\WritableStreamInterface;
 use React\Stream\Util;
+use React\Stream\WritableStreamInterface;
 
 /**
  * @event pause
@@ -73,12 +73,12 @@ class Request extends EventEmitter implements ReadableStreamInterface
      */
     public function __construct($method, $url, $query = array(), $httpVersion = '1.1', $headers = array(), $body = '')
     {
-        $this->method = $method;
-        $this->url = $url;
-        $this->query = $query;
+        $this->method      = $method;
+        $this->url         = $url;
+        $this->query       = $query;
         $this->httpVersion = $httpVersion;
-        $this->headers = $headers;
-        $this->body = $body;
+        $this->headers     = $headers;
+        $this->body        = $body;
     }
 
     /**
