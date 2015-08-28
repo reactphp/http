@@ -8,12 +8,34 @@ use React\Stream\WritableStreamInterface;
 
 class Response extends EventEmitter implements WritableStreamInterface
 {
+    /**
+     * @var bool
+     */
     private $closed = false;
+
+    /**
+     * @var bool
+     */
     private $writable = true;
+
+    /**
+     * @var ConnectionInterface
+     */
     private $conn;
+
+    /**
+     * @var bool
+     */
     private $headWritten = false;
+
+    /**
+     * @var bool
+     */
     private $chunkedEncoding = true;
 
+    /**
+     * @param ConnectionInterface $conn
+     */
     public function __construct(ConnectionInterface $conn)
     {
         $this->conn = $conn;
@@ -32,11 +54,17 @@ class Response extends EventEmitter implements WritableStreamInterface
         });
     }
 
+    /**
+     * @return bool
+     */
     public function isWritable()
     {
         return $this->writable;
     }
 
+    /**
+     * @throws \Exception
+     */
     public function writeContinue()
     {
         if ($this->headWritten) {
@@ -46,6 +74,11 @@ class Response extends EventEmitter implements WritableStreamInterface
         $this->conn->write("HTTP/1.1 100 Continue\r\n\r\n");
     }
 
+    /**
+     * @param int   $status
+     * @param array $headers
+     * @throws \Exception
+     */
     public function writeHead($status = 200, array $headers = array())
     {
         if ($this->headWritten) {
@@ -70,6 +103,11 @@ class Response extends EventEmitter implements WritableStreamInterface
         $this->headWritten = true;
     }
 
+    /**
+     * @param        $status
+     * @param  array $headers
+     * @return string
+     */
     private function formatHead($status, array $headers)
     {
         $status = (int) $status;
@@ -90,6 +128,11 @@ class Response extends EventEmitter implements WritableStreamInterface
         return $data;
     }
 
+    /**
+     * @param  $data
+     * @return mixed
+     * @throws \Exception
+     */
     public function write($data)
     {
         if (!$this->headWritten) {
@@ -107,6 +150,10 @@ class Response extends EventEmitter implements WritableStreamInterface
         return $flushed;
     }
 
+    /**
+     * @param null $data
+     * @throws \Exception
+     */
     public function end($data = null)
     {
         if (null !== $data) {
@@ -122,6 +169,9 @@ class Response extends EventEmitter implements WritableStreamInterface
         $this->conn->end();
     }
 
+    /**
+     * @return null
+     */
     public function close()
     {
         if ($this->closed) {
