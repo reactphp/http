@@ -94,7 +94,11 @@ class Request extends EventEmitter implements ReadableStreamInterface
      */
     public function getPath()
     {
-        return $this->url->getPath();
+        if ($this->url instanceof UriInterface) {
+            return $this->url->getPath();
+        }
+
+        return '';
     }
 
     public function getUrl()
