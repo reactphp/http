@@ -143,7 +143,10 @@ class RequestParserTest extends TestCase
         $this->assertEquals(2, count($request->getFiles()['files']));
     }
 
-    public function testShouldReceivePostInBody()
+    /**
+     * @dataProvider shouldReceivePostInBodyDataProvider
+     */
+    public function testShouldReceivePostInBody($postData)
     {
         $request = null;
         $body = null;
@@ -154,7 +157,7 @@ class RequestParserTest extends TestCase
                 $body = $parsedBodyBuffer;
             });
 
-        $parser->feed($this->createPostWithContent());
+        $parser->feed($postData);
 
         $this->assertInstanceOf('React\Http\Request', $request);
         $this->assertSame('', $body);
@@ -162,6 +165,14 @@ class RequestParserTest extends TestCase
             $request->getPost(),
             ['user' => 'single', 'user2' => 'second', 'users' => ['first in array', 'second in array']]
         );
+    }
+
+    public function shouldReceivePostInBodyDataProvider()
+    {
+        return [
+            [$this->createPostWithContent()],
+            [$this->createPostWithContentUtf8Charset()]
+        ];
     }
 
     public function testHeaderOverflowShouldEmitError()
@@ -253,6 +264,20 @@ class RequestParserTest extends TestCase
         $data .= "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:32.0) Gecko/20100101 Firefox/32.0\r\n";
         $data .= "Connection: close\r\n";
         $data .= "Content-Type: application/x-www-form-urlencoded\r\n";
+        $data .= "Content-Length: 79\r\n";
+        $data .= "\r\n";
+        $data .= "user=single&user2=second&users%5B%5D=first+in+array&users%5B%5D=second+in+array\r\n";
+
+        return $data;
+    }
+
+    private function createPostWithContentUtf8Charset()
+    {
+        $data  = "POST /foo?bar=baz HTTP/1.1\r\n";
+        $data .= "Host: localhost:8080\r\n";
+        $data .= "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:32.0) Gecko/20100101 Firefox/32.0\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Content-Type: application/x-www-form-urlencoded; charset=utf-8\r\n";
         $data .= "Content-Length: 79\r\n";
         $data .= "\r\n";
         $data .= "user=single&user2=second&users%5B%5D=first+in+array&users%5B%5D=second+in+array\r\n";
