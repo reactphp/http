@@ -9,7 +9,7 @@ use GuzzleHttp\Psr7 as gPsr;
  * @event headers
  * @event error
  */
-class RequestParser extends EventEmitter
+class RequestParser extends EventEmitter implements RequestParserInterface
 {
     private $buffer = '';
     private $maxSize = 4096;
