@@ -66,7 +66,7 @@ class ServerTest extends TestCase
         $this->assertContains("\r\nX-Powered-By: React/alpha\r\n", $conn->getData());
     }
 
-    public function testServerUsesProvidedRequestParser()
+    public function testServerUsesProvidedRequestParserFactory()
     {
         $io = new ServerStub();
 
@@ -74,7 +74,11 @@ class ServerTest extends TestCase
         $parser = $this->getMockBuilder('React\Http\RequestParser')->getMock();
         $parser->expects($this->once())->method('on');
 
-        new Server($io, $parser);
+        /** @var \React\Http\RequestParserFactory | \PHPUnit_Framework_MockObject_MockObject $parserFactory */
+        $parserFactory = $this->getMockBuilder('React\Http\RequestParserFactory')->getMock();
+        $parserFactory->expects($this->once())->method('create')->willReturn($parser);
+
+        new Server($io, $parserFactory);
 
         $conn = new ConnectionStub();
         $io->emit('connection', array($conn));
