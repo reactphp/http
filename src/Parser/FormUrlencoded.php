@@ -1,10 +1,11 @@
 <?php
 
-namespace React\Http;
+namespace React\Http\Parser;
 
+use React\Http\Request;
 use React\Stream\ReadableStreamInterface;
 
-class FormUrlencodedParser
+class FormUrlencoded
 {
     /**
      * @var string

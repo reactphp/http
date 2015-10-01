@@ -1,18 +1,19 @@
 <?php
 
-namespace React\Tests\Http;
+namespace React\Tests\Http\Parser;
 
-use React\Http\FormUrlencodedParser;
+use React\Http\Parser\FormUrlencoded;
 use React\Http\Request;
 use React\Stream\ThroughStream;
+use React\Tests\Http\TestCase;
 
-class FormUrlencodedParserTest extends TestCase
+class FormUrlencodedTest extends TestCase
 {
     public function testParse()
     {
         $stream = new ThroughStream();
         $request = new Request('POST', 'http://example.com/');
-        new FormUrlencodedParser($stream, $request);
+        new FormUrlencoded($stream, $request);
         $stream->write('user=single&user2=second&us');
         $stream->end('ers%5B%5D=first+in+array&users%5B%5D=second+in+array');
         $this->assertEquals(

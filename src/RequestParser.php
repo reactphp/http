@@ -4,6 +4,8 @@ namespace React\Http;
 
 use Evenement\EventEmitter;
 use GuzzleHttp\Psr7 as gPsr;
+use React\Http\Parser\FormUrlencoded;
+use React\Http\Parser\Multipart;
 use React\Stream\ReadableStreamInterface;
 
 /**
@@ -100,7 +102,7 @@ class RequestParser extends EventEmitter
                 preg_match("/boundary=\"?(.*)\"?$/", $headers['Content-Type'], $matches);
                 $boundary = $matches[1];
 
-                $parser = new MultipartParser($this->stream, $boundary, $this->request);
+                $parser = new Multipart($this->stream, $boundary, $this->request);
                 $this->once('headers', function () use ($parser, $content) {
                     $parser->feed($content);
                 });
@@ -108,7 +110,7 @@ class RequestParser extends EventEmitter
             }
 
             if (strtolower($headers['Content-Type']) == 'application/x-www-form-urlencoded') {
-                $parser = new FormUrlencodedParser($this->stream, $this->request);
+                $parser = new FormUrlencoded($this->stream, $this->request);
                 $this->once('headers', function () use ($parser, $content) {
                     $parser->feed($content);
                 });

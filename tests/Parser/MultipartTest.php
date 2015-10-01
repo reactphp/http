@@ -1,11 +1,12 @@
 <?php
 
-namespace React\Tests\Http;
+namespace React\Tests\Http\Parser;
 
-use React\Http\MultipartParser;
+use React\Http\Parser\Multipart;
 use React\Http\Request;
 use React\Stream\ReadableStreamInterface;
 use React\Stream\ThroughStream;
+use React\Tests\Http\TestCase;
 
 class MultipartParserTest extends TestCase
 {
@@ -36,7 +37,7 @@ class MultipartParserTest extends TestCase
         $data .= "second\r\n";
         $data .= "--$boundary--\r\n";
 
-        new MultipartParser($stream, $boundary, $request);
+        new Multipart($stream, $boundary, $request);
         $stream->write($data);
 
         $this->assertEmpty($files);
@@ -67,7 +68,7 @@ class MultipartParserTest extends TestCase
 
         $boundary = "---------------------------12758086162038677464950549563";
 
-        new MultipartParser($stream, $boundary, $request);
+        new Multipart($stream, $boundary, $request);
 
         $data  = "--$boundary\r\n";
         $data .= "Content-Disposition: form-data; name=\"users[one]\"\r\n";

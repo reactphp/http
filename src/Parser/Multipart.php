@@ -1,7 +1,8 @@
 <?php
 
-namespace React\Http;
+namespace React\Http\Parser;
 
+use React\Http\Request;
 use React\Stream\ReadableStreamInterface;
 use React\Stream\ThroughStream;
 
@@ -14,7 +15,7 @@ use React\Stream\ThroughStream;
  * @author stephane.goetz@onigoetz.ch
  * @license http://www.gnu.org/licenses/gpl.html GPL License 3
  */
-class MultipartParser
+class Multipart
 {
     protected $buffer = '';
 
