@@ -2,6 +2,7 @@
 
 namespace React\Http\Parser;
 
+use React\Http\File;
 use React\Http\Request;
 use React\Stream\ReadableStreamInterface;
 use React\Stream\ThroughStream;
@@ -164,12 +165,12 @@ class Multipart
             $this->stream->on('data', $func);
         }
 
-        $this->request->emit('file', [
+        $this->request->emit('file', [new File(
             $match[1], // name
             $match[2], // filename
             trim($mime[1]), // type
-            $stream,
-        ]);
+            $stream
+        )]);
 
         $stream->write($content);
     }

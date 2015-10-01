@@ -2,9 +2,9 @@
 
 namespace React\Tests\Http\Parser;
 
+use React\Http\FileInterface;
 use React\Http\Parser\Multipart;
 use React\Http\Request;
-use React\Stream\ReadableStreamInterface;
 use React\Stream\ThroughStream;
 use React\Tests\Http\TestCase;
 
@@ -21,8 +21,8 @@ class MultipartParserTest extends TestCase
         $request->on('post', function ($key, $value) use (&$post) {
             $post[$key] = $value;
         });
-        $request->on('file', function ($name, $filename, $type, ReadableStreamInterface $stream) use (&$files) {
-            $files[] = $name;
+        $request->on('file', function (FileInterface $file) use (&$files) {
+            $files[] = $file;
         });
 
         $boundary = "---------------------------5844729766471062541057622570";
@@ -60,8 +60,8 @@ class MultipartParserTest extends TestCase
         $request->on('post', function ($key, $value) use (&$post) {
             $post[] = [$key => $value];
         });
-        $request->on('file', function ($name, $filename, $type, ReadableStreamInterface $stream) use (&$files) {
-            $files[] = [$name, $filename, $type, $stream];
+        $request->on('file', function (FileInterface $file) use (&$files) {
+            $files[] = $file;
         });
 
         $file = base64_decode("R0lGODlhAQABAIAAAP///wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==");
@@ -132,17 +132,17 @@ class MultipartParserTest extends TestCase
         );
 
         $this->assertEquals(3, count($files));
-        $this->assertEquals('file', $files[0][0]);
-        $this->assertEquals('User.php', $files[0][1]);
-        $this->assertEquals('text/php', $files[0][2]);
+        $this->assertEquals('file', $files[0]->getName());
+        $this->assertEquals('User.php', $files[0]->getFilename());
+        $this->assertEquals('text/php', $files[0]->getType());
 
-        $this->assertEquals('files[]', $files[1][0]);
-        $this->assertEquals('blank.gif', $files[1][1]);
-        $this->assertEquals('image/gif', $files[1][2]);
+        $this->assertEquals('files[]', $files[1]->getName());
+        $this->assertEquals('blank.gif', $files[1]->getFilename());
+        $this->assertEquals('image/gif', $files[1]->getType());
 
-        $this->assertEquals('files[]', $files[2][0]);
-        $this->assertEquals('User.php', $files[2][1]);
-        $this->assertEquals('text/php', $files[2][2]);
+        $this->assertEquals('files[]', $files[2]->getName());
+        $this->assertEquals('User.php', $files[2]->getFilename());
+        $this->assertEquals('text/php', $files[2]->getType());
 
         return;
 
