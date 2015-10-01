@@ -143,25 +143,5 @@ class MultipartParserTest extends TestCase
         $this->assertEquals('files[]', $files[2]->getName());
         $this->assertEquals('User.php', $files[2]->getFilename());
         $this->assertEquals('text/php', $files[2]->getType());
-
-        return;
-
-        $uploaded_blank = $parser->getFiles()['files'][0];
-
-        // The original test was `file_get_contents($uploaded_blank['tmp_name'])`
-        // but as we moved to resources, we can't use that anymore, this is the only
-        // difference with a stock php implementation
-        $this->assertEquals($file, stream_get_contents($uploaded_blank['stream']));
-
-        $uploaded_blank['stream'] = 'file'; //override the resource as it is random
-        $expected_file = [
-            'name' => 'blank.gif',
-            'type' => 'image/gif',
-            'stream' => 'file',
-            'error' => 0,
-            'size' => 43,
-        ];
-
-        $this->assertEquals($expected_file, $uploaded_blank);
     }
 }
