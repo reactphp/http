@@ -2,6 +2,9 @@
 
 namespace React\Http;
 
+use React\Stream\ReadableStreamInterface;
+use React\Stream\ThroughStream;
+
 /**
  * Parse a multipart body
  *
@@ -13,10 +16,12 @@ namespace React\Http;
  */
 class MultipartParser
 {
+    protected $buffer = '';
+
     /**
      * @var string
      */
-    protected $input;
+    protected $stream;
 
     /**
      * @var string
@@ -24,71 +29,55 @@ class MultipartParser
     protected $boundary;
 
     /**
-     * Contains the resolved posts
-     *
-     * @var array
+     * @var Request
      */
-    protected $post = [];
+    protected $request;
 
     /**
-     * Contains the resolved files
-     *
-     * @var array
+     * @param ReadableStreamInterface $stream
+     * @param string $boundary
+     * @param Request $request
      */
-    protected $files = [];
-
-    /**
-     * @param $input
-     * @param $boundary
-     */
-    public function __construct($input, $boundary)
+    public function __construct(ReadableStreamInterface $stream, $boundary, Request $request)
     {
-        $this->input = $input;
+        $this->stream = $stream;
         $this->boundary = $boundary;
-    }
+        $this->request = $request;
 
-    /**
-     * @return array
-     */
-    public function getPost()
-    {
-        return $this->post;
-    }
-
-    /**
-     * @return array
-     */
-    public function getFiles()
-    {
-        return $this->files;
+        $this->stream->on('data', [$this, 'feed']);
     }
 
     /**
      * Do the actual parsing
+     *
+     * @param string $data
      */
-    public function parse()
+    public function feed($data)
     {
-        $blocks = $this->split($this->boundary);
+        $this->buffer .= $data;
 
-        foreach ($blocks as $value) {
-            if (empty($value)) {
-                continue;
-            }
+        $ending = $this->boundary . "--\r\n";
+        $endSize = strlen($ending);
 
-            $this->parseBlock($value);
+        if (strpos($this->buffer, $this->boundary) < strrpos($this->buffer, "\r\n\r\n") || substr($this->buffer, -1, $endSize) === $ending) {
+            $this->processBuffer();
         }
     }
 
-    /**
-     * @param $boundary string
-     * @returns Array
-     */
-    protected function split($boundary)
+    protected function processBuffer()
     {
-        $boundary = preg_quote($boundary);
-        $result = preg_split("/\\-+$boundary/", $this->input);
-        array_pop($result);
-        return $result;
+        $chunks = preg_split("/\\-+$this->boundary/", $this->buffer);
+        $this->buffer = array_pop($chunks);
+        foreach ($chunks as $chunk) {
+            $this->parseBlock($chunk);
+        }
+
+        $lines = explode("\r\n", $this->buffer);
+        if (isset($lines[1]) && strpos($lines[1], 'filename') !== false) {
+            $this->file($this->buffer);
+            $this->buffer = '';
+            return;
+        }
     }
 
     /**
@@ -99,15 +88,20 @@ class MultipartParser
      */
     protected function parseBlock($string)
     {
-        if (strpos($string, 'filename') !== false) {
-            $this->file($string);
+        if ($string == '') {
+            return;
+        }
+
+        list(, $firstLine) = explode("\r\n", $string);
+        if (strpos($firstLine, 'filename') !== false) {
+            $this->file($string, false);
             return;
         }
 
         // This may never be called, if an octet stream
         // has a filename it is catched by the previous
         // condition already.
-        if (strpos($string, 'application/octet-stream') !== false) {
+        if (strpos($firstLine, 'application/octet-stream') !== false) {
             $this->octetStream($string);
             return;
         }
@@ -125,45 +119,58 @@ class MultipartParser
     {
         preg_match('/name=\"([^\"]*)\".*stream[\n|\r]+([^\n\r].*)?$/s', $string, $match);
 
-        $this->addResolved('post', $match[1], $match[2]);
+        $this->request->emit('post', [$match[1], $match[2]]);
     }
 
     /**
      * Parse a file
      *
-     * @param $string
-     * @return array
+     * @param string $firstChunk
      */
-    protected function file($string)
+    protected function file($firstChunk, $streaming = true)
     {
-        preg_match('/name=\"([^\"]*)\"; filename=\"([^\"]*)\"[\n|\r]+([^\n\r].*)?\r$/s', $string, $match);
-        preg_match('/Content-Type: (.*)?/', $match[3], $mime);
+        preg_match('/name=\"([^\"]*)\"; filename=\"([^\"]*)\"[\n|\r]+([^\n\r].*)?\r$/s', $firstChunk, $match);
+        preg_match('/Content-Type: ([^\"]*)/', $match[3], $mime);
 
         $content = preg_replace('/Content-Type: (.*)[^\n\r]/', '', $match[3]);
         $content = ltrim($content, "\r\n");
 
         // Put content in a stream
-        $stream = fopen('php://memory', 'r+');
-        if ($content !== '') {
-            fwrite($stream, $content);
-            fseek($stream, 0);
+        $stream = new ThroughStream();
+
+        if ($streaming) {
+            $this->stream->removeListener('data', [$this, 'feed']);
+            $buffer = '';
+            $func = function($data) use (&$func, &$buffer, $stream) {
+                $buffer .= $data;
+                if (strpos($buffer, $this->boundary) !== false) {
+                    $chunks = preg_split("/\\-+$this->boundary/", $buffer);
+                    $chunk = array_shift($chunks);
+                    $stream->end($chunk);
+
+                    $this->stream->removeListener('data', $func);
+                    $this->stream->on('data', [$this, 'feed']);
+
+                    $this->stream->emit('data', [implode($this->boundary, $chunks)]);
+                    return;
+                }
+
+                if (strlen($buffer) >= strlen($this->boundary) * 3) {
+                    $stream->write($buffer);
+                    $buffer = '';
+                }
+            };
+            $this->stream->on('data', $func);
         }
 
-        $data = [
-            'name' => $match[2],
-            'type' => trim($mime[1]),
-            'stream' => $stream, // Instead of writing to a file, we write to a stream.
-            'error' => UPLOAD_ERR_OK,
-            'size' => function_exists('mb_strlen')? mb_strlen($content, '8bit') : strlen($content),
-        ];
+        $this->request->emit('file', [
+            $match[1], // name
+            $match[2], // filename
+            trim($mime[1]), // type
+            $stream,
+        ]);
 
-        //TODO :: have an option to write to files to emulate the same functionality as a real php server
-        //$path = tempnam(sys_get_temp_dir(), "php");
-        //$err = file_put_contents($path, $content);
-        //$data['tmp_name'] = $path;
-        //$data['error'] = ($err === false) ? UPLOAD_ERR_NO_FILE : UPLOAD_ERR_OK;
-
-        $this->addResolved('files', $match[1], $data);
+        $stream->write($content);
     }
 
     /**
@@ -176,28 +183,6 @@ class MultipartParser
     {
         preg_match('/name=\"([^\"]*)\"[\n|\r]+([^\n\r].*)?\r$/s', $string, $match);
 
-        $this->addResolved('post', $match[1], $match[2]);
-    }
-
-    /**
-     * Put the file or post where it belongs,
-     * The key names can be simple, or containing []
-     * it can also be a named key
-     *
-     * @param $type
-     * @param $key
-     * @param $content
-     */
-    protected function addResolved($type, $key, $content)
-    {
-        if (preg_match('/^(.*)\[(.*)\]$/i', $key, $tmp)) {
-            if (!empty($tmp[2])) {
-                $this->{$type}[$tmp[1]][$tmp[2]] = $content;
-            } else {
-                $this->{$type}[$tmp[1]][] = $content;
-            }
-        } else {
-            $this->{$type}[$key] = $content;
-        }
+        $this->request->emit('post', [$match[1], $match[2]]);
     }
 }

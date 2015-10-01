@@ -3,10 +3,26 @@
 namespace React\Tests\Http;
 
 use React\Http\MultipartParser;
+use React\Http\Request;
+use React\Stream\ReadableStreamInterface;
+use React\Stream\ThroughStream;
 
-class MultipartParserTest extends TestCase {
+class MultipartParserTest extends TestCase
+{
 
-    public function testPostKey() {
+    public function testPostKey()
+    {
+        $files = [];
+        $post = [];
+
+        $stream = new ThroughStream();
+        $request = new Request('POST', 'http://example.com/');
+        $request->on('post', function ($key, $value) use (&$post) {
+            $post[$key] = $value;
+        });
+        $request->on('file', function ($name, $filename, $type, ReadableStreamInterface $stream) use (&$files) {
+            $files[] = $name;
+        });
 
         $boundary = "---------------------------5844729766471062541057622570";
 
@@ -20,66 +36,114 @@ class MultipartParserTest extends TestCase {
         $data .= "second\r\n";
         $data .= "--$boundary--\r\n";
 
-        $parser = new MultipartParser($data, $boundary);
-        $parser->parse();
+        new MultipartParser($stream, $boundary, $request);
+        $stream->write($data);
 
-        $this->assertEmpty($parser->getFiles());
+        $this->assertEmpty($files);
         $this->assertEquals(
-            ['users' => ['one' => 'single', 'two' => 'second']],
-            $parser->getPost()
+            [
+                'users[one]' => 'single',
+                'users[two]' => 'second',
+            ],
+            $post
         );
     }
 
-    public function testFileUpload() {
+    public function testFileUpload()
+    {
+        $files = [];
+        $post = [];
+
+        $stream = new ThroughStream();
+        $request = new Request('POST', 'http://example.com/');
+        $request->on('post', function ($key, $value) use (&$post) {
+            $post[] = [$key => $value];
+        });
+        $request->on('file', function ($name, $filename, $type, ReadableStreamInterface $stream) use (&$files) {
+            $files[] = [$name, $filename, $type, $stream];
+        });
 
         $file = base64_decode("R0lGODlhAQABAIAAAP///wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==");
 
         $boundary = "---------------------------12758086162038677464950549563";
 
+        new MultipartParser($stream, $boundary, $request);
+
         $data  = "--$boundary\r\n";
-        $data .= "Content-Disposition: form-data; name=\"user\"\r\n";
+        $data .= "Content-Disposition: form-data; name=\"users[one]\"\r\n";
         $data .= "\r\n";
         $data .= "single\r\n";
         $data .= "--$boundary\r\n";
-        $data .= "Content-Disposition: form-data; name=\"user2\"\r\n";
+        $data .= "Content-Disposition: form-data; name=\"users[two]\"\r\n";
         $data .= "\r\n";
         $data .= "second\r\n";
-        $data .= "--$boundary\r\n";
-        $data .= "Content-Disposition: form-data; name=\"users[]\"\r\n";
-        $data .= "\r\n";
-        $data .= "first in array\r\n";
-        $data .= "--$boundary\r\n";
-        $data .= "Content-Disposition: form-data; name=\"users[]\"\r\n";
-        $data .= "\r\n";
-        $data .= "second in array\r\n";
-        $data .= "--$boundary\r\n";
-        $data .= "Content-Disposition: form-data; name=\"file\"; filename=\"User.php\"\r\n";
-        $data .= "Content-Type: text/php\r\n";
-        $data .= "\r\n";
-        $data .= "<?php echo 'User';\r\n";
-        $data .= "\r\n";
-        $data .= "--$boundary\r\n";
-        $data .= "Content-Disposition: form-data; name=\"files[]\"; filename=\"blank.gif\"\r\n";
-        $data .= "Content-Type: image/gif\r\n";
-        $data .= "\r\n";
-        $data .= $file . "\r\n";
-        $data .= "--$boundary\r\n";
-        $data .= "Content-Disposition: form-data; name=\"files[]\"; filename=\"User.php\"\r\n";
-        $data .= "Content-Type: text/php\r\n";
-        $data .= "\r\n";
-        $data .= "<?php echo 'User';\r\n";
-        $data .= "\r\n";
-        $data .= "--$boundary--\r\n";
+        $stream->write($data);
+        $stream->write("--$boundary\r\n");
+        $stream->write("Content-Disposition: form-data; name=\"user\"\r\n");
+        $stream->write("\r\n");
+        $stream->write("single\r\n");
+        $stream->write("--$boundary\r\n");
+        $stream->write("Content-Disposition: form-data; name=\"user2\"\r\n");
+        $stream->write("\r\n");
+        $stream->write("second\r\n");
+        $stream->write("--$boundary\r\n");
+        $stream->write("Content-Disposition: form-data; name=\"users[]\"\r\n");
+        $stream->write("\r\n");
+        $stream->write("first in array\r\n");
+        $stream->write("--$boundary\r\n");
+        $stream->write("Content-Disposition: form-data; name=\"users[]\"\r\n");
+        $stream->write("\r\n");
+        $stream->write("second in array\r\n");
+        $stream->write("--$boundary\r\n");
+        $stream->write("Content-Disposition: form-data; name=\"file\"; filename=\"User.php\"\r\n");
+        $stream->write("Content-Type: text/php\r\n");
+        $stream->write("\r\n");
+        $stream->write("<?php echo 'User';\r\n");
+        $stream->write("\r\n");
+        $line = "--$boundary";
+        $lines = str_split($line, round(strlen($line) / 2));
+        $stream->write($lines[0]);
+        $stream->write($lines[1]);
+        $stream->write("\r\n");
+        $stream->write("Content-Disposition: form-data; name=\"files[]\"; filename=\"blank.gif\"\r\n");
+        $stream->write("Content-Type: image/gif\r\n");
+        $stream->write("\r\n");
+        $stream->write($file . "\r\n");
+        $stream->write("--$boundary\r\n");
+        $stream->write("Content-Disposition: form-data; name=\"files[]\"; filename=\"User.php\"\r\n");
+        $stream->write("Content-Type: text/php\r\n");
+        $stream->write("\r\n");
+        $stream->write("<?php echo 'User';\r\n");
+        $stream->write("\r\n");
+        $stream->write("--$boundary--\r\n");
 
-        $parser = new MultipartParser($data, $boundary);
-        $parser->parse();
-
-        $this->assertEquals(2, count($parser->getFiles()));
-        $this->assertEquals(2, count($parser->getFiles()['files']));
+        $this->assertEquals(6, count($post));
         $this->assertEquals(
-            ['user' => 'single', 'user2' => 'second', 'users' => ['first in array', 'second in array']],
-            $parser->getPost()
+            [
+                ['users[one]' => 'single'],
+                ['users[two]' => 'second'],
+                ['user' => 'single'],
+                ['user2' => 'second'],
+                ['users[]' => 'first in array'],
+                ['users[]' => 'second in array'],
+            ],
+            $post
         );
+
+        $this->assertEquals(3, count($files));
+        $this->assertEquals('file', $files[0][0]);
+        $this->assertEquals('User.php', $files[0][1]);
+        $this->assertEquals('text/php', $files[0][2]);
+
+        $this->assertEquals('files[]', $files[1][0]);
+        $this->assertEquals('blank.gif', $files[1][1]);
+        $this->assertEquals('image/gif', $files[1][2]);
+
+        $this->assertEquals('files[]', $files[2][0]);
+        $this->assertEquals('User.php', $files[2][1]);
+        $this->assertEquals('text/php', $files[2][2]);
+
+        return;
 
         $uploaded_blank = $parser->getFiles()['files'][0];
 

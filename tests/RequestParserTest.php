@@ -3,31 +3,34 @@
 namespace React\Tests\Http;
 
 use React\Http\RequestParser;
+use React\Stream\ThroughStream;
 
 class RequestParserTest extends TestCase
 {
     public function testSplitShouldHappenOnDoubleCrlf()
     {
-        $parser = new RequestParser();
+        $stream = new ThroughStream();
+        $parser = new RequestParser($stream);
         $parser->on('headers', $this->expectCallableNever());
 
-        $parser->feed("GET / HTTP/1.1\r\n");
-        $parser->feed("Host: example.com:80\r\n");
-        $parser->feed("Connection: close\r\n");
+        $stream->write("GET / HTTP/1.1\r\n");
+        $stream->write("Host: example.com:80\r\n");
+        $stream->write("Connection: close\r\n");
 
         $parser->removeAllListeners();
         $parser->on('headers', $this->expectCallableOnce());
 
-        $parser->feed("\r\n");
+        $stream->write("\r\n");
     }
 
     public function testFeedInOneGo()
     {
-        $parser = new RequestParser();
+        $stream = new ThroughStream();
+        $parser = new RequestParser($stream);
         $parser->on('headers', $this->expectCallableOnce());
 
         $data = $this->createGetRequest();
-        $parser->feed($data);
+        $stream->write($data);
     }
 
     public function testHeadersEventShouldReturnRequestAndBodyBuffer()
@@ -35,14 +38,15 @@ class RequestParserTest extends TestCase
         $request = null;
         $bodyBuffer = null;
 
-        $parser = new RequestParser();
+        $stream = new ThroughStream();
+        $parser = new RequestParser($stream);
         $parser->on('headers', function ($parsedRequest, $parsedBodyBuffer) use (&$request, &$bodyBuffer) {
             $request = $parsedRequest;
             $bodyBuffer = $parsedBodyBuffer;
         });
 
         $data = $this->createGetRequest('RANDOM DATA', 11);
-        $parser->feed($data);
+        $stream->write($data);
 
         $this->assertInstanceOf('React\Http\Request', $request);
         $this->assertSame('GET', $request->getMethod());
@@ -61,13 +65,14 @@ class RequestParserTest extends TestCase
     {
         $bodyBuffer = null;
 
-        $parser = new RequestParser();
+        $stream = new ThroughStream();
+        $parser = new RequestParser($stream);
         $parser->on('headers', function ($parsedRequest, $parsedBodyBuffer) use (&$bodyBuffer) {
             $bodyBuffer = $parsedBodyBuffer;
         });
 
         $data = $this->createGetRequest("\0x01\0x02\0x03\0x04\0x05", strlen("\0x01\0x02\0x03\0x04\0x05"));
-        $parser->feed($data);
+        $stream->write($data);
 
         $this->assertSame("\0x01\0x02\0x03\0x04\0x05", $bodyBuffer);
     }
@@ -76,13 +81,14 @@ class RequestParserTest extends TestCase
     {
         $request = null;
 
-        $parser = new RequestParser();
+        $stream = new ThroughStream();
+        $parser = new RequestParser($stream);
         $parser->on('headers', function ($parsedRequest, $parsedBodyBuffer) use (&$request) {
             $request = $parsedRequest;
         });
 
         $data = $this->createAdvancedPostRequest();
-        $parser->feed($data);
+        $stream->write($data);
 
         $this->assertInstanceOf('React\Http\Request', $request);
         $this->assertSame('POST', $request->getMethod());
@@ -99,25 +105,51 @@ class RequestParserTest extends TestCase
 
     public function testShouldReceiveBodyContent()
     {
-        $content1 = "{\"test\":"; $content2 = " \"value\"}";
+        $content1 = "{\"test\":";
+        $content2 = " \"value\"}";
 
         $request = null;
         $body = null;
 
-        $parser = new RequestParser();
+        $stream = new ThroughStream();
+        $parser = new RequestParser($stream);
         $parser->on('headers', function ($parsedRequest, $parsedBodyBuffer) use (&$request, &$body) {
             $request = $parsedRequest;
             $body = $parsedBodyBuffer;
         });
 
         $data = $this->createAdvancedPostRequest('', 17);
-        $parser->feed($data);
-        $parser->feed($content1);
-        $parser->feed($content2 . "\r\n");
+        $stream->write($data);
+        $stream->write($content1);
+        $stream->write($content2);
 
         $this->assertInstanceOf('React\Http\Request', $request);
         $this->assertEquals($content1 . $content2, $request->getBody());
-        $this->assertSame($body, $request->getBody());
+        $this->assertSame($body, '');
+    }
+
+    public function testShouldReceiveBodyContentPartial()
+    {
+        $content1 = "{\"test\":";
+        $content2 = " \"value\"}";
+
+        $request = null;
+        $body = null;
+
+        $stream = new ThroughStream();
+        $parser = new RequestParser($stream);
+        $parser->on('headers', function ($parsedRequest, $parsedBodyBuffer) use (&$request, &$body) {
+            $request = $parsedRequest;
+            $body = $parsedBodyBuffer;
+        });
+
+        $data = $this->createAdvancedPostRequest('', 17);
+        $stream->write($data . $content1);
+        $stream->write($content2);
+
+        $this->assertInstanceOf('React\Http\Request', $request);
+        $this->assertEquals($content1 . $content2, $request->getBody());
+        $this->assertSame($body, $content1);
     }
 
     public function testShouldReceiveMultiPartBody()
@@ -125,22 +157,26 @@ class RequestParserTest extends TestCase
 
         $request = null;
         $body = null;
+        $files = [];
 
-        $parser = new RequestParser();
-        $parser->on('headers', function ($parsedRequest, $parsedBodyBuffer) use (&$request, &$body) {
+        $stream = new ThroughStream();
+        $parser = new RequestParser($stream);
+        $parser->on('headers', function ($parsedRequest, $parsedBodyBuffer) use (&$request, &$body, &$files) {
             $request = $parsedRequest;
             $body = $parsedBodyBuffer;
+            $request->on('file', function ($name) use (&$files) {
+                $files[] = $name;
+            });
         });
 
-        $parser->feed($this->createMultipartRequest());
+        $stream->write($this->createMultipartRequest());
 
         $this->assertInstanceOf('React\Http\Request', $request);
         $this->assertEquals(
-            $request->getPost(),
-            ['user' => 'single', 'user2' => 'second', 'users' => ['first in array', 'second in array']]
+            ['user' => 'single', 'user2' => 'second', 'users' => ['first in array', 'second in array']],
+            $request->getPost()
         );
-        $this->assertEquals(2, count($request->getFiles()));
-        $this->assertEquals(2, count($request->getFiles()['files']));
+        $this->assertEquals(3, count($files));
     }
 
     public function testShouldReceivePostInBody()
@@ -148,19 +184,44 @@ class RequestParserTest extends TestCase
         $request = null;
         $body = null;
 
-        $parser = new RequestParser();
+        $stream = new ThroughStream();
+        $parser = new RequestParser($stream);
         $parser->on('headers', function ($parsedRequest, $parsedBodyBuffer) use (&$request, &$body) {
                 $request = $parsedRequest;
                 $body = $parsedBodyBuffer;
             });
 
-        $parser->feed($this->createPostWithContent());
+        $stream->write($this->createPostWithContent());
 
         $this->assertInstanceOf('React\Http\Request', $request);
         $this->assertSame('', $body);
         $this->assertEquals(
-            $request->getPost(),
-            ['user' => 'single', 'user2' => 'second', 'users' => ['first in array', 'second in array']]
+            ['user' => 'single', 'user2' => 'second', 'users' => ['first in array', 'second in array']],
+            $request->getPost()
+        );
+    }
+
+    public function testShouldReceivePostInBodySplit()
+    {
+        $request = null;
+        $body = null;
+
+        $stream = new ThroughStream();
+        $parser = new RequestParser($stream);
+        $parser->on('headers', function ($parsedRequest, $parsedBodyBuffer) use (&$request, &$body) {
+                $request = $parsedRequest;
+                $body = $parsedBodyBuffer;
+            });
+
+        list($data, $data2) = $this->createPostWithContentSplit();
+        $stream->write($data);
+        $stream->write($data2);
+
+        $this->assertInstanceOf('React\Http\Request', $request);
+        $this->assertSame('', $body);
+        $this->assertEquals(
+            ['user' => 'single', 'user2' => 'second', 'users' => ['first in array', 'second in array']],
+            $request->getPost()
         );
     }
 
@@ -168,14 +229,15 @@ class RequestParserTest extends TestCase
     {
         $error = null;
 
-        $parser = new RequestParser();
+        $stream = new ThroughStream();
+        $parser = new RequestParser($stream);
         $parser->on('headers', $this->expectCallableNever());
         $parser->on('error', function ($message) use (&$error) {
             $error = $message;
         });
 
         $data = str_repeat('A', 4097);
-        $parser->feed($data);
+        $stream->write($data);
 
         $this->assertInstanceOf('OverflowException', $error);
         $this->assertSame('Maximum header size of 4096 exceeded.', $error->getMessage());
@@ -185,7 +247,8 @@ class RequestParserTest extends TestCase
     {
         $error = null;
 
-        $parser = new RequestParser();
+        $stream = new ThroughStream();
+        $parser = new RequestParser($stream);
         $parser->on('headers', $this->expectCallableNever());
         $parser->on('error', function ($message) use (&$error) {
                 $error = $message;
@@ -195,7 +258,7 @@ class RequestParserTest extends TestCase
         $data .= "Host: example.com:80\r\n";
         $data .= "Cookie: " . str_repeat('A', 4097) . "\r\n";
         $data .= "\r\n";
-        $parser->feed($data);
+        $stream->write($data);
 
         $this->assertInstanceOf('OverflowException', $error);
         $this->assertSame('Maximum header size of 4096 exceeded.', $error->getMessage());
@@ -205,14 +268,15 @@ class RequestParserTest extends TestCase
     {
         $error = null;
 
-        $parser = new RequestParser();
+        $stream = new ThroughStream();
+        $parser = new RequestParser($stream);
         $parser->on('headers', $this->expectCallableOnce());
         $parser->on('error', function ($message) use (&$error) {
                 $error = $message;
             });
 
         $data = str_repeat('A', 4097);
-        $parser->feed($this->createAdvancedPostRequest() . $data);
+        $stream->write($this->createAdvancedPostRequest() . $data);
 
         $this->assertNull($error);
     }
@@ -258,6 +322,21 @@ class RequestParserTest extends TestCase
         $data .= "user=single&user2=second&users%5B%5D=first+in+array&users%5B%5D=second+in+array\r\n";
 
         return $data;
+    }
+
+    private function createPostWithContentSplit()
+    {
+        $data  = "POST /foo?bar=baz HTTP/1.1\r\n";
+        $data .= "Host: localhost:8080\r\n";
+        $data .= "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:32.0) Gecko/20100101 Firefox/32.0\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Content-Type: application/x-www-form-urlencoded\r\n";
+        $data .= "Content-Length: 79\r\n";
+        $data .= "\r\n";
+        $data .= "user=single&user2=second&us";
+        $data2 = "ers%5B%5D=first+in+array&users%5B%5D=second+in+array\r\n";
+
+        return [$data, $data2];
     }
 
     private function createMultipartRequest()
