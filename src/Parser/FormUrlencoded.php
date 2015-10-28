@@ -55,7 +55,7 @@ class FormUrlencoded
     {
         $this->stream->removeListener('data', [$this, 'feed']);
         $this->stream->removeListener('close', [$this, 'finish']);
-        parse_str(urldecode(trim($this->buffer)), $result);
+        parse_str(trim($this->buffer), $result);
         $this->request->setPost($result);
     }
 }
