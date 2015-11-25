@@ -140,6 +140,12 @@ class RequestParser extends EventEmitter
 
                 return;
             }
+
+            if (strtolower($headers['Content-Type']) == 'application/json') {
+                $result = json_decode($content);
+                $this->request->setBody($result);
+                return;
+            }
         }
 
 
