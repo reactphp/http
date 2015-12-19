@@ -75,4 +75,47 @@ class ServerTest extends TestCase
 
         return $data;
     }
+
+    public function testServerRespondsToExpectContinue()
+    {
+        $io = new ServerStub();
+        $server = new Server($io);
+        $conn = new ConnectionStub();
+        $io->emit('connection', array($conn));
+
+        $requestReceived = false;
+        $postBody = '{"React":true}';
+        $httpRequestText = $this->createPostRequestWithExpect($postBody);
+
+        $conn->emit('data', array($httpRequestText));
+
+        $server->on('request', function ($request, $_) use (&$requestReceived, $postBody) {
+            $requestReceived = true;
+            $this->assertEquals($postBody, $request->getBody());
+        });
+
+        // If server received Expect: 100-continue - the client won't send the body right away
+        $this->assertEquals(false, $requestReceived);
+
+        $this->assertEquals("HTTP/1.1 100 Continue\r\n\r\n", $conn->getData());
+
+        $conn->emit('data', array($postBody));
+
+        $this->assertEquals(true, $requestReceived);
+
+    }
+
+    private function createPostRequestWithExpect($postBody)
+    {
+        $data = "POST / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Content-Type: application/json\r\n";
+        $data .= "Content-Length: " . strlen($postBody) . "\r\n";
+        $data .= "Expect: 100-continue\r\n";
+        $data .= "\r\n";
+
+        return $data;
+    }
+
+
 }
