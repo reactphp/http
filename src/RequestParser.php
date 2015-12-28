@@ -37,6 +37,10 @@ class RequestParser extends EventEmitter
             }
 
             $this->request = $this->parseHeaders($headers . "\r\n\r\n");
+
+            if($this->request->expectsContinue()) {
+                $this->emit('expects_continue');
+            }
         }
 
         // if there is a request (meaning the headers are parsed) and
