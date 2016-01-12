@@ -150,7 +150,7 @@ class MultipartParser
         //Do not use preg_match function to parse entire request body because of multiplying (twice) allocated memory for content data
         $pos = strpos($string, "\r\n\r\n");
         $string = substr_replace($string, '', 0, $pos);
-        $string = ltrim($string, "\r\n");
+        $string = trim($string, "\r\n");
         // Put content in a stream
         $stream = fopen('php://temp', 'r+');
         if ($string !== '') {
