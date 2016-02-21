@@ -70,10 +70,11 @@ class RequestParser extends EventEmitter
 
         // if the content is present and has the
         // right length, we're good to go
-        if (array_key_exists('Content-Length', $headers) && strlen($this->buffer) >= $headers['Content-Length']) {
+        // NOTE: "right length" means body should have exactly "Content-Length" bytes
+        if (array_key_exists('Content-Length', $headers) && strlen($this->buffer) === (int) $headers['Content-Length']) {
 
             // store the expected content length
-            $this->length = $this->request->getHeaders()['Content-Length'];
+            $this->length = (int) $this->request->getHeaders()['Content-Length'];
 
             return true;
         }
