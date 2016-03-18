@@ -28,7 +28,7 @@ class Request extends EventEmitter implements ReadableStreamInterface
         $this->url = $url;
         $this->query = $query;
         $this->httpVersion = $httpVersion;
-        $this->headers = $headers;
+        $this->headers = new HeaderBag($headers);
         $this->body = $body;
     }
 
