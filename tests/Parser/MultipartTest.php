@@ -108,6 +108,7 @@ class MultipartParserTest extends TestCase
         $stream->write("\r\n");
         $stream->write("Content-Disposition: form-data; name=\"files[]\"; filename=\"blank.gif\"\r\n");
         $stream->write("Content-Type: image/gif\r\n");
+        $stream->write("X-Foo-Bar: base64\r\n");
         $stream->write("\r\n");
         $stream->write($file . "\r\n");
         $stream->write("--$boundary\r\n");
