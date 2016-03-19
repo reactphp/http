@@ -111,10 +111,10 @@ class MultipartParserTest extends TestCase
         $stream->write("\r\n");
         $stream->write($file . "\r\n");
         $stream->write("--$boundary\r\n");
-        $stream->write("Content-Disposition: form-data; name=\"files[]\"; filename=\"User.php\"\r\n");
-        $stream->write("Content-Type: text/php\r\n");
-        $stream->write("\r\n");
-        $stream->write("<?php echo 'User';\r\n");
+        $stream->write("Content-Disposition: form-data; name=\"files[]\"; filename=\"User.php\"\r\n" .
+                       "Content-Type: text/php\r\n" .
+                       "\r\n" .
+                       "<?php echo 'User';\r\n");
         $stream->write("\r\n");
         $stream->write("--$boundary--\r\n");
 

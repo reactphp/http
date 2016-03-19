@@ -168,7 +168,7 @@ class Multipart
         $this->request->emit('file', [new File(
             $match[1], // name
             $match[2], // filename
-            trim($mime[1]), // type
+            explode("\r\n", trim($mime[1]))[0], // type
             $stream
         )]);
 
