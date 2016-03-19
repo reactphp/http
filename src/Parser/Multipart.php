@@ -172,7 +172,11 @@ class Multipart
             $stream
         )]);
 
-        $stream->write($content);
+        if ($streaming) {
+            $stream->write($content);
+        } else {
+            $stream->end($content);
+        }
     }
 
     /**
