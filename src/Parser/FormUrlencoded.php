@@ -56,6 +56,8 @@ class FormUrlencoded
         $this->stream->removeListener('data', [$this, 'feed']);
         $this->stream->removeListener('close', [$this, 'finish']);
         parse_str(trim($this->buffer), $result);
-        $this->request->setPost($result);
+        foreach ($result as $key => $value) {
+            $this->request->emit('post', [$key, $value]);
+        }
     }
 }
