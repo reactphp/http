@@ -1,0 +1,27 @@
+<?php
+
+namespace React\Tests\Http;
+
+use React\Http\FormParserFactory;
+use React\Http\Request;
+
+class FormParserFactoryTest extends TestCase
+{
+    public function testMultipart()
+    {
+        $request = new Request('POST', 'http://example.com/', [], 1.1, [
+            'Content-Type' => 'multipart/mixed; boundary=---------------------------12758086162038677464950549563',
+        ]);
+        $parser = FormParserFactory::create($request);
+        $this->assertInstanceOf('React\Http\Parser\Multipart', $parser);
+    }
+
+    public function testFormUrlencoded()
+    {
+        $request = new Request('POST', 'http://example.com/', [], 1.1, [
+            'Content-Type' => 'application/x-www-form-urlencoded',
+        ]);
+        $parser = FormParserFactory::create($request);
+        $this->assertInstanceOf('React\Http\Parser\FormUrlencoded', $parser);
+    }
+}
