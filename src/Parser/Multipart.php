@@ -23,11 +23,6 @@ class Multipart
     /**
      * @var string
      */
-    protected $stream;
-
-    /**
-     * @var string
-     */
     protected $boundary;
 
     /**
@@ -36,17 +31,18 @@ class Multipart
     protected $request;
 
     /**
-     * @param ReadableStreamInterface $stream
      * @param string $boundary
      * @param Request $request
      */
-    public function __construct(ReadableStreamInterface $stream, $boundary, Request $request)
+    public function __construct(Request $request)
     {
-        $this->stream = $stream;
-        $this->boundary = $boundary;
+        $headers = $request->getHeaders();
+        preg_match("/boundary=\"?(.*)\"?$/", $headers['Content-Type'], $matches);
+
+        $this->boundary = $matches[1];
         $this->request = $request;
 
-        $this->stream->on('data', [$this, 'feed']);
+        $this->request->on('data', [$this, 'feed']);
     }
 
     /**
@@ -141,7 +137,7 @@ class Multipart
         $stream = new ThroughStream();
 
         if ($streaming) {
-            $this->stream->removeListener('data', [$this, 'feed']);
+            $this->request->removeListener('data', [$this, 'feed']);
             $buffer = '';
             $func = function($data) use (&$func, &$buffer, $stream) {
                 $buffer .= $data;
@@ -150,10 +146,10 @@ class Multipart
                     $chunk = array_shift($chunks);
                     $stream->end($chunk);
 
-                    $this->stream->removeListener('data', $func);
-                    $this->stream->on('data', [$this, 'feed']);
+                    $this->request->removeListener('data', $func);
+                    $this->request->on('data', [$this, 'feed']);
 
-                    $this->stream->emit('data', [implode($this->boundary, $chunks)]);
+                    $this->request->emit('data', [implode($this->boundary, $chunks)]);
                     return;
                 }
 
@@ -162,7 +158,7 @@ class Multipart
                     $buffer = '';
                 }
             };
-            $this->stream->on('data', $func);
+            $this->request->on('data', $func);
         }
 
         $this->request->emit('file', [new File(

@@ -16,16 +16,17 @@ class MultipartParserTest extends TestCase
         $files = [];
         $post = [];
 
-        $stream = new ThroughStream();
-        $request = new Request('POST', 'http://example.com/');
+        $boundary = "---------------------------5844729766471062541057622570";
+
+        $request = new Request('POST', 'http://example.com/', [], 1.1, [
+            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+        ]);
         $request->on('post', function ($key, $value) use (&$post) {
             $post[$key] = $value;
         });
         $request->on('file', function (FileInterface $file) use (&$files) {
             $files[] = $file;
         });
-
-        $boundary = "---------------------------5844729766471062541057622570";
 
         $data  = "--$boundary\r\n";
         $data .= "Content-Disposition: form-data; name=\"users[one]\"\r\n";
@@ -37,8 +38,8 @@ class MultipartParserTest extends TestCase
         $data .= "second\r\n";
         $data .= "--$boundary--\r\n";
 
-        new Multipart($stream, $boundary, $request);
-        $stream->write($data);
+        new Multipart($request);
+        $request->emit('data', [$data]);
 
         $this->assertEmpty($files);
         $this->assertEquals(
@@ -55,8 +56,11 @@ class MultipartParserTest extends TestCase
         $files = [];
         $post = [];
 
-        $stream = new ThroughStream();
-        $request = new Request('POST', 'http://example.com/');
+        $boundary = "---------------------------12758086162038677464950549563";
+
+        $request = new Request('POST', 'http://example.com/', [], 1.1, [
+            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+        ]);
         $request->on('post', function ($key, $value) use (&$post) {
             $post[] = [$key => $value];
         });
@@ -66,9 +70,7 @@ class MultipartParserTest extends TestCase
 
         $file = base64_decode("R0lGODlhAQABAIAAAP///wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==");
 
-        $boundary = "---------------------------12758086162038677464950549563";
-
-        new Multipart($stream, $boundary, $request);
+        new Multipart($request);
 
         $data  = "--$boundary\r\n";
         $data .= "Content-Disposition: form-data; name=\"users[one]\"\r\n";
@@ -78,46 +80,46 @@ class MultipartParserTest extends TestCase
         $data .= "Content-Disposition: form-data; name=\"users[two]\"\r\n";
         $data .= "\r\n";
         $data .= "second\r\n";
-        $stream->write($data);
-        $stream->write("--$boundary\r\n");
-        $stream->write("Content-Disposition: form-data; name=\"user\"\r\n");
-        $stream->write("\r\n");
-        $stream->write("single\r\n");
-        $stream->write("--$boundary\r\n");
-        $stream->write("Content-Disposition: form-data; name=\"user2\"\r\n");
-        $stream->write("\r\n");
-        $stream->write("second\r\n");
-        $stream->write("--$boundary\r\n");
-        $stream->write("Content-Disposition: form-data; name=\"users[]\"\r\n");
-        $stream->write("\r\n");
-        $stream->write("first in array\r\n");
-        $stream->write("--$boundary\r\n");
-        $stream->write("Content-Disposition: form-data; name=\"users[]\"\r\n");
-        $stream->write("\r\n");
-        $stream->write("second in array\r\n");
-        $stream->write("--$boundary\r\n");
-        $stream->write("Content-Disposition: form-data; name=\"file\"; filename=\"User.php\"\r\n");
-        $stream->write("Content-Type: text/php\r\n");
-        $stream->write("\r\n");
-        $stream->write("<?php echo 'User';\r\n");
-        $stream->write("\r\n");
+        $request->emit('data', [$data]);
+        $request->emit('data', ["--$boundary\r\n"]);
+        $request->emit('data', ["Content-Disposition: form-data; name=\"user\"\r\n"]);
+        $request->emit('data', ["\r\n"]);
+        $request->emit('data', ["single\r\n"]);
+        $request->emit('data', ["--$boundary\r\n"]);
+        $request->emit('data', ["Content-Disposition: form-data; name=\"user2\"\r\n"]);
+        $request->emit('data', ["\r\n"]);
+        $request->emit('data', ["second\r\n"]);
+        $request->emit('data', ["--$boundary\r\n"]);
+        $request->emit('data', ["Content-Disposition: form-data; name=\"users[]\"\r\n"]);
+        $request->emit('data', ["\r\n"]);
+        $request->emit('data', ["first in array\r\n"]);
+        $request->emit('data', ["--$boundary\r\n"]);
+        $request->emit('data', ["Content-Disposition: form-data; name=\"users[]\"\r\n"]);
+        $request->emit('data', ["\r\n"]);
+        $request->emit('data', ["second in array\r\n"]);
+        $request->emit('data', ["--$boundary\r\n"]);
+        $request->emit('data', ["Content-Disposition: form-data; name=\"file\"; filename=\"User.php\"\r\n"]);
+        $request->emit('data', ["Content-Type: text/php\r\n"]);
+        $request->emit('data', ["\r\n"]);
+        $request->emit('data', ["<?php echo 'User';\r\n"]);
+        $request->emit('data', ["\r\n"]);
         $line = "--$boundary";
         $lines = str_split($line, round(strlen($line) / 2));
-        $stream->write($lines[0]);
-        $stream->write($lines[1]);
-        $stream->write("\r\n");
-        $stream->write("Content-Disposition: form-data; name=\"files[]\"; filename=\"blank.gif\"\r\n");
-        $stream->write("Content-Type: image/gif\r\n");
-        $stream->write("X-Foo-Bar: base64\r\n");
-        $stream->write("\r\n");
-        $stream->write($file . "\r\n");
-        $stream->write("--$boundary\r\n");
-        $stream->write("Content-Disposition: form-data; name=\"files[]\"; filename=\"User.php\"\r\n" .
+        $request->emit('data', [$lines[0]]);
+        $request->emit('data', [$lines[1]]);
+        $request->emit('data', ["\r\n"]);
+        $request->emit('data', ["Content-Disposition: form-data; name=\"files[]\"; filename=\"blank.gif\"\r\n"]);
+        $request->emit('data', ["Content-Type: image/gif\r\n"]);
+        $request->emit('data', ["X-Foo-Bar: base64\r\n"]);
+        $request->emit('data', ["\r\n"]);
+        $request->emit('data', [$file . "\r\n"]);
+        $request->emit('data', ["--$boundary\r\n"]);
+        $request->emit('data', ["Content-Disposition: form-data; name=\"files[]\"; filename=\"User.php\"\r\n" .
                        "Content-Type: text/php\r\n" .
                        "\r\n" .
-                       "<?php echo 'User';\r\n");
-        $stream->write("\r\n");
-        $stream->write("--$boundary--\r\n");
+                       "<?php echo 'User';\r\n"]);
+        $request->emit('data', ["\r\n"]);
+        $request->emit('data', ["--$boundary--\r\n"]);
 
         $this->assertEquals(6, count($post));
         $this->assertEquals(

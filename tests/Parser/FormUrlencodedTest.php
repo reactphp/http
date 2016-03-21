@@ -11,11 +11,11 @@ class FormUrlencodedTest extends TestCase
 {
     public function testParse()
     {
-        $stream = new ThroughStream();
         $request = new Request('POST', 'http://example.com/');
-        new FormUrlencoded($stream, $request);
-        $stream->write('user=single&user2=second&us');
-        $stream->end('ers%5B%5D=first+in+array&users%5B%5D=second+in+array');
+        new FormUrlencoded($request);
+        $request->emit('data', ['user=single&user2=second&us']);
+        $request->emit('data', ['ers%5B%5D=first+in+array&users%5B%5D=second+in+array']);
+        $request->emit('close');
         $this->assertEquals(
             ['user' => 'single', 'user2' => 'second', 'users' => ['first in array', 'second in array']],
             $request->getPost()

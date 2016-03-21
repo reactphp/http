@@ -13,26 +13,19 @@ class FormUrlencoded
     protected $buffer = '';
 
     /**
-     * @var ReadableStreamInterface
-     */
-    protected $stream;
-
-    /**
      * @var Request
      */
     protected $request;
 
     /**
-     * @param ReadableStreamInterface $stream
      * @param Request $request
      */
-    public function __construct(ReadableStreamInterface $stream, Request $request)
+    public function __construct(Request $request)
     {
-        $this->stream = $stream;
         $this->request = $request;
 
-        $this->stream->on('data', [$this, 'feed']);
-        $this->stream->on('close', [$this, 'finish']);
+        $this->request->on('data', [$this, 'feed']);
+        $this->request->on('close', [$this, 'finish']);
     }
 
     /**
@@ -53,8 +46,8 @@ class FormUrlencoded
 
     public function finish()
     {
-        $this->stream->removeListener('data', [$this, 'feed']);
-        $this->stream->removeListener('close', [$this, 'finish']);
+        $this->request->removeListener('data', [$this, 'feed']);
+        $this->request->removeListener('close', [$this, 'finish']);
         parse_str(trim($this->buffer), $result);
         foreach ($result as $key => $value) {
             $this->request->emit('post', [$key, $value]);
