@@ -49,8 +49,9 @@ class RequestParser extends EventEmitter
 
             $this->stream->removeListener('data', [$this, 'feed']);
             $this->request = $this->parseHeaders($headers . "\r\n\r\n");
+            $this->request->setBody($buffer);
 
-            $this->emit('headers', array($this->request, $this->parseBody($buffer)));
+            $this->emit('headers', array($this->request, $buffer));
             $this->removeAllListeners();
         }
 
@@ -91,35 +92,5 @@ class RequestParser extends EventEmitter
             $psrRequest->getProtocolVersion(),
             $headers
         );
-    }
-
-    public function parseBody($content)
-    {
-        $headers = $this->request->getHeaders();
-
-        if (array_key_exists('Content-Type', $headers)) {
-            if (strpos($headers['Content-Type'], 'multipart/') === 0) {
-                preg_match("/boundary=\"?(.*)\"?$/", $headers['Content-Type'], $matches);
-                $boundary = $matches[1];
-
-                $parser = new Multipart($this->stream, $boundary, $this->request);
-                $this->once('headers', function () use ($parser, $content) {
-                    $parser->feed($content);
-                });
-                return '';
-            }
-
-            if (strtolower($headers['Content-Type']) == 'application/x-www-form-urlencoded') {
-                $parser = new FormUrlencoded($this->stream, $this->request);
-                $this->once('headers', function () use ($parser, $content) {
-                    $parser->feed($content);
-                });
-                return '';
-            }
-        }
-
-        $this->request->setBody($content);
-        $this->stream->on('data', [$this->request, 'appendBody']);
-        return $content;
     }
 }
