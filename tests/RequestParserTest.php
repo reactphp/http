@@ -94,7 +94,7 @@ class RequestParserTest extends TestCase
             'User-Agent' => 'react/alpha',
             'Connection' => 'close',
         );
-        $this->assertSame($headers, $request->getHeaders());
+        $this->assertSame($headers, $request->getHeaders()->toArray());
     }
 
     public function testShouldReceiveBodyContent()
