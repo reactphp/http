@@ -36,7 +36,7 @@ class FormUrlencoded
         $this->buffer .= $data;
 
         if (
-            array_key_exists('Content-Length', $this->request->getHeaders()) &&
+            isset($this->request->getHeaders()['Content-Length']) &&
             strlen($this->buffer) >= $this->request->getHeaders()['Content-Length']
         ) {
             $this->buffer = substr($this->buffer, 0, $this->request->getHeaders()['Content-Length']);
