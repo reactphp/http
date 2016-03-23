@@ -18,6 +18,11 @@ class FormUrlencoded
     protected $request;
 
     /**
+     * @var bool|integer
+     */
+    protected $contentLength = false;
+
+    /**
      * @param Request $request
      */
     public function __construct(Request $request)
@@ -26,6 +31,10 @@ class FormUrlencoded
 
         $this->request->on('data', [$this, 'feed']);
         $this->request->on('close', [$this, 'finish']);
+
+        if (isset($this->request->getHeaders()['Content-Length'])) {
+            $this->contentLength = $this->request->getHeaders()['Content-Length'];
+        }
     }
 
     /**
@@ -36,10 +45,10 @@ class FormUrlencoded
         $this->buffer .= $data;
 
         if (
-            isset($this->request->getHeaders()['Content-Length']) &&
-            strlen($this->buffer) >= $this->request->getHeaders()['Content-Length']
+            $this->contentLength !== false &&
+            strlen($this->buffer) >= $this->contentLength
         ) {
-            $this->buffer = substr($this->buffer, 0, $this->request->getHeaders()['Content-Length']);
+            $this->buffer = substr($this->buffer, 0, $this->contentLength);
             $this->finish();
         }
     }
