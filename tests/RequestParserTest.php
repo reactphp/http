@@ -124,7 +124,6 @@ class RequestParserTest extends TestCase
         $stream->write($content2);
 
         $this->assertInstanceOf('React\Http\Request', $request);
-        $this->assertEquals('', $request->getBody());
         $this->assertSame($body, '');
     }
 
@@ -148,7 +147,6 @@ class RequestParserTest extends TestCase
         $stream->write($content2);
 
         $this->assertInstanceOf('React\Http\Request', $request);
-        $this->assertEquals($content1, $request->getBody());
         $this->assertSame($body, $content1);
     }
 

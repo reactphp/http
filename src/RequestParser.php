@@ -49,7 +49,6 @@ class RequestParser extends EventEmitter
 
             $this->stream->removeListener('data', [$this, 'feed']);
             $this->request = $this->parseHeaders($headers . "\r\n\r\n");
-            $this->request->setBody($buffer);
 
             $this->emit('headers', array($this->request, $buffer));
             $this->removeAllListeners();

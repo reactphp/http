@@ -15,19 +15,17 @@ class Request extends EventEmitter implements ReadableStreamInterface
     private $query;
     private $httpVersion;
     private $headers;
-    private $body;
 
     // metadata, implicitly added externally
     public $remoteAddress;
 
-    public function __construct($method, $url, $query = array(), $httpVersion = '1.1', $headers = array(), $body = '')
+    public function __construct($method, $url, $query = array(), $httpVersion = '1.1', $headers = array())
     {
         $this->method = $method;
         $this->url = $url;
         $this->query = $query;
         $this->httpVersion = $httpVersion;
         $this->headers = $headers;
-        $this->body = $body;
     }
 
     public function getMethod()
@@ -58,21 +56,6 @@ class Request extends EventEmitter implements ReadableStreamInterface
     public function getHeaders()
     {
         return $this->headers;
-    }
-
-    public function getBody()
-    {
-        return $this->body;
-    }
-
-    public function setBody($body)
-    {
-        $this->body = $body;
-    }
-
-    public function appendBody($data)
-    {
-        $this->body .= $data;
     }
 
     public function getRemoteAddress()
@@ -112,26 +95,5 @@ class Request extends EventEmitter implements ReadableStreamInterface
         Util::pipe($this, $dest, $options);
 
         return $dest;
-    }
-
-    /**
-     * Put the file or post where it belongs,
-     * The key names can be simple, or containing []
-     * it can also be a named key
-     *
-     * @param $key
-     * @param $content
-     */
-    protected function addPost($key, $content)
-    {
-        if (preg_match('/^(.*)\[(.*)\]$/i', $key, $tmp)) {
-            if (!empty($tmp[2])) {
-                $this->post[$tmp[1]][$tmp[2]] = $content;
-            } else {
-                $this->post[$tmp[1]][] = $content;
-            }
-        } else {
-            $this->post[$key] = $content;
-        }
     }
 }
