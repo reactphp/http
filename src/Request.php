@@ -16,7 +16,6 @@ class Request extends EventEmitter implements ReadableStreamInterface
     private $httpVersion;
     private $headers;
     private $body;
-    private $post = [];
 
     // metadata, implicitly added externally
     public $remoteAddress;
@@ -29,10 +28,6 @@ class Request extends EventEmitter implements ReadableStreamInterface
         $this->httpVersion = $httpVersion;
         $this->headers = $headers;
         $this->body = $body;
-
-        $this->on('post', function ($key, $value) {
-            $this->addPost($key, $value);
-        });
     }
 
     public function getMethod()
@@ -78,16 +73,6 @@ class Request extends EventEmitter implements ReadableStreamInterface
     public function appendBody($data)
     {
         $this->body .= $data;
-    }
-
-    public function getPost()
-    {
-        return $this->post;
-    }
-
-    public function setPost($post)
-    {
-        $this->post = $post;
     }
 
     public function getRemoteAddress()
