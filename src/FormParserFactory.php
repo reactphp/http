@@ -14,11 +14,13 @@ class FormParserFactory
         if (!array_key_exists('Content-Type', $headers)) {
         }
 
-        if (strpos($headers['Content-Type'], 'multipart/') === 0) {
+        $contentType = strtolower($headers['Content-Type']);
+
+        if (strpos($contentType, 'multipart/') === 0) {
             return new Multipart($request);
         }
 
-        if (strpos(strtolower($headers['Content-Type']), 'application/x-www-form-urlencoded') === 0) {
+        if (strpos($contentType, 'application/x-www-form-urlencoded') === 0) {
             return new FormUrlencoded($request);
         }
     }
