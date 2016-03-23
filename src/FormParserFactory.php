@@ -18,7 +18,7 @@ class FormParserFactory
             return new Multipart($request);
         }
 
-        if (strtolower($headers['Content-Type']) == 'application/x-www-form-urlencoded') {
+        if (strpos(strtolower($headers['Content-Type']), 'application/x-www-form-urlencoded') === 0) {
             return new FormUrlencoded($request);
         }
     }
