@@ -4,8 +4,6 @@ namespace React\Http;
 
 use Evenement\EventEmitter;
 use GuzzleHttp\Psr7 as gPsr;
-use React\Http\Parser\FormUrlencoded;
-use React\Http\Parser\Multipart;
 use React\Stream\ReadableStreamInterface;
 
 /**
