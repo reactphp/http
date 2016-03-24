@@ -128,9 +128,9 @@ class Multipart
     protected function file($firstChunk, $streaming = true)
     {
         preg_match('/name=\"([^\"]*)\"; filename=\"([^\"]*)\"[\n|\r]+([^\n\r].*)?\r$/s', $firstChunk, $match);
-        preg_match('/Content-Type: ([^\"]*)/', $match[3], $mime);
+        preg_match('/Content-Type: ([^\"]*)/i', $match[3], $mime);
 
-        $content = preg_replace('/Content-Type: (.*)[^\n\r]/', '', $match[3]);
+        $content = preg_replace('/Content-Type: (.*)[^\n\r]/i', '', $match[3]);
         $content = ltrim($content, "\r\n");
 
         // Put content in a stream

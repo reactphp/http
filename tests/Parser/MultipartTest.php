@@ -82,11 +82,11 @@ class MultipartParserTest extends TestCase
         $data .= "second\r\n";
         $request->emit('data', [$data]);
         $request->emit('data', ["--$boundary\r\n"]);
-        $request->emit('data', ["Content-Disposition: form-data; name=\"user\"\r\n"]);
+        $request->emit('data', ["Content-disposition: form-data; name=\"user\"\r\n"]);
         $request->emit('data', ["\r\n"]);
         $request->emit('data', ["single\r\n"]);
         $request->emit('data', ["--$boundary\r\n"]);
-        $request->emit('data', ["Content-Disposition: form-data; name=\"user2\"\r\n"]);
+        $request->emit('data', ["content-Disposition: form-data; name=\"user2\"\r\n"]);
         $request->emit('data', ["\r\n"]);
         $request->emit('data', ["second\r\n"]);
         $request->emit('data', ["--$boundary\r\n"]);
@@ -99,7 +99,7 @@ class MultipartParserTest extends TestCase
         $request->emit('data', ["second in array\r\n"]);
         $request->emit('data', ["--$boundary\r\n"]);
         $request->emit('data', ["Content-Disposition: form-data; name=\"file\"; filename=\"User.php\"\r\n"]);
-        $request->emit('data', ["Content-Type: text/php\r\n"]);
+        $request->emit('data', ["Content-type: text/php\r\n"]);
         $request->emit('data', ["\r\n"]);
         $request->emit('data', ["<?php echo 'User';\r\n"]);
         $request->emit('data', ["\r\n"]);
@@ -109,7 +109,7 @@ class MultipartParserTest extends TestCase
         $request->emit('data', [$lines[1]]);
         $request->emit('data', ["\r\n"]);
         $request->emit('data', ["Content-Disposition: form-data; name=\"files[]\"; filename=\"blank.gif\"\r\n"]);
-        $request->emit('data', ["Content-Type: image/gif\r\n"]);
+        $request->emit('data', ["content-Type: image/gif\r\n"]);
         $request->emit('data', ["X-Foo-Bar: base64\r\n"]);
         $request->emit('data', ["\r\n"]);
         $request->emit('data', [$file . "\r\n"]);
