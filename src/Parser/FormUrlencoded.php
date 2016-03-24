@@ -32,8 +32,11 @@ class FormUrlencoded
         $this->request->on('data', [$this, 'feed']);
         $this->request->on('close', [$this, 'finish']);
 
-        if (isset($this->request->getHeaders()['Content-Length'])) {
-            $this->contentLength = $this->request->getHeaders()['Content-Length'];
+        $headers = $this->request->getHeaders();
+        $headers = array_change_key_case($headers, CASE_LOWER);
+
+        if (isset($headers['content-length'])) {
+            $this->contentLength = $headers['content-length'];
         }
     }
 

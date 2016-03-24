@@ -25,6 +25,15 @@ class FormParserFactoryTest extends TestCase
         $this->assertInstanceOf('React\Http\Parser\Multipart', $parser);
     }
 
+    public function testMultipartHeaderCaseInsensitive()
+    {
+        $request = new Request('POST', 'http://example.com/', [], 1.1, [
+            'CONTENT-TYPE' => 'multipart/mixed; boundary=---------------------------12758086162038677464950549563',
+        ]);
+        $parser = FormParserFactory::create($request);
+        $this->assertInstanceOf('React\Http\Parser\Multipart', $parser);
+    }
+
     public function testFormUrlencoded()
     {
         $request = new Request('POST', 'http://example.com/', [], 1.1, [
@@ -38,6 +47,15 @@ class FormParserFactoryTest extends TestCase
     {
         $request = new Request('POST', 'http://example.com/', [], 1.1, [
             'Content-Type' => 'application/x-www-form-urlencoded; charset=utf8',
+        ]);
+        $parser = FormParserFactory::create($request);
+        $this->assertInstanceOf('React\Http\Parser\FormUrlencoded', $parser);
+    }
+
+    public function testFormUrlencodedHeaderCaseInsensitive()
+    {
+        $request = new Request('POST', 'http://example.com/', [], 1.1, [
+            'content-type' => 'application/x-www-form-urlencoded',
         ]);
         $parser = FormParserFactory::create($request);
         $this->assertInstanceOf('React\Http\Parser\FormUrlencoded', $parser);

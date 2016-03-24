@@ -10,11 +10,12 @@ class FormParserFactory
     public static function create(Request $request)
     {
         $headers = $request->getHeaders();
+        $headers = array_change_key_case($headers, CASE_LOWER);
 
-        if (!array_key_exists('Content-Type', $headers)) {
+        if (!array_key_exists('content-type', $headers)) {
         }
 
-        $contentType = strtolower($headers['Content-Type']);
+        $contentType = strtolower($headers['content-type']);
 
         if (strpos($contentType, 'multipart/') === 0) {
             return new Multipart($request);

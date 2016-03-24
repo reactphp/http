@@ -37,7 +37,8 @@ class Multipart
     public function __construct(Request $request)
     {
         $headers = $request->getHeaders();
-        preg_match("/boundary=\"?(.*)\"?$/", $headers['Content-Type'], $matches);
+        $headers = array_change_key_case($headers, CASE_LOWER);
+        preg_match("/boundary=\"?(.*)\"?$/", $headers['content-type'], $matches);
 
         $this->boundary = $matches[1];
         $this->request = $request;
