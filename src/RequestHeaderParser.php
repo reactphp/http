@@ -4,7 +4,7 @@ namespace React\Http;
 
 use Evenement\EventEmitter;
 use Exception;
-use GuzzleHttp\Psr7 as g7;
+use RingCentral\Psr7 as g7;
 
 /**
  * @event headers
@@ -37,7 +37,7 @@ class RequestHeaderParser extends EventEmitter
             try {
                 $this->parseAndEmitRequest();
             } catch (Exception $exception) {
-                $this->emit('error', [$exception]);
+                $this->emit('error', array($exception));
             }
             $this->removeAllListeners();
         }
@@ -55,7 +55,7 @@ class RequestHeaderParser extends EventEmitter
 
         $psrRequest = g7\parse_request($headers);
 
-        $parsedQuery = [];
+        $parsedQuery = array();
         $queryString = $psrRequest->getUri()->getQuery();
         if ($queryString) {
             parse_str($queryString, $parsedQuery);

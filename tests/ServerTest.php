@@ -121,7 +121,7 @@ class ServerTest extends TestCase
 
         $data = "GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\nX-DATA: ";
         $data .= str_repeat('A', 4097 - strlen($data)) . "\r\n\r\n";
-        $this->connection->emit('data', [$data]);
+        $this->connection->emit('data', array($data));
 
         $this->assertInstanceOf('OverflowException', $error);
         $this->connection->expects($this->never())->method('write');
