@@ -10,10 +10,12 @@ use React\Socket\ConnectionInterface;
 class Server extends EventEmitter implements ServerInterface
 {
     private $io;
+    private $params = [];
 
-    public function __construct(SocketServerInterface $io)
+    public function __construct(SocketServerInterface $io, $params=[])
     {
         $this->io = $io;
+        $this->params = $params;
 
         $this->io->on('connection', function (ConnectionInterface $conn) {
             // TODO: http 1.1 keep-alive
@@ -51,7 +53,7 @@ class Server extends EventEmitter implements ServerInterface
 
     public function handleRequest(ConnectionInterface $conn, Request $request, $bodyBuffer)
     {
-        $response = new Response($conn);
+        $response = new Response($conn, $this->params);
         $response->on('close', array($request, 'close'));
 
         if (!$this->listeners('request')) {
