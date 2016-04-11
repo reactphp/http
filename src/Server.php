@@ -15,7 +15,7 @@ class Server extends EventEmitter implements ServerInterface
     public function __construct(SocketServerInterface $io, $params=[])
     {
         $this->io = $io;
-        $this->params = $params;
+        $this->params = new ParamBag(null, false, $params);
 
         $this->io->on('connection', function (ConnectionInterface $conn) {
             // TODO: http 1.1 keep-alive
