@@ -4,6 +4,7 @@ namespace React\Http;
 
 use React\Http\Parser\FormUrlencoded;
 use React\Http\Parser\Multipart;
+use React\Http\Parser\NoBody;
 
 class FormParserFactory
 {
@@ -13,6 +14,7 @@ class FormParserFactory
         $headers = array_change_key_case($headers, CASE_LOWER);
 
         if (!array_key_exists('content-type', $headers)) {
+            return new NoBody();
         }
 
         $contentType = strtolower($headers['content-type']);
@@ -24,5 +26,7 @@ class FormParserFactory
         if (strpos($contentType, 'application/x-www-form-urlencoded') === 0) {
             return new FormUrlencoded($request);
         }
+
+        return new NoBody();
     }
 }
