@@ -59,7 +59,7 @@ class MultipartParserTest extends TestCase
         $boundary = "---------------------------12758086162038677464950549563";
 
         $request = new Request('POST', 'http://example.com/', [], 1.1, [
-            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+            'Content-Type' => 'multipart/form-data',
         ]);
         $request->on('post', function ($key, $value) use (&$post) {
             $post[] = [$key => $value];

@@ -25,18 +25,34 @@ class Multipart implements ParserInterface
     protected $request;
 
 
-    public function _construct(Request $request)
+    public function __construct(Request $request)
     {
         $this->request = $request;
         $headers = $this->request->getHeaders();
         $headers = array_change_key_case($headers, CASE_LOWER);
-        $this->boundary = preg_match('/boundary="?(.*)"?$/', $headers['content-type'], $matches)[0];
+        preg_match('/boundary="?(.*)"?$/', $headers['content-type'], $matches);
 
-        $this->request->on('data', [$this, 'onData']);
+        $dataMethod = 'findBoundary';
+        if (isset($matches[1])) {
+            $this->boundary = $matches[1];
+            $dataMethod = 'onData';
+        }
+        $this->request->on('data', [$this, $dataMethod]);
+    }
+
+    public function findBoundary($data)
+    {
+        $this->buffer .= $data;
+
+        if (substr($this->buffer, 0, 3) === '---' && strpos($this->buffer, "\r\n") !== false) {
+            $this->boundary = substr($this->buffer, 0, strpos($this->buffer, "\r\n"));
+            $this->request->removeListener('data', [$this, 'findBoundary']);
+            $this->request->on('data', [$this, 'onData']);
+        }
     }
 
     public function onData($data)
     {
-
+        $this->buffer .= $data;
     }
 }
