@@ -17,6 +17,16 @@ class Multipart implements ParserInterface
     /**
      * @var string
      */
+    protected $ending = '';
+
+    /**
+     * @var int
+     */
+    protected $endingSize = 0;
+
+    /**
+     * @var string
+     */
     protected $boundary;
 
     /**
@@ -34,10 +44,17 @@ class Multipart implements ParserInterface
 
         $dataMethod = 'findBoundary';
         if (isset($matches[1])) {
-            $this->boundary = $matches[1];
+            $this->setBoundary($matches[1]);
             $dataMethod = 'onData';
         }
         $this->request->on('data', [$this, $dataMethod]);
+    }
+
+    protected function setBoundary($boundary)
+    {
+        $this->boundary = $boundary;
+        $this->ending = $this->boundary . "--\r\n";
+        $this->endingSize = strlen($this->ending);
     }
 
     public function findBoundary($data)
@@ -45,7 +62,7 @@ class Multipart implements ParserInterface
         $this->buffer .= $data;
 
         if (substr($this->buffer, 0, 3) === '---' && strpos($this->buffer, "\r\n") !== false) {
-            $this->boundary = substr($this->buffer, 0, strpos($this->buffer, "\r\n"));
+            $this->setBoundary(substr($this->buffer, 0, strpos($this->buffer, "\r\n")));
             $this->request->removeListener('data', [$this, 'findBoundary']);
             $this->request->on('data', [$this, 'onData']);
         }
