@@ -71,5 +71,92 @@ class Multipart implements ParserInterface
     public function onData($data)
     {
         $this->buffer .= $data;
+
+        if (
+            strpos($this->buffer, $this->boundary) < strrpos($this->buffer, "\r\n\r\n") ||
+            substr($this->buffer, -1, $this->endingSize) === $this->ending
+        ) {
+            $this->parseBuffer();
+        }
+    }
+
+    protected function parseBuffer()
+    {
+        $chunks = explode($this->boundary, $this->buffer);
+        $this->buffer = array_pop($chunks);
+        foreach ($chunks as $chunk) {
+            $this->parseChunk(ltrim($chunk));
+        }
+    }
+
+    protected function parseChunk($chunk)
+    {
+        if ($chunk == '') {
+            return;
+        }
+
+        list ($header, $body) = explode("\r\n\r\n", $chunk);
+        $headers = $this->parseHeaders($header);
+
+        if (!isset($headers['content-disposition'])) {
+            return;
+        }
+
+        if ($this->headerStartsWith($headers['content-disposition'], 'name')) {
+            $this->parsePost($headers, $body);
+            return;
+        }
+    }
+
+    protected function parsePost($headers, $body)
+    {
+        foreach ($headers['content-disposition'] as $part) {
+            if (strpos($part, 'name') === 0) {
+                preg_match('/name="?(.*)"?$/', $part, $matches);
+                $this->emit('post', [
+                    $matches[1],
+                    $body,
+                    $headers,
+                ]);
+            }
+        }
+    }
+
+    protected function parseHeaders($header)
+    {
+        $headers = [];
+
+        foreach (explode("\r\n", $header) as $line) {
+            list($key, $values) = explode(':', $line);
+            $key = trim($key);
+            $key = strtolower($key);
+            $values = explode(';', $values);
+            $values = array_map('trim', $values);
+            $headers[$key] = $values;
+        }
+
+        return $headers;
+    }
+
+    protected function headerStartsWith(array $header, $needle)
+    {
+        foreach ($header as $part) {
+            if (strpos($part, $needle) === 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected function headerContains(array $header, $needle)
+    {
+        foreach ($header as $part) {
+            if (strpos($part, $needle) !== false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
