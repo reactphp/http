@@ -2,11 +2,13 @@
 
 namespace React\Http\Parser;
 
+use Evenement\EventEmitterTrait;
 use React\Http\Request;
-use React\Stream\ReadableStreamInterface;
 
-class FormUrlencoded
+class FormUrlencoded implements ParserInterface
 {
+    use EventEmitterTrait;
+
     /**
      * @var string
      */
@@ -62,7 +64,7 @@ class FormUrlencoded
         $this->request->removeListener('close', [$this, 'finish']);
         parse_str(trim($this->buffer), $result);
         foreach ($result as $key => $value) {
-            $this->request->emit('post', [$key, $value]);
+            $this->emit('post', [$key, $value]);
         }
     }
 }

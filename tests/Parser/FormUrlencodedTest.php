@@ -13,10 +13,10 @@ class FormUrlencodedTest extends TestCase
     {
         $post = [];
         $request = new Request('POST', 'http://example.com/');
-        $request->on('post', function ($key, $value) use (&$post) {
+        $parser = new FormUrlencoded($request);
+        $parser->on('post', function ($key, $value) use (&$post) {
             $post[] = [$key, $value];
         });
-        new FormUrlencoded($request);
         $request->emit('data', ['user=single&user2=second&us']);
         $request->emit('data', ['ers%5B%5D=first+in+array&users%5B%5D=second+in+array']);
         $request->emit('close');
