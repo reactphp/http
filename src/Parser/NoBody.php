@@ -2,7 +2,18 @@
 
 namespace React\Http\Parser;
 
-class NoBody
-{
+use Evenement\EventEmitterTrait;
+use React\Http\Request;
+use React\Stream\Util;
 
+class NoBody implements ParserInterface
+{
+    use EventEmitterTrait;
+
+    public function __construct(Request $request)
+    {
+        Util::forwardEvents($this->request, $this, [
+            'close',
+        ]);
+    }
 }
