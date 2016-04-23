@@ -5,7 +5,6 @@ namespace React\Tests\Http\Parser;
 use React\Http\FileInterface;
 use React\Http\Parser\Multipart;
 use React\Http\Request;
-use React\Stream\ThroughStream;
 use React\Tests\Http\TestCase;
 
 class MultipartParserTest extends TestCase
@@ -21,10 +20,12 @@ class MultipartParserTest extends TestCase
         $request = new Request('POST', 'http://example.com/', [], 1.1, [
             'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
         ]);
-        $request->on('post', function ($key, $value) use (&$post) {
+
+        $parser = new Multipart($request);
+        $parser->on('post', function ($key, $value) use (&$post) {
             $post[$key] = $value;
         });
-        $request->on('file', function (FileInterface $file) use (&$files) {
+        $parser->on('file', function (FileInterface $file) use (&$files) {
             $files[] = $file;
         });
 
@@ -38,7 +39,6 @@ class MultipartParserTest extends TestCase
         $data .= "second\r\n";
         $data .= "--$boundary--\r\n";
 
-        new Multipart($request);
         $request->emit('data', [$data]);
 
         $this->assertEmpty($files);
@@ -61,16 +61,17 @@ class MultipartParserTest extends TestCase
         $request = new Request('POST', 'http://example.com/', [], 1.1, [
             'Content-Type' => 'multipart/form-data',
         ]);
-        $request->on('post', function ($key, $value) use (&$post) {
+
+        $multipart = new Multipart($request);
+
+        $multipart->on('post', function ($key, $value) use (&$post) {
             $post[] = [$key => $value];
         });
-        $request->on('file', function (FileInterface $file) use (&$files) {
-            $files[] = $file;
+        $multipart->on('file', function (FileInterface $file, $headers) use (&$files) {
+            $files[] = [$file, $headers];
         });
 
         $file = base64_decode("R0lGODlhAQABAIAAAP///wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==");
-
-        new Multipart($request);
 
         $data  = "--$boundary\r\n";
         $data .= "Content-Disposition: form-data; name=\"users[one]\"\r\n";
@@ -135,16 +136,49 @@ class MultipartParserTest extends TestCase
         );
 
         $this->assertEquals(3, count($files));
-        $this->assertEquals('file', $files[0]->getName());
-        $this->assertEquals('User.php', $files[0]->getFilename());
-        $this->assertEquals('text/php', $files[0]->getType());
+        $this->assertEquals('file', $files[0][0]->getName());
+        $this->assertEquals('User.php', $files[0][0]->getFilename());
+        $this->assertEquals('text/php', $files[0][0]->getType());
+        $this->assertEquals([
+            'content-disposition' => [
+                'form-data',
+                'name="file"',
+                'filename="User.php"',
+            ],
+            'content-type' => [
+                'text/php',
+            ],
+        ], $files[0][1]);
 
-        $this->assertEquals('files[]', $files[1]->getName());
-        $this->assertEquals('blank.gif', $files[1]->getFilename());
-        $this->assertEquals('image/gif', $files[1]->getType());
+        $this->assertEquals('files[]', $files[1][0]->getName());
+        $this->assertEquals('blank.gif', $files[1][0]->getFilename());
+        $this->assertEquals('image/gif', $files[1][0]->getType());
+        $this->assertEquals([
+            'content-disposition' => [
+                'form-data',
+                'name="files[]"',
+                'filename="blank.gif"',
+            ],
+            'content-type' => [
+                'image/gif',
+            ],
+            'x-foo-bar' => [
+                'base64',
+            ],
+        ], $files[1][1]);
 
-        $this->assertEquals('files[]', $files[2]->getName());
-        $this->assertEquals('User.php', $files[2]->getFilename());
-        $this->assertEquals('text/php', $files[2]->getType());
+        $this->assertEquals('files[]', $files[2][0]->getName());
+        $this->assertEquals('User.php', $files[2][0]->getFilename());
+        $this->assertEquals('text/php', $files[2][0]->getType());
+        $this->assertEquals([
+            'content-disposition' => [
+                'form-data',
+                'name="files[]"',
+                'filename="User.php"',
+            ],
+            'content-type' => [
+                'text/php',
+            ],
+        ], $files[2][1]);
     }
 }
