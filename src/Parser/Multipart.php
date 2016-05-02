@@ -52,7 +52,7 @@ class Multipart implements ParserInterface
         }
         $this->request->on('data', [$this, $dataMethod]);
         Util::forwardEvents($this->request, $this, [
-            'close',
+            'end',
         ]);
     }
 

@@ -32,7 +32,7 @@ class FormUrlencoded implements ParserInterface
         $this->request = $request;
 
         $this->request->on('data', [$this, 'feed']);
-        $this->request->on('close', [$this, 'finish']);
+        $this->request->on('end', [$this, 'finish']);
 
         $headers = $this->request->getHeaders();
         $headers = array_change_key_case($headers, CASE_LOWER);
@@ -66,5 +66,6 @@ class FormUrlencoded implements ParserInterface
         foreach ($result as $key => $value) {
             $this->emit('post', [$key, $value]);
         }
+        $this->emit('end');
     }
 }

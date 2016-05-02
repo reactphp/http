@@ -13,7 +13,7 @@ class NoBody implements ParserInterface
     public function __construct(Request $request)
     {
         Util::forwardEvents($request, $this, [
-            'close',
+            'end',
         ]);
     }
 }
