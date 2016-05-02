@@ -19,7 +19,7 @@ class FormUrlencodedTest extends TestCase
         });
         $request->emit('data', ['user=single&user2=second&us']);
         $request->emit('data', ['ers%5B%5D=first+in+array&users%5B%5D=second+in+array']);
-        $request->emit('close');
+        $request->emit('end');
         $this->assertEquals(
             [
                 ['user', 'single'],
