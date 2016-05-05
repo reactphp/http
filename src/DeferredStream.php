@@ -15,6 +15,13 @@ class DeferredStream
      */
     public static function create(ParserInterface $parser)
     {
+        if ($parser->isDone()) {
+            return \React\Promise\resolve([
+                'post' => [],
+                'files' => [],
+            ]);
+        }
+
         $deferred = new Deferred();
         $postFields = [];
         $files = [];

@@ -6,11 +6,11 @@ use Evenement\EventEmitterTrait;
 use React\Http\File;
 use React\Http\Request;
 use React\Stream\ThroughStream;
-use React\Stream\Util;
 
 class Multipart implements ParserInterface
 {
     use EventEmitterTrait;
+    use DoneTrait;
 
     /**
      * @var string
@@ -83,6 +83,7 @@ class Multipart implements ParserInterface
         }
 
         if ($ending) {
+            $this->markDone();
             $this->emit('end');
         }
     }

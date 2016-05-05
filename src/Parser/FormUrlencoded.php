@@ -8,6 +8,7 @@ use React\Http\Request;
 class FormUrlencoded implements ParserInterface
 {
     use EventEmitterTrait;
+    use DoneTrait;
 
     /**
      * @var string
@@ -31,15 +32,16 @@ class FormUrlencoded implements ParserInterface
     {
         $this->request = $request;
 
-        $this->request->on('data', [$this, 'feed']);
-        $this->request->on('end', [$this, 'finish']);
-
         $headers = $this->request->getHeaders();
         $headers = array_change_key_case($headers, CASE_LOWER);
 
-        if (isset($headers['content-length'])) {
-            $this->contentLength = $headers['content-length'];
+        if (!isset($headers['content-length'])) {
+            $this->markDone();
+            return;
         }
+
+        $this->contentLength = $headers['content-length'];
+        $this->request->on('data', [$this, 'feed']);
     }
 
     /**
@@ -61,11 +63,11 @@ class FormUrlencoded implements ParserInterface
     public function finish()
     {
         $this->request->removeListener('data', [$this, 'feed']);
-        $this->request->removeListener('close', [$this, 'finish']);
         parse_str(trim($this->buffer), $result);
         foreach ($result as $key => $value) {
             $this->emit('post', [$key, $value]);
         }
+        $this->markDone();
         $this->emit('end');
     }
 }

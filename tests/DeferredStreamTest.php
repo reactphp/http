@@ -9,12 +9,25 @@ use React\Http\File;
 use React\Http\Parser\NoBody;
 use React\Http\Request;
 use React\Stream\ThroughStream;
+use React\Tests\Http\Parser\DummyParser;
 
 class DeferredStreamTest extends TestCase
 {
+    public function testDoneParser()
+    {
+        $parser = new DummyParser(new Request('get', 'http://example.com'));
+        $parser->setDone();
+        $deferredStream = DeferredStream::create($parser);
+        $result = Block\await($deferredStream, Factory::create(), 10);
+        $this->assertSame([
+            'post' => [],
+            'files' => [],
+        ], $result);
+    }
+
     public function testDeferredStream()
     {
-        $parser = new NoBody(new Request('get', 'http://example.com'));
+        $parser = new DummyParser(new Request('get', 'http://example.com'));
         $deferredStream = DeferredStream::create($parser);
         $parser->emit('post', ['foo', 'bar']);
         $parser->emit('post', ['array[]', 'foo']);
@@ -27,6 +40,7 @@ class DeferredStreamTest extends TestCase
         $parser->emit('file', [$file]);
         $stream->end('foo.bar');
 
+        $parser->setDone();
         $parser->emit('end');
 
         $result = Block\await($deferredStream, Factory::create(), 10);
