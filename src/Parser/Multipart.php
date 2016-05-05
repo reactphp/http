@@ -51,15 +51,12 @@ class Multipart implements ParserInterface
             $dataMethod = 'onData';
         }
         $this->request->on('data', [$this, $dataMethod]);
-        Util::forwardEvents($this->request, $this, [
-            'end',
-        ]);
     }
 
     protected function setBoundary($boundary)
     {
         $this->boundary = substr($boundary, 1);
-        $this->ending = '--' . $this->boundary . "--\r\n";
+        $this->ending = $this->boundary . "--\r\n";
         $this->endingSize = strlen($this->ending);
     }
 
@@ -77,18 +74,22 @@ class Multipart implements ParserInterface
     public function onData($data)
     {
         $this->buffer .= $data;
+        $ending = strpos($this->buffer, $this->ending) == strlen($this->buffer) - $this->endingSize;
 
         if (
-            strpos($this->buffer, $this->boundary) < strrpos($this->buffer, "\r\n\r\n") ||
-            substr($this->buffer, -1, $this->endingSize) === $this->ending
+            strrpos($this->buffer, $this->boundary) < strrpos($this->buffer, "\r\n\r\n") || $ending
         ) {
             $this->parseBuffer();
+        }
+
+        if ($ending) {
+            $this->emit('end');
         }
     }
 
     protected function parseBuffer()
     {
-        $chunks = preg_split('/\\-+' . $this->boundary . '/', $this->buffer);
+        $chunks = preg_split('/-+' . $this->boundary . '/', $this->buffer);
         $this->buffer = array_pop($chunks);
         foreach ($chunks as $chunk) {
             $this->parseChunk(ltrim($chunk));
@@ -99,7 +100,8 @@ class Multipart implements ParserInterface
             return;
         }
 
-        $headers = $this->parseHeaders($split[0]);
+        $chunks = preg_split('/' . $this->boundary . '/', trim($split[0]), -1, PREG_SPLIT_NO_EMPTY);
+        $headers = $this->parseHeaders(trim($chunks[0]));
         if (isset($headers['content-disposition']) && $this->headerStartsWith($headers['content-disposition'], 'filename')) {
             $this->parseFile($headers, $split[1]);
             $this->buffer = '';
@@ -166,12 +168,16 @@ class Multipart implements ParserInterface
         $func = function($data) use (&$func, &$buffer, $stream) {
             $buffer .= $data;
             if (strpos($buffer, $this->boundary) !== false) {
-                $chunks = preg_split('/\\-+' . $this->boundary . '/', $this->buffer);
+                $chunks = preg_split('/-+' . $this->boundary . '/', $buffer);
                 $chunk = array_shift($chunks);
                 $stream->end($chunk);
 
                 $this->request->removeListener('data', $func);
                 $this->request->on('data', [$this, 'onData']);
+
+                if (count($chunks) == 1) {
+                    array_unshift($chunks, '');
+                }
 
                 $this->onData(implode($this->boundary, $chunks));
                 return;
