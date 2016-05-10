@@ -8,10 +8,8 @@ use React\Http\Request;
 class NoBody implements ParserInterface
 {
     use EventEmitterTrait;
-    use DoneTrait;
 
     public function __construct(Request $request)
     {
-        $this->markDone();
     }
 }

@@ -8,7 +8,6 @@ use React\Http\Request;
 class FormUrlencoded implements ParserInterface
 {
     use EventEmitterTrait;
-    use DoneTrait;
 
     /**
      * @var string
@@ -34,11 +33,6 @@ class FormUrlencoded implements ParserInterface
 
         $headers = $this->request->getHeaders();
         $headers = array_change_key_case($headers, CASE_LOWER);
-
-        if (!isset($headers['content-length'])) {
-            $this->markDone();
-            return;
-        }
 
         $this->contentLength = $headers['content-length'];
         $this->request->on('data', [$this, 'feed']);
@@ -67,7 +61,6 @@ class FormUrlencoded implements ParserInterface
         foreach ($result as $key => $value) {
             $this->emit('post', [$key, $value]);
         }
-        $this->markDone();
         $this->emit('end');
     }
 }

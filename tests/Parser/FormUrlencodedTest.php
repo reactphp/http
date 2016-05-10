@@ -30,11 +30,4 @@ class FormUrlencodedTest extends TestCase
             $post
         );
     }
-
-    public function testNoContentLength()
-    {
-        $request = new Request('POST', 'http://example.com/');
-        $parser = new FormUrlencoded($request);
-        $this->assertTrue($parser->isDone());
-    }
 }

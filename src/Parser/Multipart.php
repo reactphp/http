@@ -10,7 +10,6 @@ use React\Stream\ThroughStream;
 class Multipart implements ParserInterface
 {
     use EventEmitterTrait;
-    use DoneTrait;
 
     /**
      * @var string
@@ -83,7 +82,6 @@ class Multipart implements ParserInterface
         }
 
         if ($ending) {
-            $this->markDone();
             $this->emit('end');
         }
     }
