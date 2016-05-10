@@ -31,3 +31,25 @@ This is an HTTP server which responds with `Hello World` to every request.
     $socket->listen(1337);
     $loop->run();
 ```
+
+## FormParserFactory and DeferredStream Usage
+
+The `FormParserFactory` parses a quest and determines which body parser to use (multipart, formurlencoded, raw body, or no body). Those body parsers emit events on `post` fields, `file` on files, and raw body emits `body` when it received the whole body. `DeferredStream` listens for those events and returns them through a promise when done.
+
+```php
+    $loop = React\EventLoop\Factory::create();
+    $socket = new React\Socket\Server($loop);
+
+    $http = new React\Http\Server($socket);
+    $http->on('request', function ($request, $response) {
+        $parser = FormParserFactory::create($request);
+        DeferredStream::create($parser)->then(function ($result) use ($response) {
+            var_export($result);
+            $response->writeHead(200, array('Content-Type' => 'text/plain'));
+            $response->end("Hello World!\n");
+        });
+    });
+
+    $socket->listen(1337);
+    $loop->run();
+```
