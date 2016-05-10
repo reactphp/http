@@ -15,13 +15,13 @@ class DeferredStreamTest extends TestCase
 {
     public function testDoneParser()
     {
-        $parser = new DummyParser(new Request('get', 'http://example.com'));
-        $parser->setDone();
+        $parser = new NoBody(new Request('get', 'http://example.com'));
         $deferredStream = DeferredStream::create($parser);
         $result = Block\await($deferredStream, Factory::create(), 10);
         $this->assertSame([
             'post' => [],
             'files' => [],
+            'body' => '',
         ], $result);
     }
 
@@ -40,7 +40,8 @@ class DeferredStreamTest extends TestCase
         $parser->emit('file', [$file]);
         $stream->end('foo.bar');
 
-        $parser->setDone();
+        $parser->emit('body', ['abc']);
+
         $parser->emit('end');
 
         $result = Block\await($deferredStream, Factory::create(), 10);
@@ -64,6 +65,8 @@ class DeferredStreamTest extends TestCase
         $this->assertSame('bar.ext', $result['files'][0]['file']->getFilename());
         $this->assertSame('text', $result['files'][0]['file']->getType());
         $this->assertSame('foo.bar', $result['files'][0]['buffer']);
+
+        $this->assertSame('abc', $result['body']);
     }
 
     public function testExtractPost()

@@ -38,6 +38,7 @@ class FormParserFactoryTest extends TestCase
     {
         $request = new Request('POST', 'http://example.com/', [], 1.1, [
             'Content-Type' => 'application/x-www-form-urlencoded',
+            'content-length' => 123,
         ]);
         $parser = FormParserFactory::create($request);
         $this->assertInstanceOf('React\Http\Parser\FormUrlencoded', $parser);
@@ -47,6 +48,7 @@ class FormParserFactoryTest extends TestCase
     {
         $request = new Request('POST', 'http://example.com/', [], 1.1, [
             'Content-Type' => 'application/x-www-form-urlencoded; charset=utf8',
+            'content-length' => 123,
         ]);
         $parser = FormParserFactory::create($request);
         $this->assertInstanceOf('React\Http\Parser\FormUrlencoded', $parser);
@@ -56,6 +58,7 @@ class FormParserFactoryTest extends TestCase
     {
         $request = new Request('POST', 'http://example.com/', [], 1.1, [
             'content-type' => 'application/x-www-form-urlencoded',
+            'content-length' => 123,
         ]);
         $parser = FormParserFactory::create($request);
         $this->assertInstanceOf('React\Http\Parser\FormUrlencoded', $parser);

@@ -2,6 +2,7 @@
 
 namespace React\Http;
 
+use React\Http\Parser\NoBody;
 use React\Http\Parser\ParserInterface;
 use React\Promise\Deferred;
 use React\Promise\PromiseInterface;
@@ -15,16 +16,18 @@ class DeferredStream
      */
     public static function create(ParserInterface $parser)
     {
-        if ($parser->isDone()) {
+        if ($parser instanceof NoBody) {
             return \React\Promise\resolve([
                 'post' => [],
                 'files' => [],
+                'body' => '',
             ]);
         }
 
         $deferred = new Deferred();
         $postFields = [];
         $files = [];
+        $body = '';
         $parser->on('post', function ($key, $value) use (&$postFields) {
             self::extractPost($postFields, $key, $value);
         });
@@ -36,10 +39,14 @@ class DeferredStream
                 ];
             });
         });
-        $parser->on('end', function () use ($deferred, &$postFields, &$files) {
+        $parser->on('body', function ($rawBody) use (&$body) {
+            $body = $rawBody;
+        });
+        $parser->on('end', function () use ($deferred, &$postFields, &$files, &$body) {
             $deferred->resolve([
                 'post' => $postFields,
                 'files' => $files,
+                'body' => $body,
             ]);
         });
 
