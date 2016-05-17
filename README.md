@@ -34,7 +34,7 @@ This is an HTTP server which responds with `Hello World` to every request.
 
 ## FormParserFactory and DeferredStream Usage
 
-The `FormParserFactory` parses a quest and determines which body parser to use (multipart, formurlencoded, raw body, or no body). Those body parsers emit events on `post` fields, `file` on files, and raw body emits `body` when it received the whole body. `DeferredStream` listens for those events and returns them through a promise when done.
+The `FormParserFactory` parses a request and determines which body parser to use (multipart, formurlencoded, raw body, or no body). Those body parsers emit events on `post` fields, `file` on files, and raw body emits `body` when it received the whole body. `DeferredStream` listens for those events and returns them through a promise when done.
 
 ```php
     $loop = React\EventLoop\Factory::create();
