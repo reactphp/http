@@ -36,7 +36,13 @@ class RequestParser extends EventEmitter
                 return;
             }
 
-            $this->request = $this->parseHeaders($headers . "\r\n\r\n");
+            try {
+                $this->request = $this->parseHeaders($headers . "\r\n\r\n");
+            } catch (\InvalidArgumentException $e) {
+                $this->emit('error', [$e]);
+                return;
+            }
+            
 
             if($this->request->expectsContinue()) {
                 $this->emit('expects_continue');
