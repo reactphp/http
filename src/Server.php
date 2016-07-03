@@ -41,8 +41,6 @@ class Server extends EventEmitter implements ServerInterface
                 });
             });
 
-            $conn->on('data', array($parser, 'feed'));
-
             $parser->on('expects_continue', function() use($conn) {
                 $conn->write("HTTP/1.1 100 Continue\r\n\r\n");
             });
@@ -61,6 +59,8 @@ class Server extends EventEmitter implements ServerInterface
         }
 
         $this->emit('request', array($request, $response));
-        $request->emit('data', array($bodyBuffer));
+        if ($bodyBuffer !== '') {
+            $request->emit('data', array($bodyBuffer));
+        }
     }
 }
