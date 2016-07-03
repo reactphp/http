@@ -40,6 +40,12 @@ class Server extends EventEmitter implements ServerInterface
                     $conn->emit('resume');
                 });
             });
+
+            $conn->on('data', array($parser, 'feed'));
+
+            $parser->on('expects_continue', function() use($conn) {
+                $conn->write("HTTP/1.1 100 Continue\r\n\r\n");
+            });
         });
     }
 
