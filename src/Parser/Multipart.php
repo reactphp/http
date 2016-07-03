@@ -209,7 +209,7 @@ class Multipart implements ParserInterface
         $headers = [];
 
         foreach (explode("\r\n", trim($header)) as $line) {
-            list($key, $values) = explode(':', $line);
+            list($key, $values) = explode(':', $line, 2);
             $key = trim($key);
             $key = strtolower($key);
             $values = explode(';', $values);

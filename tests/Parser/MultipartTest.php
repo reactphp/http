@@ -99,7 +99,7 @@ class MultipartParserTest extends TestCase
         $request->emit('data', ["\r\n"]);
         $request->emit('data', ["second in array\r\n"]);
         $request->emit('data', ["--$boundary\r\n"]);
-        $request->emit('data', ["Content-Disposition: form-data; name=\"file\"; filename=\"User.php\"\r\n"]);
+        $request->emit('data', ["Content-Disposition: form-data; name=\"file\"; filename=\"Us er.php\"\r\n"]);
         $request->emit('data', ["Content-type: text/php\r\n"]);
         $request->emit('data', ["\r\n"]);
         $request->emit('data', ["<?php echo 'User';\r\n"]);
@@ -137,13 +137,13 @@ class MultipartParserTest extends TestCase
 
         $this->assertEquals(3, count($files));
         $this->assertEquals('file', $files[0][0]->getName());
-        $this->assertEquals('User.php', $files[0][0]->getFilename());
+        $this->assertEquals('Us er.php', $files[0][0]->getFilename());
         $this->assertEquals('text/php', $files[0][0]->getType());
         $this->assertEquals([
             'content-disposition' => [
                 'form-data',
                 'name="file"',
-                'filename="User.php"',
+                'filename="Us er.php"',
             ],
             'content-type' => [
                 'text/php',
