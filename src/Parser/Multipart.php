@@ -54,7 +54,7 @@ class Multipart implements ParserInterface
 
     protected function setBoundary($boundary)
     {
-        $this->boundary = substr($boundary, 1);
+        $this->boundary = $boundary;
         $this->ending = $this->boundary . "--\r\n";
         $this->endingSize = strlen($this->ending);
     }
@@ -99,7 +99,7 @@ class Multipart implements ParserInterface
             return;
         }
 
-        $chunks = preg_split('/' . $this->boundary . '/', trim($split[0]), -1, PREG_SPLIT_NO_EMPTY);
+        $chunks = preg_split('/-+' . $this->boundary . '/', trim($split[0]), -1, PREG_SPLIT_NO_EMPTY);
         $headers = $this->parseHeaders(trim($chunks[0]));
         if (isset($headers['content-disposition']) && $this->headerStartsWith($headers['content-disposition'], 'filename')) {
             $this->parseFile($headers, $split[1]);
@@ -178,7 +178,7 @@ class Multipart implements ParserInterface
                     array_unshift($chunks, '');
                 }
 
-                $this->onData(implode($this->boundary, $chunks));
+                $this->onData(implode('-' . $this->boundary, $chunks));
                 return;
             }
 
