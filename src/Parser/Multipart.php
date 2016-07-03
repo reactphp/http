@@ -64,7 +64,9 @@ class Multipart implements ParserInterface
         $this->buffer .= $data;
 
         if (substr($this->buffer, 0, 3) === '---' && strpos($this->buffer, "\r\n") !== false) {
-            $this->setBoundary(substr($this->buffer, 0, strpos($this->buffer, "\r\n")));
+            $boundary = substr($this->buffer, 2, strpos($this->buffer, "\r\n"));
+            $boundary = substr($boundary, 0, -2);
+            $this->setBoundary($boundary);
             $this->request->removeListener('data', [$this, 'findBoundary']);
             $this->request->on('data', [$this, 'onData']);
         }
