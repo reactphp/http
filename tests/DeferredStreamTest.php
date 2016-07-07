@@ -63,7 +63,7 @@ class DeferredStreamTest extends TestCase
 
         $this->assertSame('foo', $result['files'][0]['file']->getName());
         $this->assertSame('bar.ext', $result['files'][0]['file']->getFilename());
-        $this->assertSame('text', $result['files'][0]['file']->getType());
+        $this->assertSame('text', $result['files'][0]['file']->getContentType());
         $this->assertSame('foo.bar', $result['files'][0]['buffer']);
 
         $this->assertSame('abc', $result['body']);

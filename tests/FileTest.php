@@ -16,7 +16,7 @@ class FileTest extends TestCase
         $file = new File($name, $filename, $type, $stream);
         $this->assertEquals($name, $file->getName());
         $this->assertEquals($filename, $file->getFilename());
-        $this->assertEquals($type, $file->getType());
+        $this->assertEquals($type, $file->getContentType());
         $this->assertEquals($stream, $file->getStream());
     }
 }

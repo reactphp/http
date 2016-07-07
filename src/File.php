@@ -19,7 +19,7 @@ class File implements FileInterface
     /**
      * @var string
      */
-    protected $type;
+    protected $contentType;
 
     /**
      * @var ReadableStreamInterface
@@ -29,14 +29,14 @@ class File implements FileInterface
     /**
      * @param string $name
      * @param string $filename
-     * @param string $type
+     * @param string $contentType
      * @param ReadableStreamInterface $stream
      */
-    public function __construct($name, $filename, $type, ReadableStreamInterface $stream)
+    public function __construct($name, $filename, $contentType, ReadableStreamInterface $stream)
     {
         $this->name = $name;
         $this->filename = $filename;
-        $this->type = $type;
+        $this->contentType = $contentType;
         $this->stream = $stream;
     }
 
@@ -59,9 +59,9 @@ class File implements FileInterface
     /**
      * @return string
      */
-    public function getType()
+    public function getContentType()
     {
-        return $this->type;
+        return $this->contentType;
     }
 
     /**

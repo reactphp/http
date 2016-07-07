@@ -138,7 +138,7 @@ class MultipartParserTest extends TestCase
         $this->assertEquals(3, count($files));
         $this->assertEquals('file', $files[0][0]->getName());
         $this->assertEquals('Us er.php', $files[0][0]->getFilename());
-        $this->assertEquals('text/php', $files[0][0]->getType());
+        $this->assertEquals('text/php', $files[0][0]->getContentType());
         $this->assertEquals([
             'content-disposition' => [
                 'form-data',
@@ -152,7 +152,7 @@ class MultipartParserTest extends TestCase
 
         $this->assertEquals('files[]', $files[1][0]->getName());
         $this->assertEquals('blank.gif', $files[1][0]->getFilename());
-        $this->assertEquals('image/gif', $files[1][0]->getType());
+        $this->assertEquals('image/gif', $files[1][0]->getContentType());
         $this->assertEquals([
             'content-disposition' => [
                 'form-data',
@@ -169,7 +169,7 @@ class MultipartParserTest extends TestCase
 
         $this->assertEquals('files[]', $files[2][0]->getName());
         $this->assertEquals('User.php', $files[2][0]->getFilename());
-        $this->assertEquals('text/php', $files[2][0]->getType());
+        $this->assertEquals('text/php', $files[2][0]->getContentType());
         $this->assertEquals([
             'content-disposition' => [
                 'form-data',

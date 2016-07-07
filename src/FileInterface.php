@@ -19,7 +19,7 @@ interface FileInterface
     /**
      * @return string
      */
-    public function getType();
+    public function getContentType();
 
     /**
      * @return ReadableStreamInterface
