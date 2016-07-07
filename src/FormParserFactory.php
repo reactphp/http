@@ -16,8 +16,7 @@ class FormParserFactory
         $headers = array_change_key_case($headers, CASE_LOWER);
 
         if (
-            !isset($headers['content-type']) ||
-            (!isset($headers['content-type']) && !isset($headers['content-length']))
+            !isset($headers['content-type']) || !isset($headers['content-length'])
         ) {
             return new Parser\NoBody($request);
         }
