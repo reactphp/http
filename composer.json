@@ -16,11 +16,6 @@
             "React\\Http\\": "src"
         }
     },
-    "extra": {
-        "branch-alias": {
-            "dev-master": "0.5-dev"
-        }
-    },
     "require-dev": {
         "clue/block-react": "^1.1"
     }
