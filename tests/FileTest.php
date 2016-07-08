@@ -9,12 +9,10 @@ class FileTest extends TestCase
 {
     public function testGetters()
     {
-        $name = 'foo';
         $filename = 'bar.txt';
         $type = 'text/text';
         $stream = new ThroughStream();
-        $file = new File($name, $filename, $type, $stream);
-        $this->assertEquals($name, $file->getName());
+        $file = new File($filename, $type, $stream);
         $this->assertEquals($filename, $file->getFilename());
         $this->assertEquals($type, $file->getContentType());
         $this->assertEquals($stream, $file->getStream());

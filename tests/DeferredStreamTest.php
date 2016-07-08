@@ -36,8 +36,8 @@ class DeferredStreamTest extends TestCase
         $parser->emit('post', ['dom[two][]', 'bar']);
 
         $stream = new ThroughStream();
-        $file = new File('foo', 'bar.ext', 'text', $stream);
-        $parser->emit('file', [$file]);
+        $file = new File('bar.ext', 'text', $stream);
+        $parser->emit('file', ['foo', $file]);
         $stream->end('foo.bar');
 
         $parser->emit('body', ['abc']);
@@ -61,7 +61,7 @@ class DeferredStreamTest extends TestCase
             ],
         ], $result['post']);
 
-        $this->assertSame('foo', $result['files'][0]['file']->getName());
+        $this->assertSame('foo', $result['files'][0]['name']);
         $this->assertSame('bar.ext', $result['files'][0]['file']->getFilename());
         $this->assertSame('text', $result['files'][0]['file']->getContentType());
         $this->assertSame('foo.bar', $result['files'][0]['buffer']);

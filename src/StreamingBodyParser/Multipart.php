@@ -144,8 +144,8 @@ class Multipart implements StreamingParserInterface
 
         $stream = new ThroughStream();
         $this->emit('file', [
+            $this->getFieldFromHeader($headers['content-disposition'], 'name'),
             new File(
-                $this->getFieldFromHeader($headers['content-disposition'], 'name'),
                 $this->getFieldFromHeader($headers['content-disposition'], 'filename'),
                 $headers['content-type'][0],
                 $stream

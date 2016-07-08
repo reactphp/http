@@ -9,11 +9,6 @@ interface FileInterface
     /**
      * @return string
      */
-    public function getName();
-
-    /**
-     * @return string
-     */
     public function getFilename();
 
     /**

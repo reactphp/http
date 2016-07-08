@@ -25,8 +25,8 @@ class MultipartParserTest extends TestCase
         $parser->on('post', function ($key, $value) use (&$post) {
             $post[$key] = $value;
         });
-        $parser->on('file', function (FileInterface $file) use (&$files) {
-            $files[] = $file;
+        $parser->on('file', function ($name, FileInterface $file) use (&$files) {
+            $files[] = [$name, $file];
         });
 
         $data  = "--$boundary\r\n";
@@ -67,8 +67,8 @@ class MultipartParserTest extends TestCase
         $multipart->on('post', function ($key, $value) use (&$post) {
             $post[] = [$key => $value];
         });
-        $multipart->on('file', function (FileInterface $file, $headers) use (&$files) {
-            $files[] = [$file, $headers];
+        $multipart->on('file', function ($name, FileInterface $file, $headers) use (&$files) {
+            $files[] = [$name, $file, $headers];
         });
 
         $file = base64_decode("R0lGODlhAQABAIAAAP///wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==");
@@ -136,9 +136,9 @@ class MultipartParserTest extends TestCase
         );
 
         $this->assertEquals(3, count($files));
-        $this->assertEquals('file', $files[0][0]->getName());
-        $this->assertEquals('Us er.php', $files[0][0]->getFilename());
-        $this->assertEquals('text/php', $files[0][0]->getContentType());
+        $this->assertEquals('file', $files[0][0]);
+        $this->assertEquals('Us er.php', $files[0][1]->getFilename());
+        $this->assertEquals('text/php', $files[0][1]->getContentType());
         $this->assertEquals([
             'content-disposition' => [
                 'form-data',
@@ -148,11 +148,11 @@ class MultipartParserTest extends TestCase
             'content-type' => [
                 'text/php',
             ],
-        ], $files[0][1]);
+        ], $files[0][2]);
 
-        $this->assertEquals('files[]', $files[1][0]->getName());
-        $this->assertEquals('blank.gif', $files[1][0]->getFilename());
-        $this->assertEquals('image/gif', $files[1][0]->getContentType());
+        $this->assertEquals('files[]', $files[1][0]);
+        $this->assertEquals('blank.gif', $files[1][1]->getFilename());
+        $this->assertEquals('image/gif', $files[1][1]->getContentType());
         $this->assertEquals([
             'content-disposition' => [
                 'form-data',
@@ -165,11 +165,11 @@ class MultipartParserTest extends TestCase
             'x-foo-bar' => [
                 'base64',
             ],
-        ], $files[1][1]);
+        ], $files[1][2]);
 
-        $this->assertEquals('files[]', $files[2][0]->getName());
-        $this->assertEquals('User.php', $files[2][0]->getFilename());
-        $this->assertEquals('text/php', $files[2][0]->getContentType());
+        $this->assertEquals('files[]', $files[2][0]);
+        $this->assertEquals('User.php', $files[2][1]->getFilename());
+        $this->assertEquals('text/php', $files[2][1]->getContentType());
         $this->assertEquals([
             'content-disposition' => [
                 'form-data',
@@ -179,6 +179,6 @@ class MultipartParserTest extends TestCase
             'content-type' => [
                 'text/php',
             ],
-        ], $files[2][1]);
+        ], $files[2][2]);
     }
 }

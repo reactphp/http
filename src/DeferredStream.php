@@ -31,9 +31,10 @@ class DeferredStream
         $parser->on('post', function ($key, $value) use (&$postFields) {
             self::extractPost($postFields, $key, $value);
         });
-        $parser->on('file', function (File $file) use (&$files) {
-            BufferedSink::createPromise($file->getStream())->then(function ($buffer) use ($file, &$files) {
+        $parser->on('file', function ($name, File $file) use (&$files) {
+            BufferedSink::createPromise($file->getStream())->then(function ($buffer) use ($name, $file, &$files) {
                 $files[] = [
+                    'name' => $name,
                     'file' => $file,
                     'buffer' => $buffer,
                 ];
