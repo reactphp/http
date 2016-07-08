@@ -2,8 +2,8 @@
 
 namespace React\Http;
 
-use React\Http\Parser\NoBody;
-use React\Http\Parser\ParserInterface;
+use React\Http\BodyParser\NoBody;
+use React\Http\BodyParser\ParserInterface;
 use React\Promise\Deferred;
 use React\Promise\PromiseInterface;
 use React\Stream\BufferedSink;

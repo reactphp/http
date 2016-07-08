@@ -1,6 +1,6 @@
 <?php
 
-namespace React\Http\Parser;
+namespace React\Http\BodyParser;
 
 use Evenement\EventEmitterTrait;
 use React\Http\File;

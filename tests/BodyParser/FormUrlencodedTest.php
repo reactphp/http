@@ -1,10 +1,9 @@
 <?php
 
-namespace React\Tests\Http\Parser;
+namespace React\Tests\Http\BodyParser;
 
-use React\Http\Parser\FormUrlencoded;
+use React\Http\BodyParser\FormUrlencoded;
 use React\Http\Request;
-use React\Stream\ThroughStream;
 use React\Tests\Http\TestCase;
 
 class FormUrlencodedTest extends TestCase

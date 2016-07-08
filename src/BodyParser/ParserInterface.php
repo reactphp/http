@@ -1,6 +1,6 @@
 <?php
 
-namespace React\Http\Parser;
+namespace React\Http\BodyParser;
 
 use Evenement\EventEmitterInterface;
 use React\Http\Request;

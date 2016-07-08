@@ -42,7 +42,7 @@ The `FormParserFactory` parses a request and determines which body parser to use
 
     $http = new React\Http\Server($socket);
     $http->on('request', function ($request, $response) {
-        $parser = FormParserFactory::create($request);
+        $parser = React\Http\BodyParser\Factory::create($request);
         DeferredStream::create($parser)->then(function ($result) use ($response) {
             var_export($result);
             $response->writeHead(200, array('Content-Type' => 'text/plain'));

@@ -1,9 +1,8 @@
 <?php
 
-namespace React\Tests\Http\Parser;
+namespace React\Tests\Http\BodyParser;
 
-use React\Http\Parser\NoBody;
-use React\Http\Parser\RawBody;
+use React\Http\BodyParser\RawBody;
 use React\Http\Request;
 use React\Tests\Http\TestCase;
 

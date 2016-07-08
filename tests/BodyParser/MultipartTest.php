@@ -1,9 +1,9 @@
 <?php
 
-namespace React\Tests\Http\Parser;
+namespace React\Tests\Http\BodyParser;
 
 use React\Http\FileInterface;
-use React\Http\Parser\Multipart;
+use React\Http\BodyParser\Multipart;
 use React\Http\Request;
 use React\Tests\Http\TestCase;
 

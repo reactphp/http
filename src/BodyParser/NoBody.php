@@ -1,12 +1,11 @@
 <?php
 
-namespace React\Tests\Http\Parser;
+namespace React\Http\BodyParser;
 
 use Evenement\EventEmitterTrait;
-use React\Http\Parser\ParserInterface;
 use React\Http\Request;
 
-class DummyParser implements ParserInterface
+class NoBody implements ParserInterface
 {
     use EventEmitterTrait;
 

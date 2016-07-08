@@ -1,14 +1,14 @@
 <?php
 
-namespace React\Http;
+namespace React\Http\BodyParser;
 
-use React\Http\Parser;
+use React\Http\Request;
 
-class FormParserFactory
+class Factory
 {
     /**
      * @param Request $request
-     * @return Parser\ParserInterface
+     * @return ParserInterface
      */
     public static function create(Request $request)
     {
@@ -18,19 +18,19 @@ class FormParserFactory
         if (
             !isset($headers['content-type']) && !isset($headers['content-length'])
         ) {
-            return new Parser\NoBody($request);
+            return new NoBody($request);
         }
 
         $contentType = strtolower($headers['content-type']);
 
         if (strpos($contentType, 'multipart/') === 0) {
-            return new Parser\Multipart($request);
+            return new Multipart($request);
         }
 
         if (strpos($contentType, 'application/x-www-form-urlencoded') === 0) {
-            return new Parser\FormUrlencoded($request);
+            return new FormUrlencoded($request);
         }
 
-        return new Parser\RawBody($request);
+        return new RawBody($request);
     }
 }
