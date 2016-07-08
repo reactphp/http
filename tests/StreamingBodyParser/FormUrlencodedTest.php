@@ -1,8 +1,8 @@
 <?php
 
-namespace React\Tests\Http\BodyParser;
+namespace React\Tests\Http\StreamingBodyParser;
 
-use React\Http\BodyParser\FormUrlencoded;
+use React\Http\StreamingBodyParser\FormUrlencoded;
 use React\Http\Request;
 use React\Tests\Http\TestCase;
 

@@ -1,13 +1,13 @@
 <?php
 
-namespace React\Http\BodyParser;
+namespace React\Http\StreamingBodyParser;
 
 use Evenement\EventEmitterTrait;
 use React\Http\File;
 use React\Http\Request;
 use React\Stream\ThroughStream;
 
-class Multipart implements ParserInterface
+class Multipart implements StreamingParserInterface
 {
     use EventEmitterTrait;
 

@@ -6,10 +6,10 @@ use Clue\React\Block;
 use React\EventLoop\Factory;
 use React\Http\DeferredStream;
 use React\Http\File;
-use React\Http\BodyParser\NoBody;
+use React\Http\StreamingBodyParser\NoBody;
 use React\Http\Request;
 use React\Stream\ThroughStream;
-use React\Tests\Http\BodyParser\DummyParser;
+use React\Tests\Http\StreamingBodyParser\DummyParser;
 
 class DeferredStreamTest extends TestCase
 {

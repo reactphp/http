@@ -1,6 +1,6 @@
 <?php
 
-namespace React\Http\BodyParser;
+namespace React\Http\StreamingBodyParser;
 
 use React\Http\Request;
 
@@ -8,7 +8,7 @@ class Factory
 {
     /**
      * @param Request $request
-     * @return ParserInterface
+     * @return StreamingParserInterface
      */
     public static function create(Request $request)
     {

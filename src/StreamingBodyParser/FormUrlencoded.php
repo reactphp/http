@@ -1,11 +1,11 @@
 <?php
 
-namespace React\Http\BodyParser;
+namespace React\Http\StreamingBodyParser;
 
 use Evenement\EventEmitterTrait;
 use React\Http\Request;
 
-class FormUrlencoded implements ParserInterface
+class FormUrlencoded implements StreamingParserInterface
 {
     use EventEmitterTrait;
 

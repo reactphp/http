@@ -2,8 +2,8 @@
 
 namespace React\Http;
 
-use React\Http\BodyParser\NoBody;
-use React\Http\BodyParser\ParserInterface;
+use React\Http\StreamingBodyParser\NoBody;
+use React\Http\StreamingBodyParser\StreamingParserInterface;
 use React\Promise\Deferred;
 use React\Promise\PromiseInterface;
 use React\Stream\BufferedSink;
@@ -11,10 +11,10 @@ use React\Stream\BufferedSink;
 class DeferredStream
 {
     /**
-     * @param ParserInterface $parser
+     * @param StreamingParserInterface $parser
      * @return PromiseInterface
      */
-    public static function create(ParserInterface $parser)
+    public static function create(StreamingParserInterface $parser)
     {
         if ($parser instanceof NoBody) {
             return \React\Promise\resolve([
