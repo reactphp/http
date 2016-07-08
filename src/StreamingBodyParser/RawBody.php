@@ -9,25 +9,26 @@ class RawBody implements StreamingParserInterface
 {
     use EventEmitterTrait;
 
-    protected $buffer = '';
-    protected $contentLength;
-
+    /**
+     * @param Request $request
+     */
     public function __construct(Request $request)
     {
         $headers = $request->getHeaders();
         $headers = array_change_key_case($headers, CASE_LOWER);
 
-        $this->contentLength = $headers['content-length'];
-        $request->on('data', [$this, 'feed']);
+        ContentLengthBufferedSink::createPromise(
+            $request,
+            $headers['content-length']
+        )->then([$this, 'finish']);
     }
 
-    public function feed($data)
+    /**
+     * @param string $buffer
+     */
+    public function finish($buffer)
     {
-        $this->buffer .= $data;
-
-        if (strlen($this->buffer) >= $this->contentLength) {
-            $this->emit('body', [$this->buffer]);
-            $this->emit('end');
-        }
+        $this->emit('body', [$buffer]);
+        $this->emit('end');
     }
 }
