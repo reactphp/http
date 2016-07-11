@@ -64,13 +64,13 @@ class RequestParser extends EventEmitter
 
         // if there is no content length, there should
         // be no content so we can say it's done
-        if (!array_key_exists('Content-Length', $headers)) {
+        if (!isset($headers['Content-Length'])) {
             return true;
         }
 
         // if the content is present and has the
         // right length, we're good to go
-        if (array_key_exists('Content-Length', $headers) && strlen($this->buffer) >= $headers['Content-Length']) {
+        if (isset($headers['Content-Length']) && strlen($this->buffer) >= $headers['Content-Length']) {
 
             // store the expected content length
             $this->length = $this->request->getHeaders()['Content-Length'];
@@ -124,7 +124,7 @@ class RequestParser extends EventEmitter
     {
         $headers = $this->request->getHeaders();
 
-        if (array_key_exists('Content-Type', $headers)) {
+        if (isset($headers['Content-Type'])) {
             if (strpos($headers['Content-Type'], 'multipart/') === 0) {
                 //TODO :: parse the content while it is streaming
                 preg_match("/boundary=\"?(.*)\"?$/", $headers['Content-Type'], $matches);

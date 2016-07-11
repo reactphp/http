@@ -24,6 +24,14 @@ class Server extends EventEmitter implements ServerInterface
                 // attach remote ip to the request as metadata
                 $request->remoteAddress = $conn->getRemoteAddress();
 
+                $request->on('pause', function () use ($conn) {
+                    $conn->pause();
+                    $conn->emit('pause');
+                });
+                $request->on('resume', function () use ($conn) {
+                    $conn->resume();
+                    $conn->emit('resume');
+                });
                 $this->handleRequest($conn, $request, $bodyBuffer);
 
                 $conn->removeListener('data', array($parser, 'feed'));
@@ -32,12 +40,6 @@ class Server extends EventEmitter implements ServerInterface
                 });
                 $conn->on('data', function ($data) use ($request) {
                     $request->emit('data', array($data));
-                });
-                $request->on('pause', function () use ($conn) {
-                    $conn->emit('pause');
-                });
-                $request->on('resume', function () use ($conn) {
-                    $conn->emit('resume');
                 });
             });
 
