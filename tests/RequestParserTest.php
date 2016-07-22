@@ -110,10 +110,11 @@ class RequestParserTest extends TestCase
             $body = $parsedBodyBuffer;
         });
 
-        $data = $this->createAdvancedPostRequest('', 17);
+        $len = strlen($content1.$content2);
+        $data = $this->createAdvancedPostRequest('', $len);
         $parser->feed($data);
         $parser->feed($content1);
-        $parser->feed($content2 . "\r\n");
+        $parser->feed($content2);
 
         $this->assertInstanceOf('React\Http\Request', $request);
         $this->assertEquals($content1 . $content2, $request->getBody());
@@ -152,7 +153,7 @@ class RequestParserTest extends TestCase
         $parser->on('headers', function ($parsedRequest, $parsedBodyBuffer) use (&$request, &$body) {
                 $request = $parsedRequest;
                 $body = $parsedBodyBuffer;
-            });
+        });
 
         $parser->feed($this->createPostWithContent());
 
@@ -239,6 +240,9 @@ class RequestParserTest extends TestCase
         $data .= "Connection: close\r\n";
         if($len) {
             $data .= "Content-Length: $len\r\n";
+        } elseif ($content) {
+            $len = strlen($content);
+            $data .= "Content-Length: {$len}\r\n";
         }
         $data .= "\r\n";
         $data .= $content;
@@ -255,55 +259,57 @@ class RequestParserTest extends TestCase
         $data .= "Content-Type: application/x-www-form-urlencoded\r\n";
         $data .= "Content-Length: 79\r\n";
         $data .= "\r\n";
-        $data .= "user=single&user2=second&users%5B%5D=first+in+array&users%5B%5D=second+in+array\r\n";
+        $data .= "user=single&user2=second&users%5B%5D=first+in+array&users%5B%5D=second+in+array";
 
         return $data;
     }
 
     private function createMultipartRequest()
     {
-        $data  = "POST / HTTP/1.1\r\n";
-        $data .= "Host: localhost:8080\r\n";
-        $data .= "Connection: close\r\n";
-        $data .= "Content-Type: multipart/form-data; boundary=---------------------------12758086162038677464950549563\r\n";
-        $data .= "Content-Length: 1097\r\n";
-        $data .= "\r\n";
+        $body = "-----------------------------12758086162038677464950549563\r\n";
+        $body .= "Content-Disposition: form-data; name=\"user\"\r\n";
+        $body .= "\r\n";
+        $body .= "single\r\n";
+        $body .= "-----------------------------12758086162038677464950549563\r\n";
+        $body .= "Content-Disposition: form-data; name=\"user2\"\r\n";
+        $body .= "\r\n";
+        $body .= "second\r\n";
+        $body .= "-----------------------------12758086162038677464950549563\r\n";
+        $body .= "Content-Disposition: form-data; name=\"users[]\"\r\n";
+        $body .= "\r\n";
+        $body .= "first in array\r\n";
+        $body .= "-----------------------------12758086162038677464950549563\r\n";
+        $body .= "Content-Disposition: form-data; name=\"users[]\"\r\n";
+        $body .= "\r\n";
+        $body .= "second in array\r\n";
+        $body .= "-----------------------------12758086162038677464950549563\r\n";
+        $body .= "Content-Disposition: form-data; name=\"file\"; filename=\"User.php\"\r\n";
+        $body .= "Content-Type: text/php\r\n";
+        $body .= "\r\n";
+        $body .= "<?php echo 'User';\r\n";
+        $body .= "\r\n";
+        $body .= "-----------------------------12758086162038677464950549563\r\n";
+        $body .= "Content-Disposition: form-data; name=\"files[]\"; filename=\"blank.gif\"\r\n";
+        $body .= "Content-Type: image/gif\r\n";
+        $body .= "\r\n";
+        $body .= base64_decode("R0lGODlhAQABAIAAAP///wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==") . "\r\n";
+        $body .= "-----------------------------12758086162038677464950549563\r\n";
+        $body .= "Content-Disposition: form-data; name=\"files[]\"; filename=\"User.php\"\r\n";
+        $body .= "Content-Type: text/php\r\n";
+        $body .= "\r\n";
+        $body .= "<?php echo 'User';\r\n";
+        $body .= "\r\n";
+        $body .= "-----------------------------12758086162038677464950549563--\r\n";
 
-        $data .= "-----------------------------12758086162038677464950549563\r\n";
-        $data .= "Content-Disposition: form-data; name=\"user\"\r\n";
-        $data .= "\r\n";
-        $data .= "single\r\n";
-        $data .= "-----------------------------12758086162038677464950549563\r\n";
-        $data .= "Content-Disposition: form-data; name=\"user2\"\r\n";
-        $data .= "\r\n";
-        $data .= "second\r\n";
-        $data .= "-----------------------------12758086162038677464950549563\r\n";
-        $data .= "Content-Disposition: form-data; name=\"users[]\"\r\n";
-        $data .= "\r\n";
-        $data .= "first in array\r\n";
-        $data .= "-----------------------------12758086162038677464950549563\r\n";
-        $data .= "Content-Disposition: form-data; name=\"users[]\"\r\n";
-        $data .= "\r\n";
-        $data .= "second in array\r\n";
-        $data .= "-----------------------------12758086162038677464950549563\r\n";
-        $data .= "Content-Disposition: form-data; name=\"file\"; filename=\"User.php\"\r\n";
-        $data .= "Content-Type: text/php\r\n";
-        $data .= "\r\n";
-        $data .= "<?php echo 'User';\r\n";
-        $data .= "\r\n";
-        $data .= "-----------------------------12758086162038677464950549563\r\n";
-        $data .= "Content-Disposition: form-data; name=\"files[]\"; filename=\"blank.gif\"\r\n";
-        $data .= "Content-Type: image/gif\r\n";
-        $data .= "\r\n";
-        $data .= base64_decode("R0lGODlhAQABAIAAAP///wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==") . "\r\n";
-        $data .= "-----------------------------12758086162038677464950549563\r\n";
-        $data .= "Content-Disposition: form-data; name=\"files[]\"; filename=\"User.php\"\r\n";
-        $data .= "Content-Type: text/php\r\n";
-        $data .= "\r\n";
-        $data .= "<?php echo 'User';\r\n";
-        $data .= "\r\n";
-        $data .= "-----------------------------12758086162038677464950549563--\r\n";
+        $bodyLen = strlen($body);
 
-        return $data;
+        $header  = "POST / HTTP/1.1\r\n";
+        $header .= "Host: localhost:8080\r\n";
+        $header .= "Connection: close\r\n";
+        $header .= "Content-Type: multipart/form-data; boundary=---------------------------12758086162038677464950549563\r\n";
+        $header .= "Content-Length: {$bodyLen}\r\n";
+        $header .= "\r\n";
+
+        return $header.$body;
     }
 }
