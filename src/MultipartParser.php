@@ -136,34 +136,41 @@ class MultipartParser
      */
     protected function file($string)
     {
-        preg_match('/name=\"([^\"]*)\"; filename=\"([^\"]*)\"[\n|\r]+([^\n\r].*)?\r$/s', $string, $match);
-        preg_match('/Content-Type: (.*)?/', $match[3], $mime);
+        $match = array();
+        preg_match('/name=\"(?P<name>[^\"]*)\";/', $string, $match);
+        $name = $match['name'];
 
-        $content = preg_replace('/Content-Type: (.*)[^\n\r]/', '', $match[3]);
-        $content = ltrim($content, "\r\n");
+        $match = array();
+        preg_match('/filename=\"(?P<filename>[^\"]*)\"[\n|\r]/', $string, $match);
+        $filename = $match['filename'];
 
+        $match = array();
+        preg_match('/Content-Type: (?P<mime>.*)?/', $string, $match);
+        $mime = $match['mime'];
+        //Do not use preg_match function to parse entire request body because of multiplying (twice) allocated memory for content data
+        $pos = strpos($string, "\r\n\r\n");
+        $string = substr_replace($string, '', 0, $pos);
+        $string = trim($string, "\r\n");
         // Put content in a stream
-        $stream = fopen('php://memory', 'r+');
-        if ($content !== '') {
-            fwrite($stream, $content);
+        $stream = fopen('php://temp', 'r+');
+        if ($string !== '') {
+            fwrite($stream, $string);
             fseek($stream, 0);
         }
-
         $data = [
-            'name' => $match[2],
-            'type' => trim($mime[1]),
+            'name' => $filename,
+            'type' => trim($mime),
             'stream' => $stream, // Instead of writing to a file, we write to a stream.
             'error' => UPLOAD_ERR_OK,
-            'size' => function_exists('mb_strlen')? mb_strlen($content, '8bit') : strlen($content),
+            'size' => function_exists('mb_strlen')? mb_strlen($string, '8bit') : strlen($string),
         ];
-
         //TODO :: have an option to write to files to emulate the same functionality as a real php server
         //$path = tempnam(sys_get_temp_dir(), "php");
         //$err = file_put_contents($path, $content);
         //$data['tmp_name'] = $path;
         //$data['error'] = ($err === false) ? UPLOAD_ERR_NO_FILE : UPLOAD_ERR_OK;
 
-        $this->addResolved('files', $match[1], $data);
+        $this->addResolved('files', $name, $data);
     }
 
     /**
@@ -201,3 +208,4 @@ class MultipartParser
         }
     }
 }
+
