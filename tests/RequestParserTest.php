@@ -20,6 +20,24 @@ class RequestParserTest extends TestCase
 
         $parser->feed("\r\n");
     }
+    
+    public function testEmptyHeaderShouldEmitError()
+    {
+        $parser = new RequestParser();
+        $parser->on('headers', $this->expectCallableNever());
+        $parser->on('error', $this->expectCallableOnce());
+
+        $parser->feed("\r\n\r\n");
+    }
+
+    public function testInvalidHeaderShouldEmitError()
+    {
+        $parser = new RequestParser();
+        $parser->on('headers', $this->expectCallableNever());
+        $parser->on('error', $this->expectCallableOnce());
+
+        $parser->feed("GET\r\nhello: there\r\n\r\n");
+    }
 
     public function testFeedInOneGo()
     {
