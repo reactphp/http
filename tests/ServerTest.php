@@ -87,12 +87,16 @@ class ServerTest extends TestCase
         $postBody = '{"React":true}';
         $httpRequestText = $this->createPostRequestWithExpect($postBody);
 
-        $conn->emit('data', array($httpRequestText));
-
         $server->on('request', function ($request, $_) use (&$requestReceived, $postBody) {
-            $requestReceived = true;
-            $this->assertEquals($postBody, $request->getBody());
+            $func = function ($data) use ($request, &$requestReceived, $postBody, &$func) {
+                $requestReceived = true;
+                $this->assertEquals($postBody, $data);
+                $request->removeListener('data', $func);
+            };
+            $request->on('data', $func);
         });
+
+        $conn->emit('data', array($httpRequestText));
 
         // If server received Expect: 100-continue - the client won't send the body right away
         $this->assertEquals(false, $requestReceived);

@@ -4,6 +4,7 @@ namespace React\Http;
 
 use Evenement\EventEmitter;
 use GuzzleHttp\Psr7 as gPsr;
+use React\Stream\ReadableStreamInterface;
 
 /**
  * @event headers
@@ -11,6 +12,8 @@ use GuzzleHttp\Psr7 as gPsr;
  */
 class RequestParser extends EventEmitter
 {
+    private $stream;
+
     private $buffer = '';
     private $maxSize = 4096;
 
@@ -18,7 +21,13 @@ class RequestParser extends EventEmitter
      * @var Request
      */
     private $request;
-    private $length = 0;
+
+    public function __construct(ReadableStreamInterface $conn)
+    {
+        $this->stream = $conn;
+
+        $this->stream->on('data', [$this, 'feed']);
+    }
 
     public function feed($data)
     {
@@ -28,7 +37,7 @@ class RequestParser extends EventEmitter
 
             // Extract the header from the buffer
             // in case the content isn't complete
-            list($headers, $this->buffer) = explode("\r\n\r\n", $this->buffer, 2);
+            list($headers, $buffer) = explode("\r\n\r\n", $this->buffer, 2);
 
             // Fail before parsing if the
             if (strlen($headers) > $this->maxSize) {
@@ -36,19 +45,15 @@ class RequestParser extends EventEmitter
                 return;
             }
 
+            $this->stream->removeListener('data', [$this, 'feed']);
             $this->request = $this->parseHeaders($headers . "\r\n\r\n");
 
-            if($this->request->expectsContinue()) {
+            if ($this->request->expectsContinue()) {
                 $this->emit('expects_continue');
             }
-        }
 
-        // if there is a request (meaning the headers are parsed) and
-        // we have the right content size, we can finish the parsing
-        if ($this->request && $this->isRequestComplete()) {
-            $this->parseBody(substr($this->buffer, 0, $this->length));
-            $this->finishParsing();
-            return;
+            $this->emit('headers', array($this->request, $buffer));
+            $this->removeAllListeners();
         }
 
         // fail if the header hasn't finished but it is already too large
@@ -56,36 +61,6 @@ class RequestParser extends EventEmitter
             $this->headerSizeExceeded();
             return;
         }
-    }
-
-    protected function isRequestComplete()
-    {
-        $headers = $this->request->getHeaders();
-
-        // if there is no content length, there should
-        // be no content so we can say it's done
-        if (!array_key_exists('Content-Length', $headers)) {
-            return true;
-        }
-
-        // if the content is present and has the
-        // right length, we're good to go
-        if (array_key_exists('Content-Length', $headers) && strlen($this->buffer) >= $headers['Content-Length']) {
-
-            // store the expected content length
-            $this->length = $this->request->getHeaders()['Content-Length'];
-
-            return true;
-        }
-
-        return false;
-    }
-
-    protected function finishParsing()
-    {
-        $this->emit('headers', array($this->request, $this->request->getBody()));
-        $this->removeAllListeners();
-        $this->request = null;
     }
 
     protected function headerSizeExceeded()
@@ -118,36 +93,5 @@ class RequestParser extends EventEmitter
             $psrRequest->getProtocolVersion(),
             $headers
         );
-    }
-
-    public function parseBody($content)
-    {
-        $headers = $this->request->getHeaders();
-
-        if (array_key_exists('Content-Type', $headers)) {
-            if (strpos($headers['Content-Type'], 'multipart/') === 0) {
-                //TODO :: parse the content while it is streaming
-                preg_match("/boundary=\"?(.*)\"?$/", $headers['Content-Type'], $matches);
-                $boundary = $matches[1];
-
-                $parser = new MultipartParser($content, $boundary);
-                $parser->parse();
-
-                $this->request->setPost($parser->getPost());
-                $this->request->setFiles($parser->getFiles());
-                return;
-            }
-
-            if (strtolower($headers['Content-Type']) == 'application/x-www-form-urlencoded') {
-                parse_str($content, $result);
-                $this->request->setPost($result);
-
-                return;
-            }
-        }
-
-
-
-        $this->request->setBody($content);
     }
 }
