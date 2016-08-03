@@ -10,10 +10,10 @@ use React\Stream\BufferedSink as StreamBufferedSink;
 class BufferedSink
 {
     /**
-     * @param StreamingParserInterface $parser
+     * @param ParserInterface $parser
      * @return PromiseInterface
      */
-    public static function createPromise(StreamingParserInterface $parser)
+    public static function createPromise(ParserInterface $parser)
     {
         if ($parser instanceof NoBodyParser) {
             return \React\Promise\resolve([

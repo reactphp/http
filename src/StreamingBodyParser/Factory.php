@@ -8,7 +8,7 @@ class Factory
 {
     /**
      * @param Request $request
-     * @return StreamingParserInterface
+     * @return ParserInterface
      */
     public static function create(Request $request)
     {
