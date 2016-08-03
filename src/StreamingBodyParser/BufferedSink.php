@@ -1,20 +1,19 @@
 <?php
 
-namespace React\Http;
+namespace React\Http\StreamingBodyParser;
 
-use React\Http\StreamingBodyParser\NoBodyParser;
-use React\Http\StreamingBodyParser\StreamingParserInterface;
+use React\Http\File;
 use React\Promise\Deferred;
 use React\Promise\PromiseInterface;
-use React\Stream\BufferedSink;
+use React\Stream\BufferedSink as StreamBufferedSink;
 
-class DeferredStream
+class BufferedSink
 {
     /**
      * @param StreamingParserInterface $parser
      * @return PromiseInterface
      */
-    public static function create(StreamingParserInterface $parser)
+    public static function createPromise(StreamingParserInterface $parser)
     {
         if ($parser instanceof NoBodyParser) {
             return \React\Promise\resolve([
@@ -32,7 +31,7 @@ class DeferredStream
             self::extractPost($postFields, $key, $value);
         });
         $parser->on('file', function ($name, File $file) use (&$files) {
-            BufferedSink::createPromise($file->getStream())->then(function ($buffer) use ($name, $file, &$files) {
+            StreamBufferedSink::createPromise($file->getStream())->then(function ($buffer) use ($name, $file, &$files) {
                 $files[] = [
                     'name' => $name,
                     'file' => $file,
