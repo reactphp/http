@@ -7,7 +7,7 @@ use React\Http\File;
 use React\Http\Request;
 use React\Stream\ThroughStream;
 
-class Multipart implements StreamingParserInterface
+class MultipartParser implements StreamingParserInterface
 {
     use EventEmitterTrait;
 

@@ -2,11 +2,11 @@
 
 namespace React\Tests\Http\StreamingBodyParser;
 
-use React\Http\StreamingBodyParser\FormUrlencoded;
+use React\Http\StreamingBodyParser\FormUrlencodedParser;
 use React\Http\Request;
 use React\Tests\Http\TestCase;
 
-class FormUrlencodedTest extends TestCase
+class FormUrlencodedParserTest extends TestCase
 {
     public function testParse()
     {
@@ -14,7 +14,7 @@ class FormUrlencodedTest extends TestCase
         $request = new Request('POST', 'http://example.com/', [], '1.1', [
             'Content-Length' => 79,
         ]);
-        $parser = new FormUrlencoded($request);
+        $parser = new FormUrlencodedParser($request);
         $parser->on('post', function ($key, $value) use (&$post) {
             $post[] = [$key, $value];
         });

@@ -5,7 +5,7 @@ namespace React\Http\StreamingBodyParser;
 use Evenement\EventEmitterTrait;
 use React\Http\Request;
 
-class FormUrlencoded implements StreamingParserInterface
+class FormUrlencodedParser implements StreamingParserInterface
 {
     use EventEmitterTrait;
 

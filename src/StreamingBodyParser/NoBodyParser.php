@@ -5,7 +5,7 @@ namespace React\Http\StreamingBodyParser;
 use Evenement\EventEmitterTrait;
 use React\Http\Request;
 
-class NoBody implements StreamingParserInterface
+class NoBodyParser implements StreamingParserInterface
 {
     use EventEmitterTrait;
 

@@ -18,19 +18,19 @@ class Factory
         if (
             !isset($headers['content-type']) && !isset($headers['content-length'])
         ) {
-            return new NoBody($request);
+            return new NoBodyParser($request);
         }
 
         $contentType = strtolower($headers['content-type']);
 
         if (strpos($contentType, 'multipart/') === 0) {
-            return new Multipart($request);
+            return new MultipartParser($request);
         }
 
         if (strpos($contentType, 'application/x-www-form-urlencoded') === 0) {
-            return new FormUrlencoded($request);
+            return new FormUrlencodedParser($request);
         }
 
-        return new RawBody($request);
+        return new RawBodyParser($request);
     }
 }

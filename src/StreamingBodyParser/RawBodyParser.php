@@ -5,7 +5,7 @@ namespace React\Http\StreamingBodyParser;
 use Evenement\EventEmitterTrait;
 use React\Http\Request;
 
-class RawBody implements StreamingParserInterface
+class RawBodyParser implements StreamingParserInterface
 {
     use EventEmitterTrait;
 

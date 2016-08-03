@@ -14,7 +14,7 @@ class FactoryTest extends TestCase
             'Content-Type' => 'multipart/mixed; boundary=---------------------------12758086162038677464950549563',
         ]);
         $parser = Factory::create($request);
-        $this->assertInstanceOf('React\Http\StreamingBodyParser\Multipart', $parser);
+        $this->assertInstanceOf('React\Http\StreamingBodyParser\MultipartParser', $parser);
     }
 
     public function testMultipartUTF8()
@@ -23,7 +23,7 @@ class FactoryTest extends TestCase
             'Content-Type' => 'multipart/mixed; boundary=---------------------------12758086162038677464950549563; charset=utf8',
         ]);
         $parser = Factory::create($request);
-        $this->assertInstanceOf('React\Http\StreamingBodyParser\Multipart', $parser);
+        $this->assertInstanceOf('React\Http\StreamingBodyParser\MultipartParser', $parser);
     }
 
     public function testMultipartHeaderCaseInsensitive()
@@ -32,7 +32,7 @@ class FactoryTest extends TestCase
             'CONTENT-TYPE' => 'multipart/mixed; boundary=---------------------------12758086162038677464950549563',
         ]);
         $parser = Factory::create($request);
-        $this->assertInstanceOf('React\Http\StreamingBodyParser\Multipart', $parser);
+        $this->assertInstanceOf('React\Http\StreamingBodyParser\MultipartParser', $parser);
     }
 
     public function testFormUrlencoded()
@@ -42,7 +42,7 @@ class FactoryTest extends TestCase
             'content-length' => 123,
         ]);
         $parser = Factory::create($request);
-        $this->assertInstanceOf('React\Http\StreamingBodyParser\FormUrlencoded', $parser);
+        $this->assertInstanceOf('React\Http\StreamingBodyParser\FormUrlencodedParser', $parser);
     }
 
     public function testFormUrlencodedUTF8()
@@ -52,7 +52,7 @@ class FactoryTest extends TestCase
             'content-length' => 123,
         ]);
         $parser = Factory::create($request);
-        $this->assertInstanceOf('React\Http\StreamingBodyParser\FormUrlencoded', $parser);
+        $this->assertInstanceOf('React\Http\StreamingBodyParser\FormUrlencodedParser', $parser);
     }
 
     public function testFormUrlencodedHeaderCaseInsensitive()
@@ -62,6 +62,6 @@ class FactoryTest extends TestCase
             'content-length' => 123,
         ]);
         $parser = Factory::create($request);
-        $this->assertInstanceOf('React\Http\StreamingBodyParser\FormUrlencoded', $parser);
+        $this->assertInstanceOf('React\Http\StreamingBodyParser\FormUrlencodedParser', $parser);
     }
 }

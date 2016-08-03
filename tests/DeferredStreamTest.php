@@ -6,7 +6,7 @@ use Clue\React\Block;
 use React\EventLoop\Factory;
 use React\Http\DeferredStream;
 use React\Http\File;
-use React\Http\StreamingBodyParser\NoBody;
+use React\Http\StreamingBodyParser\NoBodyParser;
 use React\Http\Request;
 use React\Stream\ThroughStream;
 use React\Tests\Http\StreamingBodyParser\DummyParser;
@@ -15,7 +15,7 @@ class DeferredStreamTest extends TestCase
 {
     public function testDoneParser()
     {
-        $parser = new NoBody(new Request('get', 'http://example.com'));
+        $parser = new NoBodyParser(new Request('get', 'http://example.com'));
         $deferredStream = DeferredStream::create($parser);
         $result = Block\await($deferredStream, Factory::create(), 10);
         $this->assertSame([

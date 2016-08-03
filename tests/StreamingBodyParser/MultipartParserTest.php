@@ -3,7 +3,7 @@
 namespace React\Tests\Http\StreamingBodyParser;
 
 use React\Http\FileInterface;
-use React\Http\StreamingBodyParser\Multipart;
+use React\Http\StreamingBodyParser\MultipartParser;
 use React\Http\Request;
 use React\Tests\Http\TestCase;
 
@@ -21,7 +21,7 @@ class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
         ]);
 
-        $parser = new Multipart($request);
+        $parser = new MultipartParser($request);
         $parser->on('post', function ($key, $value) use (&$post) {
             $post[$key] = $value;
         });
@@ -62,7 +62,7 @@ class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data',
         ]);
 
-        $multipart = new Multipart($request);
+        $multipart = new MultipartParser($request);
 
         $multipart->on('post', function ($key, $value) use (&$post) {
             $post[] = [$key => $value];

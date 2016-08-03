@@ -2,7 +2,7 @@
 
 namespace React\Http;
 
-use React\Http\StreamingBodyParser\NoBody;
+use React\Http\StreamingBodyParser\NoBodyParser;
 use React\Http\StreamingBodyParser\StreamingParserInterface;
 use React\Promise\Deferred;
 use React\Promise\PromiseInterface;
@@ -16,7 +16,7 @@ class DeferredStream
      */
     public static function create(StreamingParserInterface $parser)
     {
-        if ($parser instanceof NoBody) {
+        if ($parser instanceof NoBodyParser) {
             return \React\Promise\resolve([
                 'post' => [],
                 'files' => [],
