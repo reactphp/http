@@ -11,15 +11,29 @@ use GuzzleHttp\Psr7 as gPsr;
  */
 class RequestParser extends EventEmitter
 {
+    /**
+     * @var string
+     */
     private $buffer = '';
+
+    /**
+     * @var int
+     */
     private $maxSize = 4096;
 
     /**
      * @var Request
      */
     private $request;
+
+    /**
+     * @var int
+     */
     private $length = 0;
 
+    /**
+     * @param $data
+     */
     public function feed($data)
     {
         $this->buffer .= $data;
@@ -58,6 +72,9 @@ class RequestParser extends EventEmitter
         }
     }
 
+    /**
+     * @return bool
+     */
     protected function isRequestComplete()
     {
         $headers = $this->request->getHeaders();
@@ -81,6 +98,9 @@ class RequestParser extends EventEmitter
         return false;
     }
 
+    /**
+     * @return null
+     */
     protected function finishParsing()
     {
         $this->emit('headers', array($this->request, $this->request->getBody()));
@@ -88,13 +108,21 @@ class RequestParser extends EventEmitter
         $this->request = null;
     }
 
+    /**
+     * @return null
+     */
     protected function headerSizeExceeded()
     {
         $this->emit('error', array(new \OverflowException("Maximum header size of {$this->maxSize} exceeded."), $this));
     }
 
+    /**
+     * @param  $data
+     * @return Request
+     */
     public function parseHeaders($data)
     {
+        /** @var \GuzzleHttp\Psr7\Request $psrRequest */
         $psrRequest = gPsr\parse_request($data);
 
         $parsedQuery = [];
@@ -120,6 +148,10 @@ class RequestParser extends EventEmitter
         );
     }
 
+    /**
+     * @param  $content
+     * @return null
+     */
     public function parseBody($content)
     {
         $headers = $this->request->getHeaders();
