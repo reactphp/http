@@ -18,8 +18,9 @@ class Server extends EventEmitter implements ServerInterface
         $this->io->on('connection', function (ConnectionInterface $conn) {
             // TODO: http 1.1 keep-alive
             // TODO: chunked transfer encoding (also for outgoing data)
+            // TODO: multipart parsing
 
-            $parser = new RequestParser();
+            $parser = new RequestHeaderParser();
             $parser->on('headers', function (Request $request, $bodyBuffer) use ($conn, $parser) {
                 // attach remote ip to the request as metadata
                 $request->remoteAddress = $conn->getRemoteAddress();
@@ -42,10 +43,6 @@ class Server extends EventEmitter implements ServerInterface
             });
 
             $conn->on('data', array($parser, 'feed'));
-
-            $parser->on('expects_continue', function() use($conn) {
-                $conn->write("HTTP/1.1 100 Continue\r\n\r\n");
-            });
         });
     }
 
