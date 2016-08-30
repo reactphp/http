@@ -4,17 +4,17 @@ namespace React\Http;
 
 use React\Stream\ReadableStreamInterface;
 
-interface FileInterface
+interface UploadedFileInterface
 {
     /**
      * @return string
      */
-    public function getFilename();
+    public function getClientFilename();
 
     /**
      * @return string
      */
-    public function getContentType();
+    public function getClientMediaType();
 
     /**
      * @return ReadableStreamInterface

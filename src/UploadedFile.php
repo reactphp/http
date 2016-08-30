@@ -4,7 +4,7 @@ namespace React\Http;
 
 use React\Stream\ReadableStreamInterface;
 
-class File implements FileInterface
+class UploadedFile implements UploadedFileInterface
 {
     /**
      * @var string
@@ -36,7 +36,7 @@ class File implements FileInterface
     /**
      * @return string
      */
-    public function getFilename()
+    public function getClientFilename()
     {
         return $this->filename;
     }
@@ -44,7 +44,7 @@ class File implements FileInterface
     /**
      * @return string
      */
-    public function getContentType()
+    public function getClientMediaType()
     {
         return $this->contentType;
     }
