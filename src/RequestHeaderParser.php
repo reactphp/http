@@ -36,7 +36,12 @@ class RequestHeaderParser extends EventEmitter
     {
         list($headers, $bodyBuffer) = explode("\r\n\r\n", $data, 2);
 
-        $psrRequest = g7\parse_request($headers);
+        try {
+            $psrRequest = g7\parse_request($headers);
+        } catch (Exception $exception) {
+            $this->emit('error', [$exception]);
+            return [null, null];
+        }
 
         $parsedQuery = [];
         $queryString = $psrRequest->getUri()->getQuery();
