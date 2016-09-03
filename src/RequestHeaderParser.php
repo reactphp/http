@@ -25,9 +25,13 @@ class RequestHeaderParser extends EventEmitter
         $this->buffer .= $data;
 
         if (false !== strpos($this->buffer, "\r\n\r\n")) {
-            list($request, $bodyBuffer) = $this->parseRequest($this->buffer);
+            try {
+                list($request, $bodyBuffer) = $this->parseRequest($this->buffer);
+                $this->emit('headers', array($request, $bodyBuffer));
+            } catch (Exception $exception) {
+                $this->emit('error', [$exception]);
+            }
 
-            $this->emit('headers', array($request, $bodyBuffer));
             $this->removeAllListeners();
         }
     }
@@ -36,12 +40,7 @@ class RequestHeaderParser extends EventEmitter
     {
         list($headers, $bodyBuffer) = explode("\r\n\r\n", $data, 2);
 
-        try {
-            $psrRequest = g7\parse_request($headers);
-        } catch (Exception $exception) {
-            $this->emit('error', [$exception]);
-            return [null, null];
-        }
+        $psrRequest = g7\parse_request($headers);
 
         $parsedQuery = [];
         $queryString = $psrRequest->getUri()->getQuery();
