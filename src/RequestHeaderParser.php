@@ -3,6 +3,7 @@
 namespace React\Http;
 
 use Evenement\EventEmitter;
+use Exception;
 use GuzzleHttp\Psr7 as g7;
 
 /**
