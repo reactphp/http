@@ -15,19 +15,23 @@ are the main concepts:
 * **Response** A `WritableStream` which streams the response body. You can set
   the status code and response headers via the `writeHead()` method.
 
-## Usage
+
+## Quickstart example
 
 This is an HTTP server which responds with `Hello World` to every request.
+
 ```php
-    $loop = React\EventLoop\Factory::create();
-    $socket = new React\Socket\Server($loop);
+$loop = React\EventLoop\Factory::create();
+$socket = new React\Socket\Server($loop);
 
-    $http = new React\Http\Server($socket);
-    $http->on('request', function ($request, $response) {
-        $response->writeHead(200, array('Content-Type' => 'text/plain'));
-        $response->end("Hello World!\n");
-    });
+$http = new React\Http\Server($socket);
+$http->on('request', function ($request, $response) {
+    $response->writeHead(200, array('Content-Type' => 'text/plain'));
+    $response->end("Hello World!\n");
+});
 
-    $socket->listen(1337);
-    $loop->run();
+$socket->listen(1337);
+$loop->run();
 ```
+
+See also the [examples](examples).
