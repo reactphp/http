@@ -113,6 +113,23 @@ class RequestHeaderParserTest extends TestCase
         $this->assertSame('Maximum header size of 4096 exceeded.', $error->getMessage());
     }
 
+    public function testInvalidRequestShouldEmitError()
+    {
+        $error = null;
+
+        $parser = new RequestHeaderParser();
+        $parser->on('headers', $this->expectCallableNever());
+        $parser->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $data = "hello world\r\n\r\n";
+        $parser->feed($data);
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+        $this->assertSame('Invalid request string', $error->getMessage());
+    }
+
     private function createGetRequest()
     {
         $data = "GET / HTTP/1.1\r\n";
