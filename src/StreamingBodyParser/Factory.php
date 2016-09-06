@@ -21,6 +21,10 @@ class Factory
             return new NoBodyParser($request);
         }
 
+        if (!isset($headers['content-type'])) {
+            return new RawBodyParser($request);
+        }
+
         $contentType = strtolower($headers['content-type']);
 
         if (strpos($contentType, 'multipart/') === 0) {

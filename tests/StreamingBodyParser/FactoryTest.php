@@ -64,4 +64,13 @@ class FactoryTest extends TestCase
         $parser = Factory::create($request);
         $this->assertInstanceOf('React\Http\StreamingBodyParser\FormUrlencodedParser', $parser);
     }
+
+    public function testNoContentType()
+    {
+        $request = new Request('POST', 'http://example.com/', [], 1.1, [
+            'content-length' => 123,
+        ]);
+        $parser = Factory::create($request);
+        $this->assertInstanceOf('React\Http\StreamingBodyParser\RawBodyParser', $parser);
+    }
 }
