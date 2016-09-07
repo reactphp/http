@@ -21,4 +21,14 @@ class ContentLengthBufferedSinkTest extends TestCase
         $request->emit('data', ['90123456789']);
         $this->assertSame($expectedBuffer, $catchedBuffer);
     }
+
+    public function testZeroLengthBuffer()
+    {
+        $catchedBuffer = null;
+        $request = new Request('GET', 'http://example.com/');
+        ContentLengthBufferedSink::createPromise($request, 0)->then(function ($buffer) use (&$catchedBuffer) {
+            $catchedBuffer = $buffer;
+        });
+        $this->assertSame('', $catchedBuffer);
+    }
 }

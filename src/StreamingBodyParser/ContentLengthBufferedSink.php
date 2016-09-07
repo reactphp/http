@@ -21,7 +21,7 @@ class ContentLengthBufferedSink
     /**
      * @var string
      */
-    protected $buffer;
+    protected $buffer = '';
 
     /**
      * @var int
@@ -51,6 +51,7 @@ class ContentLengthBufferedSink
         $this->request = $request;
         $this->length = $length;
         $this->request->on('data', [$this, 'feed']);
+        $this->check();
     }
 
     /**
@@ -60,6 +61,11 @@ class ContentLengthBufferedSink
     {
         $this->buffer .= $data;
 
+        $this->check();
+    }
+
+    protected function check()
+    {
         if (
             $this->length !== false &&
             strlen($this->buffer) >= $this->length
@@ -69,5 +75,4 @@ class ContentLengthBufferedSink
             $this->deferred->resolve($this->buffer);
         }
     }
-
 }
