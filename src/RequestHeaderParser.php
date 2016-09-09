@@ -3,6 +3,7 @@
 namespace React\Http;
 
 use Evenement\EventEmitter;
+use Exception;
 use GuzzleHttp\Psr7 as g7;
 
 /**
@@ -25,11 +26,20 @@ class RequestHeaderParser extends EventEmitter
         $this->buffer .= $data;
 
         if (false !== strpos($this->buffer, "\r\n\r\n")) {
-            list($request, $bodyBuffer) = $this->parseRequest($this->buffer);
+            try {
+                $this->parseAndEmitRequest();
+            } catch (Exception $exception) {
+                $this->emit('error', [$exception]);
+            }
 
-            $this->emit('headers', array($request, $bodyBuffer));
             $this->removeAllListeners();
         }
+    }
+
+    protected function parseAndEmitRequest()
+    {
+        list($request, $bodyBuffer) = $this->parseRequest($this->buffer);
+        $this->emit('headers', array($request, $bodyBuffer));
     }
 
     public function parseRequest($data)
