@@ -27,14 +27,19 @@ class RequestHeaderParser extends EventEmitter
 
         if (false !== strpos($this->buffer, "\r\n\r\n")) {
             try {
-                list($request, $bodyBuffer) = $this->parseRequest($this->buffer);
-                $this->emit('headers', array($request, $bodyBuffer));
+                $this->parseAndEmitRequest();
             } catch (Exception $exception) {
                 $this->emit('error', [$exception]);
             }
 
             $this->removeAllListeners();
         }
+    }
+
+    protected function parseAndEmitRequest()
+    {
+        list($request, $bodyBuffer) = $this->parseRequest($this->buffer);
+        $this->emit('headers', array($request, $bodyBuffer));
     }
 
     public function parseRequest($data)
