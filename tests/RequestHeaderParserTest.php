@@ -99,10 +99,13 @@ class RequestHeaderParserTest extends TestCase
     public function testHeaderOverflowShouldEmitError()
     {
         $error = null;
+        $passedParser = null;
+
         $parser = new RequestHeaderParser();
         $parser->on('headers', $this->expectCallableNever());
-        $parser->on('error', function ($message) use (&$error) {
+        $parser->on('error', function ($message, $parser) use (&$error, &$passedParser) {
             $error = $message;
+            $passedParser = $parser;
         });
 
         $this->assertSame(1, count($parser->listeners('headers')));
@@ -113,6 +116,7 @@ class RequestHeaderParserTest extends TestCase
 
         $this->assertInstanceOf('OverflowException', $error);
         $this->assertSame('Maximum header size of 4096 exceeded.', $error->getMessage());
+        $this->assertSame($parser, $passedParser);
         $this->assertSame(0, count($parser->listeners('headers')));
         $this->assertSame(0, count($parser->listeners('error')));
     }
@@ -120,10 +124,13 @@ class RequestHeaderParserTest extends TestCase
     public function testGuzzleRequestParseException()
     {
         $error = null;
+        $passedParser = null;
+
         $parser = new RequestHeaderParser();
         $parser->on('headers', $this->expectCallableNever());
-        $parser->on('error', function ($message) use (&$error) {
+        $parser->on('error', function ($message, $parser) use (&$error, &$passedParser) {
             $error = $message;
+            $passedParser = $parser;
         });
 
         $this->assertSame(1, count($parser->listeners('headers')));
@@ -133,6 +140,7 @@ class RequestHeaderParserTest extends TestCase
 
         $this->assertInstanceOf('InvalidArgumentException', $error);
         $this->assertSame('Invalid message', $error->getMessage());
+        $this->assertSame($parser, $passedParser);
         $this->assertSame(0, count($parser->listeners('headers')));
         $this->assertSame(0, count($parser->listeners('error')));
     }
