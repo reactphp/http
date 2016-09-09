@@ -123,10 +123,15 @@ class RequestHeaderParserTest extends TestCase
             $error = $message;
         });
 
+        $this->assertSame(1, count($parser->listeners('headers')));
+        $this->assertSame(1, count($parser->listeners('error')));
+
         $parser->feed("\r\n\r\n");
 
         $this->assertInstanceOf('InvalidArgumentException', $error);
         $this->assertSame('Invalid message', $error->getMessage());
+        $this->assertSame(0, count($parser->listeners('headers')));
+        $this->assertSame(0, count($parser->listeners('error')));
     }
 
     private function createGetRequest()
