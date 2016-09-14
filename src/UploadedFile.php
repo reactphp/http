@@ -4,6 +4,9 @@ namespace React\Http;
 
 use React\Stream\ReadableStreamInterface;
 
+/**
+ * @internal
+ */
 class UploadedFile implements UploadedFileInterface
 {
     /**
