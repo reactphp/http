@@ -70,7 +70,9 @@ class ContentLengthBufferedSink
             $this->length !== false &&
             strlen($this->buffer) >= $this->length
         ) {
-            $this->buffer = substr($this->buffer, 0, $this->length);
+            if (strlen($this->buffer) > $this->length) {
+                $this->buffer = substr($this->buffer, 0, $this->length);
+            }
             $this->request->removeListener('data', [$this, 'feed']);
             $this->deferred->resolve($this->buffer);
         }
