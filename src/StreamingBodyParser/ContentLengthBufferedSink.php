@@ -6,6 +6,9 @@ use React\Http\Request;
 use React\Promise\Deferred;
 use React\Promise\ExtendedPromiseInterface;
 
+/**
+ * @internal
+ */
 class ContentLengthBufferedSink
 {
     /**
