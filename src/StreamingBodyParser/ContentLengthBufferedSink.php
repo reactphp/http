@@ -7,6 +7,9 @@ use React\Promise\Deferred;
 use React\Promise\ExtendedPromiseInterface;
 
 /**
+ * Buffer the data coming in from a request until the specified length is reached.
+ * Or until the promise is canceled.
+ *
  * @internal
  */
 class ContentLengthBufferedSink
