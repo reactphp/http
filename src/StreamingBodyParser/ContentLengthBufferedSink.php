@@ -17,22 +17,22 @@ class ContentLengthBufferedSink
     /**
      * @var Deferred
      */
-    protected $deferred;
+    private $deferred;
 
     /**
      * @var Request
      */
-    protected $request;
+    private $request;
 
     /**
      * @var string
      */
-    protected $buffer = '';
+    private $buffer = '';
 
     /**
      * @var int
      */
-    protected $length;
+    private $length;
 
     /**
      * @param Request $request
