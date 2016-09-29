@@ -14,7 +14,7 @@ class RawBodyParserTest extends TestCase
         $request = new Request('POST', 'http://example.com/', [], 1.1, [
             'content-length' => 3,
         ]);
-        $parser = new RawBodyParser($request);
+        $parser = RawBodyParser::create($request);
         $parser->on('body', function ($rawBody) use (&$body) {
             $body = $rawBody;
         });
