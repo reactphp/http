@@ -12,6 +12,15 @@ class Factory
      */
     public static function create(Request $request)
     {
-        return new RawBodyParser($request);
+        $headers = $request->getHeaders();
+        $headers = array_change_key_case($headers, CASE_LOWER);
+
+        if (
+            !isset($headers['content-length'])
+        ) {
+            return NoBodyParser::create($request);
+        }
+
+        return RawBodyParser::create($request);
     }
 }
