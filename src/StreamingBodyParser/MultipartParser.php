@@ -5,6 +5,8 @@ namespace React\Http\StreamingBodyParser;
 use Evenement\EventEmitterTrait;
 use React\Http\File;
 use React\Http\Request;
+use React\Promise\CancellablePromiseInterface;
+use React\Promise\Deferred;
 use React\Stream\ThroughStream;
 
 class MultipartParser implements ParserInterface
@@ -36,9 +38,31 @@ class MultipartParser implements ParserInterface
      */
     protected $request;
 
+    /**
+     * @var CancellablePromiseInterface
+     */
+    protected $promise;
 
-    public function __construct(Request $request)
+    /**
+     * @var callable
+     */
+    protected $onDataCallable;
+
+    /**
+     * @param Request $request
+     * @return ParserInterface
+     */
+    public static function create(Request $request)
     {
+        return new static($request);
+    }
+
+    private function __construct(Request $request)
+    {
+        $this->promise = (new Deferred(function () {
+            $this->request->removeListener('data', $this->onDataCallable);
+            $this->request->close();
+        }))->promise();
         $this->request = $request;
         $headers = $this->request->getHeaders();
         $headers = array_change_key_case($headers, CASE_LOWER);
@@ -49,7 +73,7 @@ class MultipartParser implements ParserInterface
             $this->setBoundary($matches[1]);
             $dataMethod = 'onData';
         }
-        $this->request->on('data', [$this, $dataMethod]);
+        $this->setOnDataListener([$this, $dataMethod]);
     }
 
     protected function setBoundary($boundary)
@@ -67,8 +91,7 @@ class MultipartParser implements ParserInterface
             $boundary = substr($this->buffer, 2, strpos($this->buffer, "\r\n"));
             $boundary = substr($boundary, 0, -2);
             $this->setBoundary($boundary);
-            $this->request->removeListener('data', [$this, 'findBoundary']);
-            $this->request->on('data', [$this, 'onData']);
+            $this->setOnDataListener([$this, 'onData']);
         }
     }
 
@@ -158,8 +181,7 @@ class MultipartParser implements ParserInterface
             return;
         }
 
-        $this->request->removeListener('data', [$this, 'onData']);
-        $this->request->on('data', $this->chunkStreamFunc($stream));
+        $this->setOnDataListener($this->chunkStreamFunc($stream));
         $stream->write($body);
     }
 
@@ -173,8 +195,7 @@ class MultipartParser implements ParserInterface
                 $chunk = array_shift($chunks);
                 $stream->end($chunk);
 
-                $this->request->removeListener('data', $func);
-                $this->request->on('data', [$this, 'onData']);
+                $this->setOnDataListener([$this, 'onData']);
 
                 if (count($chunks) == 1) {
                     array_unshift($chunks, '');
@@ -254,5 +275,17 @@ class MultipartParser implements ParserInterface
         }
 
         return '';
+    }
+
+    protected function setOnDataListener(callable $callable)
+    {
+        $this->request->removeListener('data', $this->onDataCallable);
+        $this->onDataCallable = $callable;
+        $this->request->on('data', $this->onDataCallable);
+    }
+
+    public function cancel()
+    {
+        $this->promise->cancel();
     }
 }
