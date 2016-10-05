@@ -4,20 +4,35 @@ namespace React\Http\StreamingBodyParser;
 
 use Evenement\EventEmitterTrait;
 use React\Http\Request;
+use React\Promise\CancellablePromiseInterface;
 
 class FormUrlencodedParser implements ParserInterface
 {
     use EventEmitterTrait;
 
     /**
+     * @var CancellablePromiseInterface
+     */
+    private $promise;
+
+    /**
+     * @param Request $request
+     * @return ParserInterface
+     */
+    public static function create(Request $request)
+    {
+        return new static($request);
+    }
+
+    /**
      * @param Request $request
      */
-    public function __construct(Request $request)
+    private function __construct(Request $request)
     {
         $headers = $request->getHeaders();
         $headers = array_change_key_case($headers, CASE_LOWER);
 
-        ContentLengthBufferedSink::createPromise(
+        $this->promise = ContentLengthBufferedSink::createPromise(
             $request,
             $headers['content-length']
         )->then([$this, 'finish']);
@@ -33,5 +48,10 @@ class FormUrlencodedParser implements ParserInterface
             $this->emit('post', [$key, $value]);
         }
         $this->emit('end');
+    }
+
+    public function cancel()
+    {
+        $this->promise->cancel();
     }
 }
