@@ -36,6 +36,51 @@ $loop->run();
 
 See also the [examples](examples).
 
+## Usage
+
+### Server
+
+See the above usage example and the class outline for details.
+
+### Request
+
+See the above usage example and the class outline for details.
+
+#### getHeaders()
+
+The `getHeaders(): array` method can be used to
+return ALL headers.
+
+This will return an (possibly empty) assoc array with header names as
+key and header values as value. The header value will be a string if
+there's only a single value or an array of strings if this header has
+multiple values.
+
+Note that this differs from the PSR-7 implementation of this method.
+
+#### getHeader()
+
+The `getHeader(string $name): string[]` method can be used to
+retrieve a message header value by the given case-insensitive name.
+
+Returns a list of all values for this header name or an empty array if header was not found
+
+#### getHeaderLine()
+
+The `getHeaderLine(string $name): string` method can be used to
+retrieve a comma-separated string of the values for a single header.
+
+Returns a comma-separated list of all values for this header name or an empty string if header was not found
+
+#### hasHeader()
+
+The `hasHeader(string $name): bool` method can be used to
+check if a header exists by the given case-insensitive name.
+
+### Response
+
+See the above usage example and the class outline for details.
+
 ## Install
 
 The recommended way to install this library is [through Composer](http://getcomposer.org).
