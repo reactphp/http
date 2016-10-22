@@ -29,7 +29,7 @@ class RequestHeaderParser extends EventEmitter
             try {
                 $this->parseAndEmitRequest();
             } catch (Exception $exception) {
-                $this->emit('error', [$exception, $this]);
+                $this->emit('error', [$exception]);
             }
 
             $this->removeAllListeners();
