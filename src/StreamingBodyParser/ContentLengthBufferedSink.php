@@ -36,7 +36,7 @@ class ContentLengthBufferedSink
 
     /**
      * @param Request $request
-     * @param $length
+     * @param int $length
      * @return ExtendedPromiseInterface
      */
     public static function createPromise(Request $request, $length)
@@ -46,7 +46,7 @@ class ContentLengthBufferedSink
 
     /**
      * @param Request $request
-     * @param $length
+     * @param int $length
      */
     protected function __construct(Request $request, $length)
     {
@@ -57,7 +57,7 @@ class ContentLengthBufferedSink
             $resolve($this->buffer);
         });
         $this->request = $request;
-        $this->length = $length;
+        $this->length = (int)$length;
         $this->request->on('data', [$this, 'feed']);
         $this->request->on('end', [$this, 'finish']);
         $this->check();
@@ -88,10 +88,7 @@ class ContentLengthBufferedSink
      */
     protected function check()
     {
-        if (
-            $this->length !== false &&
-            strlen($this->buffer) >= $this->length
-        ) {
+        if (strlen($this->buffer) >= $this->length) {
             $this->resolve();
         }
     }
