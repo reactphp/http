@@ -9,7 +9,7 @@
         "react/socket": "^0.4",
         "react/stream": "^0.4",
         "evenement/evenement": "^2.0",
-        "react/promise": "^2.1 || ^1.2"
+        "react/promise": "^2.2"
     },
     "autoload": {
         "psr-4": {
