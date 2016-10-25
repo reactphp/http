@@ -6,6 +6,9 @@ use Evenement\EventEmitterTrait;
 use React\Http\Request;
 use React\Promise\ExtendedPromiseInterface;
 
+/**
+ * @internal
+ */
 class RawBodyParser implements ParserInterface
 {
     use EventEmitterTrait;
