@@ -3,6 +3,7 @@
 namespace React\Http\StreamingBodyParser;
 
 use Evenement\EventEmitterTrait;
+use InvalidArgumentException;
 use React\Http\Request;
 use React\Promise\ExtendedPromiseInterface;
 
@@ -34,6 +35,10 @@ class RawBodyParser implements ParserInterface
     {
         $headers = $request->getHeaders();
         $headers = array_change_key_case($headers, CASE_LOWER);
+
+        if (!isset($headers['content-length'])) {
+            throw new InvalidArgumentException('content-length header missing on request');
+        }
 
         $this->promise = ContentLengthBufferedSink::createPromise(
             $request,
