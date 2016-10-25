@@ -35,7 +35,7 @@ class RawBodyParser implements ParserInterface
         $this->promise = ContentLengthBufferedSink::createPromise(
             $request,
             $headers['content-length']
-        )->then([$this, 'finish']);
+        )->done([$this, 'finish']);
     }
 
     /**
