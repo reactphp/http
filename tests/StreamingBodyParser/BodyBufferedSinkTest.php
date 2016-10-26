@@ -31,6 +31,6 @@ class BodyBufferedSinkTest extends TestCase
 
         $result = Block\await($deferredStream, Factory::create(), 10);
 
-        $this->assertSame('abc', $result['body']);
+        $this->assertSame('abc', $result);
     }
 }
