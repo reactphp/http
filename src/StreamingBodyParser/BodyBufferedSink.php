@@ -23,7 +23,7 @@ class BodyBufferedSink
         $parser->on('body', function ($rawBody) use (&$body) {
             $body = $rawBody;
         });
-        $parser->on('end', function () use ($deferred, &$postFields, &$files, &$body) {
+        $parser->on('end', function () use ($deferred, &$body) {
             $deferred->resolve($body);
         });
 
