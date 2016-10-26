@@ -13,6 +13,7 @@ class Response extends EventEmitter implements WritableStreamInterface
     private $conn;
     private $headWritten = false;
     private $chunkedEncoding = true;
+    public $closeConnection = false;
 
     public function __construct(ConnectionInterface $conn)
     {
@@ -62,6 +63,12 @@ class Response extends EventEmitter implements WritableStreamInterface
         );
         if ($this->chunkedEncoding) {
             $headers['Transfer-Encoding'] = 'chunked';
+        }
+
+        if ($this->closeConnection) {
+            $headers['Connection'] = 'close';
+        } else {
+            $headers['Connection'] = 'keep-alive';
         }
 
         $data = $this->formatHead($status, $headers);
@@ -119,7 +126,9 @@ class Response extends EventEmitter implements WritableStreamInterface
 
         $this->emit('end');
         $this->removeAllListeners();
-        $this->conn->end();
+        if ($this->closeConnection) {
+            $this->conn->end();
+        }
     }
 
     public function close()
@@ -133,6 +142,5 @@ class Response extends EventEmitter implements WritableStreamInterface
         $this->writable = false;
         $this->emit('close');
         $this->removeAllListeners();
-        $this->conn->close();
     }
 }

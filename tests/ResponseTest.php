@@ -12,6 +12,7 @@ class ResponseTest extends TestCase
         $expected .= "HTTP/1.1 200 OK\r\n";
         $expected .= "X-Powered-By: React/alpha\r\n";
         $expected .= "Transfer-Encoding: chunked\r\n";
+        $expected .= "Connection: keep-alive\r\n";
         $expected .= "\r\n";
 
         $conn = $this->getMock('React\Socket\ConnectionInterface');
@@ -30,6 +31,7 @@ class ResponseTest extends TestCase
         $expected .= "HTTP/1.1 200 OK\r\n";
         $expected .= "X-Powered-By: React/alpha\r\n";
         $expected .= "Content-Length: 22\r\n";
+        $expected .= "Connection: keep-alive\r\n";
         $expected .= "\r\n";
 
         $conn = $this->getMock('React\Socket\ConnectionInterface');
@@ -132,6 +134,7 @@ class ResponseTest extends TestCase
         $expected .= "X-Powered-By: React/alpha\r\n";
         $expected .= "FooBar: BazQux\r\n";
         $expected .= "Transfer-Encoding: chunked\r\n";
+        $expected .= "Connection: keep-alive\r\n";
         $expected .= "\r\n";
 
         $conn = $this->getMock('React\Socket\ConnectionInterface');
@@ -151,6 +154,7 @@ class ResponseTest extends TestCase
         $expected .= "HTTP/1.1 700 \r\n";
         $expected .= "X-Powered-By: React/alpha\r\n";
         $expected .= "Transfer-Encoding: chunked\r\n";
+        $expected .= "Connection: keep-alive\r\n";
         $expected .= "\r\n";
 
         $conn = $this->getMock('React\Socket\ConnectionInterface');
@@ -172,6 +176,7 @@ class ResponseTest extends TestCase
         $expected .= "Set-Cookie: foo=bar\r\n";
         $expected .= "Set-Cookie: bar=baz\r\n";
         $expected .= "Transfer-Encoding: chunked\r\n";
+        $expected .= "Connection: keep-alive\r\n";
         $expected .= "\r\n";
 
         $conn = $this->getMock('React\Socket\ConnectionInterface');
@@ -191,6 +196,7 @@ class ResponseTest extends TestCase
         $expected .= "HTTP/1.1 200 OK\r\n";
         $expected .= "X-Powered-By: React/alpha\r\n";
         $expected .= "Transfer-Encoding: chunked\r\n";
+        $expected .= "Connection: keep-alive\r\n";
         $expected .= "\r\n";
 
         $conn = $this->getMock('React\Socket\ConnectionInterface');
