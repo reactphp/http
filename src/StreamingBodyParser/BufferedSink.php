@@ -31,7 +31,7 @@ class BufferedSink
             self::extractPost($postFields, $key, $value);
         });
         $parser->on('file', function ($name, File $file) use (&$files) {
-            StreamBufferedSink::createPromise($file->getStream())->then(function ($buffer) use ($name, $file, &$files) {
+            StreamBufferedSink::createPromise($file->getStream())->done(function ($buffer) use ($name, $file, &$files) {
                 $files[] = [
                     'name' => $name,
                     'file' => $file,
