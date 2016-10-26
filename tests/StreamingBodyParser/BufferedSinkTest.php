@@ -11,7 +11,7 @@ use React\Http\Request;
 use React\Stream\ThroughStream;
 use React\Tests\Http\TestCase;
 
-class DeferredStreamTest extends TestCase
+class BufferedSinkTest extends TestCase
 {
     public function testDoneParser()
     {
