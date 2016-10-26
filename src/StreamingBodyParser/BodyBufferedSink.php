@@ -9,7 +9,7 @@ class BodyBufferedSink
 {
     /**
      * @param ParserInterface $parser
-     * @return PromiseInterface
+     * @return Promise\PromiseInterface
      */
     public static function createPromise(ParserInterface $parser)
     {
