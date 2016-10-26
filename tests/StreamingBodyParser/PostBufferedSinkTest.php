@@ -4,17 +4,17 @@ namespace React\Tests\Http\StreamingBodyParser;
 
 use Clue\React\Block;
 use React\EventLoop\Factory;
-use React\Http\StreamingBodyParser\BufferedSink;
+use React\Http\StreamingBodyParser\PostBufferedSink;
 use React\Http\StreamingBodyParser\NoBodyParser;
 use React\Http\Request;
 use React\Tests\Http\TestCase;
 
-class PostBufferedSinkTest extends TestCase
+class PostPostBufferedSinkTest extends TestCase
 {
     public function testDoneParser()
     {
         $parser = new NoBodyParser(new Request('get', 'http://example.com'));
-        $deferredStream = BufferedSink::createPromise($parser);
+        $deferredStream = PostBufferedSink::createPromise($parser);
         $result = Block\await($deferredStream, Factory::create(), 10);
         $this->assertSame([], $result);
     }
@@ -22,7 +22,7 @@ class PostBufferedSinkTest extends TestCase
     public function testDeferredStream()
     {
         $parser = new DummyParser(new Request('get', 'http://example.com'));
-        $deferredStream = BufferedSink::createPromise($parser);
+        $deferredStream = PostBufferedSink::createPromise($parser);
         $parser->emit('post', ['foo', 'bar']);
         $parser->emit('post', ['array[]', 'foo']);
         $parser->emit('post', ['array[]', 'bar']);
@@ -52,12 +52,12 @@ class PostBufferedSinkTest extends TestCase
     public function testExtractPost()
     {
         $postFields = [];
-        BufferedSink::extractPost($postFields, 'dem', 'value');
-        BufferedSink::extractPost($postFields, 'dom[one][two][]', 'value_a');
-        BufferedSink::extractPost($postFields, 'dom[one][two][]', 'value_b');
-        BufferedSink::extractPost($postFields, 'dam[]', 'value_a');
-        BufferedSink::extractPost($postFields, 'dam[]', 'value_b');
-        BufferedSink::extractPost($postFields, 'dum[sum]', 'value');
+        PostBufferedSink::extractPost($postFields, 'dem', 'value');
+        PostBufferedSink::extractPost($postFields, 'dom[one][two][]', 'value_a');
+        PostBufferedSink::extractPost($postFields, 'dom[one][two][]', 'value_b');
+        PostBufferedSink::extractPost($postFields, 'dam[]', 'value_a');
+        PostBufferedSink::extractPost($postFields, 'dam[]', 'value_b');
+        PostBufferedSink::extractPost($postFields, 'dum[sum]', 'value');
         $this->assertSame([
             'dem' => 'value',
             'dom' => [
