@@ -15,9 +15,9 @@ class RawBodyParser implements ParserInterface
     use EventEmitterTrait;
 
     /**
-     * @var ExtendedPromiseInterface
+     * @var Request
      */
-    private $promise;
+    private $request;
 
     /**
      * @param Request $request
@@ -33,32 +33,33 @@ class RawBodyParser implements ParserInterface
      */
     private function __construct(Request $request)
     {
-        $headers = $request->getHeaders();
-        $headers = array_change_key_case($headers, CASE_LOWER);
-
-        if (!isset($headers['content-length'])) {
-            throw new InvalidArgumentException('content-length header missing on request');
-        }
-
-        $this->promise = ContentLengthBufferedSink::createPromise(
-            $request,
-            $headers['content-length']
-        )->done([$this, 'finish']);
+        $this->request = $request;
+        $this->request->on('data', [$this, 'body']);
+        $this->request->on('end', [$this, 'end']);
     }
 
     /**
-     * @param string $buffer
+     * @param string $data
      *
      * @internal
      */
-    public function finish($buffer)
+    public function body($data)
     {
-        $this->emit('body', [$buffer]);
+        $this->emit('body', [$data]);
+    }
+
+    /**
+     * @internal
+     */
+    public function end()
+    {
         $this->emit('end');
     }
 
     public function cancel()
     {
-        $this->promise->cancel();
+        $this->request->removeListener('data', [$this, 'body']);
+        $this->request->removeListener('end', [$this, 'end']);
+        $this->emit('end');
     }
 }
