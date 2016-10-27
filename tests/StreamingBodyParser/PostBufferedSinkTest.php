@@ -9,7 +9,7 @@ use React\Http\StreamingBodyParser\NoBodyParser;
 use React\Http\Request;
 use React\Tests\Http\TestCase;
 
-class PostPostBufferedSinkTest extends TestCase
+class PostBufferedSinkTest extends TestCase
 {
     public function testDeferredStream()
     {
