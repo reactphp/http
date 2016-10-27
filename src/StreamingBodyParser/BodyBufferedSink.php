@@ -21,7 +21,7 @@ class BodyBufferedSink
         $body = '';
 
         $parser->on('body', function ($rawBody) use (&$body) {
-            $body = $rawBody;
+            $body .= $rawBody;
         });
         $parser->on('end', function () use ($deferred, &$body) {
             $deferred->resolve($body);

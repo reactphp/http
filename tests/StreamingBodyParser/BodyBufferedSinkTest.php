@@ -31,4 +31,18 @@ class BodyBufferedSinkTest extends TestCase
 
         $this->assertSame('abc', $result);
     }
+
+    public function testDeferredStreamMultipleCalls()
+    {
+        $parser = new DummyParser(new Request('get', 'http://example.com'));
+        $deferredStream = BodyBufferedSink::createPromise($parser);
+
+        $parser->emit('body', ['abc']);
+        $parser->emit('body', ['def']);
+        $parser->emit('end');
+
+        $result = Block\await($deferredStream, Factory::create(), 10);
+
+        $this->assertSame('abcdef', $result);
+    }
 }
