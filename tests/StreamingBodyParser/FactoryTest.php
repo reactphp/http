@@ -21,6 +21,6 @@ class FactoryTest extends TestCase
     {
         $request = new Request('POST', 'http://example.com/');
         $parser = Factory::create($request);
-        $this->assertInstanceOf('React\Http\StreamingBodyParser\NoBodyParser', $parser);
+        $this->assertInstanceOf('React\Http\StreamingBodyParser\RawBodyParser', $parser);
     }
 }
