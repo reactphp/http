@@ -12,10 +12,6 @@ class PostBufferedSink
      */
     public static function createPromise(ParserInterface $parser)
     {
-        if ($parser instanceof NoBodyParser) {
-            return Promise\resolve([]);
-        }
-
         $deferred = new Promise\Deferred();
         $postFields = [];
 

@@ -13,14 +13,6 @@ use React\Tests\Http\TestCase;
 
 class FilesBufferedSinkTest extends TestCase
 {
-    public function testDoneParser()
-    {
-        $parser = new NoBodyParser(new Request('get', 'http://example.com'));
-        $deferredStream = FilesBufferedSink::createPromise($parser);
-        $result = Block\await($deferredStream, Factory::create(), 10);
-        $this->assertSame([], $result);
-    }
-
     public function testDeferredStream()
     {
         $parser = new DummyParser(new Request('get', 'http://example.com'));
