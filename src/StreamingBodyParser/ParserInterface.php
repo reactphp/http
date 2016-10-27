@@ -8,7 +8,7 @@ use React\Http\Request;
 /**
  * Parser can emit the following events:
  *     end - When done or canceled (required)
- *     body - Raw request body (optional)
+ *     body - Raw request body chunks as they come in (optional)
  *     post - Post field (optional)
  *     file - Uploaded file (optional)
  */
