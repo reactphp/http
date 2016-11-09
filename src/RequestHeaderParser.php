@@ -19,7 +19,7 @@ class RequestHeaderParser extends EventEmitter
     {
         if (strlen($this->buffer) + strlen($data) > $this->maxSize) {
             $this->emit('error', array(new \OverflowException("Maximum header size of {$this->maxSize} exceeded."), $this));
-
+            $this->removeAllListeners();
             return;
         }
 
