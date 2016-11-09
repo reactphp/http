@@ -1,6 +1,15 @@
 # Changelog
 
-## 0.4.1 (2014-05-21)
+## 0.4.2 (2016-11-09)
+
+* Remove all listeners after emitting error in RequestHeaderParser #68 @WyriHaximus
+* Catch Guzzle parse request errors #65 @WyriHaximus
+* Remove branch-alias definition as per reactphp/react#343 #58 @WyriHaximus
+* Add functional example to ease getting started #64 by @clue
+* Naming, immutable array manipulation #37 @cboden
+
+## 0.4.1 (2015-05-21)
+
 * Replaced guzzle/parser with guzzlehttp/psr7 by @cboden 
 * FIX Continue Header by @iannsp
 * Missing type hint by @marenzo
