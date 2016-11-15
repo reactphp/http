@@ -12,6 +12,6 @@ class Factory
      */
     public static function create(Request $request)
     {
-        return RawBodyParser::create($request);
+        return new RawBodyParser($request);
     }
 }

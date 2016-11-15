@@ -21,17 +21,8 @@ class RawBodyParser implements ParserInterface
 
     /**
      * @param Request $request
-     * @return ParserInterface
      */
-    public static function create(Request $request)
-    {
-        return new static($request);
-    }
-
-    /**
-     * @param Request $request
-     */
-    private function __construct(Request $request)
+    public function __construct(Request $request)
     {
         $this->request = $request;
         $this->request->on('data', [$this, 'body']);

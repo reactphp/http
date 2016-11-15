@@ -15,14 +15,6 @@ use React\Http\Request;
 interface ParserInterface extends EventEmitterInterface
 {
     /**
-     * Factory method creating the parser.
-     *
-     * @param Request $request
-     * @return ParserInterface
-     */
-    public static function create(Request $request);
-
-    /**
      * Cancel parsing the request body stream.
      * Parser will still emit end event to any listeners.
      *

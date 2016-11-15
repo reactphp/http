@@ -14,7 +14,7 @@ class RawBodyParserTest extends TestCase
         $request = new Request('POST', 'http://example.com/', [], 1.1, [
             'content-length' => 3,
         ]);
-        $parser = RawBodyParser::create($request);
+        $parser = new RawBodyParser($request);
         $parser->on('end', $this->expectCallableNever());
         $parser->on('body', function ($rawBody) use (&$body) {
             $body = $rawBody;
@@ -28,7 +28,7 @@ class RawBodyParserTest extends TestCase
     public function testEndForward()
     {
         $request = new Request('POST', 'http://example.com/');
-        $parser = RawBodyParser::create($request);
+        $parser = new RawBodyParser($request);
         $parser->on('end', $this->expectCallableOnce());
         $parser->on('body', $this->expectCallableNever());
         $request->emit('end');
@@ -37,7 +37,7 @@ class RawBodyParserTest extends TestCase
     public function testEndOnCancel()
     {
         $request = new Request('POST', 'http://example.com/');
-        $parser = RawBodyParser::create($request);
+        $parser = new RawBodyParser($request);
         $parser->on('end', $this->expectCallableOnce());
         $parser->on('body', $this->expectCallableNever());
         $parser->cancel();
