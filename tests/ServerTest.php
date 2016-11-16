@@ -2,6 +2,7 @@
 
 namespace React\Tests\Http;
 
+use React\Http\RequestHeaderParser;
 use React\Http\Server;
 
 class ServerTest extends TestCase
@@ -64,6 +65,28 @@ class ServerTest extends TestCase
         $conn->emit('data', array($data));
 
         $this->assertContains("\r\nX-Powered-By: React/alpha\r\n", $conn->getData());
+    }
+
+    public function testParserErrorEmitted()
+    {
+        $io = new ServerStub();
+
+        $error = null;
+        $server = new Server($io);
+        $server->on('headers', $this->expectCallableNever());
+        $server->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $conn = new ConnectionStub();
+        $io->emit('connection', [$conn]);
+
+        $data = $this->createGetRequest();
+        $data = str_pad($data, 4096 * 4);
+        $conn->emit('data', [$data]);
+
+        $this->assertInstanceOf('OverflowException', $error);
+        $this->assertEquals('', $conn->getData());
     }
 
     private function createGetRequest()
