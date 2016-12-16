@@ -66,11 +66,79 @@ class ServerTest extends TestCase
         $this->assertContains("\r\nX-Powered-By: React/alpha\r\n", $conn->getData());
     }
 
-    private function createGetRequest()
+    public function testKeepaliveCloseAfterMax()
+    {
+        $io = new ServerStub();
+
+        $server = new Server($io);
+        $server->on('request', function ($request, $response) {
+            $response->writeHead();
+            $response->end();
+        });
+
+        $conn = new ConnectionStub();
+        $io->emit('connection', array($conn));
+
+        for ($i=0; $i<Server::KEEPALIVE_MAX_REQUEST; $i++) {
+            $data = $this->createGetRequest(false);
+            $conn->emit('data', array($data));
+            $this->assertContains("\r\nConnection: keep-alive\r\n", $conn->getData());
+
+            if ($i < Server::KEEPALIVE_MAX_REQUEST - 1) {
+                $this->assertNotContains("\r\nConnection: close\r\n", $conn->getData());
+            } else {
+                $this->assertContains("\r\nConnection: close\r\n", $conn->getData());
+            }
+        }
+    }
+
+    public function testKeepaliveClose()
+    {
+        $io = new ServerStub();
+
+        $server = new Server($io);
+        $server->on('request', function ($request, $response) {
+            $response->writeHead();
+            $response->end();
+        });
+
+        $conn = new ConnectionStub();
+        $io->emit('connection', array($conn));
+
+        $data = $this->createGetRequest(true);
+        $conn->emit('data', array($data));
+
+        $this->assertContains("\r\nConnection: close\r\n", $conn->getData());
+    }
+
+    public function testKeepaliveKeep()
+    {
+        $io = new ServerStub();
+
+        $server = new Server($io);
+        $server->on('request', function ($request, $response) {
+            $response->writeHead();
+            $response->end();
+        });
+
+        $conn = new ConnectionStub();
+        $io->emit('connection', array($conn));
+
+        $data = $this->createGetRequest(false);
+        $conn->emit('data', array($data));
+
+        $this->assertContains("\r\nConnection: keep-alive\r\n", $conn->getData());
+    }
+
+    private function createGetRequest($close = true)
     {
         $data = "GET / HTTP/1.1\r\n";
         $data .= "Host: example.com:80\r\n";
-        $data .= "Connection: close\r\n";
+        if ($close) {
+            $data .= "Connection: close\r\n";
+        } else {
+            $data .= "Connection: keep-alive\r\n";
+        }
         $data .= "\r\n";
 
         return $data;
