@@ -10,7 +10,7 @@ use React\Promise\ExtendedPromiseInterface;
 /**
  * @internal
  */
-class RawBodyParser implements ParserInterface
+final class RawBodyParser implements ParserInterface
 {
     use EventEmitterTrait;
 
