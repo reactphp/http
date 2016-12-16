@@ -35,3 +35,31 @@ $loop->run();
 ```
 
 See also the [examples](examples).
+
+## Request body parsing example
+
+As of `v0.5` `react/http` supports request body parsing and comes with a handy factory:
+
+```php
+$loop = React\EventLoop\Factory::create();
+$socket = new React\Socket\Server($loop);
+
+$http = new React\Http\Server($socket);
+$http->on('request', function ($request, $response) {
+    $parser = React\Http\StreamingBodyParser\Factory::create($request);
+    $parser->on('body', function ($bodyString) {});
+    $parser->on('post', function ($fieldName, $fileValue) {});
+    $parser->on('file', function ($fieldName, $fileObject) {});
+    $parser->on('end', function () use ($response) {
+        $response->writeHead(200, array('Content-Type' => 'text/plain'));
+        $response->end("Hello World!\n");
+    });
+});
+
+$socket->listen(1337);
+$loop->run();
+```
+
+### Current supported request body parsers
+
+* RawBodyParser - Emit raw body chunks as they come in, no parsing for `post` or `file`. This is the default parser.
