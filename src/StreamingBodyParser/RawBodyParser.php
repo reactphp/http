@@ -47,6 +47,9 @@ class RawBodyParser implements ParserInterface
         $this->emit('end');
     }
 
+    /**
+     * Cancel 'parsing' the request body
+     */
     public function cancel()
     {
         $this->request->removeListener('data', [$this, 'body']);
