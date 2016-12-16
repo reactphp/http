@@ -11,7 +11,7 @@ $loop = Factory::create();
 $socket = new Server($loop);
 
 $server = new \React\Http\Server($socket);
-$server->on('request', function (Request $reques, Response $response) {
+$server->on('request', function (Request $request, Response $response) {
     $response->writeHead(200, array('Content-Type' => 'text/plain'));
     $response->end("Hello world!\n");
 });
