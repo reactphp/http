@@ -48,6 +48,19 @@ class Server extends EventEmitter
      * $http = new React\Http\Server($socket);
      * ```
      *
+     * Similarly, you can also attach this to a
+     * [`React\Socket\SecureServer`](https://github.com/reactphp/socket#secureserver)
+     * in order to start a secure HTTPS server like this:
+     *
+     * ```php
+     * $socket = new Server(8080, $loop);
+     * $socket = new SecureServer($socket, $loop, array(
+     *     'local_cert' => __DIR__ . '/localhost.pem'
+     * ));
+     *
+     * $http = new React\Http\Server($socket);
+     * ```
+     *
      * @param \React\Socket\ServerInterface $io
      */
     public function __construct(SocketServerInterface $io)

@@ -52,6 +52,19 @@ $socket = new React\Socket\Server(8080, $loop);
 $http = new React\Http\Server($socket);
 ```
 
+Similarly, you can also attach this to a
+[`React\Socket\SecureServer`](https://github.com/reactphp/socket#secureserver)
+in order to start a secure HTTPS server like this:
+
+```php
+$socket = new Server(8080, $loop);
+$socket = new SecureServer($socket, $loop, array(
+    'local_cert' => __DIR__ . '/localhost.pem'
+));
+
+$http = new React\Http\Server($socket);
+```
+
 For each incoming connection, it emits a `request` event with the respective
 [`Request`](#request) and [`Response`](#response) objects:
 
