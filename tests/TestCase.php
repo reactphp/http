@@ -2,7 +2,7 @@
 
 namespace React\Tests\Http;
 
-class TestCase extends \PHPUnit_Framework_TestCase
+class TestCase extends \PHPUnit\Framework\TestCase
 {
     protected function expectCallableExactly($amount)
     {
@@ -36,6 +36,6 @@ class TestCase extends \PHPUnit_Framework_TestCase
 
     protected function createCallableMock()
     {
-        return $this->getMock('React\Tests\Http\CallableStub');
+        return $this->createMock('React\Tests\Http\CallableStub');
     }
 }
