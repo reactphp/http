@@ -42,7 +42,13 @@ class Server extends EventEmitter implements ServerInterface
                 });
             });
 
-            $conn->on('data', array($parser, 'feed'));
+            $listener = [$parser, 'feed'];
+            $conn->on('data', $listener);
+            $parser->on('error', function() use ($conn, $listener) {
+                // TODO: return 400 response
+                $conn->removeListener('data', $listener);
+                $this->emit('error', func_get_args());
+            });
         });
     }
 
