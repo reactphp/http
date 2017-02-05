@@ -17,21 +17,28 @@ class RequestHeaderParser extends EventEmitter
 
     public function feed($data)
     {
-        if (strlen($this->buffer) + strlen($data) > $this->maxSize) {
+        $this->buffer .= $data;
+
+        $endOfHeader = strpos($this->buffer, "\r\n\r\n");
+
+        if (false !== $endOfHeader) {
+            $currentHeaderSize = $endOfHeader;
+        } else {
+            $currentHeaderSize = strlen($this->buffer);
+        }
+
+        if ($currentHeaderSize > $this->maxSize) {
             $this->emit('error', array(new \OverflowException("Maximum header size of {$this->maxSize} exceeded."), $this));
             $this->removeAllListeners();
             return;
         }
 
-        $this->buffer .= $data;
-
-        if (false !== strpos($this->buffer, "\r\n\r\n")) {
+        if (false !== $endOfHeader) {
             try {
                 $this->parseAndEmitRequest();
             } catch (Exception $exception) {
                 $this->emit('error', [$exception]);
             }
-
             $this->removeAllListeners();
         }
     }
