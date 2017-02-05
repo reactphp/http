@@ -81,8 +81,8 @@ class ServerTest extends TestCase
         $conn = new ConnectionStub();
         $io->emit('connection', [$conn]);
 
-        $data = $this->createGetRequest();
-        $data = str_pad($data, 4096 * 4);
+        $data = "GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\nX-DATA: ";
+        $data .= str_repeat('A', 4097 - strlen($data)) . "\r\n\r\n";
         $conn->emit('data', [$data]);
 
         $this->assertInstanceOf('OverflowException', $error);
