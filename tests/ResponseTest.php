@@ -14,7 +14,7 @@ class ResponseTest extends TestCase
         $expected .= "Transfer-Encoding: chunked\r\n";
         $expected .= "\r\n";
 
-        $conn = $this->getMock('React\Socket\ConnectionInterface');
+        $conn = $this->createMock('React\Socket\ConnectionInterface');
         $conn
             ->expects($this->once())
             ->method('write')
@@ -32,7 +32,7 @@ class ResponseTest extends TestCase
         $expected .= "Content-Length: 22\r\n";
         $expected .= "\r\n";
 
-        $conn = $this->getMock('React\Socket\ConnectionInterface');
+        $conn = $this->createMock('React\Socket\ConnectionInterface');
         $conn
             ->expects($this->once())
             ->method('write')
@@ -44,7 +44,7 @@ class ResponseTest extends TestCase
 
     public function testResponseBodyShouldBeChunkedCorrectly()
     {
-        $conn = $this->getMock('React\Socket\ConnectionInterface');
+        $conn = $this->createMock('React\Socket\ConnectionInterface');
         $conn
             ->expects($this->at(4))
             ->method('write')
@@ -75,7 +75,7 @@ class ResponseTest extends TestCase
     {
         $ended = false;
 
-        $conn = $this->getMock('React\Socket\ConnectionInterface');
+        $conn = $this->createMock('React\Socket\ConnectionInterface');
         $response = new Response($conn);
 
         $response->on('end', function () use (&$ended) {
@@ -89,7 +89,7 @@ class ResponseTest extends TestCase
     /** @test */
     public function writeContinueShouldSendContinueLineBeforeRealHeaders()
     {
-        $conn = $this->getMock('React\Socket\ConnectionInterface');
+        $conn = $this->createMock('React\Socket\ConnectionInterface');
         $conn
             ->expects($this->at(3))
             ->method('write')
@@ -107,7 +107,7 @@ class ResponseTest extends TestCase
     /** @test */
     public function shouldForwardEndDrainAndErrorEvents()
     {
-        $conn = $this->getMock('React\Socket\ConnectionInterface');
+        $conn = $this->createMock('React\Socket\ConnectionInterface');
         $conn
             ->expects($this->at(0))
             ->method('on')
@@ -134,7 +134,7 @@ class ResponseTest extends TestCase
         $expected .= "Transfer-Encoding: chunked\r\n";
         $expected .= "\r\n";
 
-        $conn = $this->getMock('React\Socket\ConnectionInterface');
+        $conn = $this->createMock('React\Socket\ConnectionInterface');
         $conn
             ->expects($this->once())
             ->method('write')
@@ -153,7 +153,7 @@ class ResponseTest extends TestCase
         $expected .= "Transfer-Encoding: chunked\r\n";
         $expected .= "\r\n";
 
-        $conn = $this->getMock('React\Socket\ConnectionInterface');
+        $conn = $this->createMock('React\Socket\ConnectionInterface');
         $conn
             ->expects($this->once())
             ->method('write')
@@ -174,7 +174,7 @@ class ResponseTest extends TestCase
         $expected .= "Transfer-Encoding: chunked\r\n";
         $expected .= "\r\n";
 
-        $conn = $this->getMock('React\Socket\ConnectionInterface');
+        $conn = $this->createMock('React\Socket\ConnectionInterface');
         $conn
             ->expects($this->once())
             ->method('write')
@@ -193,7 +193,7 @@ class ResponseTest extends TestCase
         $expected .= "Transfer-Encoding: chunked\r\n";
         $expected .= "\r\n";
 
-        $conn = $this->getMock('React\Socket\ConnectionInterface');
+        $conn = $this->createMock('React\Socket\ConnectionInterface');
         $conn
             ->expects($this->once())
             ->method('write')
