@@ -6,7 +6,7 @@
     "require": {
         "php": ">=5.3.0",
         "ringcentral/psr7": "^1.2",
-        "react/socket": "^0.4",
+        "react/socket": "^0.5",
         "react/stream": "^0.4.4",
         "evenement/evenement": "^2.0 || ^1.0"
     },
