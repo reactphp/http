@@ -12,26 +12,55 @@ use GuzzleHttp\Psr7 as g7;
  */
 class RequestHeaderParser extends EventEmitter
 {
+    /**
+     * While HTTP does not strictly specify max length for headers,
+     * most HTTP-server implementations use 8K. There are some using
+     * 4K though (eg nginx use system page size, that is usually around
+     * 4096 bytes)
+     */
+    const DEFAULT_HEADER_SIZE = 4096;
+
+    /**
+     * Data buffer used to emit "data" event if we have read
+     * part of body while seeking headers end (\r\n\r\n)
+     *
+     * @var string
+     */
     private $buffer = '';
-    private $maxSize = 4096;
+
+    /**
+     * Maximum headers length
+     *
+     * @var int
+     */
+    private $maxSize;
+
+    /**
+     * @param int $maxSize
+     */
+    public function __construct(
+        $maxSize = self::DEFAULT_HEADER_SIZE
+    ) {
+        $this->maxSize = $maxSize;
+    }
 
     public function feed($data)
     {
-        if (strlen($this->buffer) + strlen($data) > $this->maxSize) {
-            $this->emit('error', array(new \OverflowException("Maximum header size of {$this->maxSize} exceeded."), $this));
-            $this->removeAllListeners();
-            return;
-        }
+        try {
+            $this->buffer .= $data;
 
-        $this->buffer .= $data;
+            $headerLen = strpos($this->buffer, "\r\n\r\n");
 
-        if (false !== strpos($this->buffer, "\r\n\r\n")) {
-            try {
-                $this->parseAndEmitRequest();
-            } catch (Exception $exception) {
-                $this->emit('error', [$exception]);
+            if (($headerLen ?: strlen($this->buffer)) > $this->maxSize) {
+                throw new \OverflowException("Maximum header size of {$this->maxSize} exceeded.");
             }
 
+            if (false !== $headerLen) {
+                $this->parseAndEmitRequest();
+                $this->removeAllListeners();
+            }
+        } catch (Exception $exception) {
+            $this->emit('error', [$exception, $this]);
             $this->removeAllListeners();
         }
     }
@@ -71,5 +100,13 @@ class RequestHeaderParser extends EventEmitter
         );
 
         return array($request, $bodyBuffer);
+    }
+
+    /**
+     * @return int
+     */
+    public function getMaxHeadersSize()
+    {
+        return $this->maxSize;
     }
 }

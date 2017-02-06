@@ -96,12 +96,16 @@ class RequestHeaderParserTest extends TestCase
         $this->assertSame($headers, $request->getHeaders());
     }
 
-    public function testHeaderOverflowShouldEmitError()
-    {
-        $error = null;
-        $passedParser = null;
+    /**
+     * @param RequestHeaderParser $parser
+     * @param string              $data
+     */
+    private function checkHeaderOverflowShouldEmitError(
+        RequestHeaderParser $parser,
+        $data
+    ) {
+        $error = $passedParser = null;
 
-        $parser = new RequestHeaderParser();
         $parser->on('headers', $this->expectCallableNever());
         $parser->on('error', function ($message, $parser) use (&$error, &$passedParser) {
             $error = $message;
@@ -111,14 +115,35 @@ class RequestHeaderParserTest extends TestCase
         $this->assertSame(1, count($parser->listeners('headers')));
         $this->assertSame(1, count($parser->listeners('error')));
 
-        $data = str_repeat('A', 4097);
         $parser->feed($data);
 
         $this->assertInstanceOf('OverflowException', $error);
-        $this->assertSame('Maximum header size of 4096 exceeded.', $error->getMessage());
+        $this->assertSame(
+            sprintf('Maximum header size of %d exceeded.', $parser->getMaxHeadersSize()),
+            $error->getMessage()
+        );
         $this->assertSame($parser, $passedParser);
         $this->assertSame(0, count($parser->listeners('headers')));
         $this->assertSame(0, count($parser->listeners('error')));
+    }
+
+    public function testHeaderOverflowShouldEmitErrorDefault()
+    {
+        /*
+         * This checks that exception is thrown if buffer exceeds header
+         * max length, but header end is still missing
+         */
+        $data = str_repeat('A', RequestHeaderParser::DEFAULT_HEADER_SIZE + 1);
+        $this->checkHeaderOverflowShouldEmitError(new RequestHeaderParser(), $data);
+
+        /*
+         * This checks that exception is thrown if header size really exceeded
+         */
+        $data = str_pad($data . "\r\n\r\n", RequestHeaderParser::DEFAULT_HEADER_SIZE * 2, 'B');
+        $this->checkHeaderOverflowShouldEmitError(new RequestHeaderParser(), $data);
+
+        $data = str_repeat('A', 8096 + 1);
+        $this->checkHeaderOverflowShouldEmitError(new RequestHeaderParser(8096), $data);
     }
 
     public function testGuzzleRequestParseException()
@@ -140,6 +165,31 @@ class RequestHeaderParserTest extends TestCase
         $this->assertSame('Invalid message', $error->getMessage());
         $this->assertSame(0, count($parser->listeners('headers')));
         $this->assertSame(0, count($parser->listeners('error')));
+    }
+
+    /**
+     * Checks if HeaderParser supports data chunks of size
+     * bigger, than @see RequestHeaderParser::$maxSize option
+     *
+     * @url https://github.com/reactphp/http/issues/80
+     */
+    public function testHugeBodyFirstChunk()
+    {
+        $bodyBuffer = null;
+
+        $parser = new RequestHeaderParser();
+        $parser->on('headers', function ($parsedRequest, $parsedBodyBuffer) use (&$bodyBuffer) {
+            $bodyBuffer = $parsedBodyBuffer;
+        });
+        $parser->on('error', $this->expectCallableNever());
+
+        $data = $this->createGetRequest();
+        $headLength = strlen($data);
+        $totalLength = 4096 * 16;
+        $data = str_pad($data, $totalLength, "\0x00");
+        $parser->feed($data);
+
+        $this->assertEquals($totalLength - $headLength, strlen($bodyBuffer));
     }
 
     private function createGetRequest()
