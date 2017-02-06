@@ -121,6 +121,33 @@ class RequestHeaderParserTest extends TestCase
         $this->assertSame(0, count($parser->listeners('error')));
     }
 
+    public function testHeaderOverflowShouldNotEmitErrorWhenDataExceedsMaxHeaderSize()
+    {
+        $request = null;
+        $bodyBuffer = null;
+
+        $parser = new RequestHeaderParser();
+        $parser->on('headers', function ($parsedRequest, $parsedBodyBuffer) use (&$request, &$bodyBuffer) {
+            $request = $parsedRequest;
+            $bodyBuffer = $parsedBodyBuffer;
+        });
+
+        $data = $this->createAdvancedPostRequest();
+        $body = str_repeat('A', 4097 - strlen($data));
+        $data .= $body;
+
+        $parser->feed($data);
+
+        $headers = array(
+            'Host' => 'example.com:80',
+            'User-Agent' => 'react/alpha',
+            'Connection' => 'close',
+        );
+        $this->assertSame($headers, $request->getHeaders());
+
+        $this->assertSame($body, $bodyBuffer);
+    }
+
     public function testGuzzleRequestParseException()
     {
         $error = null;
