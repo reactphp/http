@@ -31,7 +31,7 @@ class ServerTest extends TestCase
         $responseAssertion = null;
 
         $server = new Server($io);
-        $server->on('request', function (Request $request, Response $response) use (&$i, &$requestAssertion, &$responseAssertion) {
+        $server->on('request', function ($request, $response) use (&$i, &$requestAssertion, &$responseAssertion) {
             $i++;
             $requestAssertion = $request;
             $responseAssertion = $response;
