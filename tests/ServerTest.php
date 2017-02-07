@@ -2,8 +2,9 @@
 
 namespace React\Tests\Http;
 
-use React\Http\RequestHeaderParser;
 use React\Http\Server;
+use React\Http\Response;
+use React\Http\Request;
 
 class ServerTest extends TestCase
 {
@@ -26,17 +27,14 @@ class ServerTest extends TestCase
         $io = new ServerStub();
 
         $i = 0;
+        $requestAssertion = null;
+        $responseAssertion = null;
 
         $server = new Server($io);
-        $server->on('request', function ($request, $response) use (&$i) {
+        $server->on('request', function (Request $request, Response $response) use (&$i, &$requestAssertion, &$responseAssertion) {
             $i++;
-
-            $this->assertInstanceOf('React\Http\Request', $request);
-            $this->assertSame('/', $request->getPath());
-            $this->assertSame('GET', $request->getMethod());
-            $this->assertSame('127.0.0.1', $request->remoteAddress);
-
-            $this->assertInstanceOf('React\Http\Response', $response);
+            $requestAssertion = $request;
+            $responseAssertion = $response;
         });
 
         $conn = new ConnectionStub();
@@ -46,6 +44,12 @@ class ServerTest extends TestCase
         $conn->emit('data', array($data));
 
         $this->assertSame(1, $i);
+        $this->assertInstanceOf('React\Http\Request', $requestAssertion);
+        $this->assertSame('/', $requestAssertion->getPath());
+        $this->assertSame('GET', $requestAssertion->getMethod());
+        $this->assertSame('127.0.0.1', $requestAssertion->remoteAddress);
+
+        $this->assertInstanceOf('React\Http\Response', $responseAssertion);
     }
 
     public function testResponseContainsPoweredByHeader()
@@ -53,7 +57,7 @@ class ServerTest extends TestCase
         $io = new ServerStub();
 
         $server = new Server($io);
-        $server->on('request', function ($request, $response) {
+        $server->on('request', function (Request $request, Response $response) {
             $response->writeHead();
             $response->end();
         });
