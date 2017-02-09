@@ -13,10 +13,12 @@ class Response extends EventEmitter implements WritableStreamInterface
     private $conn;
     private $headWritten = false;
     private $chunkedEncoding = true;
+    private $params = [];
 
-    public function __construct(ConnectionInterface $conn)
+    public function __construct(ConnectionInterface $conn, $params=[])
     {
         $this->conn = $conn;
+        $this->params = new ParamBag(null, false, $params);
 
         $this->conn->on('end', function () {
             $this->close();
@@ -56,10 +58,12 @@ class Response extends EventEmitter implements WritableStreamInterface
             $this->chunkedEncoding = false;
         }
 
-        $headers = array_merge(
-            array('X-Powered-By' => 'React/alpha'),
-            $headers
-        );
+        if ($this->params['expose-powered-by']) {
+            $headers = array_merge(
+                array('X-Powered-By' => 'React/alpha'),
+                $headers
+            );
+        }
         if ($this->chunkedEncoding) {
             $headers['Transfer-Encoding'] = 'chunked';
         }
