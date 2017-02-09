@@ -49,14 +49,16 @@ class Request extends EventEmitter implements ReadableStreamInterface
     }
 
     /**
-     * Returns ALL headers
+     * Returns an array with ALL headers
      *
-     * This will return an (possibly empty) assoc array with header names as
-     * key and header values as value. The header value will be a string if
-     * there's only a single value or an array of strings if this header has
-     * multiple values.
+     * The keys represent the header name in the exact case in which they were
+     * originally specified. The values will be a string if there's only a single
+     * value for the respective header name or an array of strings if this header
+     * has multiple values.
      *
-     * Note that this differs from the PSR-7 implementation of this method.
+     * Note that this differs from the PSR-7 implementation of this method,
+     * which always returns an array for each header name, even if it only has a
+     * single value.
      *
      * @return array
      */
@@ -79,7 +81,7 @@ class Request extends EventEmitter implements ReadableStreamInterface
         foreach ($this->headers as $key => $value) {
             if (strtolower($key) === $name) {
                 foreach((array)$value as $one) {
-                    $found []= $one;
+                    $found[] = $one;
                 }
             }
         }
