@@ -22,6 +22,13 @@ class Server extends EventEmitter implements ServerInterface
 
             $parser = new RequestHeaderParser();
             $parser->on('headers', function (Request $request, $bodyBuffer) use ($conn, $parser) {
+                $request->on('pause', function () use ($conn) {
+                    $conn->pause();
+                });
+                $request->on('resume', function () use ($conn) {
+                    $conn->resume();
+                });
+
                 // attach remote ip to the request as metadata
                 $request->remoteAddress = $conn->getRemoteAddress();
 
@@ -33,12 +40,6 @@ class Server extends EventEmitter implements ServerInterface
                 });
                 $conn->on('data', function ($data) use ($request) {
                     $request->emit('data', array($data));
-                });
-                $request->on('pause', function () use ($conn) {
-                    $conn->emit('pause');
-                });
-                $request->on('resume', function () use ($conn) {
-                    $conn->emit('resume');
                 });
             });
 
