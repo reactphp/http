@@ -5,17 +5,14 @@ namespace React\Tests\Http;
 use React\Http\Server;
 use React\Http\Response;
 use React\Http\Request;
-use React\Socket\Server as Socket;
 
 class ServerTest extends TestCase
 {
     private $connection;
-    private $loop;
+    private $socket;
 
     public function setUp()
     {
-        $this->loop = \React\EventLoop\Factory::create();
-
         $this->connection = $this->getMockBuilder('React\Socket\Connection')
             ->disableOriginalConstructor()
             ->setMethods(
@@ -32,16 +29,19 @@ class ServerTest extends TestCase
                 )
             )
             ->getMock();
+
+        $this->socket = $this->getMockBuilder('React\Socket\Server')
+            ->disableOriginalConstructor()
+            ->setMethods(null)
+            ->getMock();
     }
 
     public function testRequestEventIsEmitted()
     {
-        $socket = new Socket($this->loop);
-
-        $server = new Server($socket);
+        $server = new Server($this->socket);
         $server->on('request', $this->expectCallableOnce());
 
-        $socket->emit('connection', array($this->connection));
+        $this->socket->emit('connection', array($this->connection));
 
         $data = $this->createGetRequest();
         $this->connection->emit('data', array($data));
@@ -49,13 +49,11 @@ class ServerTest extends TestCase
 
     public function testRequestEvent()
     {
-        $socket = new Socket($this->loop);
-
         $i = 0;
         $requestAssertion = null;
         $responseAssertion = null;
 
-        $server = new Server($socket);
+        $server = new Server($this->socket);
         $server->on('request', function ($request, $response) use (&$i, &$requestAssertion, &$responseAssertion) {
             $i++;
             $requestAssertion = $request;
@@ -67,7 +65,7 @@ class ServerTest extends TestCase
             ->method('getRemoteAddress')
             ->willReturn('127.0.0.1');
 
-        $socket->emit('connection', array($this->connection));
+        $this->socket->emit('connection', array($this->connection));
 
         $data = $this->createGetRequest();
         $this->connection->emit('data', array($data));
@@ -83,40 +81,43 @@ class ServerTest extends TestCase
 
     public function testResponseContainsPoweredByHeader()
     {
-        $socket = new Socket($this->loop);
-
-        $server = new Server($socket);
+        $server = new Server($this->socket);
         $server->on('request', function (Request $request, Response $response) {
             $response->writeHead();
             $response->end();
         });
 
+        $buffer = '';
+
         $this->connection
-            ->expects($this->exactly(2))
+            ->expects($this->any())
             ->method('write')
-            ->withConsecutive(
-                array($this->equalTo("HTTP/1.1 200 OK\r\nX-Powered-By: React/alpha\r\nTransfer-Encoding: chunked\r\n\r\n")),
-                array($this->equalTo("0\r\n\r\n"))
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
             );
 
-        $socket->emit('connection', array($this->connection));
+        $this->socket->emit('connection', array($this->connection));
 
         $data = $this->createGetRequest();
         $this->connection->emit('data', array($data));
+
+        $this->assertContains("\r\nX-Powered-By: React/alpha\r\n", $buffer);
     }
 
     public function testParserErrorEmitted()
     {
-        $socket = new Socket($this->loop);
-
         $error = null;
-        $server = new Server($socket);
+        $server = new Server($this->socket);
         $server->on('headers', $this->expectCallableNever());
         $server->on('error', function ($message) use (&$error) {
             $error = $message;
         });
 
-        $socket->emit('connection', array($this->connection));
+        $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\nX-DATA: ";
         $data .= str_repeat('A', 4097 - strlen($data)) . "\r\n\r\n";
