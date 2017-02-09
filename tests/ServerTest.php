@@ -36,6 +36,18 @@ class ServerTest extends TestCase
             ->getMock();
     }
 
+    public function testRequestEventWillNotBeEmittedForIncompleteHeaders()
+    {
+        $server = new Server($this->socket);
+        $server->on('request', $this->expectCallableNever());
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = '';
+        $data .= "GET / HTTP/1.1\r\n";
+        $this->connection->emit('data', array($data));
+    }
+
     public function testRequestEventIsEmitted()
     {
         $server = new Server($this->socket);
@@ -104,6 +116,62 @@ class ServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = $this->createGetRequest();
+        $this->connection->emit('data', array($data));
+    }
+
+    public function testRequestEventWithoutBodyWillNotEmitData()
+    {
+        $never = $this->expectCallableNever();
+
+        $server = new Server($this->socket);
+        $server->on('request', function (Request $request) use ($never) {
+            $request->on('data', $never);
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+        $this->connection->emit('data', array($data));
+    }
+
+    public function testRequestEventWithSecondDataEventWillEmitBodyData()
+    {
+        $once = $this->expectCallableOnceWith('incomplete');
+
+        $server = new Server($this->socket);
+        $server->on('request', function (Request $request) use ($once) {
+            $request->on('data', $once);
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = '';
+        $data .= "POST / HTTP/1.1\r\n";
+        $data .= "Content-Length: 100\r\n";
+        $data .= "\r\n";
+        $data .= "incomplete";
+        $this->connection->emit('data', array($data));
+    }
+
+    public function testRequestEventWithPartialBodyWillEmitData()
+    {
+        $once = $this->expectCallableOnceWith('incomplete');
+
+        $server = new Server($this->socket);
+        $server->on('request', function (Request $request) use ($once) {
+            $request->on('data', $once);
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = '';
+        $data .= "POST / HTTP/1.1\r\n";
+        $data .= "Content-Length: 100\r\n";
+        $data .= "\r\n";
+        $this->connection->emit('data', array($data));
+
+        $data = '';
+        $data .= "incomplete";
         $this->connection->emit('data', array($data));
     }
 
