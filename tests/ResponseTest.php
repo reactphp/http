@@ -77,6 +77,33 @@ class ResponseTest extends TestCase
         $response->end();
     }
 
+    public function testResponseBodyShouldSkipEmptyChunks()
+    {
+        $conn = $this
+            ->getMockBuilder('React\Socket\ConnectionInterface')
+            ->getMock();
+        $conn
+            ->expects($this->at(4))
+            ->method('write')
+            ->with("5\r\nHello\r\n");
+        $conn
+            ->expects($this->at(5))
+            ->method('write')
+            ->with("5\r\nWorld\r\n");
+        $conn
+            ->expects($this->at(6))
+            ->method('write')
+            ->with("0\r\n\r\n");
+
+        $response = new Response($conn);
+        $response->writeHead();
+
+        $response->write('Hello');
+        $response->write('');
+        $response->write('World');
+        $response->end();
+    }
+
     public function testResponseShouldEmitEndOnStreamEnd()
     {
         $ended = false;
