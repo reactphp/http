@@ -14,18 +14,19 @@ class Server extends EventEmitter implements ServerInterface
     public function __construct(SocketServerInterface $io)
     {
         $this->io = $io;
+        $that = $this;
 
-        $this->io->on('connection', function (ConnectionInterface $conn) {
+        $this->io->on('connection', function (ConnectionInterface $conn) use ($that) {
             // TODO: http 1.1 keep-alive
             // TODO: chunked transfer encoding (also for outgoing data)
             // TODO: multipart parsing
 
             $parser = new RequestHeaderParser();
-            $parser->on('headers', function (Request $request, $bodyBuffer) use ($conn, $parser) {
+            $parser->on('headers', function (Request $request, $bodyBuffer) use ($conn, $parser, $that) {
                 // attach remote ip to the request as metadata
                 $request->remoteAddress = $conn->getRemoteAddress();
 
-                $this->handleRequest($conn, $request, $bodyBuffer);
+                $that->handleRequest($conn, $request, $bodyBuffer);
 
                 $conn->removeListener('data', array($parser, 'feed'));
                 $conn->on('end', function () use ($request) {
@@ -42,12 +43,12 @@ class Server extends EventEmitter implements ServerInterface
                 });
             });
 
-            $listener = [$parser, 'feed'];
+            $listener = array($parser, 'feed');
             $conn->on('data', $listener);
-            $parser->on('error', function() use ($conn, $listener) {
+            $parser->on('error', function() use ($conn, $listener, $that) {
                 // TODO: return 400 response
                 $conn->removeListener('data', $listener);
-                $this->emit('error', func_get_args());
+                $that->emit('error', func_get_args());
             });
         });
     }
