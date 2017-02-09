@@ -155,6 +155,95 @@ class ServerTest extends TestCase
         $this->connection->expects($this->never())->method('write');
     }
 
+    public function testBodyDataWillBeSendViaRequestEvent()
+    {
+        $server = new Server($this->socket);
+
+        $that = $this;
+        $server->on('request', function (Request $request, Response $response) use ($that) {
+            $request->on('data', $that->expectCallableOnceWith('hello'));
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Content-Length: 5\r\n";
+        $data .= "\r\n";
+        $data .= "hello";
+
+        $this->connection->emit('data', array($data));
+    }
+
+    public function testChunkedEncodedRequestWillBeParsedForRequestEvent()
+    {
+        $server = new Server($this->socket);
+
+        $that = $this;
+        $server->on('request', function (Request $request, Response $response) use ($that) {
+            $request->on('data', $that->expectCallableOnceWith('hello'));
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Transfer-Encoding: chunked\r\n";
+        $data .= "\r\n";
+        $data .= "5\r\nhello\r\n";
+        $data .= "0\r\n\r\n";
+
+        $this->connection->emit('data', array($data));
+    }
+
+    public function testChunkedEncodedRequestAdditionalDataWontBeEmitted()
+    {
+        $server = new Server($this->socket);
+
+        $that = $this;
+        $server->on('request', function (Request $request, Response $response) use ($that) {
+            $request->on('data', $that->expectCallableOnce());
+            $request->on('end', $that->expectCallableOnce());
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Transfer-Encoding: chunked\r\n";
+        $data .= "\r\n";
+        $data .= "5\r\nhello\r\n";
+        $data .= "0\r\n\r\n";
+        $data .= "2\r\nhi\r\n";
+
+        $this->connection->emit('data', array($data));
+    }
+
+    public function testEmptyChunkedEncodedRequest()
+    {
+        $server = new Server($this->socket);
+
+        $that = $this;
+        $server->on('request', function (Request $request, Response $response) use ($that) {
+            $request->on('data', $that->expectCallableNever());
+            $request->on('end', $that->expectCallableOnce());
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Transfer-Encoding: chunked\r\n";
+        $data .= "\r\n";
+        $data .= "0\r\n\r\n";
+
+        $this->connection->emit('data', array($data));
+    }
+
     private function createGetRequest()
     {
         $data = "GET / HTTP/1.1\r\n";

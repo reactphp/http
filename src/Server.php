@@ -22,7 +22,9 @@ class Server extends EventEmitter implements ServerInterface
             // TODO: multipart parsing
 
             $parser = new RequestHeaderParser();
-            $parser->on('headers', function (Request $request, $bodyBuffer) use ($conn, $parser, $that) {
+            $listener = array($parser, 'feed');
+
+            $parser->on('headers', function (Request $request, $bodyBuffer) use ($conn, $parser, $that, $listener) {
                 // attach remote ip to the request as metadata
                 $request->remoteAddress = $conn->getRemoteAddress();
 
@@ -30,18 +32,11 @@ class Server extends EventEmitter implements ServerInterface
                 $request->on('pause', array($conn, 'pause'));
                 $request->on('resume', array($conn, 'resume'));
 
-                $that->handleRequest($conn, $request, $bodyBuffer);
+                $conn->removeListener('data', $listener);
 
-                $conn->removeListener('data', array($parser, 'feed'));
-                $conn->on('end', function () use ($request) {
-                    $request->emit('end');
-                });
-                $conn->on('data', function ($data) use ($request) {
-                    $request->emit('data', array($data));
-                });
+                $that->handleRequest($conn, $request, $bodyBuffer);
             });
 
-            $listener = array($parser, 'feed');
             $conn->on('data', $listener);
             $parser->on('error', function() use ($conn, $listener, $that) {
                 // TODO: return 400 response
@@ -62,7 +57,21 @@ class Server extends EventEmitter implements ServerInterface
             return;
         }
 
+        $header = $request->getHeaders();
+        $stream = $conn;
+        if (!empty($header['Transfer-Encoding']) && $header['Transfer-Encoding'] === 'chunked') {
+            $stream = new ChunkedDecoder($conn);
+        }
+
+        $stream->on('data', function ($data) use ($request) {
+            $request->emit('data', array($data));
+        });
+
+        $stream->on('end', function () use ($request) {
+            $request->emit('end', array());
+        });
+
         $this->emit('request', array($request, $response));
-        $request->emit('data', array($bodyBuffer));
+        $conn->emit('data', array($bodyBuffer));
     }
 }
