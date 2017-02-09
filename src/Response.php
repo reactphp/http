@@ -201,15 +201,19 @@ class Response extends EventEmitter implements WritableStreamInterface
             throw new \Exception('Response head has not yet been written.');
         }
 
+        // prefix with chunk length for chunked transfer encoding
         if ($this->chunkedEncoding) {
             $len = strlen($data);
-            $chunk = dechex($len)."\r\n".$data."\r\n";
-            $flushed = $this->conn->write($chunk);
-        } else {
-            $flushed = $this->conn->write($data);
+
+            // skip empty chunks
+            if ($len === 0) {
+                return true;
+            }
+
+            $data = dechex($len) . "\r\n" . $data . "\r\n";
         }
 
-        return $flushed;
+        return $this->conn->write($data);
     }
 
     public function end($data = null)
