@@ -52,15 +52,29 @@ class Response extends EventEmitter implements WritableStreamInterface
             throw new \Exception('Response head has already been written.');
         }
 
-        if (isset($headers['Content-Length'])) {
+        $lower = array_change_key_case($headers);
+
+        // disable chunked encoding if content-length is given
+        if (isset($lower['content-length'])) {
             $this->chunkedEncoding = false;
         }
 
-        $headers = array_merge(
-            array('X-Powered-By' => 'React/alpha'),
-            $headers
-        );
+        // assign default "X-Powered-By" header as first for history reasons
+        if (!isset($lower['x-powered-by'])) {
+            $headers = array_merge(
+                array('X-Powered-By' => 'React/alpha'),
+                $headers
+            );
+        }
+
+        // assign chunked transfer-encoding if chunked encoding is used
         if ($this->chunkedEncoding) {
+            foreach($headers as $name => $value) {
+                if (strtolower($name) === 'transfer-encoding') {
+                    unset($headers[$name]);
+                }
+            }
+
             $headers['Transfer-Encoding'] = 'chunked';
         }
 
