@@ -33,6 +33,15 @@ class RequestTest extends TestCase
         $this->assertTrue($request->expectsContinue());
     }
 
+    /** @test */
+    public function expectsContinueShouldBeFalseForHttp10()
+    {
+        $headers = array('Expect' => '100-continue');
+        $request = new Request('GET', '/', array(), '1.0', $headers);
+
+        $this->assertFalse($request->expectsContinue());
+    }
+
     public function testEmptyHeader()
     {
         $request = new Request('GET', '/');

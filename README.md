@@ -93,6 +93,9 @@ This header MAY be included when an HTTP/1.1 client wants to send a bigger
 request body.
 See [`writeContinue()`](#writecontinue) for more details.
 
+This will always be `false` for HTTP/1.0 requests, regardless of what
+any header values say.
+
 ### Response
 
 The `Response` class is responsible for streaming the outgoing response body.
