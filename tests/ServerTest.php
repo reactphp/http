@@ -79,6 +79,34 @@ class ServerTest extends TestCase
         $this->assertInstanceOf('React\Http\Response', $responseAssertion);
     }
 
+    public function testRequestPauseWillbeForwardedToConnection()
+    {
+        $server = new Server($this->socket);
+        $server->on('request', function (Request $request) {
+            $request->pause();
+        });
+
+        $this->connection->expects($this->once())->method('pause');
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+        $this->connection->emit('data', array($data));
+    }
+
+    public function testRequestResumeWillbeForwardedToConnection()
+    {
+        $server = new Server($this->socket);
+        $server->on('request', function (Request $request) {
+            $request->resume();
+        });
+
+        $this->connection->expects($this->once())->method('resume');
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+        $this->connection->emit('data', array($data));
+    }
+
     public function testResponseContainsPoweredByHeader()
     {
         $server = new Server($this->socket);
