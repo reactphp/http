@@ -57,10 +57,13 @@ class Server extends EventEmitter implements ServerInterface
             return;
         }
 
-        $header = $request->getHeaders();
         $stream = $conn;
-        if (!empty($header['Transfer-Encoding']) && $header['Transfer-Encoding'] === 'chunked') {
-            $stream = new ChunkedDecoder($conn);
+        if ($request->hasHeader('Transfer-Encoding')) {
+            $transferEncodingHeader = $request->getHeader('Transfer-Encoding');
+            // 'chunked' must always be the final value of 'Transfer-Encoding' according to: https://tools.ietf.org/html/rfc7230#section-3.3.1
+            if (strtolower(end($transferEncodingHeader)) === 'chunked') {
+                $stream = new ChunkedDecoder($conn);
+            }
         }
 
         $stream->on('data', function ($data) use ($request) {

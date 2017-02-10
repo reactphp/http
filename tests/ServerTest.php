@@ -159,9 +159,11 @@ class ServerTest extends TestCase
     {
         $server = new Server($this->socket);
 
-        $that = $this;
-        $server->on('request', function (Request $request, Response $response) use ($that) {
-            $request->on('data', $that->expectCallableOnceWith('hello'));
+        $buffer = '';
+        $server->on('request', function (Request $request, Response $response) use (&$buffer) {
+            $request->on('data', function ($data) use (&$buffer) {
+                $buffer .= $data;
+            });
         });
 
         $this->socket->emit('connection', array($this->connection));
@@ -174,15 +176,19 @@ class ServerTest extends TestCase
         $data .= "hello";
 
         $this->connection->emit('data', array($data));
+
+        $this->assertEquals('hello', $buffer);
     }
 
     public function testChunkedEncodedRequestWillBeParsedForRequestEvent()
     {
         $server = new Server($this->socket);
 
-        $that = $this;
-        $server->on('request', function (Request $request, Response $response) use ($that) {
-            $request->on('data', $that->expectCallableOnceWith('hello'));
+        $buffer =  '';
+        $server->on('request', function (Request $request, Response $response) use (&$buffer) {
+            $request->on('data', function ($data) use (&$buffer) {
+                $buffer .= $data;
+            });
         });
 
         $this->socket->emit('connection', array($this->connection));
@@ -196,16 +202,19 @@ class ServerTest extends TestCase
         $data .= "0\r\n\r\n";
 
         $this->connection->emit('data', array($data));
+
+        $this->assertEquals('hello', $buffer);
     }
 
     public function testChunkedEncodedRequestAdditionalDataWontBeEmitted()
     {
         $server = new Server($this->socket);
 
-        $that = $this;
-        $server->on('request', function (Request $request, Response $response) use ($that) {
-            $request->on('data', $that->expectCallableOnce());
-            $request->on('end', $that->expectCallableOnce());
+        $buffer =  '';
+        $server->on('request', function (Request $request, Response $response) use (&$buffer) {
+            $request->on('data', function ($data) use (&$buffer) {
+                $buffer .= $data;
+            });
         });
 
         $this->socket->emit('connection', array($this->connection));
@@ -220,16 +229,18 @@ class ServerTest extends TestCase
         $data .= "2\r\nhi\r\n";
 
         $this->connection->emit('data', array($data));
+        $this->assertEquals('hello', $buffer);
     }
 
     public function testEmptyChunkedEncodedRequest()
     {
         $server = new Server($this->socket);
 
-        $that = $this;
-        $server->on('request', function (Request $request, Response $response) use ($that) {
-            $request->on('data', $that->expectCallableNever());
-            $request->on('end', $that->expectCallableOnce());
+        $buffer =  '';
+        $server->on('request', function (Request $request, Response $response) use (&$buffer) {
+            $request->on('data', function ($data) use (&$buffer) {
+                $buffer .= $data;
+            });
         });
 
         $this->socket->emit('connection', array($this->connection));
@@ -242,6 +253,57 @@ class ServerTest extends TestCase
         $data .= "0\r\n\r\n";
 
         $this->connection->emit('data', array($data));
+        $this->assertEquals('', $buffer);
+    }
+
+    public function testChunkedIsUpperCase()
+    {
+        $server = new Server($this->socket);
+
+        $buffer =  '';
+        $server->on('request', function (Request $request, Response $response) use (&$buffer) {
+            $request->on('data', function ($data) use (&$buffer) {
+                $buffer .= $data;
+            });
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Transfer-Encoding: CHUNKED\r\n";
+        $data .= "\r\n";
+        $data .= "5\r\nhello\r\n";
+        $data .= "0\r\n\r\n";
+
+        $this->connection->emit('data', array($data));
+        $this->assertEquals('hello', $buffer);
+    }
+
+    public function testChunkedIsMixedUpperAndLowerCase()
+    {
+        $server = new Server($this->socket);
+
+        $buffer =  '';
+        $server->on('request', function (Request $request, Response $response) use (&$buffer) {
+            $request->on('data', function ($data) use (&$buffer) {
+                $buffer .= $data;
+            });
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Transfer-Encoding: CHunKeD\r\n";
+        $data .= "\r\n";
+        $data .= "5\r\nhello\r\n";
+        $data .= "0\r\n\r\n";
+
+        $this->connection->emit('data', array($data));
+        $this->assertEquals('hello', $buffer);
     }
 
     private function createGetRequest()
