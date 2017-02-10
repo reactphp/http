@@ -2,14 +2,19 @@
 
 ## 0.4.3 (2017-02-10)
 
-* First class support for PHP7 and HHVM #102 @clue
-* Improve compatibility with legacy versions #101 @clue
-* Remove unneeded stubs from tests #100 @legionth 
-* Replace PHPUnit's getMock() for forward compatibility #93 @nopolabs
-* Add PHPUnit 4.8 to require-dev #92 @nopolabs
-* Fix checking maximum header size, do not take start of body into account #88 @nopolabs
-* data listener is removed if HeaderParser emits error #83 @nick4fake
-* Removed testing against HHVM nightly #66 @WyriHaximus
+* Fix: Do not take start of body into account when checking maximum header size
+  (#88 by @nopolabs)
+
+* Fix: Remove `data` listener if `HeaderParser` emits an error
+  (#83 by @nick4fake)
+
+* First class support for PHP 5.3 through PHP 7 and HHVM
+  (#101 and #102 by @clue, #66 by @WyriHaximus)
+
+* Improve test suite by adding PHPUnit to require-dev,
+  improving forward compatibility with newer PHPUnit versions
+  and replacing unneeded test stubs
+  (#92 and #93 by @nopolabs, #100 by @legionth)
 
 ## 0.4.2 (2016-11-09)
 
