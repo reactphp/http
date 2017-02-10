@@ -7,6 +7,7 @@ use React\Stream\WritableStreamInterface;
 use React\Stream\Util;
 use Exception;
 
+/** @internal */
 class ChunkedDecoder extends EventEmitter implements ReadableStreamInterface
 {
     const CRLF = "\r\n";
