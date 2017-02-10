@@ -118,12 +118,15 @@ class Request extends EventEmitter implements ReadableStreamInterface
      * request body.
      * See [`writeContinue()`] for more details.
      *
+     * This will always be `false` for HTTP/1.0 requests, regardless of what
+     * any header values say.
+     *
      * @return bool
      * @see Response::writeContinue()
      */
     public function expectsContinue()
     {
-        return '100-continue' === strtolower($this->getHeaderLine('Expect'));
+        return $this->httpVersion !== '1.0' && '100-continue' === strtolower($this->getHeaderLine('Expect'));
     }
 
     public function isReadable()
