@@ -123,7 +123,7 @@ class Request extends EventEmitter implements ReadableStreamInterface
      */
     public function expectsContinue()
     {
-        return '100-continue' === $this->getHeaderLine('Expect');
+        return '100-continue' === strtolower($this->getHeaderLine('Expect'));
     }
 
     public function isReadable()
