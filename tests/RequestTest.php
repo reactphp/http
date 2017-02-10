@@ -23,4 +23,38 @@ class RequestTest extends TestCase
 
         $this->assertTrue($request->expectsContinue());
     }
+
+    public function testEmptyHeader()
+    {
+        $request = new Request('GET', '/');
+
+        $this->assertEquals(array(), $request->getHeaders());
+        $this->assertFalse($request->hasHeader('Test'));
+        $this->assertEquals(array(), $request->getHeader('Test'));
+        $this->assertEquals('', $request->getHeaderLine('Test'));
+    }
+
+    public function testHeaderIsCaseInsensitive()
+    {
+        $request = new Request('GET', '/', array(), '1.1', array(
+            'TEST' => 'Yes',
+        ));
+
+        $this->assertEquals(array('TEST' => 'Yes'), $request->getHeaders());
+        $this->assertTrue($request->hasHeader('Test'));
+        $this->assertEquals(array('Yes'), $request->getHeader('Test'));
+        $this->assertEquals('Yes', $request->getHeaderLine('Test'));
+    }
+
+    public function testHeaderWithMultipleValues()
+    {
+        $request = new Request('GET', '/', array(), '1.1', array(
+            'Test' => array('a', 'b'),
+        ));
+
+        $this->assertEquals(array('Test' => array('a', 'b')), $request->getHeaders());
+        $this->assertTrue($request->hasHeader('Test'));
+        $this->assertEquals(array('a', 'b'), $request->getHeader('Test'));
+        $this->assertEquals('a, b', $request->getHeaderLine('Test'));
+    }
 }
