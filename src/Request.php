@@ -111,9 +111,22 @@ class Request extends EventEmitter implements ReadableStreamInterface
         return !!$this->getHeader($name);
     }
 
+    /**
+     * Checks if the request headers contain the `Expect: 100-continue` header.
+     *
+     * This header MAY be included when an HTTP/1.1 client wants to send a bigger
+     * request body.
+     * See [`writeContinue()`] for more details.
+     *
+     * This will always be `false` for HTTP/1.0 requests, regardless of what
+     * any header values say.
+     *
+     * @return bool
+     * @see Response::writeContinue()
+     */
     public function expectsContinue()
     {
-        return isset($this->headers['Expect']) && '100-continue' === $this->headers['Expect'];
+        return $this->httpVersion !== '1.0' && '100-continue' === strtolower($this->getHeaderLine('Expect'));
     }
 
     public function isReadable()
