@@ -8,8 +8,18 @@ php:
   - 7
   - hhvm
 
+matrix:
+  include:
+    - php: 5.3
+      env:
+        - DEPENDENCIES=lowest
+    - php: 7.0
+      env:
+        - DEPENDENCIES=lowest
+
 install:
   - composer install --no-interaction
+  - if [ "$DEPENDENCIES" = "lowest" ]; then composer update --prefer-lowest -n; fi
   
 script:
   - ./vendor/bin/phpunit --coverage-text
