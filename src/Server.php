@@ -63,6 +63,9 @@ class Server extends EventEmitter implements ServerInterface
         }
 
         $this->emit('request', array($request, $response));
-        $request->emit('data', array($bodyBuffer));
+
+        if ($bodyBuffer !== '') {
+            $request->emit('data', array($bodyBuffer));
+        }
     }
 }
