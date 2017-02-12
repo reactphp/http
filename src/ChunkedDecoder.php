@@ -17,18 +17,16 @@ class ChunkedDecoder extends EventEmitter implements ReadableStreamInterface
     private $buffer = '';
     private $chunkSize = 0;
     private $actualChunksize = 0;
-    private $chunkHeaderComplete = false;
 
     public function __construct(ReadableStreamInterface $input)
     {
         $this->input = $input;
 
-        $this->input->on('data', array($this, 'handleData'));
+        $this->input->on('data', array($this, 'handleChunkHeader'));
         $this->input->on('end', array($this, 'handleEnd'));
         $this->input->on('error', array($this, 'handleError'));
         $this->input->on('close', array($this, 'close'));
     }
-
 
     public function isReadable()
     {
@@ -58,6 +56,8 @@ class ChunkedDecoder extends EventEmitter implements ReadableStreamInterface
             return;
         }
 
+        $this->buffer = '';
+
         $this->closed = true;
 
         $this->input->close();
@@ -66,109 +66,70 @@ class ChunkedDecoder extends EventEmitter implements ReadableStreamInterface
         $this->removeAllListeners();
     }
 
-    /**
-     * Extracts the hexadecimal header and removes it from the given data string
-     *
-     * @param string $data - complete or incomplete chunked string
-     * @return string
-     */
-    private function handleChunkHeader($data)
+
+    /** @internal */
+    public function handleChunkHeader($data)
     {
-        $hexValue = strtok($this->buffer . $data, static::CRLF);
-        if ($this->isLineComplete($this->buffer . $data, $hexValue, strlen($hexValue))) {
-
-            if (dechex(hexdec($hexValue)) != $hexValue) {
-                $this->emit('error', array(new \Exception('Unable to identify ' . $hexValue . 'as hexadecimal number')));
-                $this->close();
-                return;
-            }
-
-            $this->chunkSize = hexdec($hexValue);
-            $this->chunkHeaderComplete = true;
-
-            $data = substr($this->buffer . $data, strlen($hexValue) + 2);
-            $this->buffer = '';
-            // Chunk header is complete
-            return $data;
-        }
-
         $this->buffer .= $data;
-        $data = '';
-        // Chunk header isn't complete, buffer
-        return $data;
-    }
 
-    /**
-     * Extracts the chunk data and removes it from the income data string
-     *
-     * @param unknown $data - string without the hexadecimal header
-     * @return string
-     */
-    private function handleChunkData($data)
-    {
-        $chunk = substr($this->buffer . $data, 0, $this->chunkSize);
-        $this->actualChunksize = strlen($chunk);
-
-        if ($this->chunkSize == $this->actualChunksize) {
-            $data = $this->sendChunk($data, $chunk);
-        } elseif ($this->actualChunksize < $this->chunkSize) {
-            $this->buffer .= $data;
-            $data = '';
-        }
-
-        return $data;
-    }
-
-    /**
-     * Sends the chunk or ends the stream
-     *
-     * @param string $data - incomed data stream the chunk will be removed from this string
-     * @param string $chunk - chunk which will be emitted
-     * @return string - rest data string
-     */
-    private function sendChunk($data, $chunk)
-    {
-        if ($this->chunkSize == 0 && $this->isLineComplete($this->buffer . $data, $chunk, $this->chunkSize)) {
-            $this->emit('end', array());
-            return;
-        }
-
-        if (!$this->isLineComplete($this->buffer . $data, $chunk, $this->chunkSize)) {
-            $this->emit('error', array(new \Exception('Chunk doesn\'t end with new line delimiter')));
+        $hexValue = strtok($this->buffer, static::CRLF);
+        if (dechex(hexdec($hexValue)) != $hexValue) {
+            $this->emit('error', array(new \Exception('Unable to identify ' . $hexValue . 'as hexadecimal number')));
             $this->close();
             return;
         }
 
-        $data = substr($this->buffer . $data, $this->chunkSize + 2);
-        $this->emit('data', array($chunk));
+        if (strpos($this->buffer, static::CRLF) !== false) {
+            $this->chunkSize = hexdec($hexValue);
 
-        $this->buffer = '';
-        $this->chunkSize = 0;
-        $this->chunkHeaderComplete = false;
-
-        return $data;
+            $data = substr($this->buffer, strlen($hexValue) + 2);
+            $this->buffer = '';
+            // Chunk header is complete
+            $this->input->removeListener('data', array($this, 'handleChunkHeader'));
+            $this->input->on('data', array($this, 'handleChunkData'));
+            if ($data !== '') {
+                $this->input->emit('data', array($data));
+            }
+        }
     }
 
-    /**
-     * Checks if the given chunk is ending with a "\r\n" at the start of the data string
-     *
-     * @param string $data - complete data string
-     * @param string $chunk - string which should end with "\r\n"
-     * @param unknown $length - possible length of the data chunk
-     * @return boolean
-     */
-    private function isLineComplete($data, $chunk, $length)
+    /** @internal */
+    public function handleChunkData($data)
     {
-        if (substr($data, 0, $length + 2) == $chunk . static::CRLF) {
-            return true;
+        $this->buffer .= $data;
+        $chunk = substr($this->buffer, 0, $this->chunkSize);
+        $this->actualChunksize = strlen($chunk);
+
+        if ($this->chunkSize === $this->actualChunksize) {
+            if ($this->chunkSize === 0 && strpos($this->buffer, static::CRLF) !== false) {
+                $this->emit('end', array());
+                $this->close();
+                return;
+            }
+
+            if (strpos($this->buffer, static::CRLF) === false) {
+                return;
+            }
+
+            $data = substr($this->buffer , $this->chunkSize + 2);
+            $this->emit('data', array($chunk));
+
+            $this->buffer = '';
+            $this->chunkSize = 0;
+            // chunk body is complete
+            $this->input->removeListener('data', array($this, 'handleChunkData'));
+            $this->input->on('data', array($this, 'handleChunkHeader'));
+            if ($data !== '') {
+                $this->input->emit('data', array($data));
+            }
         }
-        return false;
     }
 
     /** @internal */
     public function handleEnd()
     {
-        if (! $this->closed) {
+        if (!$this->closed) {
+            $this->buffer = '';
             $this->emit('end');
             $this->close();
         }
@@ -179,19 +140,5 @@ class ChunkedDecoder extends EventEmitter implements ReadableStreamInterface
     {
         $this->emit('error', array($e));
         $this->close();
-    }
-
-    /** @internal */
-    public function handleData($data)
-    {
-        while (strlen($data) != 0) {
-            if (! $this->chunkHeaderComplete) {
-                $data = $this->handleChunkHeader($data);
-            }
-            // Not 'else', chunkHeaderComplete can change in 'handleChunkHeader'
-            if ($this->chunkHeaderComplete) {
-                $data = $this->handleChunkData($data);
-            }
-        }
     }
 }
