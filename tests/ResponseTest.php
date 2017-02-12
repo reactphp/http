@@ -34,7 +34,9 @@ class ResponseTest extends TestCase
         $expected .= "Transfer-Encoding: chunked\r\n";
         $expected .= "\r\n";
 
-        $conn = $this->getMock('React\Socket\ConnectionInterface');
+        $conn = $this
+            ->getMockBuilder('React\Socket\ConnectionInterface')
+            ->getMock();
         $conn
             ->expects($this->once())
             ->method('write')
@@ -73,7 +75,9 @@ class ResponseTest extends TestCase
         $expected .= "CONTENT-LENGTH: 0\r\n";
         $expected .= "\r\n";
 
-        $conn = $this->getMock('React\Socket\ConnectionInterface');
+        $conn = $this
+            ->getMockBuilder('React\Socket\ConnectionInterface')
+            ->getMock();
         $conn
             ->expects($this->once())
             ->method('write')
@@ -91,7 +95,9 @@ class ResponseTest extends TestCase
         $expected .= "X-POWERED-BY: demo\r\n";
         $expected .= "\r\n";
 
-        $conn = $this->getMock('React\Socket\ConnectionInterface');
+        $conn = $this
+            ->getMockBuilder('React\Socket\ConnectionInterface')
+            ->getMock();
         $conn
             ->expects($this->once())
             ->method('write')
@@ -108,7 +114,9 @@ class ResponseTest extends TestCase
         $expected .= "Content-Length: 0\r\n";
         $expected .= "\r\n";
 
-        $conn = $this->getMock('React\Socket\ConnectionInterface');
+        $conn = $this
+            ->getMockBuilder('React\Socket\ConnectionInterface')
+            ->getMock();
         $conn
             ->expects($this->once())
             ->method('write')
