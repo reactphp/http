@@ -1,5 +1,50 @@
 # Changelog
 
+## 0.4.4 (2017-02-13)
+
+* Feature: Add request header accessors (à la PSR-7)
+  (#103 by @clue)
+
+  ```php
+  // get value of host header
+  $host = $request->getHeaderLine('Host');
+
+  // get list of all cookie headers
+  $cookies = $request->getHeader('Cookie');
+  ```
+
+* Feature: Forward `pause()` and `resume()` from `Request` to underlying connection
+  (#110 by @clue)
+
+  ```php
+  // support back-pressure when piping request into slower destination
+  $request->pipe($dest);
+
+  // manually pause/resume request
+  $request->pause();
+  $request->resume();
+  ```
+
+* Fix: Fix `100-continue` to be handled case-insensitive and ignore it for HTTP/1.0.
+  Similarly, outgoing response headers are now handled case-insensitive, e.g
+  we no longer apply chunked transfer encoding with mixed-case `Content-Length`.
+  (#107 by @clue)
+  
+  ```php
+  // now handled case-insensitive
+  $request->expectsContinue();
+
+  // now works just like properly-cased header
+  $response->writeHead($status, array('content-length' => 0));
+  ```
+
+* Fix: Do not emit empty `data` events and ignore empty writes in order to
+  not mess up chunked transfer encoding
+  (#108 and #112 by @clue)
+
+* Lock and test minimum required dependency versions and support PHPUnit v5
+  (#113, #115 and #114 by @andig)
+
 ## 0.4.3 (2017-02-10)
 
 * Fix: Do not take start of body into account when checking maximum header size
