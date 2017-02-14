@@ -18,7 +18,7 @@ class RequestTest extends TestCase
     /** @test */
     public function expectsContinueShouldBeTrueIfContinueExpected()
     {
-        $headers = array('Expect' => '100-continue');
+        $headers = array('Expect' => array('100-continue'));
         $request = new Request('GET', '/', array(), '1.1', $headers);
 
         $this->assertTrue($request->expectsContinue());
@@ -27,7 +27,7 @@ class RequestTest extends TestCase
     /** @test */
     public function expectsContinueShouldBeTrueIfContinueExpectedCaseInsensitive()
     {
-        $headers = array('EXPECT' => '100-CONTINUE');
+        $headers = array('EXPECT' => array('100-CONTINUE'));
         $request = new Request('GET', '/', array(), '1.1', $headers);
 
         $this->assertTrue($request->expectsContinue());
@@ -36,7 +36,7 @@ class RequestTest extends TestCase
     /** @test */
     public function expectsContinueShouldBeFalseForHttp10()
     {
-        $headers = array('Expect' => '100-continue');
+        $headers = array('Expect' => array('100-continue'));
         $request = new Request('GET', '/', array(), '1.0', $headers);
 
         $this->assertFalse($request->expectsContinue());
@@ -55,10 +55,10 @@ class RequestTest extends TestCase
     public function testHeaderIsCaseInsensitive()
     {
         $request = new Request('GET', '/', array(), '1.1', array(
-            'TEST' => 'Yes',
+            'TEST' => array('Yes'),
         ));
 
-        $this->assertEquals(array('TEST' => 'Yes'), $request->getHeaders());
+        $this->assertEquals(array('TEST' => array('Yes')), $request->getHeaders());
         $this->assertTrue($request->hasHeader('Test'));
         $this->assertEquals(array('Yes'), $request->getHeader('Test'));
         $this->assertEquals('Yes', $request->getHeaderLine('Test'));

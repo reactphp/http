@@ -51,19 +51,34 @@ It implements the `ReadableStreamInterface`.
 
 See the above usage example and the class outline for details.
 
+#### getMethod()
+
+The `getMethod(): string` method can be used to
+return the request method.
+
+#### getPath()
+
+The `getPath(): string` method can be used to
+return the request path.
+
+#### getQueryParams()
+
+The `getQueryParams(): array` method can be used to
+return an array with all query parameters ($_GET).
+
+#### getProtocolVersion()
+
+The `getProtocolVersion(): string` method can be used to
+return the HTTP protocol version (such as "1.0" or "1.1").
+
 #### getHeaders()
 
 The `getHeaders(): array` method can be used to
 return an array with ALL headers.
 
 The keys represent the header name in the exact case in which they were
-originally specified. The values will be a string if there's only a single
-value for the respective header name or an array of strings if this header
-has multiple values.
-
-> Note that this differs from the PSR-7 implementation of this method,
-which always returns an array for each header name, even if it only has a
-single value.
+originally specified. The values will be an array of strings for each
+value for the respective header name.
 
 #### getHeader()
 
