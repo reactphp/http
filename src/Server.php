@@ -24,7 +24,10 @@ class Server extends EventEmitter
             $parser = new RequestHeaderParser();
             $parser->on('headers', function (Request $request, $bodyBuffer) use ($conn, $parser, $that) {
                 // attach remote ip to the request as metadata
-                $request->remoteAddress = $conn->getRemoteAddress();
+                $request->remoteAddress = trim(
+                    parse_url('tcp://' . $conn->getRemoteAddress(), PHP_URL_HOST),
+                    '[]'
+                );
 
                 // forward pause/resume calls to underlying connection
                 $request->on('pause', array($conn, 'pause'));

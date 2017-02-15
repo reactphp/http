@@ -25,15 +25,13 @@ class ServerTest extends TestCase
                     'isReadable',
                     'isWritable',
                     'getRemoteAddress',
+                    'getLocalAddress',
                     'pipe'
                 )
             )
             ->getMock();
 
-        $this->socket = $this->getMockBuilder('React\Socket\Server')
-            ->disableOriginalConstructor()
-            ->setMethods(null)
-            ->getMock();
+        $this->socket = new SocketServerStub();
     }
 
     public function testRequestEventWillNotBeEmittedForIncompleteHeaders()

@@ -22,7 +22,7 @@ This is an HTTP server which responds with `Hello World` to every request.
 
 ```php
 $loop = React\EventLoop\Factory::create();
-$socket = new React\Socket\Server($loop);
+$socket = new React\Socket\Server(8080, $loop);
 
 $http = new React\Http\Server($socket);
 $http->on('request', function ($request, $response) {
@@ -30,7 +30,6 @@ $http->on('request', function ($request, $response) {
     $response->end("Hello World!\n");
 });
 
-$socket->listen(1337);
 $loop->run();
 ```
 

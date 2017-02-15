@@ -8,7 +8,7 @@ use React\Http\Response;
 require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
-$socket = new Server($loop);
+$socket = new Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
 
 $server = new \React\Http\Server($socket);
 $server->on('request', function (Request $request, Response $response) {
@@ -16,8 +16,6 @@ $server->on('request', function (Request $request, Response $response) {
     $response->end("Hello world!\n");
 });
 
-$socket->listen(isset($argv[1]) ? $argv[1] : 0, '0.0.0.0');
-
-echo 'Listening on ' . $socket->getPort() . PHP_EOL;
+echo 'Listening on http://' . $socket->getAddress() . PHP_EOL;
 
 $loop->run();
