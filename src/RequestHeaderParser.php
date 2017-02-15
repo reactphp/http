@@ -61,20 +61,12 @@ class RequestHeaderParser extends EventEmitter
             parse_str($queryString, $parsedQuery);
         }
 
-        $headers = array_map(function($val) {
-            if (1 === count($val)) {
-                $val = $val[0];
-            }
-
-            return $val;
-        }, $psrRequest->getHeaders());
-
         $request = new Request(
             $psrRequest->getMethod(),
             $psrRequest->getUri()->getPath(),
             $parsedQuery,
             $psrRequest->getProtocolVersion(),
-            $headers
+            $psrRequest->getHeaders()
         );
 
         return array($request, $bodyBuffer);

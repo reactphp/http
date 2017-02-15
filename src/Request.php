@@ -28,22 +28,42 @@ class Request extends EventEmitter implements ReadableStreamInterface
         $this->headers = $headers;
     }
 
+    /**
+     * Returns the request method
+     *
+     * @return string
+     */
     public function getMethod()
     {
         return $this->method;
     }
 
+    /**
+     * Returns the request path
+     *
+     * @return string
+     */
     public function getPath()
     {
         return $this->path;
     }
 
-    public function getQuery()
+    /**
+     * Returns an array with all query parameters ($_GET)
+     *
+     * @return array
+     */
+    public function getQueryParams()
     {
         return $this->query;
     }
 
-    public function getHttpVersion()
+    /**
+     * Returns the HTTP protocol version (such as "1.0" or "1.1")
+     *
+     * @return string
+     */
+    public function getProtocolVersion()
     {
         return $this->httpVersion;
     }
@@ -52,13 +72,8 @@ class Request extends EventEmitter implements ReadableStreamInterface
      * Returns an array with ALL headers
      *
      * The keys represent the header name in the exact case in which they were
-     * originally specified. The values will be a string if there's only a single
-     * value for the respective header name or an array of strings if this header
-     * has multiple values.
-     *
-     * Note that this differs from the PSR-7 implementation of this method,
-     * which always returns an array for each header name, even if it only has a
-     * single value.
+     * originally specified. The values will be an array of strings for each
+     * value for the respective header name.
      *
      * @return array
      */
