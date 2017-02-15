@@ -6,11 +6,50 @@ use Evenement\EventEmitter;
 use React\Socket\ServerInterface as SocketServerInterface;
 use React\Socket\ConnectionInterface;
 
-/** @event request */
+/**
+ * The `Server` class is responsible for handling incoming connections and then
+ * emit a `request` event for each incoming HTTP request.
+ *
+ * ```php
+ * $socket = new React\Socket\Server(8080, $loop);
+ *
+ * $http = new React\Http\Server($socket);
+ * ```
+ *
+ * For each incoming connection, it emits a `request` event with the respective
+ * [`Request`](#request) and [`Response`](#response) objects:
+ *
+ * ```php
+ * $http->on('request', function (Request $request, Response $response) {
+ *     $response->writeHead(200, array('Content-Type' => 'text/plain'));
+ *     $response->end("Hello World!\n");
+ * });
+ * ```
+ *
+ * See also [`Request`](#request) and [`Response`](#response) for more details.
+ *
+ * @see Request
+ * @see Response
+ */
 class Server extends EventEmitter
 {
     private $io;
 
+    /**
+     * Creates a HTTP server that accepts connections from the given socket.
+     *
+     * It attaches itself to an instance of `React\Socket\ServerInterface` which
+     * emits underlying streaming connections in order to then parse incoming data
+     * as HTTP:
+     *
+     * ```php
+     * $socket = new React\Socket\Server(8080, $loop);
+     *
+     * $http = new React\Http\Server($socket);
+     * ```
+     *
+     * @param \React\Socket\ServerInterface $io
+     */
     public function __construct(SocketServerInterface $io)
     {
         $this->io = $io;
@@ -54,6 +93,7 @@ class Server extends EventEmitter
         });
     }
 
+    /** @internal */
     public function handleRequest(ConnectionInterface $conn, Request $request, $bodyBuffer)
     {
         $response = new Response($conn);
