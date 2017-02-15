@@ -9,6 +9,8 @@ use RingCentral\Psr7 as g7;
 /**
  * @event headers
  * @event error
+ *
+ * @internal
  */
 class RequestHeaderParser extends EventEmitter
 {
@@ -43,13 +45,13 @@ class RequestHeaderParser extends EventEmitter
         }
     }
 
-    protected function parseAndEmitRequest()
+    private function parseAndEmitRequest()
     {
         list($request, $bodyBuffer) = $this->parseRequest($this->buffer);
         $this->emit('headers', array($request, $bodyBuffer));
     }
 
-    public function parseRequest($data)
+    private function parseRequest($data)
     {
         list($headers, $bodyBuffer) = explode("\r\n\r\n", $data, 2);
 

@@ -6,6 +6,19 @@ use Evenement\EventEmitter;
 use React\Socket\ConnectionInterface;
 use React\Stream\WritableStreamInterface;
 
+/**
+ * The `Response` class is responsible for streaming the outgoing response body.
+ *
+ * It implements the `WritableStreamInterface`.
+ *
+ * The constructor is internal, you SHOULD NOT call this yourself.
+ * The `Server` is responsible for emitting `Request` and `Response` objects.
+ *
+ * See the usage examples and the class outline for details.
+ *
+ * @see WritableStreamInterface
+ * @see Server
+ */
 class Response extends EventEmitter implements WritableStreamInterface
 {
     private $closed = false;
@@ -14,6 +27,15 @@ class Response extends EventEmitter implements WritableStreamInterface
     private $headWritten = false;
     private $chunkedEncoding = true;
 
+    /**
+     * The constructor is internal, you SHOULD NOT call this yourself.
+     *
+     * The `Server` is responsible for emitting `Request` and `Response` objects.
+     *
+     * Constructor parameters may change at any time.
+     *
+     * @internal
+     */
     public function __construct(ConnectionInterface $conn)
     {
         $this->conn = $conn;
