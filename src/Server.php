@@ -155,6 +155,19 @@ class Server extends EventEmitter
             }
         }
 
+        if ($request->hasHeader('Content-Length')) {
+            $string = $request->getHeaderLine('Content-Length');
+
+            $contentLength = (int)$string;
+            if ((string)$contentLength !== (string)$string) {
+                // Content-Length value is not an integer or not a single integer
+                $this->emit('error', new \Exception('The value of `Content-Length` is not valid'));
+                return;
+            }
+
+            $stream = new LengthLimitedStream($conn, $contentLength);
+        }
+
         // forward pause/resume calls to underlying connection
         $request->on('pause', array($conn, 'pause'));
         $request->on('resume', array($conn, 'resume'));
@@ -173,6 +186,12 @@ class Server extends EventEmitter
         });
 
         $this->emit('request', array($request, $response));
+
+        if ($stream instanceof LengthLimitedStream && $contentLength === 0) {
+            // stream must emit an 'end' here, because empty data won't be emitted
+            $stream->emit('end');
+            $conn->removeListener('data', array($stream, 'handleData'));
+        }
     }
 
     /** @internal */

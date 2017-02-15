@@ -433,8 +433,8 @@ class ServerTest extends TestCase
         $server = new Server($this->socket);
 
         $dataEvent = $this->expectCallableOnceWith('hello');
-        $endEvent = $this->expectCallableNever();
-        $closeEvent = $this->expectCallableNever();
+        $endEvent = $this->expectCallableOnce();
+        $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
         $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
@@ -705,6 +705,153 @@ class ServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.0\r\n\r\n";
+        $this->connection->emit('data', array($data));
+    }
+
+    public function testWontEmitFurtherDataWhenContentLengthIsReached()
+    {
+        $server = new Server($this->socket);
+
+        $dataEvent = $this->expectCallableOnceWith('hello');
+        $endEvent = $this->expectCallableOnce();
+        $closeEvent = $this->expectCallableOnce();
+        $errorEvent = $this->expectCallableNever();
+
+        $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+            $request->on('data', $dataEvent);
+            $request->on('end', $endEvent);
+            $request->on('close', $closeEvent);
+            $request->on('error', $errorEvent);
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Content-Length: 5\r\n";
+        $data .= "\r\n";
+        $data .= "hello";
+        $data .= "world";
+
+        $this->connection->emit('data', array($data));
+    }
+
+    public function testWontEmitFurtherDataWhenContentLengthIsReachedSplitted()
+    {
+        $server = new Server($this->socket);
+
+        $dataEvent = $this->expectCallableOnceWith('hello');
+        $endEvent = $this->expectCallableOnce();
+        $closeEvent = $this->expectCallableOnce();
+        $errorEvent = $this->expectCallableNever();
+
+        $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+            $request->on('data', $dataEvent);
+            $request->on('end', $endEvent);
+            $request->on('close', $closeEvent);
+            $request->on('error', $errorEvent);
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Content-Length: 5\r\n";
+        $data .= "\r\n";
+        $data .= "hello";
+
+        $this->connection->emit('data', array($data));
+
+        $data = "world";
+
+        $this->connection->emit('data', array($data));
+    }
+
+    public function testContentLengthContainsZeroWillEmitEndEvent()
+    {
+        $server = new Server($this->socket);
+
+        $dataEvent = $this->expectCallableNever();
+        $endEvent = $this->expectCallableOnce();
+        $closeEvent = $this->expectCallableNever();
+        $errorEvent = $this->expectCallableNever();
+
+        $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+            $request->on('data', $dataEvent);
+            $request->on('end', $endEvent);
+            $request->on('close', $closeEvent);
+            $request->on('error', $errorEvent);
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Content-Length: 0\r\n";
+        $data .= "\r\n";
+
+        $this->connection->emit('data', array($data));
+    }
+
+    public function testContentLengthContainsZeroWillEmitEndEventAdditionalDataWillBeIgnored()
+    {
+        $server = new Server($this->socket);
+
+        $dataEvent = $this->expectCallableNever();
+        $endEvent = $this->expectCallableOnce();
+        $closeEvent = $this->expectCallableNever();
+        $errorEvent = $this->expectCallableNever();
+
+        $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+            $request->on('data', $dataEvent);
+            $request->on('end', $endEvent);
+            $request->on('close', $closeEvent);
+            $request->on('error', $errorEvent);
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Content-Length: 0\r\n";
+        $data .= "\r\n";
+        $data .= "hello";
+
+        $this->connection->emit('data', array($data));
+    }
+
+    public function testContentLengthContainsZeroWillEmitEndEventAdditionalDataWillBeIgnoredSplitted()
+    {
+        $server = new Server($this->socket);
+
+        $dataEvent = $this->expectCallableNever();
+        $endEvent = $this->expectCallableOnce();
+        $closeEvent = $this->expectCallableNever();
+        $errorEvent = $this->expectCallableNever();
+
+        $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+            $request->on('data', $dataEvent);
+            $request->on('end', $endEvent);
+            $request->on('close', $closeEvent);
+            $request->on('error', $errorEvent);
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Content-Length: 0\r\n";
+        $data .= "\r\n";
+
+        $this->connection->emit('data', array($data));
+
+        $data = "hello";
+
         $this->connection->emit('data', array($data));
     }
 
