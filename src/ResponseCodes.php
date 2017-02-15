@@ -4,6 +4,8 @@ namespace React\Http;
 
 /**
  * This is copy-pasted from Symfony2's Response class
+ *
+ * @internal
  */
 class ResponseCodes
 {

@@ -7,6 +7,20 @@ use React\Stream\ReadableStreamInterface;
 use React\Stream\WritableStreamInterface;
 use React\Stream\Util;
 
+/**
+ * The `Request` class is responsible for streaming the incoming request body
+ * and contains meta data which was parsed from the request headers.
+ *
+ * It implements the `ReadableStreamInterface`.
+ *
+ * The constructor is internal, you SHOULD NOT call this yourself.
+ * The `Server` is responsible for emitting `Request` and `Response` objects.
+ *
+ * See the usage examples and the class outline for details.
+ *
+ * @see ReadableStreamInterface
+ * @see Server
+ */
 class Request extends EventEmitter implements ReadableStreamInterface
 {
     private $readable = true;
@@ -19,6 +33,15 @@ class Request extends EventEmitter implements ReadableStreamInterface
     // metadata, implicitly added externally
     public $remoteAddress;
 
+    /**
+     * The constructor is internal, you SHOULD NOT call this yourself.
+     *
+     * The `Server` is responsible for emitting `Request` and `Response` objects.
+     *
+     * Constructor parameters may change at any time.
+     *
+     * @internal
+     */
     public function __construct($method, $path, $query = array(), $httpVersion = '1.1', $headers = array())
     {
         $this->method = $method;

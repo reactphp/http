@@ -25,7 +25,7 @@ $loop = React\EventLoop\Factory::create();
 $socket = new React\Socket\Server(8080, $loop);
 
 $http = new React\Http\Server($socket);
-$http->on('request', function ($request, $response) {
+$http->on('request', function (Request $request, Response $response) {
     $response->writeHead(200, array('Content-Type' => 'text/plain'));
     $response->end("Hello World!\n");
 });
@@ -39,7 +39,30 @@ See also the [examples](examples).
 
 ### Server
 
-See the above usage example and the class outline for details.
+The `Server` class is responsible for handling incoming connections and then
+emit a `request` event for each incoming HTTP request.
+
+It attaches itself to an instance of `React\Socket\ServerInterface` which
+emits underlying streaming connections in order to then parse incoming data
+as HTTP:
+
+```php
+$socket = new React\Socket\Server(8080, $loop);
+
+$http = new React\Http\Server($socket);
+```
+
+For each incoming connection, it emits a `request` event with the respective
+[`Request`](#request) and [`Response`](#response) objects:
+
+```php
+$http->on('request', function (Request $request, Response $response) {
+    $response->writeHead(200, array('Content-Type' => 'text/plain'));
+    $response->end("Hello World!\n");
+});
+```
+
+See also [`Request`](#request) and [`Response`](#response) for more details.
 
 ### Request
 
@@ -47,6 +70,9 @@ The `Request` class is responsible for streaming the incoming request body
 and contains meta data which was parsed from the request headers.
 
 It implements the `ReadableStreamInterface`.
+
+The constructor is internal, you SHOULD NOT call this yourself.
+The `Server` is responsible for emitting `Request` and `Response` objects.
 
 See the above usage example and the class outline for details.
 
@@ -100,6 +126,9 @@ any header values say.
 The `Response` class is responsible for streaming the outgoing response body.
 
 It implements the `WritableStreamInterface`.
+
+The constructor is internal, you SHOULD NOT call this yourself.
+The `Server` is responsible for emitting `Request` and `Response` objects.
 
 See the above usage example and the class outline for details.
 
