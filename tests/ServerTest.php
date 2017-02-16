@@ -206,7 +206,6 @@ class ServerTest extends TestCase
     {
         $error = null;
         $server = new Server($this->socket);
-        $server->on('headers', $this->expectCallableNever());
         $server->on('error', function ($message) use (&$error) {
             $error = $message;
         });
@@ -218,7 +217,38 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
 
         $this->assertInstanceOf('OverflowException', $error);
-        $this->connection->expects($this->never())->method('write');
+    }
+
+    public function testRequestInvalidWillEmitErrorAndSendErrorResponse()
+    {
+        $error = null;
+        $server = new Server($this->socket);
+        $server->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $buffer = '';
+
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "bad request\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+
+        $this->assertContains("HTTP/1.1 400 Bad Request\r\n", $buffer);
+        $this->assertContains("\r\n\r\nError 400: Bad Request", $buffer);
     }
 
     private function createGetRequest()

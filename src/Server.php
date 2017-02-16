@@ -84,10 +84,14 @@ class Server extends EventEmitter
         });
 
         $conn->on('data', $listener);
-        $parser->on('error', function() use ($conn, $listener, $that) {
-            // TODO: return 400 response
+        $parser->on('error', function(\Exception $e) use ($conn, $listener, $that) {
             $conn->removeListener('data', $listener);
-            $that->emit('error', func_get_args());
+            $that->emit('error', array($e));
+
+            $that->writeError(
+                $conn,
+                400
+            );
         });
     }
 
@@ -122,5 +126,21 @@ class Server extends EventEmitter
         });
 
         $this->emit('request', array($request, $response));
+    }
+
+    /** @internal */
+    public function writeError(ConnectionInterface $conn, $code)
+    {
+        $message = 'Error ' . $code;
+        if (isset(ResponseCodes::$statusTexts[$code])) {
+            $message .= ': ' . ResponseCodes::$statusTexts[$code];
+        }
+
+        $response = new Response($conn);
+        $response->writeHead($code, array(
+            'Content-Length' => strlen($message),
+            'Content-Type' => 'text/plain'
+        ));
+        $response->end($message);
     }
 }
