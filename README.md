@@ -11,7 +11,7 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
   * [Server](#server)
   * [Request](#request)
     * [getMethod()](#getmethod)
-    * [getQueryParams()](#getqueryparams]
+    * [getQueryParams()](#getqueryparams)
     * [getProtocolVersion()](#getprotocolversion)
     * [getHeaders()](#getheaders)
     * [getHeader()](#getheader)
