@@ -363,13 +363,26 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
-    public function testParserErrorEmitted()
+    public function testRequestOverflowWillEmitErrorAndSendErrorResponse()
     {
         $error = null;
         $server = new Server($this->socket);
         $server->on('error', function ($message) use (&$error) {
             $error = $message;
         });
+
+        $buffer = '';
+
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
 
         $this->socket->emit('connection', array($this->connection));
 
@@ -378,6 +391,9 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
 
         $this->assertInstanceOf('OverflowException', $error);
+
+        $this->assertContains("HTTP/1.1 431 Request Header Fields Too Large\r\n", $buffer);
+        $this->assertContains("\r\n\r\nError 431: Request Header Fields Too Large", $buffer);
     }
 
     public function testRequestInvalidWillEmitErrorAndSendErrorResponse()
