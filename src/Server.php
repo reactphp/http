@@ -105,7 +105,7 @@ class Server extends EventEmitter
 
             $that->writeError(
                 $conn,
-                400
+                ($e instanceof \OverflowException) ? 431 : 400
             );
         });
     }
