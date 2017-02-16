@@ -1,7 +1,7 @@
 {
     "name": "react/http",
-    "description": "Library for building an evented http server.",
-    "keywords": ["http"],
+    "description": "Event-driven, streaming plaintext HTTP and secure HTTPS server for ReactPHP",
+    "keywords": ["event-driven", "streaming", "HTTP", "HTTPS", "server", "ReactPHP"],
     "license": "MIT",
     "require": {
         "php": ">=5.3.0",
