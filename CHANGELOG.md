@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.5.0 (2017-02-16)
+
+* Feature / BC break: Change `Request` methods to be in line with PSR-7
+  (#117 by @clue)
+  * Rename `getQuery()` to `getQueryParams()`
+  * Rename `getHttpVersion()` to `getProtocolVersion()`
+  * Change `getHeaders()` to always return an array of string values
+    for each header
+
+* Feature / BC break: Update Socket component to v0.5 and
+  add secure HTTPS server support
+  (#90 and #119 by @clue)
+
+  ```php
+  // old plaintext HTTP server
+  $socket = new React\Socket\Server($loop);
+  $socket->listen(8080, '127.0.0.1');
+  $http = new React\Http\Server($socket);
+
+  // new plaintext HTTP server
+  $socket = new React\Socket\Server('127.0.0.1:8080', $loop);
+  $http = new React\Http\Server($socket);
+
+  // new secure HTTPS server
+  $socket = new React\Socket\Server('127.0.0.1:8080', $loop);
+  $socket = new React\Socket\SecureServer($socket, $loop, array(
+      'local_cert' => __DIR__ . '/localhost.pem'
+  ));
+  $http = new React\Http\Server($socket);
+  ```
+
+* BC break: Mark internal APIs as internal or private and
+  remove unneeded `ServerInterface`
+  (#118 by @clue, #95 by @legionth)
+
 ## 0.4.4 (2017-02-13)
 
 * Feature: Add request header accessors (à la PSR-7)

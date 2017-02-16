@@ -2,19 +2,30 @@
 
 [![Build Status](https://secure.travis-ci.org/reactphp/http.png?branch=master)](http://travis-ci.org/reactphp/http) [![Code Climate](https://codeclimate.com/github/reactphp/http/badges/gpa.svg)](https://codeclimate.com/github/reactphp/http)
 
-Library for building an evented http server.
+Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](https://reactphp.org/)
 
-This component builds on top of the `Socket` component to implement HTTP. Here
-are the main concepts:
+**Table of Contents**
 
-* **Server**: Attaches itself to an instance of
-  `React\Socket\ServerInterface`, parses any incoming data as HTTP, emits a
-  `request` event for each request.
-* **Request**: A `ReadableStream` which streams the request body and contains
-  meta data which was parsed from the request header.
-* **Response** A `WritableStream` which streams the response body. You can set
-  the status code and response headers via the `writeHead()` method.
+* [Quickstart example](#quickstart-example)
+* [Usage](#usage)
+  * [Server](#server)
+  * [Request](#request)
+    * [getMethod()](#getmethod)
+    * [getQueryParams()](#getqueryparams]
+    * [getProtocolVersion()](#getprotocolversion)
+    * [getHeaders()](#getheaders)
+    * [getHeader()](#getheader)
+    * [getHeaderLine()](#getheaderline)
+    * [hasHeader()](#hasheader)
+    * [expectsContinue()](#expectscontinue)
+  * [Response](#response)
+    * [writeContinue()](#writecontinue)
+    * [writeHead()](#writehead)
+* [Install](#install)
+* [Tests](#tests)
+* [License](#license)
 
+> Note: This project is in beta stage! Feel free to report any issues you encounter.
 
 ## Quickstart example
 
@@ -255,7 +266,7 @@ The recommended way to install this library is [through Composer](http://getcomp
 This will install the latest supported version:
 
 ```bash
-$ composer require react/http:^0.4.4
+$ composer require react/http:^0.5
 ```
 
 More details about version upgrades can be found in the [CHANGELOG](CHANGELOG.md).
