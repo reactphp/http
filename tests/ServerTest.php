@@ -310,6 +310,28 @@ class ServerTest extends TestCase
         $this->assertContains("\r\n\r\nError 505: HTTP Version Not Supported", $buffer);
     }
 
+    public function testServerWithNoRequestListenerDoesNotSendAnythingToConnection()
+    {
+        $server = new Server($this->socket);
+
+        $this->connection
+            ->expects($this->never())
+            ->method('write');
+
+        $this->connection
+            ->expects($this->never())
+            ->method('end');
+
+        $this->connection
+            ->expects($this->never())
+            ->method('close');
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+        $this->connection->emit('data', array($data));
+    }
+
     public function testParserErrorEmitted()
     {
         $error = null;
