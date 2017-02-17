@@ -115,6 +115,24 @@ class Server extends EventEmitter
             return $this->writeError($conn, 505);
         }
 
+        // HTTP/1.1 requests MUST include a valid host header (host and optional port)
+        // https://tools.ietf.org/html/rfc7230#section-5.4
+        if ($request->getProtocolVersion() === '1.1') {
+            $parts = parse_url('http://' . $request->getHeaderLine('Host'));
+
+            // make sure value contains valid host component (IP or hostname)
+            if (!$parts || !isset($parts['scheme'], $parts['host'])) {
+                $parts = false;
+            }
+
+            // make sure value does not contain any other URI component
+            unset($parts['scheme'], $parts['host'], $parts['port']);
+            if ($parts === false || $parts) {
+                $this->emit('error', array(new \InvalidArgumentException('Invalid Host header for HTTP/1.1 request')));
+                return $this->writeError($conn, 400);
+            }
+        }
+
         $response = new Response($conn, $request->getProtocolVersion());
         $response->on('close', array($request, 'close'));
 
