@@ -28,8 +28,10 @@ use React\Socket\ConnectionInterface;
  *
  * See also [`Request`](#request) and [`Response`](#response) for more details.
  *
- * If a client sends an invalid request message, it will emit an `error` event,
- * send an HTTP error response to the client and close the connection:
+ * The `Server` supports both HTTP/1.1 and HTTP/1.0 request messages.
+ * If a client sends an invalid request message or uses an invalid HTTP protocol
+ * version, it will emit an `error` event, send an HTTP error response to the
+ * client and close the connection:
  *
  * ```php
  * $http->on('error', function (Exception $e) {
@@ -107,6 +109,12 @@ class Server extends EventEmitter
     /** @internal */
     public function handleRequest(ConnectionInterface $conn, Request $request)
     {
+        // only support HTTP/1.1 and HTTP/1.0 requests
+        if ($request->getProtocolVersion() !== '1.1' && $request->getProtocolVersion() !== '1.0') {
+            $this->emit('error', array(new \InvalidArgumentException('Received request with invalid protocol version')));
+            return $this->writeError($conn, 505);
+        }
+
         $response = new Response($conn, $request->getProtocolVersion());
         $response->on('close', array($request, 'close'));
 
