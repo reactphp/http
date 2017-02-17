@@ -26,12 +26,11 @@ class ResponseTest extends TestCase
         $response->writeHead();
     }
 
-    public function testResponseShouldUseGivenProtocolVersion()
+    public function testResponseShouldNotBeChunkedWhenProtocolVersionIsNot11()
     {
         $expected = '';
         $expected .= "HTTP/1.0 200 OK\r\n";
         $expected .= "X-Powered-By: React/alpha\r\n";
-        $expected .= "Transfer-Encoding: chunked\r\n";
         $expected .= "\r\n";
 
         $conn = $this

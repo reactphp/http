@@ -17,6 +17,10 @@ use React\Stream\WritableStreamInterface;
  * The `Response` will automatically use the same HTTP protocol version as the
  * corresponding `Request`.
  *
+ * HTTP/1.1 responses will automatically apply chunked transfer encoding if
+ * no `Content-Length` header has been set.
+ * See `writeHead()` for more details.
+ *
  * See the usage examples and the class outline for details.
  *
  * @see WritableStreamInterface
@@ -30,7 +34,7 @@ class Response extends EventEmitter implements WritableStreamInterface
     private $closed = false;
     private $writable = true;
     private $headWritten = false;
-    private $chunkedEncoding = true;
+    private $chunkedEncoding = false;
 
     /**
      * The constructor is internal, you SHOULD NOT call this yourself.
@@ -129,7 +133,7 @@ class Response extends EventEmitter implements WritableStreamInterface
      *
      * Calling this method more than once will result in an `Exception`.
      *
-     * Unless you specify a `Content-Length` header yourself, the response message
+     * Unless you specify a `Content-Length` header yourself, HTTP/1.1 responses
      * will automatically use chunked transfer encoding and send the respective header
      * (`Transfer-Encoding: chunked`) automatically. If you know the length of your
      * body, you MAY specify it like this instead:
@@ -174,11 +178,6 @@ class Response extends EventEmitter implements WritableStreamInterface
 
         $lower = array_change_key_case($headers);
 
-        // disable chunked encoding if content-length is given
-        if (isset($lower['content-length'])) {
-            $this->chunkedEncoding = false;
-        }
-
         // assign default "X-Powered-By" header as first for history reasons
         if (!isset($lower['x-powered-by'])) {
             $headers = array_merge(
@@ -187,8 +186,8 @@ class Response extends EventEmitter implements WritableStreamInterface
             );
         }
 
-        // assign chunked transfer-encoding if chunked encoding is used
-        if ($this->chunkedEncoding) {
+        // assign chunked transfer-encoding if no 'content-length' is given for HTTP/1.1 responses
+        if (!isset($lower['content-length']) && $this->protocolVersion === '1.1') {
             foreach($headers as $name => $value) {
                 if (strtolower($name) === 'transfer-encoding') {
                     unset($headers[$name]);
@@ -196,6 +195,7 @@ class Response extends EventEmitter implements WritableStreamInterface
             }
 
             $headers['Transfer-Encoding'] = 'chunked';
+            $this->chunkedEncoding = true;
         }
 
         $data = $this->formatHead($status, $headers);
