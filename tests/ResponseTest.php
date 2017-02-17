@@ -239,6 +239,20 @@ class ResponseTest extends TestCase
         $response->writeHead();
     }
 
+    /**
+     * @test
+     * @expectedException Exception
+     */
+    public function writeContinueShouldThrowForHttp10()
+    {
+        $conn = $this
+            ->getMockBuilder('React\Socket\ConnectionInterface')
+            ->getMock();
+
+        $response = new Response($conn, '1.0');
+        $response->writeContinue();
+    }
+
     /** @test */
     public function shouldForwardEndDrainAndErrorEvents()
     {
