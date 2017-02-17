@@ -216,12 +216,12 @@ class ServerTest extends TestCase
         $this->assertContains("\r\nX-Powered-By: React/alpha\r\n", $buffer);
     }
 
-    public function testResponseContainsSameRequestProtocolVersionForHttp11()
+    public function testResponseContainsSameRequestProtocolVersionAndChunkedBodyForHttp11()
     {
         $server = new Server($this->socket);
         $server->on('request', function (Request $request, Response $response) {
             $response->writeHead();
-            $response->end();
+            $response->end('bye');
         });
 
         $buffer = '';
@@ -243,14 +243,15 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
 
         $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertContains("\r\n\r\n3\r\nbye\r\n0\r\n\r\n", $buffer);
     }
 
-    public function testResponseContainsSameRequestProtocolVersionForHttp10()
+    public function testResponseContainsSameRequestProtocolVersionAndRawBodyForHttp10()
     {
         $server = new Server($this->socket);
         $server->on('request', function (Request $request, Response $response) {
             $response->writeHead();
-            $response->end();
+            $response->end('bye');
         });
 
         $buffer = '';
@@ -272,6 +273,7 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
 
         $this->assertContains("HTTP/1.0 200 OK\r\n", $buffer);
+        $this->assertContains("\r\n\r\nbye", $buffer);
     }
 
     public function testParserErrorEmitted()
