@@ -117,6 +117,20 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
+    public function testRequestCloseWillPauseConnection()
+    {
+        $server = new Server($this->socket);
+        $server->on('request', function (Request $request) {
+            $request->close();
+        });
+
+        $this->connection->expects($this->once())->method('pause');
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+        $this->connection->emit('data', array($data));
+    }
+
     public function testRequestEventWithoutBodyWillNotEmitData()
     {
         $never = $this->expectCallableNever();
