@@ -98,12 +98,15 @@ class Response extends EventEmitter implements WritableStreamInterface
      * });
      * ```
      *
-     * Note that calling this method is strictly optional.
-     * If you do not use it, then the client MUST continue sending the request body
-     * after waiting some time.
+     * Note that calling this method is strictly optional for HTTP/1.1 responses.
+     * If you do not use it, then a HTTP/1.1 client MUST continue sending the
+     * request body after waiting some time.
      *
      * This method MUST NOT be invoked after calling `writeHead()`.
-     * Calling this method after sending the headers will result in an `Exception`.
+     * This method MUST NOT be invoked if this is not a HTTP/1.1 response
+     * (please check [`expectsContinue()`] as above).
+     * Calling this method after sending the headers or if this is not a HTTP/1.1
+     * response is an error that will result in an `Exception`.
      *
      * @return void
      * @throws \Exception
@@ -111,6 +114,9 @@ class Response extends EventEmitter implements WritableStreamInterface
      */
     public function writeContinue()
     {
+        if ($this->protocolVersion !== '1.1') {
+            throw new \Exception('Continue requires a HTTP/1.1 message');
+        }
         if ($this->headWritten) {
             throw new \Exception('Response head has already been written.');
         }

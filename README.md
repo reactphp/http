@@ -217,12 +217,15 @@ $http->on('request', function (Request $request, Response $response) {
 });
 ```
 
-Note that calling this method is strictly optional.
-If you do not use it, then the client MUST continue sending the request body
-after waiting some time.
+Note that calling this method is strictly optional for HTTP/1.1 responses.
+If you do not use it, then a HTTP/1.1 client MUST continue sending the
+request body after waiting some time.
 
-This method MUST NOT be invoked after calling `writeHead()`.
-Calling this method after sending the headers will result in an `Exception`.
+This method MUST NOT be invoked after calling [`writeHead()`](#writehead).
+This method MUST NOT be invoked if this is not a HTTP/1.1 response
+(please check [`expectsContinue()`](#expectscontinue) as above).
+Calling this method after sending the headers or if this is not a HTTP/1.1
+response is an error that will result in an `Exception`.
 
 #### writeHead()
 
