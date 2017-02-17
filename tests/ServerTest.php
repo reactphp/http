@@ -276,6 +276,38 @@ class ServerTest extends TestCase
         $this->assertContains("\r\n\r\nbye", $buffer);
     }
 
+    public function testRequestInvalidHttpProtocolVersionWillEmitErrorAndSendErrorResponse()
+    {
+        $error = null;
+        $server = new Server($this->socket);
+        $server->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $buffer = '';
+
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.2\r\nHost: localhost\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+
+        $this->assertContains("HTTP/1.1 505 HTTP Version Not Supported\r\n", $buffer);
+        $this->assertContains("\r\n\r\nError 505: HTTP Version Not Supported", $buffer);
+    }
+
     public function testParserErrorEmitted()
     {
         $error = null;
