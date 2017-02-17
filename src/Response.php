@@ -14,6 +14,9 @@ use React\Stream\WritableStreamInterface;
  * The constructor is internal, you SHOULD NOT call this yourself.
  * The `Server` is responsible for emitting `Request` and `Response` objects.
  *
+ * The `Response` will automatically use the same HTTP protocol version as the
+ * corresponding `Request`.
+ *
  * See the usage examples and the class outline for details.
  *
  * @see WritableStreamInterface
@@ -21,9 +24,11 @@ use React\Stream\WritableStreamInterface;
  */
 class Response extends EventEmitter implements WritableStreamInterface
 {
+    private $conn;
+    private $protocolVersion;
+
     private $closed = false;
     private $writable = true;
-    private $conn;
     private $headWritten = false;
     private $chunkedEncoding = true;
 
@@ -36,9 +41,11 @@ class Response extends EventEmitter implements WritableStreamInterface
      *
      * @internal
      */
-    public function __construct(ConnectionInterface $conn)
+    public function __construct(ConnectionInterface $conn, $protocolVersion = '1.1')
     {
         $this->conn = $conn;
+        $this->protocolVersion = $protocolVersion;
+
         $that = $this;
         $this->conn->on('end', function () use ($that) {
             $that->close();
@@ -201,7 +208,7 @@ class Response extends EventEmitter implements WritableStreamInterface
     {
         $status = (int) $status;
         $text = isset(ResponseCodes::$statusTexts[$status]) ? ResponseCodes::$statusTexts[$status] : '';
-        $data = "HTTP/1.1 $status $text\r\n";
+        $data = "HTTP/$this->protocolVersion $status $text\r\n";
 
         foreach ($headers as $name => $value) {
             $name = str_replace(array("\r", "\n"), '', $name);
