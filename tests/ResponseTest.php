@@ -26,6 +26,26 @@ class ResponseTest extends TestCase
         $response->writeHead();
     }
 
+    public function testResponseShouldUseGivenProtocolVersion()
+    {
+        $expected = '';
+        $expected .= "HTTP/1.0 200 OK\r\n";
+        $expected .= "X-Powered-By: React/alpha\r\n";
+        $expected .= "Transfer-Encoding: chunked\r\n";
+        $expected .= "\r\n";
+
+        $conn = $this
+            ->getMockBuilder('React\Socket\ConnectionInterface')
+            ->getMock();
+        $conn
+            ->expects($this->once())
+            ->method('write')
+            ->with($expected);
+
+        $response = new Response($conn, '1.0');
+        $response->writeHead();
+    }
+
     public function testResponseShouldBeChunkedEvenWithOtherTransferEncoding()
     {
         $expected = '';
@@ -45,7 +65,6 @@ class ResponseTest extends TestCase
         $response = new Response($conn);
         $response->writeHead(200, array('transfer-encoding' => 'custom'));
     }
-
 
     public function testResponseShouldNotBeChunkedWithContentLength()
     {

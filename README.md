@@ -178,6 +178,9 @@ It implements the `WritableStreamInterface`.
 The constructor is internal, you SHOULD NOT call this yourself.
 The `Server` is responsible for emitting `Request` and `Response` objects.
 
+The `Response` will automatically use the same HTTP protocol version as the
+corresponding `Request`.
+
 See the above usage example and the class outline for details.
 
 #### writeContinue()

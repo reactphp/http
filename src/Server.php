@@ -107,7 +107,7 @@ class Server extends EventEmitter
     /** @internal */
     public function handleRequest(ConnectionInterface $conn, Request $request)
     {
-        $response = new Response($conn);
+        $response = new Response($conn, $request->getProtocolVersion());
         $response->on('close', array($request, 'close'));
 
         if (!$this->listeners('request')) {
