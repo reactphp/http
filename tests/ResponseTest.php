@@ -9,7 +9,7 @@ class ResponseTest extends TestCase
     public function testResponseShouldBeChunkedByDefault()
     {
         $expected = '';
-        $expected .= "HTTP/1.1 200 OK\r\n";
+        $expected .= "HTTP/1.0 200 OK\r\n";
         $expected .= "X-Powered-By: React/alpha\r\n";
         $expected .= "Transfer-Encoding: chunked\r\n";
         $expected .= "\r\n";
@@ -50,7 +50,7 @@ class ResponseTest extends TestCase
     public function testResponseShouldNotBeChunkedWithContentLength()
     {
         $expected = '';
-        $expected .= "HTTP/1.1 200 OK\r\n";
+        $expected .= "HTTP/1.0 200 OK\r\n";
         $expected .= "X-Powered-By: React/alpha\r\n";
         $expected .= "Content-Length: 22\r\n";
         $expected .= "\r\n";
@@ -214,7 +214,7 @@ class ResponseTest extends TestCase
         $conn
             ->expects($this->at(4))
             ->method('write')
-            ->with($this->stringContains("HTTP/1.1 200 OK\r\n"));
+            ->with($this->stringContains("HTTP/1.0 200 OK\r\n"));
 
         $response = new Response($conn);
         $response->writeContinue();
@@ -247,7 +247,7 @@ class ResponseTest extends TestCase
     public function shouldRemoveNewlinesFromHeaders()
     {
         $expected = '';
-        $expected .= "HTTP/1.1 200 OK\r\n";
+        $expected .= "HTTP/1.0 200 OK\r\n";
         $expected .= "X-Powered-By: React/alpha\r\n";
         $expected .= "FooBar: BazQux\r\n";
         $expected .= "Transfer-Encoding: chunked\r\n";
@@ -269,7 +269,7 @@ class ResponseTest extends TestCase
     public function missingStatusCodeTextShouldResultInNumberOnlyStatus()
     {
         $expected = '';
-        $expected .= "HTTP/1.1 700 \r\n";
+        $expected .= "HTTP/1.0 700 \r\n";
         $expected .= "X-Powered-By: React/alpha\r\n";
         $expected .= "Transfer-Encoding: chunked\r\n";
         $expected .= "\r\n";
@@ -290,7 +290,7 @@ class ResponseTest extends TestCase
     public function shouldAllowArrayHeaderValues()
     {
         $expected = '';
-        $expected .= "HTTP/1.1 200 OK\r\n";
+        $expected .= "HTTP/1.0 200 OK\r\n";
         $expected .= "X-Powered-By: React/alpha\r\n";
         $expected .= "Set-Cookie: foo=bar\r\n";
         $expected .= "Set-Cookie: bar=baz\r\n";
@@ -313,7 +313,7 @@ class ResponseTest extends TestCase
     public function shouldIgnoreHeadersWithNullValues()
     {
         $expected = '';
-        $expected .= "HTTP/1.1 200 OK\r\n";
+        $expected .= "HTTP/1.0 200 OK\r\n";
         $expected .= "X-Powered-By: React/alpha\r\n";
         $expected .= "Transfer-Encoding: chunked\r\n";
         $expected .= "\r\n";

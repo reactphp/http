@@ -25,7 +25,8 @@ class Response extends EventEmitter implements WritableStreamInterface
     private $writable = true;
     private $conn;
     private $headWritten = false;
-    private $chunkedEncoding = true;
+    // TODO chunked is a HTTP/1.1 feature that needs proper Request parsing before enabling
+    private $chunkedEncoding = false;
 
     /**
      * The constructor is internal, you SHOULD NOT call this yourself.
@@ -201,7 +202,7 @@ class Response extends EventEmitter implements WritableStreamInterface
     {
         $status = (int) $status;
         $text = isset(ResponseCodes::$statusTexts[$status]) ? ResponseCodes::$statusTexts[$status] : '';
-        $data = "HTTP/1.1 $status $text\r\n";
+        $data = "HTTP/1.0 $status $text\r\n";
 
         foreach ($headers as $name => $value) {
             $name = str_replace(array("\r", "\n"), '', $name);
