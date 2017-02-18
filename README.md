@@ -88,6 +88,15 @@ $http->on('request', function (Request $request, Response $response) {
 
 See also [`Request`](#request) and [`Response`](#response) for more details.
 
+If a client sends an invalid request message, it will emit an `error` event,
+send an HTTP error response to the client and close the connection:
+
+```php
+$http->on('error', function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
+});
+```
+
 ### Request
 
 The `Request` class is responsible for streaming the incoming request body
