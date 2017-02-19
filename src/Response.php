@@ -172,6 +172,12 @@ class Response extends EventEmitter implements WritableStreamInterface
      * ));
      * ```
      *
+     * Note that persistent connections (`Connection: keep-alive`) are currently
+     * not supported.
+     * As such, HTTP/1.1 response messages will automatically include a
+     * `Connection: close` header, irrespective of what header values are
+     * passed explicitly.
+     *
      * @param int   $status
      * @param array $headers
      * @throws \Exception
@@ -202,6 +208,18 @@ class Response extends EventEmitter implements WritableStreamInterface
 
             $headers['Transfer-Encoding'] = 'chunked';
             $this->chunkedEncoding = true;
+        }
+
+        // HTTP/1.1 assumes persistent connection support by default
+        // we do not support persistent connections, so let the client know
+        if ($this->protocolVersion === '1.1') {
+            foreach($headers as $name => $value) {
+                if (strtolower($name) === 'connection') {
+                    unset($headers[$name]);
+                }
+            }
+
+            $headers['Connection'] = 'close';
         }
 
         $data = $this->formatHead($status, $headers);

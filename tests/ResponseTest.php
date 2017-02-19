@@ -12,6 +12,7 @@ class ResponseTest extends TestCase
         $expected .= "HTTP/1.1 200 OK\r\n";
         $expected .= "X-Powered-By: React/alpha\r\n";
         $expected .= "Transfer-Encoding: chunked\r\n";
+        $expected .= "Connection: close\r\n";
         $expected .= "\r\n";
 
         $conn = $this
@@ -51,6 +52,7 @@ class ResponseTest extends TestCase
         $expected .= "HTTP/1.1 200 OK\r\n";
         $expected .= "X-Powered-By: React/alpha\r\n";
         $expected .= "Transfer-Encoding: chunked\r\n";
+        $expected .= "Connection: close\r\n";
         $expected .= "\r\n";
 
         $conn = $this
@@ -71,6 +73,7 @@ class ResponseTest extends TestCase
         $expected .= "HTTP/1.1 200 OK\r\n";
         $expected .= "X-Powered-By: React/alpha\r\n";
         $expected .= "Content-Length: 22\r\n";
+        $expected .= "Connection: close\r\n";
         $expected .= "\r\n";
 
         $conn = $this
@@ -91,6 +94,7 @@ class ResponseTest extends TestCase
         $expected .= "HTTP/1.1 200 OK\r\n";
         $expected .= "X-Powered-By: React/alpha\r\n";
         $expected .= "CONTENT-LENGTH: 0\r\n";
+        $expected .= "Connection: close\r\n";
         $expected .= "\r\n";
 
         $conn = $this
@@ -111,6 +115,7 @@ class ResponseTest extends TestCase
         $expected .= "HTTP/1.1 200 OK\r\n";
         $expected .= "Content-Length: 0\r\n";
         $expected .= "X-POWERED-BY: demo\r\n";
+        $expected .= "Connection: close\r\n";
         $expected .= "\r\n";
 
         $conn = $this
@@ -130,6 +135,7 @@ class ResponseTest extends TestCase
         $expected = '';
         $expected .= "HTTP/1.1 200 OK\r\n";
         $expected .= "Content-Length: 0\r\n";
+        $expected .= "Connection: close\r\n";
         $expected .= "\r\n";
 
         $conn = $this
@@ -142,6 +148,27 @@ class ResponseTest extends TestCase
 
         $response = new Response($conn);
         $response->writeHead(200, array('Content-Length' => 0, 'X-Powered-By' => array()));
+    }
+
+    public function testResponseShouldAlwaysIncludeConnectionCloseIrrespectiveOfExplicitValue()
+    {
+        $expected = '';
+        $expected .= "HTTP/1.1 200 OK\r\n";
+        $expected .= "X-Powered-By: React/alpha\r\n";
+        $expected .= "Content-Length: 0\r\n";
+        $expected .= "Connection: close\r\n";
+        $expected .= "\r\n";
+
+        $conn = $this
+            ->getMockBuilder('React\Socket\ConnectionInterface')
+            ->getMock();
+        $conn
+            ->expects($this->once())
+            ->method('write')
+            ->with($expected);
+
+        $response = new Response($conn);
+        $response->writeHead(200, array('Content-Length' => 0, 'connection' => 'ignored'));
     }
 
     public function testResponseBodyShouldBeChunkedCorrectly()
@@ -283,6 +310,7 @@ class ResponseTest extends TestCase
         $expected .= "X-Powered-By: React/alpha\r\n";
         $expected .= "FooBar: BazQux\r\n";
         $expected .= "Transfer-Encoding: chunked\r\n";
+        $expected .= "Connection: close\r\n";
         $expected .= "\r\n";
 
         $conn = $this
@@ -304,6 +332,7 @@ class ResponseTest extends TestCase
         $expected .= "HTTP/1.1 700 \r\n";
         $expected .= "X-Powered-By: React/alpha\r\n";
         $expected .= "Transfer-Encoding: chunked\r\n";
+        $expected .= "Connection: close\r\n";
         $expected .= "\r\n";
 
         $conn = $this
@@ -327,6 +356,7 @@ class ResponseTest extends TestCase
         $expected .= "Set-Cookie: foo=bar\r\n";
         $expected .= "Set-Cookie: bar=baz\r\n";
         $expected .= "Transfer-Encoding: chunked\r\n";
+        $expected .= "Connection: close\r\n";
         $expected .= "\r\n";
 
         $conn = $this
@@ -348,6 +378,7 @@ class ResponseTest extends TestCase
         $expected .= "HTTP/1.1 200 OK\r\n";
         $expected .= "X-Powered-By: React/alpha\r\n";
         $expected .= "Transfer-Encoding: chunked\r\n";
+        $expected .= "Connection: close\r\n";
         $expected .= "\r\n";
 
         $conn = $this
