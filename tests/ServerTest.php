@@ -216,6 +216,98 @@ class ServerTest extends TestCase
         $this->assertContains("\r\nX-Powered-By: React/alpha\r\n", $buffer);
     }
 
+    public function testResponseContainsSameRequestProtocolVersionAndChunkedBodyForHttp11()
+    {
+        $server = new Server($this->socket);
+        $server->on('request', function (Request $request, Response $response) {
+            $response->writeHead();
+            $response->end('bye');
+        });
+
+        $buffer = '';
+
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertContains("\r\n\r\n3\r\nbye\r\n0\r\n\r\n", $buffer);
+    }
+
+    public function testResponseContainsSameRequestProtocolVersionAndRawBodyForHttp10()
+    {
+        $server = new Server($this->socket);
+        $server->on('request', function (Request $request, Response $response) {
+            $response->writeHead();
+            $response->end('bye');
+        });
+
+        $buffer = '';
+
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.0\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertContains("HTTP/1.0 200 OK\r\n", $buffer);
+        $this->assertContains("\r\n\r\nbye", $buffer);
+    }
+
+    public function testRequestInvalidHttpProtocolVersionWillEmitErrorAndSendErrorResponse()
+    {
+        $error = null;
+        $server = new Server($this->socket);
+        $server->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $buffer = '';
+
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.2\r\nHost: localhost\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+
+        $this->assertContains("HTTP/1.1 505 HTTP Version Not Supported\r\n", $buffer);
+        $this->assertContains("\r\n\r\nError 505: HTTP Version Not Supported", $buffer);
+    }
+
     public function testParserErrorEmitted()
     {
         $error = null;

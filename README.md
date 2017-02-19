@@ -88,8 +88,10 @@ $http->on('request', function (Request $request, Response $response) {
 
 See also [`Request`](#request) and [`Response`](#response) for more details.
 
-If a client sends an invalid request message, it will emit an `error` event,
-send an HTTP error response to the client and close the connection:
+The `Server` supports both HTTP/1.1 and HTTP/1.0 request messages.
+If a client sends an invalid request message or uses an invalid HTTP protocol
+version, it will emit an `error` event, send an HTTP error response to the
+client and close the connection:
 
 ```php
 $http->on('error', function (Exception $e) {
@@ -178,6 +180,13 @@ It implements the `WritableStreamInterface`.
 The constructor is internal, you SHOULD NOT call this yourself.
 The `Server` is responsible for emitting `Request` and `Response` objects.
 
+The `Response` will automatically use the same HTTP protocol version as the
+corresponding `Request`.
+
+HTTP/1.1 responses will automatically apply chunked transfer encoding if
+no `Content-Length` header has been set.
+See [`writeHead()`](#writehead) for more details.
+
 See the above usage example and the class outline for details.
 
 #### writeContinue()
@@ -210,12 +219,15 @@ $http->on('request', function (Request $request, Response $response) {
 });
 ```
 
-Note that calling this method is strictly optional.
-If you do not use it, then the client MUST continue sending the request body
-after waiting some time.
+Note that calling this method is strictly optional for HTTP/1.1 responses.
+If you do not use it, then a HTTP/1.1 client MUST continue sending the
+request body after waiting some time.
 
-This method MUST NOT be invoked after calling `writeHead()`.
-Calling this method after sending the headers will result in an `Exception`.
+This method MUST NOT be invoked after calling [`writeHead()`](#writehead).
+This method MUST NOT be invoked if this is not a HTTP/1.1 response
+(please check [`expectsContinue()`](#expectscontinue) as above).
+Calling this method after sending the headers or if this is not a HTTP/1.1
+response is an error that will result in an `Exception`.
 
 #### writeHead()
 
@@ -234,7 +246,7 @@ $response->end('Hello World!');
 
 Calling this method more than once will result in an `Exception`.
 
-Unless you specify a `Content-Length` header yourself, the response message
+Unless you specify a `Content-Length` header yourself, HTTP/1.1 responses
 will automatically use chunked transfer encoding and send the respective header
 (`Transfer-Encoding: chunked`) automatically. If you know the length of your
 body, you MAY specify it like this instead:

@@ -14,6 +14,13 @@ use React\Stream\WritableStreamInterface;
  * The constructor is internal, you SHOULD NOT call this yourself.
  * The `Server` is responsible for emitting `Request` and `Response` objects.
  *
+ * The `Response` will automatically use the same HTTP protocol version as the
+ * corresponding `Request`.
+ *
+ * HTTP/1.1 responses will automatically apply chunked transfer encoding if
+ * no `Content-Length` header has been set.
+ * See `writeHead()` for more details.
+ *
  * See the usage examples and the class outline for details.
  *
  * @see WritableStreamInterface
@@ -21,11 +28,13 @@ use React\Stream\WritableStreamInterface;
  */
 class Response extends EventEmitter implements WritableStreamInterface
 {
+    private $conn;
+    private $protocolVersion;
+
     private $closed = false;
     private $writable = true;
-    private $conn;
     private $headWritten = false;
-    private $chunkedEncoding = true;
+    private $chunkedEncoding = false;
 
     /**
      * The constructor is internal, you SHOULD NOT call this yourself.
@@ -36,9 +45,11 @@ class Response extends EventEmitter implements WritableStreamInterface
      *
      * @internal
      */
-    public function __construct(ConnectionInterface $conn)
+    public function __construct(ConnectionInterface $conn, $protocolVersion = '1.1')
     {
         $this->conn = $conn;
+        $this->protocolVersion = $protocolVersion;
+
         $that = $this;
         $this->conn->on('end', function () use ($that) {
             $that->close();
@@ -87,12 +98,15 @@ class Response extends EventEmitter implements WritableStreamInterface
      * });
      * ```
      *
-     * Note that calling this method is strictly optional.
-     * If you do not use it, then the client MUST continue sending the request body
-     * after waiting some time.
+     * Note that calling this method is strictly optional for HTTP/1.1 responses.
+     * If you do not use it, then a HTTP/1.1 client MUST continue sending the
+     * request body after waiting some time.
      *
      * This method MUST NOT be invoked after calling `writeHead()`.
-     * Calling this method after sending the headers will result in an `Exception`.
+     * This method MUST NOT be invoked if this is not a HTTP/1.1 response
+     * (please check [`expectsContinue()`] as above).
+     * Calling this method after sending the headers or if this is not a HTTP/1.1
+     * response is an error that will result in an `Exception`.
      *
      * @return void
      * @throws \Exception
@@ -100,6 +114,9 @@ class Response extends EventEmitter implements WritableStreamInterface
      */
     public function writeContinue()
     {
+        if ($this->protocolVersion !== '1.1') {
+            throw new \Exception('Continue requires a HTTP/1.1 message');
+        }
         if ($this->headWritten) {
             throw new \Exception('Response head has already been written.');
         }
@@ -122,7 +139,7 @@ class Response extends EventEmitter implements WritableStreamInterface
      *
      * Calling this method more than once will result in an `Exception`.
      *
-     * Unless you specify a `Content-Length` header yourself, the response message
+     * Unless you specify a `Content-Length` header yourself, HTTP/1.1 responses
      * will automatically use chunked transfer encoding and send the respective header
      * (`Transfer-Encoding: chunked`) automatically. If you know the length of your
      * body, you MAY specify it like this instead:
@@ -167,11 +184,6 @@ class Response extends EventEmitter implements WritableStreamInterface
 
         $lower = array_change_key_case($headers);
 
-        // disable chunked encoding if content-length is given
-        if (isset($lower['content-length'])) {
-            $this->chunkedEncoding = false;
-        }
-
         // assign default "X-Powered-By" header as first for history reasons
         if (!isset($lower['x-powered-by'])) {
             $headers = array_merge(
@@ -180,8 +192,8 @@ class Response extends EventEmitter implements WritableStreamInterface
             );
         }
 
-        // assign chunked transfer-encoding if chunked encoding is used
-        if ($this->chunkedEncoding) {
+        // assign chunked transfer-encoding if no 'content-length' is given for HTTP/1.1 responses
+        if (!isset($lower['content-length']) && $this->protocolVersion === '1.1') {
             foreach($headers as $name => $value) {
                 if (strtolower($name) === 'transfer-encoding') {
                     unset($headers[$name]);
@@ -189,6 +201,7 @@ class Response extends EventEmitter implements WritableStreamInterface
             }
 
             $headers['Transfer-Encoding'] = 'chunked';
+            $this->chunkedEncoding = true;
         }
 
         $data = $this->formatHead($status, $headers);
@@ -201,7 +214,7 @@ class Response extends EventEmitter implements WritableStreamInterface
     {
         $status = (int) $status;
         $text = isset(ResponseCodes::$statusTexts[$status]) ? ResponseCodes::$statusTexts[$status] : '';
-        $data = "HTTP/1.1 $status $text\r\n";
+        $data = "HTTP/$this->protocolVersion $status $text\r\n";
 
         foreach ($headers as $name => $value) {
             $name = str_replace(array("\r", "\n"), '', $name);
