@@ -153,16 +153,14 @@ class Server extends EventEmitter
             if (strtolower(end($transferEncodingHeader)) === 'chunked') {
                 $stream = new ChunkedDecoder($conn);
             }
-        }
-
-        if ($request->hasHeader('Content-Length')) {
+        } elseif ($request->hasHeader('Content-Length')) {
             $string = $request->getHeaderLine('Content-Length');
 
             $contentLength = (int)$string;
             if ((string)$contentLength !== (string)$string) {
                 // Content-Length value is not an integer or not a single integer
-                $this->emit('error', new \Exception('The value of `Content-Length` is not valid'));
-                return;
+                $this->emit('error', array(new \InvalidArgumentException('The value of `Content-Length` is not valid')));
+                return $this->writeError($conn, 400);
             }
 
             $stream = new LengthLimitedStream($conn, $contentLength);
@@ -188,9 +186,10 @@ class Server extends EventEmitter
         $this->emit('request', array($request, $response));
 
         if ($stream instanceof LengthLimitedStream && $contentLength === 0) {
-            // stream must emit an 'end' here, because empty data won't be emitted
+            // Content-Length is 0 and won't emit further data,
+            // 'handleData' from LengthLimitedStream won't be called anymore
             $stream->emit('end');
-            $conn->removeListener('data', array($stream, 'handleData'));
+            $stream->close();
         }
     }
 
