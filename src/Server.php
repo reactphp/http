@@ -90,7 +90,7 @@ class Server extends EventEmitter
             $that->handleRequest($conn, $request);
 
             if ($bodyBuffer !== '') {
-                $request->emit('data', array($bodyBuffer));
+                $conn->emit('data', array($bodyBuffer));
             }
         });
 
@@ -130,6 +130,15 @@ class Server extends EventEmitter
             '[]'
         );
 
+        $stream = $conn;
+        if ($request->hasHeader('Transfer-Encoding')) {
+            $transferEncodingHeader = $request->getHeader('Transfer-Encoding');
+            // 'chunked' must always be the final value of 'Transfer-Encoding' according to: https://tools.ietf.org/html/rfc7230#section-3.3.1
+            if (strtolower(end($transferEncodingHeader)) === 'chunked') {
+                $stream = new ChunkedDecoder($conn);
+            }
+        }
+
         // forward pause/resume calls to underlying connection
         $request->on('pause', array($conn, 'pause'));
         $request->on('resume', array($conn, 'resume'));
@@ -141,10 +150,11 @@ class Server extends EventEmitter
         });
 
         // forward connection events to request
-        $conn->on('end', function () use ($request) {
+        $stream->on('end', function () use ($request) {
             $request->emit('end');
         });
-        $conn->on('data', function ($data) use ($request) {
+
+        $stream->on('data', function ($data) use ($request) {
             $request->emit('data', array($data));
         });
 
