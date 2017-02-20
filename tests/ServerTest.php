@@ -190,6 +190,7 @@ class ServerTest extends TestCase
 
         $data = '';
         $data .= "POST / HTTP/1.1\r\n";
+        $data .= "Host: localhost\r\n";
         $data .= "Content-Length: 100\r\n";
         $data .= "\r\n";
         $data .= "incomplete";
@@ -209,6 +210,7 @@ class ServerTest extends TestCase
 
         $data = '';
         $data .= "POST / HTTP/1.1\r\n";
+        $data .= "Host: localhost\r\n";
         $data .= "Content-Length: 100\r\n";
         $data .= "\r\n";
         $this->connection->emit('data', array($data));
@@ -270,7 +272,7 @@ class ServerTest extends TestCase
 
         $this->socket->emit('connection', array($this->connection));
 
-        $data = "GET / HTTP/1.1\r\n\r\n";
+        $data = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n";
         $this->connection->emit('data', array($data));
 
         $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
@@ -579,7 +581,114 @@ class ServerTest extends TestCase
         $data .= "\r\n";
         $data .= "5\r\nhello\r\n";
         $data .= "0\r\n\r\n";
+        $this->connection->emit('data', array($data));
+    }
 
+    public function testRequestHttp11WithoutHostWillEmitErrorAndSendErrorResponse()
+    {
+        $error = null;
+        $server = new Server($this->socket);
+        $server->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $buffer = '';
+
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+
+        $this->assertContains("HTTP/1.1 400 Bad Request\r\n", $buffer);
+        $this->assertContains("\r\n\r\nError 400: Bad Request", $buffer);
+    }
+
+    public function testRequestHttp11WithMalformedHostWillEmitErrorAndSendErrorResponse()
+    {
+        $error = null;
+        $server = new Server($this->socket);
+        $server->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $buffer = '';
+
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\nHost: ///\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+
+        $this->assertContains("HTTP/1.1 400 Bad Request\r\n", $buffer);
+        $this->assertContains("\r\n\r\nError 400: Bad Request", $buffer);
+    }
+
+    public function testRequestHttp11WithInvalidHostUriComponentsWillEmitErrorAndSendErrorResponse()
+    {
+        $error = null;
+        $server = new Server($this->socket);
+        $server->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $buffer = '';
+
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\nHost: localhost:80/test\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+
+        $this->assertContains("HTTP/1.1 400 Bad Request\r\n", $buffer);
+        $this->assertContains("\r\n\r\nError 400: Bad Request", $buffer);
+    }
+
+    public function testRequestHttp10WithoutHostEmitsRequestWithNoError()
+    {
+        $server = new Server($this->socket);
+        $server->on('request', $this->expectCallableOnce());
+        $server->on('error', $this->expectCallableNever());
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.0\r\n\r\n";
         $this->connection->emit('data', array($data));
     }
 
