@@ -131,6 +131,37 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
+    public function testRequestPauseAfterCloseWillNotBeForwarded()
+    {
+        $server = new Server($this->socket);
+        $server->on('request', function (Request $request) {
+            $request->close();
+            $request->pause();
+        });
+
+        $this->connection->expects($this->once())->method('pause');
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+        $this->connection->emit('data', array($data));
+    }
+
+    public function testRequestResumeAfterCloseWillNotBeForwarded()
+    {
+        $server = new Server($this->socket);
+        $server->on('request', function (Request $request) {
+            $request->close();
+            $request->resume();
+        });
+
+        $this->connection->expects($this->once())->method('pause');
+        $this->connection->expects($this->never())->method('resume');
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+        $this->connection->emit('data', array($data));
+    }
+
     public function testRequestEventWithoutBodyWillNotEmitData()
     {
         $never = $this->expectCallableNever();
@@ -415,7 +446,7 @@ class ServerTest extends TestCase
 
         $dataEvent = $this->expectCallableOnceWith('hello');
         $endEvent = $this->expectCallableOnce();
-        $closeEvent = $this->expectCallableNever();
+        $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
         $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
@@ -444,7 +475,7 @@ class ServerTest extends TestCase
 
         $dataEvent = $this->expectCallableOnceWith('hello');
         $endEvent = $this->expectCallableOnce();
-        $closeEvent = $this->expectCallableNever();
+        $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
         $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
@@ -474,7 +505,7 @@ class ServerTest extends TestCase
 
         $dataEvent = $this->expectCallableNever();
         $endEvent = $this->expectCallableOnce();
-        $closeEvent = $this->expectCallableNever();
+        $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
         $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
@@ -502,7 +533,7 @@ class ServerTest extends TestCase
 
         $dataEvent = $this->expectCallableOnceWith('hello');
         $endEvent = $this->expectCallableOnce();
-        $closeEvent = $this->expectCallableNever();
+        $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
         $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
@@ -531,7 +562,7 @@ class ServerTest extends TestCase
 
         $dataEvent = $this->expectCallableOnceWith('hello');
         $endEvent = $this->expectCallableOnce();
-        $closeEvent = $this->expectCallableNever();
+        $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
         $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {

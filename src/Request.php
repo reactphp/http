@@ -174,18 +174,30 @@ class Request extends EventEmitter implements ReadableStreamInterface
 
     public function pause()
     {
+        if (!$this->readable) {
+            return;
+        }
+
         $this->emit('pause');
     }
 
     public function resume()
     {
+        if (!$this->readable) {
+            return;
+        }
+
         $this->emit('resume');
     }
 
     public function close()
     {
+        if (!$this->readable) {
+            return;
+        }
+
         $this->readable = false;
-        $this->emit('end');
+        $this->emit('close');
         $this->removeAllListeners();
     }
 
