@@ -231,7 +231,9 @@ This method MUST NOT be invoked after calling [`writeHead()`](#writehead).
 This method MUST NOT be invoked if this is not a HTTP/1.1 response
 (please check [`expectsContinue()`](#expectscontinue) as above).
 Calling this method after sending the headers or if this is not a HTTP/1.1
-response is an error that will result in an `Exception`.
+response is an error that will result in an `Exception`
+(unless the response has ended/closed already).
+Calling this method after the response has ended/closed is a NOOP.
 
 #### writeHead()
 
@@ -248,7 +250,9 @@ $response->writeHead(200, array(
 $response->end('Hello World!');
 ```
 
-Calling this method more than once will result in an `Exception`.
+Calling this method more than once will result in an `Exception`
+(unless the response has ended/closed already).
+Calling this method after the response has ended/closed is a NOOP.
 
 Unless you specify a `Content-Length` header yourself, HTTP/1.1 responses
 will automatically use chunked transfer encoding and send the respective header

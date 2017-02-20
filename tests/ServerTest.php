@@ -249,6 +249,23 @@ class ServerTest extends TestCase
         $this->assertContains("\r\nX-Powered-By: React/alpha\r\n", $buffer);
     }
 
+    public function testClosingResponseDoesNotSendAnyData()
+    {
+        $server = new Server($this->socket);
+        $server->on('request', function (Request $request, Response $response) {
+            $response->close();
+        });
+
+        $this->connection->expects($this->never())->method('write');
+        $this->connection->expects($this->never())->method('end');
+        $this->connection->expects($this->once())->method('close');
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+        $this->connection->emit('data', array($data));
+    }
+
     public function testResponseContainsSameRequestProtocolVersionAndChunkedBodyForHttp11()
     {
         $server = new Server($this->socket);

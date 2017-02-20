@@ -3,7 +3,6 @@
 namespace React\Http;
 
 use Evenement\EventEmitter;
-use React\Socket\ConnectionInterface;
 use React\Stream\WritableStreamInterface;
 
 /**
@@ -45,19 +44,16 @@ class Response extends EventEmitter implements WritableStreamInterface
      *
      * @internal
      */
-    public function __construct(ConnectionInterface $conn, $protocolVersion = '1.1')
+    public function __construct(WritableStreamInterface $conn, $protocolVersion = '1.1')
     {
         $this->conn = $conn;
         $this->protocolVersion = $protocolVersion;
 
         $that = $this;
-        $this->conn->on('end', function () use ($that) {
-            $that->close();
-        });
+        $this->conn->on('close', array($this, 'close'));
 
         $this->conn->on('error', function ($error) use ($that) {
-            $that->emit('error', array($error, $that));
-            $that->close();
+            $that->emit('error', array($error));
         });
 
         $this->conn->on('drain', function () use ($that) {
@@ -106,7 +102,9 @@ class Response extends EventEmitter implements WritableStreamInterface
      * This method MUST NOT be invoked if this is not a HTTP/1.1 response
      * (please check [`expectsContinue()`] as above).
      * Calling this method after sending the headers or if this is not a HTTP/1.1
-     * response is an error that will result in an `Exception`.
+     * response is an error that will result in an `Exception`
+     * (unless the response has ended/closed already).
+     * Calling this method after the response has ended/closed is a NOOP.
      *
      * @return void
      * @throws \Exception
@@ -114,6 +112,9 @@ class Response extends EventEmitter implements WritableStreamInterface
      */
     public function writeContinue()
     {
+        if (!$this->writable) {
+            return;
+        }
         if ($this->protocolVersion !== '1.1') {
             throw new \Exception('Continue requires a HTTP/1.1 message');
         }
@@ -137,7 +138,9 @@ class Response extends EventEmitter implements WritableStreamInterface
      * $response->end('Hello World!');
      * ```
      *
-     * Calling this method more than once will result in an `Exception`.
+     * Calling this method more than once will result in an `Exception`
+     * (unless the response has ended/closed already).
+     * Calling this method after the response has ended/closed is a NOOP.
      *
      * Unless you specify a `Content-Length` header yourself, HTTP/1.1 responses
      * will automatically use chunked transfer encoding and send the respective header
@@ -184,6 +187,9 @@ class Response extends EventEmitter implements WritableStreamInterface
      */
     public function writeHead($status = 200, array $headers = array())
     {
+        if (!$this->writable) {
+            return;
+        }
         if ($this->headWritten) {
             throw new \Exception('Response head has already been written.');
         }
@@ -250,6 +256,9 @@ class Response extends EventEmitter implements WritableStreamInterface
 
     public function write($data)
     {
+        if (!$this->writable) {
+            return false;
+        }
         if (!$this->headWritten) {
             throw new \Exception('Response head has not yet been written.');
         }
@@ -271,6 +280,13 @@ class Response extends EventEmitter implements WritableStreamInterface
 
     public function end($data = null)
     {
+        if (!$this->writable) {
+            return;
+        }
+        if (!$this->headWritten) {
+            throw new \Exception('Response head has not yet been written.');
+        }
+
         if (null !== $data) {
             $this->write($data);
         }
@@ -279,8 +295,7 @@ class Response extends EventEmitter implements WritableStreamInterface
             $this->conn->write("0\r\n\r\n");
         }
 
-        $this->emit('end');
-        $this->removeAllListeners();
+        $this->writable = false;
         $this->conn->end();
     }
 
@@ -291,10 +306,10 @@ class Response extends EventEmitter implements WritableStreamInterface
         }
 
         $this->closed = true;
-
         $this->writable = false;
+        $this->conn->close();
+
         $this->emit('close');
         $this->removeAllListeners();
-        $this->conn->close();
     }
 }
