@@ -3,6 +3,7 @@
 namespace React\Tests\Http;
 
 use React\Http\Response;
+use React\Stream\WritableStream;
 
 class ResponseTest extends TestCase
 {
@@ -171,6 +172,106 @@ class ResponseTest extends TestCase
         $response->writeHead(200, array('Content-Length' => 0, 'connection' => 'ignored'));
     }
 
+    /** @expectedException Exception */
+    public function testWriteHeadTwiceShouldThrowException()
+    {
+        $conn = $this
+            ->getMockBuilder('React\Socket\ConnectionInterface')
+            ->getMock();
+        $conn
+            ->expects($this->once())
+            ->method('write');
+
+        $response = new Response($conn);
+        $response->writeHead();
+        $response->writeHead();
+    }
+
+    public function testEndWithoutDataWritesEndChunkAndEndsInput()
+    {
+        $conn = $this
+            ->getMockBuilder('React\Socket\ConnectionInterface')
+            ->getMock();
+        $conn
+            ->expects($this->at(4))
+            ->method('write')
+            ->with("0\r\n\r\n");
+        $conn
+            ->expects($this->once())
+            ->method('end');
+
+        $response = new Response($conn);
+        $response->writeHead();
+        $response->end();
+    }
+
+    public function testEndWithDataWritesToInputAndEndsInputWithoutData()
+    {
+        $conn = $this
+            ->getMockBuilder('React\Socket\ConnectionInterface')
+            ->getMock();
+        $conn
+            ->expects($this->at(4))
+            ->method('write')
+            ->with("3\r\nbye\r\n");
+        $conn
+            ->expects($this->at(5))
+            ->method('write')
+            ->with("0\r\n\r\n");
+        $conn
+            ->expects($this->once())
+            ->method('end');
+
+        $response = new Response($conn);
+        $response->writeHead();
+        $response->end('bye');
+    }
+
+    public function testEndWithoutDataWithoutChunkedEncodingWritesNoDataAndEndsInput()
+    {
+        $conn = $this
+            ->getMockBuilder('React\Socket\ConnectionInterface')
+            ->getMock();
+        $conn
+            ->expects($this->once())
+            ->method('write');
+        $conn
+            ->expects($this->once())
+            ->method('end');
+
+        $response = new Response($conn);
+        $response->writeHead(200, array('Content-Length' => 0));
+        $response->end();
+    }
+
+    /** @expectedException Exception */
+    public function testEndWithoutHeadShouldThrowException()
+    {
+        $conn = $this
+            ->getMockBuilder('React\Socket\ConnectionInterface')
+            ->getMock();
+        $conn
+            ->expects($this->never())
+            ->method('end');
+
+        $response = new Response($conn);
+        $response->end();
+    }
+
+    /** @expectedException Exception */
+    public function testWriteWithoutHeadShouldThrowException()
+    {
+        $conn = $this
+            ->getMockBuilder('React\Socket\ConnectionInterface')
+            ->getMock();
+        $conn
+            ->expects($this->never())
+            ->method('write');
+
+        $response = new Response($conn);
+        $response->write('test');
+    }
+
     public function testResponseBodyShouldBeChunkedCorrectly()
     {
         $conn = $this
@@ -229,23 +330,6 @@ class ResponseTest extends TestCase
         $response->end();
     }
 
-    public function testResponseShouldEmitEndOnStreamEnd()
-    {
-        $ended = false;
-
-        $conn = $this
-            ->getMockBuilder('React\Socket\ConnectionInterface')
-            ->getMock();
-        $response = new Response($conn);
-
-        $response->on('end', function () use (&$ended) {
-            $ended = true;
-        });
-        $response->end();
-
-        $this->assertTrue($ended);
-    }
-
     /** @test */
     public function writeContinueShouldSendContinueLineBeforeRealHeaders()
     {
@@ -280,26 +364,19 @@ class ResponseTest extends TestCase
         $response->writeContinue();
     }
 
-    /** @test */
-    public function shouldForwardEndDrainAndErrorEvents()
+    /** @expectedException Exception */
+    public function testWriteContinueAfterWriteHeadShouldThrowException()
     {
         $conn = $this
             ->getMockBuilder('React\Socket\ConnectionInterface')
             ->getMock();
         $conn
-            ->expects($this->at(0))
-            ->method('on')
-            ->with('end', $this->isInstanceOf('Closure'));
-        $conn
-            ->expects($this->at(1))
-            ->method('on')
-            ->with('error', $this->isInstanceOf('Closure'));
-        $conn
-            ->expects($this->at(2))
-            ->method('on')
-            ->with('drain', $this->isInstanceOf('Closure'));
+            ->expects($this->once())
+            ->method('write');
 
         $response = new Response($conn);
+        $response->writeHead();
+        $response->writeContinue();
     }
 
     /** @test */
@@ -391,5 +468,132 @@ class ResponseTest extends TestCase
 
         $response = new Response($conn);
         $response->writeHead(200, array("FooBar" => null));
+    }
+
+    public function testCloseClosesInputAndEmitsCloseEvent()
+    {
+        $input = $this->getMockBuilder('React\Stream\WritableStreamInterface')->getMock();
+        $input->expects($this->once())->method('close');
+
+        $response = new Response($input);
+
+        $response->on('close', $this->expectCallableOnce());
+
+        $response->close();
+    }
+
+    public function testClosingInputEmitsCloseEvent()
+    {
+        $input = new WritableStream();
+        $response = new Response($input);
+
+        $response->on('close', $this->expectCallableOnce());
+
+        $input->close();
+    }
+
+    public function testCloseMultipleTimesEmitsCloseEventOnce()
+    {
+        $input = new WritableStream();
+        $response = new Response($input);
+
+        $response->on('close', $this->expectCallableOnce());
+
+        $response->close();
+        $response->close();
+    }
+
+    public function testIsNotWritableAfterClose()
+    {
+        $input = $this->getMockBuilder('React\Stream\WritableStreamInterface')->getMock();
+
+        $response = new Response($input);
+
+        $response->close();
+
+        $this->assertFalse($response->isWritable());
+    }
+
+    public function testCloseAfterEndIsPassedThrough()
+    {
+        $input = $this->getMockBuilder('React\Stream\WritableStreamInterface')->getMock();
+        $input->expects($this->once())->method('end');
+        $input->expects($this->once())->method('close');
+
+        $response = new Response($input);
+
+        $response->writeHead();
+        $response->end();
+        $response->close();
+    }
+
+    public function testWriteAfterCloseIsNoOp()
+    {
+        $input = $this->getMockBuilder('React\Stream\WritableStreamInterface')->getMock();
+        $input->expects($this->once())->method('close');
+        $input->expects($this->never())->method('write');
+
+        $response = new Response($input);
+        $response->close();
+
+        $this->assertFalse($response->write('noop'));
+    }
+
+    public function testWriteHeadAfterCloseIsNoOp()
+    {
+        $input = $this->getMockBuilder('React\Stream\WritableStreamInterface')->getMock();
+        $input->expects($this->once())->method('close');
+        $input->expects($this->never())->method('write');
+
+        $response = new Response($input);
+        $response->close();
+
+        $response->writeHead();
+    }
+
+    public function testWriteContinueAfterCloseIsNoOp()
+    {
+        $input = $this->getMockBuilder('React\Stream\WritableStreamInterface')->getMock();
+        $input->expects($this->once())->method('close');
+        $input->expects($this->never())->method('write');
+
+        $response = new Response($input);
+        $response->close();
+
+        $response->writeContinue();
+    }
+
+    public function testEndAfterCloseIsNoOp()
+    {
+        $input = $this->getMockBuilder('React\Stream\WritableStreamInterface')->getMock();
+        $input->expects($this->once())->method('close');
+        $input->expects($this->never())->method('write');
+        $input->expects($this->never())->method('end');
+
+        $response = new Response($input);
+        $response->close();
+
+        $response->end('noop');
+    }
+
+    public function testErrorEventShouldBeForwardedWithoutClosing()
+    {
+        $input = new WritableStream();
+        $response = new Response($input);
+
+        $response->on('error', $this->expectCallableOnce());
+        $response->on('close', $this->expectCallableNever());
+
+        $input->emit('error', array(new \RuntimeException()));
+    }
+
+    public function testDrainEventShouldBeForwarded()
+    {
+        $input = new WritableStream();
+        $response = new Response($input);
+
+        $response->on('drain', $this->expectCallableOnce());
+
+        $input->emit('drain');
     }
 }
