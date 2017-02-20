@@ -75,4 +75,43 @@ class RequestTest extends TestCase
         $this->assertEquals(array('a', 'b'), $request->getHeader('Test'));
         $this->assertEquals('a, b', $request->getHeaderLine('Test'));
     }
+
+    public function testCloseEmitsCloseEvent()
+    {
+        $request = new Request('GET', '/');
+
+        $request->on('close', $this->expectCallableOnce());
+
+        $request->close();
+    }
+
+    public function testCloseMultipleTimesEmitsCloseEventOnce()
+    {
+        $request = new Request('GET', '/');
+
+        $request->on('close', $this->expectCallableOnce());
+
+        $request->close();
+        $request->close();
+    }
+
+    public function testIsNotReadableAfterClose()
+    {
+        $request = new Request('GET', '/');
+
+        $request->close();
+
+        $this->assertFalse($request->isReadable());
+    }
+
+    public function testPipeReturnsDest()
+    {
+        $dest = $this->getMockBuilder('React\Stream\WritableStreamInterface')->getMock();
+
+        $request = new Request('GET', '/');
+
+        $ret = $request->pipe($dest);
+
+        $this->assertSame($dest, $ret);
+    }
 }

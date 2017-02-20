@@ -143,17 +143,15 @@ class Server extends EventEmitter
         $request->on('pause', array($conn, 'pause'));
         $request->on('resume', array($conn, 'resume'));
 
-        // closing the request currently emits an "end" event
-        // stop reading from the connection by pausing it
-        $request->on('end', function () use ($conn) {
-            $conn->pause();
-        });
+        // request closed => stop reading from the stream by pausing it
+        // stream closed => close request
+        $request->on('close', array($stream, 'pause'));
+        $stream->on('close', array($request, 'close'));
 
-        // forward connection events to request
-        $stream->on('end', function () use ($request) {
+        // forward data and end events from body stream to request
+        $stream->on('end', function() use ($request) {
             $request->emit('end');
         });
-
         $stream->on('data', function ($data) use ($request) {
             $request->emit('data', array($data));
         });
