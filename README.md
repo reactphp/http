@@ -283,6 +283,12 @@ $response->writeHead(200, array(
 ));
 ```
 
+Note that persistent connections (`Connection: keep-alive`) are currently
+not supported.
+As such, HTTP/1.1 response messages will automatically include a
+`Connection: close` header, irrespective of what header values are
+passed explicitly.
+
 ## Install
 
 The recommended way to install this library is [through Composer](http://getcomposer.org).
