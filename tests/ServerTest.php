@@ -83,6 +83,7 @@ class ServerTest extends TestCase
         $this->assertSame(1, $i);
         $this->assertInstanceOf('React\Http\Request', $requestAssertion);
         $this->assertSame('/', $requestAssertion->getPath());
+        $this->assertSame(array(), $requestAssertion->getQueryParams());
         $this->assertSame('GET', $requestAssertion->getMethod());
         $this->assertSame('127.0.0.1', $requestAssertion->remoteAddress);
 
