@@ -196,9 +196,8 @@ class Request extends EventEmitter implements ReadableStreamInterface
             return;
         }
 
-        // request closed => stop reading from the stream by pausing it
         $this->readable = false;
-        $this->stream->pause();
+        $this->stream->close();
 
         $this->emit('close');
         $this->removeAllListeners();

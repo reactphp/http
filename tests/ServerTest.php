@@ -1031,6 +1031,9 @@ class ServerTest extends TestCase
             $request->on('error', $errorEvent);
         });
 
+        $this->connection->expects($this->never())->method('close');
+        $this->connection->expects($this->once())->method('pause');
+
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
@@ -1050,6 +1053,9 @@ class ServerTest extends TestCase
         $server->on('request', function ($request, $response) use ($errorEvent){
             $request->on('error', $errorEvent);
         });
+
+        $this->connection->expects($this->never())->method('close');
+        $this->connection->expects($this->once())->method('pause');
 
         $this->socket->emit('connection', array($this->connection));
 
@@ -1073,6 +1079,9 @@ class ServerTest extends TestCase
             $request->on('error', $errorEvent);
         });
 
+        $this->connection->expects($this->never())->method('close');
+        $this->connection->expects($this->once())->method('pause');
+
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
@@ -1093,6 +1102,9 @@ class ServerTest extends TestCase
             $request->on('error', $errorEvent);
         });
 
+        $this->connection->expects($this->never())->method('close');
+        $this->connection->expects($this->once())->method('pause');
+
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
@@ -1111,6 +1123,9 @@ class ServerTest extends TestCase
         $server = new Server($this->socket);
         $server->on('request', $this->expectCallableOnce());
 
+        $this->connection->expects($this->never())->method('close');
+        $this->connection->expects($this->once())->method('pause');
+
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
@@ -1128,6 +1143,9 @@ class ServerTest extends TestCase
         $server = new Server($this->socket);
         $server->on('request', $this->expectCallableOnce());
 
+        $this->connection->expects($this->never())->method('close');
+        $this->connection->expects($this->once())->method('pause');
+
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
@@ -1139,6 +1157,22 @@ class ServerTest extends TestCase
 
         $this->connection->emit('data', array($data));
         $this->connection->emit('end');
+    }
+
+    public function testCloseRequestWillPauseConnection()
+    {
+        $server = new Server($this->socket);
+        $server->on('request', function ($request, $response) {
+            $request->close();
+        });
+
+        $this->connection->expects($this->never())->method('close');
+        $this->connection->expects($this->once())->method('pause');
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+        $this->connection->emit('data', array($data));
     }
 
     private function createGetRequest()

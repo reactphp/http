@@ -103,10 +103,9 @@ class RequestTest extends TestCase
         $request->close();
     }
 
-    public function testCloseWillPauseUnderlyingStream()
+    public function testCloseWillCloseUnderlyingStream()
     {
-        $this->stream->expects($this->once())->method('pause');
-        $this->stream->expects($this->never())->method('close');
+        $this->stream->expects($this->once())->method('close');
 
         $request = new Request(new Psr('GET', '/'), $this->stream);
 
