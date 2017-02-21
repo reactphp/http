@@ -55,21 +55,7 @@ class RequestHeaderParser extends EventEmitter
     {
         list($headers, $bodyBuffer) = explode("\r\n\r\n", $data, 2);
 
-        $psrRequest = g7\parse_request($headers);
-
-        $parsedQuery = array();
-        $queryString = $psrRequest->getUri()->getQuery();
-        if ($queryString) {
-            parse_str($queryString, $parsedQuery);
-        }
-
-        $request = new Request(
-            $psrRequest->getMethod(),
-            $psrRequest->getUri()->getPath(),
-            $parsedQuery,
-            $psrRequest->getProtocolVersion(),
-            $psrRequest->getHeaders()
-        );
+        $request = g7\parse_request($headers);
 
         return array($request, $bodyBuffer);
     }
