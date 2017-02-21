@@ -149,19 +149,7 @@ class Server extends EventEmitter
             }
         }
 
-        $parsedQuery = array();
-        $queryString = $request->getUri()->getQuery();
-        if ($queryString) {
-            parse_str($queryString, $parsedQuery);
-        }
-
-        $request = new Request(
-            $request->getMethod(),
-            $request->getUri()->getPath(),
-            $parsedQuery,
-            $request->getProtocolVersion(),
-            $request->getHeaders()
-        );
+        $request = new Request($request);
 
         // attach remote ip to the request as metadata
         $request->remoteAddress = trim(

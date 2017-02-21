@@ -3,6 +3,7 @@
 namespace React\Tests\Http;
 
 use React\Http\Request;
+use RingCentral\Psr7\Request as Psr;
 
 class RequestTest extends TestCase
 {
@@ -10,7 +11,7 @@ class RequestTest extends TestCase
     public function expectsContinueShouldBeFalseByDefault()
     {
         $headers = array();
-        $request = new Request('GET', '/', array(), '1.1', $headers);
+        $request = new Request(new Psr('GET', '/', $headers, null, '1.1'));
 
         $this->assertFalse($request->expectsContinue());
     }
@@ -19,7 +20,7 @@ class RequestTest extends TestCase
     public function expectsContinueShouldBeTrueIfContinueExpected()
     {
         $headers = array('Expect' => array('100-continue'));
-        $request = new Request('GET', '/', array(), '1.1', $headers);
+        $request = new Request(new Psr('GET', '/', $headers, null, '1.1'));
 
         $this->assertTrue($request->expectsContinue());
     }
@@ -28,7 +29,7 @@ class RequestTest extends TestCase
     public function expectsContinueShouldBeTrueIfContinueExpectedCaseInsensitive()
     {
         $headers = array('EXPECT' => array('100-CONTINUE'));
-        $request = new Request('GET', '/', array(), '1.1', $headers);
+        $request = new Request(new Psr('GET', '/', $headers, null, '1.1'));
 
         $this->assertTrue($request->expectsContinue());
     }
@@ -37,14 +38,14 @@ class RequestTest extends TestCase
     public function expectsContinueShouldBeFalseForHttp10()
     {
         $headers = array('Expect' => array('100-continue'));
-        $request = new Request('GET', '/', array(), '1.0', $headers);
+        $request = new Request(new Psr('GET', '/', $headers, null, '1.0'));
 
         $this->assertFalse($request->expectsContinue());
     }
 
     public function testEmptyHeader()
     {
-        $request = new Request('GET', '/');
+        $request = new Request(new Psr('GET', '/', array()));
 
         $this->assertEquals(array(), $request->getHeaders());
         $this->assertFalse($request->hasHeader('Test'));
@@ -54,9 +55,9 @@ class RequestTest extends TestCase
 
     public function testHeaderIsCaseInsensitive()
     {
-        $request = new Request('GET', '/', array(), '1.1', array(
+        $request = new Request(new Psr('GET', '/', array(
             'TEST' => array('Yes'),
-        ));
+        )));
 
         $this->assertEquals(array('TEST' => array('Yes')), $request->getHeaders());
         $this->assertTrue($request->hasHeader('Test'));
@@ -66,9 +67,9 @@ class RequestTest extends TestCase
 
     public function testHeaderWithMultipleValues()
     {
-        $request = new Request('GET', '/', array(), '1.1', array(
+        $request = new Request(new Psr('GET', '/', array(
             'Test' => array('a', 'b'),
-        ));
+        )));
 
         $this->assertEquals(array('Test' => array('a', 'b')), $request->getHeaders());
         $this->assertTrue($request->hasHeader('Test'));
@@ -78,7 +79,7 @@ class RequestTest extends TestCase
 
     public function testCloseEmitsCloseEvent()
     {
-        $request = new Request('GET', '/');
+        $request = new Request(new Psr('GET', '/'));
 
         $request->on('close', $this->expectCallableOnce());
 
@@ -87,7 +88,7 @@ class RequestTest extends TestCase
 
     public function testCloseMultipleTimesEmitsCloseEventOnce()
     {
-        $request = new Request('GET', '/');
+        $request = new Request(new Psr('GET', '/'));
 
         $request->on('close', $this->expectCallableOnce());
 
@@ -97,7 +98,7 @@ class RequestTest extends TestCase
 
     public function testIsNotReadableAfterClose()
     {
-        $request = new Request('GET', '/');
+        $request = new Request(new Psr('GET', '/'));
 
         $request->close();
 
@@ -108,7 +109,7 @@ class RequestTest extends TestCase
     {
         $dest = $this->getMockBuilder('React\Stream\WritableStreamInterface')->getMock();
 
-        $request = new Request('GET', '/');
+        $request = new Request(new Psr('GET', '/'));
 
         $ret = $request->pipe($dest);
 

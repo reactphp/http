@@ -6,6 +6,7 @@ use Evenement\EventEmitter;
 use React\Stream\ReadableStreamInterface;
 use React\Stream\WritableStreamInterface;
 use React\Stream\Util;
+use Psr\Http\Message\RequestInterface;
 
 /**
  * The `Request` class is responsible for streaming the incoming request body
@@ -24,11 +25,7 @@ use React\Stream\Util;
 class Request extends EventEmitter implements ReadableStreamInterface
 {
     private $readable = true;
-    private $method;
-    private $path;
-    private $query;
-    private $httpVersion;
-    private $headers;
+    private $request;
 
     // metadata, implicitly added externally
     public $remoteAddress;
@@ -42,13 +39,9 @@ class Request extends EventEmitter implements ReadableStreamInterface
      *
      * @internal
      */
-    public function __construct($method, $path, $query = array(), $httpVersion = '1.1', $headers = array())
+    public function __construct(RequestInterface $request)
     {
-        $this->method = $method;
-        $this->path = $path;
-        $this->query = $query;
-        $this->httpVersion = $httpVersion;
-        $this->headers = $headers;
+        $this->request = $request;
     }
 
     /**
@@ -58,7 +51,7 @@ class Request extends EventEmitter implements ReadableStreamInterface
      */
     public function getMethod()
     {
-        return $this->method;
+        return $this->request->getMethod();
     }
 
     /**
@@ -68,7 +61,7 @@ class Request extends EventEmitter implements ReadableStreamInterface
      */
     public function getPath()
     {
-        return $this->path;
+        return $this->request->getUri()->getPath();
     }
 
     /**
@@ -78,7 +71,10 @@ class Request extends EventEmitter implements ReadableStreamInterface
      */
     public function getQueryParams()
     {
-        return $this->query;
+        $params = array();
+        parse_str($this->request->getUri()->getQuery(), $params);
+
+        return $params;
     }
 
     /**
@@ -88,7 +84,7 @@ class Request extends EventEmitter implements ReadableStreamInterface
      */
     public function getProtocolVersion()
     {
-        return $this->httpVersion;
+        return $this->request->getProtocolVersion();
     }
 
     /**
@@ -102,7 +98,7 @@ class Request extends EventEmitter implements ReadableStreamInterface
      */
     public function getHeaders()
     {
-        return $this->headers;
+        return $this->request->getHeaders();
     }
 
     /**
@@ -113,18 +109,7 @@ class Request extends EventEmitter implements ReadableStreamInterface
      */
     public function getHeader($name)
     {
-        $found = array();
-
-        $name = strtolower($name);
-        foreach ($this->headers as $key => $value) {
-            if (strtolower($key) === $name) {
-                foreach((array)$value as $one) {
-                    $found[] = $one;
-                }
-            }
-        }
-
-        return $found;
+        return $this->request->getHeader($name);
     }
 
     /**
@@ -135,7 +120,7 @@ class Request extends EventEmitter implements ReadableStreamInterface
      */
     public function getHeaderLine($name)
     {
-        return implode(', ', $this->getHeader($name));
+        return $this->request->getHeaderLine($name);
     }
 
     /**
@@ -146,7 +131,7 @@ class Request extends EventEmitter implements ReadableStreamInterface
      */
     public function hasHeader($name)
     {
-        return !!$this->getHeader($name);
+        return $this->request->hasHeader($name);
     }
 
     /**
@@ -164,7 +149,7 @@ class Request extends EventEmitter implements ReadableStreamInterface
      */
     public function expectsContinue()
     {
-        return $this->httpVersion !== '1.0' && '100-continue' === strtolower($this->getHeaderLine('Expect'));
+        return $this->getProtocolVersion() !== '1.0' && '100-continue' === strtolower($this->getHeaderLine('Expect'));
     }
 
     public function isReadable()
