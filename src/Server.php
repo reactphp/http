@@ -5,6 +5,7 @@ namespace React\Http;
 use Evenement\EventEmitter;
 use React\Socket\ServerInterface as SocketServerInterface;
 use React\Socket\ConnectionInterface;
+use Psr\Http\Message\RequestInterface;
 
 /**
  * The `Server` class is responsible for handling incoming connections and then
@@ -87,7 +88,7 @@ class Server extends EventEmitter
         $that = $this;
         $parser = new RequestHeaderParser();
         $listener = array($parser, 'feed');
-        $parser->on('headers', function (Request $request, $bodyBuffer) use ($conn, $listener, $parser, $that) {
+        $parser->on('headers', function (RequestInterface $request, $bodyBuffer) use ($conn, $listener, $parser, $that) {
             // parsing request completed => stop feeding parser
             $conn->removeListener('data', $listener);
 
@@ -111,7 +112,7 @@ class Server extends EventEmitter
     }
 
     /** @internal */
-    public function handleRequest(ConnectionInterface $conn, Request $request)
+    public function handleRequest(ConnectionInterface $conn, RequestInterface $request)
     {
         // only support HTTP/1.1 and HTTP/1.0 requests
         if ($request->getProtocolVersion() !== '1.1' && $request->getProtocolVersion() !== '1.0') {
@@ -138,13 +139,6 @@ class Server extends EventEmitter
         }
 
         $response = new Response($conn, $request->getProtocolVersion());
-        $response->on('close', array($request, 'close'));
-
-        // attach remote ip to the request as metadata
-        $request->remoteAddress = trim(
-            parse_url('tcp://' . $conn->getRemoteAddress(), PHP_URL_HOST),
-            '[]'
-        );
 
         $stream = $conn;
         if ($request->hasHeader('Transfer-Encoding')) {
@@ -154,6 +148,26 @@ class Server extends EventEmitter
                 $stream = new ChunkedDecoder($conn);
             }
         }
+
+        $parsedQuery = array();
+        $queryString = $request->getUri()->getQuery();
+        if ($queryString) {
+            parse_str($queryString, $parsedQuery);
+        }
+
+        $request = new Request(
+            $request->getMethod(),
+            $request->getUri()->getPath(),
+            $parsedQuery,
+            $request->getProtocolVersion(),
+            $request->getHeaders()
+        );
+
+        // attach remote ip to the request as metadata
+        $request->remoteAddress = trim(
+            parse_url('tcp://' . $conn->getRemoteAddress(), PHP_URL_HOST),
+            '[]'
+        );
 
         // forward pause/resume calls to underlying connection
         $request->on('pause', array($conn, 'pause'));

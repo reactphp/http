@@ -45,10 +45,9 @@ class RequestHeaderParserTest extends TestCase
         $data .= 'RANDOM DATA';
         $parser->feed($data);
 
-        $this->assertInstanceOf('React\Http\Request', $request);
+        $this->assertInstanceOf('Psr\Http\Message\RequestInterface', $request);
         $this->assertSame('GET', $request->getMethod());
-        $this->assertSame('/', $request->getPath());
-        $this->assertSame(array(), $request->getQueryParams());
+        $this->assertEquals('http://example.com/', $request->getUri());
         $this->assertSame('1.1', $request->getProtocolVersion());
         $this->assertSame(array('Host' => array('example.com:80'), 'Connection' => array('close')), $request->getHeaders());
 
@@ -83,10 +82,9 @@ class RequestHeaderParserTest extends TestCase
         $data = $this->createAdvancedPostRequest();
         $parser->feed($data);
 
-        $this->assertInstanceOf('React\Http\Request', $request);
+        $this->assertInstanceOf('Psr\Http\Message\RequestInterface', $request);
         $this->assertSame('POST', $request->getMethod());
-        $this->assertSame('/foo', $request->getPath());
-        $this->assertSame(array('bar' => 'baz'), $request->getQueryParams());
+        $this->assertEquals('http://example.com/foo?bar=baz', $request->getUri());
         $this->assertSame('1.1', $request->getProtocolVersion());
         $headers = array(
             'Host' => array('example.com:80'),
