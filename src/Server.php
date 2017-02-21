@@ -149,30 +149,13 @@ class Server extends EventEmitter
             }
         }
 
-        $request = new Request($request);
+        $request = new Request($request, $stream);
 
         // attach remote ip to the request as metadata
         $request->remoteAddress = trim(
             parse_url('tcp://' . $conn->getRemoteAddress(), PHP_URL_HOST),
             '[]'
         );
-
-        // forward pause/resume calls to underlying connection
-        $request->on('pause', array($conn, 'pause'));
-        $request->on('resume', array($conn, 'resume'));
-
-        // request closed => stop reading from the stream by pausing it
-        // stream closed => close request
-        $request->on('close', array($stream, 'pause'));
-        $stream->on('close', array($request, 'close'));
-
-        // forward data and end events from body stream to request
-        $stream->on('end', function() use ($request) {
-            $request->emit('end');
-        });
-        $stream->on('data', function ($data) use ($request) {
-            $request->emit('data', array($data));
-        });
 
         $this->emit('request', array($request, $response));
     }

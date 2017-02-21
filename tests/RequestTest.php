@@ -7,11 +7,18 @@ use RingCentral\Psr7\Request as Psr;
 
 class RequestTest extends TestCase
 {
+    private $stream;
+
+    public function setUp()
+    {
+        $this->stream = $this->getMockBuilder('React\Stream\ReadableStreamInterface')->getMock();
+    }
+
     /** @test */
     public function expectsContinueShouldBeFalseByDefault()
     {
         $headers = array();
-        $request = new Request(new Psr('GET', '/', $headers, null, '1.1'));
+        $request = new Request(new Psr('GET', '/', $headers, null, '1.1'), $this->stream);
 
         $this->assertFalse($request->expectsContinue());
     }
@@ -20,7 +27,7 @@ class RequestTest extends TestCase
     public function expectsContinueShouldBeTrueIfContinueExpected()
     {
         $headers = array('Expect' => array('100-continue'));
-        $request = new Request(new Psr('GET', '/', $headers, null, '1.1'));
+        $request = new Request(new Psr('GET', '/', $headers, null, '1.1'), $this->stream);
 
         $this->assertTrue($request->expectsContinue());
     }
@@ -29,7 +36,7 @@ class RequestTest extends TestCase
     public function expectsContinueShouldBeTrueIfContinueExpectedCaseInsensitive()
     {
         $headers = array('EXPECT' => array('100-CONTINUE'));
-        $request = new Request(new Psr('GET', '/', $headers, null, '1.1'));
+        $request = new Request(new Psr('GET', '/', $headers, null, '1.1'), $this->stream);
 
         $this->assertTrue($request->expectsContinue());
     }
@@ -38,14 +45,14 @@ class RequestTest extends TestCase
     public function expectsContinueShouldBeFalseForHttp10()
     {
         $headers = array('Expect' => array('100-continue'));
-        $request = new Request(new Psr('GET', '/', $headers, null, '1.0'));
+        $request = new Request(new Psr('GET', '/', $headers, null, '1.0'), $this->stream);
 
         $this->assertFalse($request->expectsContinue());
     }
 
     public function testEmptyHeader()
     {
-        $request = new Request(new Psr('GET', '/', array()));
+        $request = new Request(new Psr('GET', '/', array()), $this->stream);
 
         $this->assertEquals(array(), $request->getHeaders());
         $this->assertFalse($request->hasHeader('Test'));
@@ -57,7 +64,7 @@ class RequestTest extends TestCase
     {
         $request = new Request(new Psr('GET', '/', array(
             'TEST' => array('Yes'),
-        )));
+        )), $this->stream);
 
         $this->assertEquals(array('TEST' => array('Yes')), $request->getHeaders());
         $this->assertTrue($request->hasHeader('Test'));
@@ -69,7 +76,7 @@ class RequestTest extends TestCase
     {
         $request = new Request(new Psr('GET', '/', array(
             'Test' => array('a', 'b'),
-        )));
+        )), $this->stream);
 
         $this->assertEquals(array('Test' => array('a', 'b')), $request->getHeaders());
         $this->assertTrue($request->hasHeader('Test'));
@@ -79,7 +86,7 @@ class RequestTest extends TestCase
 
     public function testCloseEmitsCloseEvent()
     {
-        $request = new Request(new Psr('GET', '/'));
+        $request = new Request(new Psr('GET', '/'), $this->stream);
 
         $request->on('close', $this->expectCallableOnce());
 
@@ -88,7 +95,7 @@ class RequestTest extends TestCase
 
     public function testCloseMultipleTimesEmitsCloseEventOnce()
     {
-        $request = new Request(new Psr('GET', '/'));
+        $request = new Request(new Psr('GET', '/'), $this->stream);
 
         $request->on('close', $this->expectCallableOnce());
 
@@ -96,20 +103,48 @@ class RequestTest extends TestCase
         $request->close();
     }
 
+    public function testCloseWillPauseUnderlyingStream()
+    {
+        $this->stream->expects($this->once())->method('pause');
+        $this->stream->expects($this->never())->method('close');
+
+        $request = new Request(new Psr('GET', '/'), $this->stream);
+
+        $request->close();
+    }
+
     public function testIsNotReadableAfterClose()
     {
-        $request = new Request(new Psr('GET', '/'));
+        $request = new Request(new Psr('GET', '/'), $this->stream);
 
         $request->close();
 
         $this->assertFalse($request->isReadable());
     }
 
+    public function testPauseWillBeForwarded()
+    {
+        $this->stream->expects($this->once())->method('pause');
+
+        $request = new Request(new Psr('GET', '/'), $this->stream);
+
+        $request->pause();
+    }
+
+    public function testResumeWillBeForwarded()
+    {
+        $this->stream->expects($this->once())->method('resume');
+
+        $request = new Request(new Psr('GET', '/'), $this->stream);
+
+        $request->resume();
+    }
+
     public function testPipeReturnsDest()
     {
         $dest = $this->getMockBuilder('React\Stream\WritableStreamInterface')->getMock();
 
-        $request = new Request(new Psr('GET', '/'));
+        $request = new Request(new Psr('GET', '/'), $this->stream);
 
         $ret = $request->pipe($dest);
 

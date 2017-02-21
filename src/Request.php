@@ -26,6 +26,7 @@ class Request extends EventEmitter implements ReadableStreamInterface
 {
     private $readable = true;
     private $request;
+    private $stream;
 
     // metadata, implicitly added externally
     public $remoteAddress;
@@ -39,9 +40,23 @@ class Request extends EventEmitter implements ReadableStreamInterface
      *
      * @internal
      */
-    public function __construct(RequestInterface $request)
+    public function __construct(RequestInterface $request, ReadableStreamInterface $stream)
     {
         $this->request = $request;
+        $this->stream = $stream;
+
+        $that = $this;
+        // forward data and end events from body stream to request
+        $stream->on('data', function ($data) use ($that) {
+            $that->emit('data', array($data));
+        });
+        $stream->on('end', function () use ($that) {
+            $that->emit('end');
+        });
+        $stream->on('error', function ($error) use ($that) {
+            $that->emit('error', array($error));
+        });
+        $stream->on('close', array($this, 'close'));
     }
 
     /**
@@ -163,7 +178,7 @@ class Request extends EventEmitter implements ReadableStreamInterface
             return;
         }
 
-        $this->emit('pause');
+        $this->stream->pause();
     }
 
     public function resume()
@@ -172,7 +187,7 @@ class Request extends EventEmitter implements ReadableStreamInterface
             return;
         }
 
-        $this->emit('resume');
+        $this->stream->resume();
     }
 
     public function close()
@@ -181,7 +196,10 @@ class Request extends EventEmitter implements ReadableStreamInterface
             return;
         }
 
+        // request closed => stop reading from the stream by pausing it
         $this->readable = false;
+        $this->stream->pause();
+
         $this->emit('close');
         $this->removeAllListeners();
     }
