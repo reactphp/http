@@ -105,4 +105,16 @@ class LengthLimitedStreamTest extends TestCase
 
         $this->assertFalse($input->isReadable());
     }
+
+    public function testHandleUnexpectedEnd()
+    {
+        $stream = new LengthLimitedStream($this->input, 5);
+
+        $stream->on('data', $this->expectCallableNever());
+        $stream->on('close', $this->expectCallableOnce());
+        $stream->on('end', $this->expectCallableNever());
+        $stream->on('error', $this->expectCallableOnce());
+
+        $this->input->emit('end');
+    }
 }

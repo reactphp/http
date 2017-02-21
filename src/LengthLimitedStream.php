@@ -95,8 +95,7 @@ class LengthLimitedStream extends EventEmitter implements ReadableStreamInterfac
     public function handleEnd()
     {
         if (!$this->closed) {
-            $this->emit('end');
-            $this->close();
+            $this->handleError(new \Exception('Unexpected end event'));
         }
     }
 
