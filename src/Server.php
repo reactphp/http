@@ -170,6 +170,12 @@ class Server extends EventEmitter
 
         $this->emit('request', array($request, $response));
 
+        if ($stream instanceof CloseProtectionStream) {
+            $request->emit('end');
+            $request->close();
+            return;
+        }
+
         if ($stream instanceof LengthLimitedStream && $contentLength === 0) {
             // Content-Length is 0 and won't emit further data,
             // 'handleData' from LengthLimitedStream won't be called anymore

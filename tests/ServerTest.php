@@ -100,7 +100,12 @@ class ServerTest extends TestCase
         $this->connection->expects($this->once())->method('pause');
         $this->socket->emit('connection', array($this->connection));
 
-        $data = $this->createGetRequest();
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Content-Length: 5\r\n";
+        $data .= "\r\n";
+
         $this->connection->emit('data', array($data));
     }
 
@@ -1172,6 +1177,31 @@ class ServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = $this->createGetRequest();
+        $this->connection->emit('data', array($data));
+    }
+
+    public function testEndEventWillBeEmittedOnSimpleRequest()
+    {
+        $dataEvent = $this->expectCallableNever();
+        $closeEvent = $this->expectCallableOnce();
+        $endEvent = $this->expectCallableOnce();
+        $errorEvent = $this->expectCallableNever();
+
+        $server = new Server($this->socket);
+        $server->on('request', function ($request, $response) use ($dataEvent, $closeEvent, $endEvent, $errorEvent){
+            $request->on('data', $dataEvent);
+            $request->on('close', $closeEvent);
+            $request->on('end', $endEvent);
+            $request->on('error', $errorEvent);
+        });
+
+        $this->connection->expects($this->once())->method('pause');
+        $this->connection->expects($this->never())->method('close');
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+
         $this->connection->emit('data', array($data));
     }
 
