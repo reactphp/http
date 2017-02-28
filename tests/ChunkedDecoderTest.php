@@ -396,4 +396,55 @@ class ChunkedDecoderTest extends TestCase
 
         $this->assertFalse($input->isReadable());
     }
+
+    public function testLeadingZerosWillBeIgnored()
+    {
+        $this->parser->on('data', $this->expectCallableConsecutive(2, array('hello', 'hello world')));
+        $this->parser->on('error', $this->expectCallableNever());
+        $this->parser->on('end', $this->expectCallableNever());
+        $this->parser->on('close', $this->expectCallableNever());
+
+        $this->input->emit('data', array("00005\r\nhello\r\n"));
+        $this->input->emit('data', array("0000b\r\nhello world\r\n"));
+    }
+
+    public function testLeadingZerosInEndChunkWillBeIgnored()
+    {
+        $this->parser->on('data', $this->expectCallableNever());
+        $this->parser->on('error', $this->expectCallableNever());
+        $this->parser->on('end', $this->expectCallableOnce());
+        $this->parser->on('close', $this->expectCallableOnce());
+
+        $this->input->emit('data', array("0000\r\n\r\n"));
+    }
+
+    public function testLeadingZerosInInvalidChunk()
+    {
+        $this->parser->on('data', $this->expectCallableNever());
+        $this->parser->on('error', $this->expectCallableOnce());
+        $this->parser->on('end', $this->expectCallableNever());
+        $this->parser->on('close', $this->expectCallableOnce());
+
+        $this->input->emit('data', array("0000hello\r\n\r\n"));
+    }
+
+    public function testEmptyHeaderLeadsToError()
+    {
+        $this->parser->on('data', $this->expectCallableNever());
+        $this->parser->on('error', $this->expectCallableOnce());
+        $this->parser->on('end', $this->expectCallableNever());
+        $this->parser->on('close', $this->expectCallableOnce());
+
+        $this->input->emit('data', array("\r\n\r\n"));
+    }
+
+    public function testEmptyHeaderAndFilledBodyLeadsToError()
+    {
+        $this->parser->on('data', $this->expectCallableNever());
+        $this->parser->on('error', $this->expectCallableOnce());
+        $this->parser->on('end', $this->expectCallableNever());
+        $this->parser->on('close', $this->expectCallableOnce());
+
+        $this->input->emit('data', array("\r\nhello\r\n"));
+    }
 }
