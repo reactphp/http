@@ -1023,6 +1023,124 @@ class ServerTest extends TestCase
         $this->assertInstanceOf('InvalidArgumentException', $error);
     }
 
+    public function testInvalidChunkHeaderResultsInErrorOnRequestStream()
+    {
+        $errorEvent = $this->expectCallableOnceWith($this->isInstanceOf('Exception'));
+        $server = new Server($this->socket);
+        $server->on('request', function ($request, $response) use ($errorEvent){
+            $request->on('error', $errorEvent);
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Transfer-Encoding: chunked\r\n";
+        $data .= "\r\n";
+        $data .= "hello\r\hello\r\n";
+
+        $this->connection->emit('data', array($data));
+    }
+
+    public function testTooLongChunkHeaderResultsInErrorOnRequestStream()
+    {
+        $errorEvent = $this->expectCallableOnceWith($this->isInstanceOf('Exception'));
+        $server = new Server($this->socket);
+        $server->on('request', function ($request, $response) use ($errorEvent){
+            $request->on('error', $errorEvent);
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Transfer-Encoding: chunked\r\n";
+        $data .= "\r\n";
+        for ($i = 0; $i < 1025; $i++) {
+            $data .= 'a';
+        }
+
+        $this->connection->emit('data', array($data));
+    }
+
+    public function testTooLongChunkBodyResultsInErrorOnRequestStream()
+    {
+        $errorEvent = $this->expectCallableOnceWith($this->isInstanceOf('Exception'));
+        $server = new Server($this->socket);
+        $server->on('request', function ($request, $response) use ($errorEvent){
+            $request->on('error', $errorEvent);
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Transfer-Encoding: chunked\r\n";
+        $data .= "\r\n";
+        $data .= "5\r\nhello world\r\n";
+
+        $this->connection->emit('data', array($data));
+    }
+
+    public function testUnexpectedEndOfConnectionWillResultsInErrorOnRequestStream()
+    {
+        $errorEvent = $this->expectCallableOnceWith($this->isInstanceOf('Exception'));
+        $server = new Server($this->socket);
+        $server->on('request', function ($request, $response) use ($errorEvent){
+            $request->on('error', $errorEvent);
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Transfer-Encoding: chunked\r\n";
+        $data .= "\r\n";
+        $data .= "5\r\nhello\r\n";
+
+        $this->connection->emit('data', array($data));
+        $this->connection->emit('end');
+    }
+
+    public function testErrorInChunkedDecoderNeverClosesConnection()
+    {
+        $server = new Server($this->socket);
+        $server->on('request', $this->expectCallableOnce());
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Transfer-Encoding: chunked\r\n";
+        $data .= "\r\n";
+        $data .= "hello\r\nhello\r\n";
+
+        $this->connection->emit('data', array($data));
+    }
+
+    public function testErrorInLengthLimitedStreamNeverClosesConnection()
+    {
+        $server = new Server($this->socket);
+        $server->on('request', $this->expectCallableOnce());
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Content-Length: 5\r\n";
+        $data .= "\r\n";
+        $data .= "hello";
+
+        $this->connection->emit('data', array($data));
+        $this->connection->emit('end');
+    }
+
     private function createGetRequest()
     {
         $data = "GET / HTTP/1.1\r\n";
