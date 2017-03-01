@@ -140,12 +140,12 @@ class Server extends EventEmitter
 
         $response = new Response($conn, $request->getProtocolVersion());
 
-        $stream = $conn;
+        $stream = new CloseProtectionStream($conn);
         if ($request->hasHeader('Transfer-Encoding')) {
             $transferEncodingHeader = $request->getHeader('Transfer-Encoding');
             // 'chunked' must always be the final value of 'Transfer-Encoding' according to: https://tools.ietf.org/html/rfc7230#section-3.3.1
             if (strtolower(end($transferEncodingHeader)) === 'chunked') {
-                $stream = new ChunkedDecoder($conn);
+                $stream = new ChunkedDecoder($stream);
             }
         } elseif ($request->hasHeader('Content-Length')) {
             $string = $request->getHeaderLine('Content-Length');
@@ -157,7 +157,7 @@ class Server extends EventEmitter
                 return $this->writeError($conn, 400);
             }
 
-            $stream = new LengthLimitedStream($conn, $contentLength);
+            $stream = new LengthLimitedStream($stream, $contentLength);
         }
 
         $request = new Request($request, $stream);
