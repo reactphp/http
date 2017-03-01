@@ -108,6 +108,13 @@ class ChunkedDecoder extends EventEmitter implements ReadableStreamInterface
                     $hexValue = $array[0];
                 }
 
+                if ($hexValue !== '') {
+                    $hexValue = ltrim($hexValue, "0");
+                    if ($hexValue === '') {
+                        $hexValue = "0";
+                    }
+                }
+
                 $this->chunkSize = hexdec($hexValue);
                 if (dechex($this->chunkSize) !== $hexValue) {
                     $this->handleError(new \Exception($hexValue . ' is not a valid hexadecimal number'));
