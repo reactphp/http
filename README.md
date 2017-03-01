@@ -103,6 +103,20 @@ $http->on('error', function (Exception $e) {
 });
 ```
 
+An `error` event will be emitted for the `Request` if the validation of the body data fails.
+This can be e.g. invalid chunked decoded data or an unexpected `end` event.
+
+```php
+$http->on('request', function (Request $request, Response $response) {
+    $request->on('error', function (\Exception $error) {
+        echo $error->getMessage();
+    });
+});
+```
+
+Such an error will `pause` the connection instead of closing it. A response message
+can still be sent.
+
 ### Request
 
 The `Request` class is responsible for streaming the incoming request body
