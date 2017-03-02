@@ -1205,6 +1205,30 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
+    public function testRequestWithoutDefinedLengthWillIgnoreDataEvent()
+    {
+        $server = new Server($this->socket);
+
+        $dataEvent = $this->expectCallableNever();
+        $endEvent = $this->expectCallableOnce();
+        $closeEvent = $this->expectCallableOnce();
+        $errorEvent = $this->expectCallableNever();
+
+        $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+            $request->on('data', $dataEvent);
+            $request->on('end', $endEvent);
+            $request->on('close', $closeEvent);
+            $request->on('error', $errorEvent);
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+        $data .= "hello world";
+
+        $this->connection->emit('data', array($data));
+    }
+
     private function createGetRequest()
     {
         $data = "GET / HTTP/1.1\r\n";
