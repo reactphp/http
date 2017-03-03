@@ -121,6 +121,8 @@ can still be sent.
 
 The `Request` class is responsible for streaming the incoming request body
 and contains meta data which was parsed from the request headers.
+If the request body is chunked-encoded, the data will be decoded and emitted on the data event.
+The `Transfer-Encoding` header will be removed.
 
 It implements the `ReadableStreamInterface`.
 
