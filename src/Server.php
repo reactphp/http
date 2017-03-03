@@ -147,6 +147,9 @@ class Server extends EventEmitter
             // 'chunked' must always be the final value of 'Transfer-Encoding' according to: https://tools.ietf.org/html/rfc7230#section-3.3.1
             if (strtolower(end($transferEncodingHeader)) === 'chunked') {
                 $stream = new ChunkedDecoder($stream);
+
+                $request = $request->withoutHeader('Transfer-Encoding');
+
                 $contentLength = null;
             }
         } elseif ($request->hasHeader('Content-Length')) {
@@ -162,6 +165,7 @@ class Server extends EventEmitter
             $stream = new LengthLimitedStream($stream, $contentLength);
         }
 
+        $request = $request->withoutHeader('Content-Length');
         $request = new Request($request, $stream);
 
         // attach remote ip to the request as metadata
