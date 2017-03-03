@@ -279,7 +279,13 @@ $http = new Server($socket, function (ServerRequestInterface $request) {
 
 Note that the server supports *any* request method (including custom and non-
 standard ones) and all request-target formats defined in the HTTP specs for each
-respective method.
+respective method, including *normal* `origin-form` requests as well as
+proxy requests in `absolute-form` and `authority-form`.
+The `getUri(): UriInterface` method can be used to get the effective request
+URI which provides you access to individiual URI components.
+Note that (depending on the given `request-target`) certain URI components may
+or may not be present, for example the `getPath(): string` method will return
+an empty string for requests in `asterisk-form` or `authority-form`.
 You can use `getMethod(): string` and `getRequestTarget(): string` to
 check this is an accepted request and may want to reject other requests with
 an appropriate error code, such as `400` (Bad Request) or `405` (Method Not
@@ -439,7 +445,7 @@ to the message if the same request would have used an (unconditional) `GET`.
   response for tunneled application data.
   This implies that that a `2xx` (Successful) response to a `CONNECT` request
   can in fact use a streaming response body for the tunneled application data.
-  See also [example #21](examples) for more details.
+  See also [example #22](examples) for more details.
 
 A `Date` header will be automatically added with the system date and time if none is given.
 You can add a custom `Date` header yourself like this:
