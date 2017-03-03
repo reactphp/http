@@ -140,12 +140,14 @@ class Server extends EventEmitter
 
         $response = new Response($conn, $request->getProtocolVersion());
 
+        $contentLength = 0;
         $stream = new CloseProtectionStream($conn);
         if ($request->hasHeader('Transfer-Encoding')) {
             $transferEncodingHeader = $request->getHeader('Transfer-Encoding');
             // 'chunked' must always be the final value of 'Transfer-Encoding' according to: https://tools.ietf.org/html/rfc7230#section-3.3.1
             if (strtolower(end($transferEncodingHeader)) === 'chunked') {
                 $stream = new ChunkedDecoder($stream);
+                $contentLength = null;
             }
         } elseif ($request->hasHeader('Content-Length')) {
             $string = $request->getHeaderLine('Content-Length');
@@ -170,9 +172,9 @@ class Server extends EventEmitter
 
         $this->emit('request', array($request, $response));
 
-        if ($stream instanceof LengthLimitedStream && $contentLength === 0) {
-            // Content-Length is 0 and won't emit further data,
-            // 'handleData' from LengthLimitedStream won't be called anymore
+        if ($contentLength === 0) {
+            // If Body is empty or Content-Length is 0 and won't emit further data,
+            // 'data' events from other streams won't be called anymore
             $stream->emit('end');
             $stream->close();
         }
