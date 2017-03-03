@@ -270,8 +270,9 @@ Calling this method after the response has ended/closed is a NOOP.
 
 Unless you specify a `Content-Length` header yourself, HTTP/1.1 responses
 will automatically use chunked transfer encoding and send the respective header
-(`Transfer-Encoding: chunked`) automatically. If you know the length of your
-body, you MAY specify it like this instead:
+(`Transfer-Encoding: chunked`) automatically. The server is responsible for handling
+`Transfer-Encoding` so you SHOULD NOT pass it yourself.
+If you know the length of your body, you MAY specify it like this instead:
 
 ```php
 $data = 'Hello World!';
