@@ -149,6 +149,7 @@ class Server extends EventEmitter
                 $stream = new ChunkedDecoder($stream);
 
                 $request = $request->withoutHeader('Transfer-Encoding');
+                $request = $request->withoutHeader('Content-Length');
 
                 $contentLength = null;
             }
@@ -165,7 +166,6 @@ class Server extends EventEmitter
             $stream = new LengthLimitedStream($stream, $contentLength);
         }
 
-        $request = $request->withoutHeader('Content-Length');
         $request = new Request($request, $stream);
 
         // attach remote ip to the request as metadata
