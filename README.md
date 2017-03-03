@@ -286,6 +286,24 @@ $response->writeHead(200, array(
 $response->end($data);
 ```
 
+A `Date` header will be automatically added with the system date and time if none is given.
+You can add a custom `Date` header yourself like this:
+
+```php
+$response->writeHead(200, array(
+    'Date' => date('D, d M Y H:i:s T')
+));
+```
+
+If you don't have a appropriate clock to rely on, you should
+unset this header with an empty array:
+
+```php
+$response->writeHead(200, array(
+    'Date' => array()
+));
+```
+
 Note that it will automatically assume a `X-Powered-By: react/alpha` header
 unless your specify a custom `X-Powered-By` header yourself:
 

@@ -25,7 +25,7 @@ class ResponseTest extends TestCase
             ->with($expected);
 
         $response = new Response($conn);
-        $response->writeHead();
+        $response->writeHead(200, array('Date' => array()));
     }
 
     public function testResponseShouldNotBeChunkedWhenProtocolVersionIsNot11()
@@ -44,7 +44,7 @@ class ResponseTest extends TestCase
             ->with($expected);
 
         $response = new Response($conn, '1.0');
-        $response->writeHead();
+        $response->writeHead(200, array('Date' => array()));
     }
 
     public function testResponseShouldBeChunkedEvenWithOtherTransferEncoding()
@@ -65,7 +65,7 @@ class ResponseTest extends TestCase
             ->with($expected);
 
         $response = new Response($conn);
-        $response->writeHead(200, array('transfer-encoding' => 'custom'));
+        $response->writeHead(200, array('transfer-encoding' => 'custom', 'Date' => array()));
     }
 
     public function testResponseShouldNotBeChunkedWithContentLength()
@@ -86,7 +86,7 @@ class ResponseTest extends TestCase
             ->with($expected);
 
         $response = new Response($conn);
-        $response->writeHead(200, array('Content-Length' => 22));
+        $response->writeHead(200, array('Content-Length' => 22, 'Date' => array()));
     }
 
     public function testResponseShouldNotBeChunkedWithContentLengthCaseInsensitive()
@@ -107,7 +107,7 @@ class ResponseTest extends TestCase
             ->with($expected);
 
         $response = new Response($conn);
-        $response->writeHead(200, array('CONTENT-LENGTH' => 0));
+        $response->writeHead(200, array('CONTENT-LENGTH' => 0, 'Date' => array()));
     }
 
     public function testResponseShouldIncludeCustomByPoweredAsFirstHeaderIfGivenExplicitly()
@@ -128,7 +128,7 @@ class ResponseTest extends TestCase
             ->with($expected);
 
         $response = new Response($conn);
-        $response->writeHead(200, array('Content-Length' => 0, 'X-POWERED-BY' => 'demo'));
+        $response->writeHead(200, array('Content-Length' => 0, 'X-POWERED-BY' => 'demo', 'Date' => array()));
     }
 
     public function testResponseShouldNotIncludePoweredByIfGivenEmptyArray()
@@ -148,7 +148,7 @@ class ResponseTest extends TestCase
             ->with($expected);
 
         $response = new Response($conn);
-        $response->writeHead(200, array('Content-Length' => 0, 'X-Powered-By' => array()));
+        $response->writeHead(200, array('Content-Length' => 0, 'X-Powered-By' => array(), 'Date' => array()));
     }
 
     public function testResponseShouldAlwaysIncludeConnectionCloseIrrespectiveOfExplicitValue()
@@ -169,7 +169,7 @@ class ResponseTest extends TestCase
             ->with($expected);
 
         $response = new Response($conn);
-        $response->writeHead(200, array('Content-Length' => 0, 'connection' => 'ignored'));
+        $response->writeHead(200, array('Content-Length' => 0, 'connection' => 'ignored', 'Date' => array()));
     }
 
     /** @expectedException Exception */
@@ -399,7 +399,7 @@ class ResponseTest extends TestCase
             ->with($expected);
 
         $response = new Response($conn);
-        $response->writeHead(200, array("Foo\nBar" => "Baz\rQux"));
+        $response->writeHead(200, array("Foo\nBar" => "Baz\rQux", 'Date' => array()));
     }
 
     /** @test */
@@ -421,7 +421,7 @@ class ResponseTest extends TestCase
             ->with($expected);
 
         $response = new Response($conn);
-        $response->writeHead(700);
+        $response->writeHead(700, array('Date' => array()));
     }
 
     /** @test */
@@ -445,7 +445,7 @@ class ResponseTest extends TestCase
             ->with($expected);
 
         $response = new Response($conn);
-        $response->writeHead(200, array("Set-Cookie" => array("foo=bar", "bar=baz")));
+        $response->writeHead(200, array("Set-Cookie" => array("foo=bar", "bar=baz"), 'Date' => array()));
     }
 
     /** @test */
@@ -467,7 +467,7 @@ class ResponseTest extends TestCase
             ->with($expected);
 
         $response = new Response($conn);
-        $response->writeHead(200, array("FooBar" => null));
+        $response->writeHead(200, array("FooBar" => null, 'Date' => array()));
     }
 
     public function testCloseClosesInputAndEmitsCloseEvent()
@@ -624,9 +624,77 @@ class ResponseTest extends TestCase
             200,
             array(
                 'Content-Length' => 4,
-                'Transfer-Encoding' => 'chunked'
+                'Transfer-Encoding' => 'chunked',
+                'Date' => array()
             )
         );
         $response->write('hello');
+    }
+
+    public function testDateHeaderWillUseServerTime()
+    {
+        $buffer = '';
+        $conn = $this
+            ->getMockBuilder('React\Socket\ConnectionInterface')
+            ->getMock();
+        $conn
+            ->expects($this->once())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $response = new Response($conn);
+        $response->writeHead();
+
+        $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertContains("Date:", $buffer);
+    }
+
+    public function testDateHeaderWithCustomDate()
+    {
+        $expected = '';
+        $expected .= "HTTP/1.1 200 OK\r\n";
+        $expected .= "X-Powered-By: React/alpha\r\n";
+        $expected .= "Date: Tue, 15 Nov 1994 08:12:31 GMT\r\n";
+        $expected .= "Transfer-Encoding: chunked\r\n";
+        $expected .= "Connection: close\r\n";
+        $expected .= "\r\n";
+
+        $conn = $this
+            ->getMockBuilder('React\Socket\ConnectionInterface')
+            ->getMock();
+        $conn
+            ->expects($this->once())
+            ->method('write')
+            ->with($expected);
+
+        $response = new Response($conn);
+        $response->writeHead(200, array("Date" => "Tue, 15 Nov 1994 08:12:31 GMT"));
+    }
+
+    public function testDateHeaderWillBeRemoved()
+    {
+        $expected = '';
+        $expected .= "HTTP/1.1 200 OK\r\n";
+        $expected .= "X-Powered-By: React/alpha\r\n";
+        $expected .= "Transfer-Encoding: chunked\r\n";
+        $expected .= "Connection: close\r\n";
+        $expected .= "\r\n";
+
+        $conn = $this
+            ->getMockBuilder('React\Socket\ConnectionInterface')
+            ->getMock();
+        $conn
+            ->expects($this->once())
+            ->method('write')
+            ->with($expected);
+
+        $response = new Response($conn);
+        $response->writeHead(200, array("Date" => array()));
     }
 }
