@@ -143,16 +143,18 @@ class Server extends EventEmitter
         $contentLength = 0;
         $stream = new CloseProtectionStream($conn);
         if ($request->hasHeader('Transfer-Encoding')) {
-            $transferEncodingHeader = $request->getHeader('Transfer-Encoding');
-            // 'chunked' must always be the final value of 'Transfer-Encoding' according to: https://tools.ietf.org/html/rfc7230#section-3.3.1
-            if (strtolower(end($transferEncodingHeader)) === 'chunked') {
-                $stream = new ChunkedDecoder($stream);
 
-                $request = $request->withoutHeader('Transfer-Encoding');
-                $request = $request->withoutHeader('Content-Length');
-
-                $contentLength = null;
+            if (strtolower($request->getHeaderLine('Transfer-Encoding')) !== 'chunked') {
+                $this->emit('error', array(new \InvalidArgumentException('Only chunked-encoding is allowed for Transfer-Encoding')));
+                return $this->writeError($conn, 501);
             }
+
+            $stream = new ChunkedDecoder($stream);
+
+            $request = $request->withoutHeader('Transfer-Encoding');
+            $request = $request->withoutHeader('Content-Length');
+
+            $contentLength = null;
         } elseif ($request->hasHeader('Content-Length')) {
             $string = $request->getHeaderLine('Content-Length');
 
