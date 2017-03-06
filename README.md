@@ -92,6 +92,8 @@ See also [`Request`](#request) and [`Response`](#response) for more details.
 Failing to do so will result in the server parsing the incoming request,
 but never sending a response back to the client.
 
+Checkout [Request](#request) for details about the request data body.
+
 The `Server` supports both HTTP/1.1 and HTTP/1.0 request messages.
 If a client sends an invalid request message or uses an invalid HTTP protocol
 version, it will emit an `error` event, send an HTTP error response to the
@@ -103,19 +105,7 @@ $http->on('error', function (Exception $e) {
 });
 ```
 
-An `error` event will be emitted for the `Request` if the validation of the body data fails.
-This can be e.g. invalid chunked decoded data or an unexpected `end` event.
-
-```php
-$http->on('request', function (Request $request, Response $response) {
-    $request->on('error', function (\Exception $error) {
-        echo $error->getMessage();
-    });
-});
-```
-
-Such an error will `pause` the connection instead of closing it. A response message
-can still be sent.
+The request object can also emit an error. Checkout [Request](#request) for more details.
 
 ### Request
 
@@ -125,6 +115,34 @@ If the request body is chunked-encoded, the data will be decoded and emitted on 
 The `Transfer-Encoding` header will be removed.
 
 It implements the `ReadableStreamInterface`.
+
+Listen on the `data` event and the `end` event of the [Request](#request)
+to evaluate the data of the request body:
+
+```php
+$http->on('request', function (Request $request, Response $response) {
+    $contentLength = 0;
+    $request->on('data', function ($data) use (&$contentLength) {
+        $contentLength += strlen($data);
+    });
+
+    $request->on('end', function () use ($response, &$contentLength){
+        $response->writeHead(200, array('Content-Type' => 'text/plain'));
+        $response->end("The length of the submitted request body is: " . $contentLength);
+    });
+
+    // an error occures e.g. on invalid chunked encoded data or an unexpected 'end' event 
+    $request->on('error', function (\Exception $exception) use ($response, &$contentLength) {
+        $response->writeHead(400, array('Content-Type' => 'text/plain'));
+        $response->end("An error occured while reading at length: " . $contentLength);
+    });
+});
+```
+
+An error will just `pause` the connection instead of closing it. A response message
+can still be sent.
+
+A `close` event will be emitted after an `error` or `end` event.
 
 The constructor is internal, you SHOULD NOT call this yourself.
 The `Server` is responsible for emitting `Request` and `Response` objects.
