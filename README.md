@@ -93,9 +93,9 @@ Failing to do so will result in the server parsing the incoming request,
 but never sending a response back to the client.
 
 The `Server` supports both HTTP/1.1 and HTTP/1.0 request messages.
-If a client sends an invalid request message or uses an invalid HTTP protocol
-version, it will emit an `error` event, send an HTTP error response to the
-client and close the connection:
+If a client sends an invalid request message, uses an invalid HTTP protocol
+version or sends an invalid `Transfer-Encoding` in the request header, it will
+emit an `error` event, send an HTTP error response to the client and close the connection:
 
 ```php
 $http->on('error', function (Exception $e) {

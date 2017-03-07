@@ -1428,6 +1428,42 @@ class ServerTest extends TestCase
         $this->assertContains("\r\n\r\n", $buffer);
     }
 
+    public function testOnlyChunkedEncodingIsAllowedForTransferEncoding()
+    {
+        $error = null;
+
+        $server = new Server($this->socket);
+        $server->on('request', $this->expectCallableNever());
+        $server->on('error', function ($exception) use (&$error) {
+            $error = $exception;
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Transfer-Encoding: custom\r\n";
+        $data .= "\r\n";
+
+        $this->connection->emit('data', array($data));
+
+        $this->assertContains("HTTP/1.1 501 Not Implemented\r\n", $buffer);
+        $this->assertContains("\r\n\r\nError 501: Not Implemented", $buffer);
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+    }
+
     private function createGetRequest()
     {
         $data = "GET / HTTP/1.1\r\n";
