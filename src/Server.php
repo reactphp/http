@@ -213,7 +213,7 @@ class Server extends EventEmitter
             $stream = new LengthLimitedStream($stream, $contentLength);
         }
 
-        $request = new Request($request, $stream);
+        $request = $request->withBody(new HttpBodyStream($stream, $contentLength));
 
         if ($request->getProtocolVersion() !== '1.0' && '100-continue' === strtolower($request->getHeaderLine('Expect'))) {
             $conn->write("HTTP/1.1 100 Continue\r\n\r\n");
