@@ -596,4 +596,37 @@ class ResponseTest extends TestCase
 
         $input->emit('drain');
     }
+
+    public function testContentLengthWillBeRemovedIfTransferEncodingIsGiven()
+    {
+        $expectedHeader = '';
+        $expectedHeader .= "HTTP/1.1 200 OK\r\n";
+        $expectedHeader .= "X-Powered-By: React/alpha\r\n";
+        $expectedHeader .= "Content-Length: 4\r\n";
+        $expectedHeader .= "Connection: close\r\n";
+        $expectedHeader .= "\r\n";
+
+        $expectedBody = "hello";
+
+        $conn = $this
+            ->getMockBuilder('React\Socket\ConnectionInterface')
+            ->getMock();
+        $conn
+            ->expects($this->exactly(2))
+            ->method('write')
+            ->withConsecutive(
+                array($expectedHeader),
+                array($expectedBody)
+            );
+
+        $response = new Response($conn, '1.1');
+        $response->writeHead(
+            200,
+            array(
+                'Content-Length' => 4,
+                'Transfer-Encoding' => 'chunked'
+            )
+        );
+        $response->write('hello');
+    }
 }

@@ -204,14 +204,15 @@ class Response extends EventEmitter implements WritableStreamInterface
             );
         }
 
+        // always remove transfer-encoding
+        foreach($headers as $name => $value) {
+            if (strtolower($name) === 'transfer-encoding') {
+                unset($headers[$name]);
+            }
+        }
+
         // assign chunked transfer-encoding if no 'content-length' is given for HTTP/1.1 responses
         if (!isset($lower['content-length']) && $this->protocolVersion === '1.1') {
-            foreach($headers as $name => $value) {
-                if (strtolower($name) === 'transfer-encoding') {
-                    unset($headers[$name]);
-                }
-            }
-
             $headers['Transfer-Encoding'] = 'chunked';
             $this->chunkedEncoding = true;
         }
