@@ -1335,6 +1335,99 @@ class ServerTest extends TestCase
         $this->assertContains("5\r\nhello\r\n", $buffer);
     }
 
+    public function testDateHeaderWillBeAddedWhenNoneIsGiven()
+    {
+        $server = new Server($this->socket);
+
+        $server->on('request', function (Request $request, Response $response) {
+            $response->writeHead(200);
+        });
+
+        $buffer = '';
+            $this->connection
+            ->expects($this->once())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+
+        $this->connection->emit('data', array($data));
+
+        $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertContains("Date:", $buffer);
+        $this->assertContains("\r\n\r\n", $buffer);
+    }
+
+    public function testAddCustomDateHeader()
+    {
+        $server = new Server($this->socket);
+
+        $server->on('request', function (Request $request, Response $response) {
+            $response->writeHead(200, array("Date" => "Tue, 15 Nov 1994 08:12:31 GMT"));
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->once())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+
+        $this->connection->emit('data', array($data));
+
+        $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertContains("Date: Tue, 15 Nov 1994 08:12:31 GMT\r\n", $buffer);
+        $this->assertContains("\r\n\r\n", $buffer);
+    }
+
+    public function testRemoveDateHeader()
+    {
+        $server = new Server($this->socket);
+
+        $server->on('request', function (Request $request, Response $response) {
+            $response->writeHead(200, array('Date' => array()));
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->once())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+
+        $this->connection->emit('data', array($data));
+
+        $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertNotContains("Date:", $buffer);
+        $this->assertContains("\r\n\r\n", $buffer);
+    }
+
     private function createGetRequest()
     {
         $data = "GET / HTTP/1.1\r\n";

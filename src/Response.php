@@ -211,6 +211,12 @@ class Response extends EventEmitter implements WritableStreamInterface
             }
         }
 
+        // assign date header if no 'date' is given, use the current time where this code is running
+        if (!isset($lower['date'])) {
+            // IMF-fixdate  = day-name "," SP date1 SP time-of-day SP GMT
+            $headers['Date'] = gmdate('D, d M Y H:i:s') . ' GMT';
+        }
+
         // assign chunked transfer-encoding if no 'content-length' is given for HTTP/1.1 responses
         if (!isset($lower['content-length']) && $this->protocolVersion === '1.1') {
             $headers['Transfer-Encoding'] = 'chunked';
