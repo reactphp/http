@@ -147,6 +147,10 @@ class Server extends EventEmitter
             // 'chunked' must always be the final value of 'Transfer-Encoding' according to: https://tools.ietf.org/html/rfc7230#section-3.3.1
             if (strtolower(end($transferEncodingHeader)) === 'chunked') {
                 $stream = new ChunkedDecoder($stream);
+
+                $request = $request->withoutHeader('Transfer-Encoding');
+                $request = $request->withoutHeader('Content-Length');
+
                 $contentLength = null;
             }
         } elseif ($request->hasHeader('Content-Length')) {
