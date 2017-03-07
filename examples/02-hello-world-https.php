@@ -2,9 +2,9 @@
 
 use React\EventLoop\Factory;
 use React\Socket\Server;
-use React\Http\Request;
 use React\Http\Response;
 use React\Socket\SecureServer;
+use Psr\Http\Message\RequestInterface;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -14,7 +14,7 @@ $socket = new SecureServer($socket, $loop, array(
     'local_cert' => isset($argv[2]) ? $argv[2] : __DIR__ . '/localhost.pem'
 ));
 
-$server = new \React\Http\Server($socket, function (Request $request, Response $response) {
+$server = new \React\Http\Server($socket, function (RequestInterface $request, Response $response) {
     $response->writeHead(200, array('Content-Type' => 'text/plain'));
     $response->end("Hello world!\n");
 });
