@@ -67,65 +67,6 @@ class Response extends EventEmitter implements WritableStreamInterface
     }
 
     /**
-     * Sends an intermediary `HTTP/1.1 100 continue` response.
-     *
-     * This is a feature that is implemented by *many* HTTP/1.1 clients.
-     * When clients want to send a bigger request body, they MAY send only the request
-     * headers with an additional `Expect: 100-continue` header and wait before
-     * sending the actual (large) message body.
-     *
-     * The server side MAY use this header to verify if the request message is
-     * acceptable by checking the request headers (such as `Content-Length` or HTTP
-     * authentication) and then ask the client to continue with sending the message body.
-     * Otherwise, the server can send a normal HTTP response message and save the
-     * client from transfering the whole body at all.
-     *
-     * This method is mostly useful in combination with the
-     * [`expectsContinue()`] method like this:
-     *
-     * ```php
-     * $http->on('request', function (Request $request, Response $response) {
-     *     if ($request->expectsContinue()) {
-     *         $response->writeContinue();
-     *     }
-     *
-     *     $response->writeHead(200, array('Content-Type' => 'text/plain'));
-     *     $response->end("Hello World!\n");
-     * });
-     * ```
-     *
-     * Note that calling this method is strictly optional for HTTP/1.1 responses.
-     * If you do not use it, then a HTTP/1.1 client MUST continue sending the
-     * request body after waiting some time.
-     *
-     * This method MUST NOT be invoked after calling `writeHead()`.
-     * This method MUST NOT be invoked if this is not a HTTP/1.1 response
-     * (please check [`expectsContinue()`] as above).
-     * Calling this method after sending the headers or if this is not a HTTP/1.1
-     * response is an error that will result in an `Exception`
-     * (unless the response has ended/closed already).
-     * Calling this method after the response has ended/closed is a NOOP.
-     *
-     * @return void
-     * @throws \Exception
-     * @see Request::expectsContinue()
-     */
-    public function writeContinue()
-    {
-        if (!$this->writable) {
-            return;
-        }
-        if ($this->protocolVersion !== '1.1') {
-            throw new \Exception('Continue requires a HTTP/1.1 message');
-        }
-        if ($this->headWritten) {
-            throw new \Exception('Response head has already been written.');
-        }
-
-        $this->conn->write("HTTP/1.1 100 Continue\r\n\r\n");
-    }
-
-    /**
      * Writes the given HTTP message header.
      *
      * This method MUST be invoked once before calling `write()` or `end()` to send
