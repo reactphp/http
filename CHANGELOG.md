@@ -4,8 +4,8 @@
 
 *   Feature / BC break: The `Request` and `Response` objects now follow strict
     stream semantics and their respective methods and events.
-    (#116, #129, #133, #135, #136, #137, #138, #140, #141 by @legionth and
-    #122, #123, #130, #131, #132, #142 by @clue)
+    (#116, #129, #133, #135, #136, #137, #138, #140, #141 by @legionth
+    and #122, #123, #130, #131, #132, #142 by @clue)
 
     This implies that the `Server` now supports proper detection of the request
     message body stream, such as supporting decoding chunked transfer encoding,
