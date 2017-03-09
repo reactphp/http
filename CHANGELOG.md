@@ -1,5 +1,65 @@
 # Changelog
 
+## 0.6.0 (2016-03-09)
+
+*   Feature / BC break: The `Request` and `Response` objects now follow strict
+    stream semantics and their respective methods and events.
+    (#116, #129, #133, #135, #136, #137, #138, #140, #141 by @legionth and
+    #122, #123, #130, #131, #132, #142 by @clue)
+
+    This implies that the `Server` now supports proper detection of the request
+    message body stream, such as supporting decoding chunked transfer encoding,
+    delimiting requests with an explicit `Content-Length` header
+    and those with an empty request message body.
+
+    These streaming semantics are compatible with previous Stream v0.5, future
+    compatible with v0.5 and upcoming v0.6 versions and can be used like this:
+
+    ```php
+    $http->on('request', function (Request $request, Response $response) {
+        $contentLength = 0;
+        $request->on('data', function ($data) use (&$contentLength) {
+            $contentLength += strlen($data);
+        });
+
+        $request->on('end', function () use ($response, &$contentLength){
+            $response->writeHead(200, array('Content-Type' => 'text/plain'));
+            $response->end("The length of the submitted request body is: " . $contentLength);
+        });
+
+        // an error occured
+        // e.g. on invalid chunked encoded data or an unexpected 'end' event 
+        $request->on('error', function (\Exception $exception) use ($response, &$contentLength) {
+            $response->writeHead(400, array('Content-Type' => 'text/plain'));
+            $response->end("An error occured while reading at length: " . $contentLength);
+        });
+    });
+    ```
+
+    Similarly, the `Request` and `Response` now strictly follow the
+    `close()` method and `close` event semantics.
+    Closing the `Request` does not interrupt the underlying TCP/IP in
+    order to allow still sending back a valid response message.
+    Closing the `Response` does terminate the underlying TCP/IP
+    connection in order to clean up resources.
+
+    You should make sure to always attach a `request` event listener
+    like above. The `Server` will not respond to an incoming HTTP
+    request otherwise and keep the TCP/IP connection pending until the
+    other side chooses to close the connection.
+
+*   Feature: Support `HTTP/1.1` and `HTTP/1.0` for `Request` and `Response`.
+    (#124, #125, #126, #127, #128 by @clue and #139 by @legionth)
+
+    The outgoing `Response` will automatically use the same HTTP version as the
+    incoming `Request` message and will only apply `HTTP/1.1` semantics if
+    applicable. This includes that the `Response` will automatically attach a
+    `Date` and `Connection: close` header if applicable.
+
+    This implies that the `Server` now automatically responds with HTTP error
+    messages for invalid requests (status 400) and those exceeding internal
+    request header limits (status 431).
+
 ## 0.5.0 (2017-02-16)
 
 * Feature / BC break: Change `Request` methods to be in line with PSR-7

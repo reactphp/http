@@ -25,8 +25,6 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
 * [Tests](#tests)
 * [License](#license)
 
-> Note: This project is in beta stage! Feel free to report any issues you encounter.
-
 ## Quickstart example
 
 This is an HTTP server which responds with `Hello World` to every request.
@@ -354,7 +352,7 @@ The recommended way to install this library is [through Composer](http://getcomp
 This will install the latest supported version:
 
 ```bash
-$ composer require react/http:^0.5
+$ composer require react/http:^0.6
 ```
 
 More details about version upgrades can be found in the [CHANGELOG](CHANGELOG.md).
