@@ -27,6 +27,15 @@ use Psr\Http\Message\RequestInterface;
  * });
  * ```
  *
+ * When HTTP/1.1 clients want to send a bigger request body, they MAY send only
+ * the request headers with an additional `Expect: 100-continue` header and
+ * wait before sending the actual (large) message body.
+ * In this case the server will automatically send an intermediary
+ * `HTTP/1.1 100 Continue` response to the client.
+ * This ensures you will receive the request body without a delay as expected.
+ * The [Response](#response) still needs to be created as described in the
+ * examples above.
+ *
  * See also [`Request`](#request) and [`Response`](#response) for more details.
  *
  * > Note that you SHOULD always listen for the `request` event.
@@ -43,6 +52,8 @@ use Psr\Http\Message\RequestInterface;
  *     echo 'Error: ' . $e->getMessage() . PHP_EOL;
  * });
  * ```
+ * The request object can also emit an error. Checkout [Request](#request)
+ * for more details.
  *
  * @see Request
  * @see Response
@@ -150,6 +161,10 @@ class Server extends EventEmitter
         }
 
         $request = new Request($request, $stream);
+
+        if ($request->getProtocolVersion() !== '1.0' && '100-continue' === strtolower($request->getHeaderLine('Expect'))) {
+            $conn->write("HTTP/1.1 100 Continue\r\n\r\n");
+        }
 
         // attach remote ip to the request as metadata
         $request->remoteAddress = trim(
