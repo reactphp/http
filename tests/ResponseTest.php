@@ -331,55 +331,6 @@ class ResponseTest extends TestCase
     }
 
     /** @test */
-    public function writeContinueShouldSendContinueLineBeforeRealHeaders()
-    {
-        $conn = $this
-            ->getMockBuilder('React\Socket\ConnectionInterface')
-            ->getMock();
-        $conn
-            ->expects($this->at(3))
-            ->method('write')
-            ->with("HTTP/1.1 100 Continue\r\n\r\n");
-        $conn
-            ->expects($this->at(4))
-            ->method('write')
-            ->with($this->stringContains("HTTP/1.1 200 OK\r\n"));
-
-        $response = new Response($conn);
-        $response->writeContinue();
-        $response->writeHead();
-    }
-
-    /**
-     * @test
-     * @expectedException Exception
-     */
-    public function writeContinueShouldThrowForHttp10()
-    {
-        $conn = $this
-            ->getMockBuilder('React\Socket\ConnectionInterface')
-            ->getMock();
-
-        $response = new Response($conn, '1.0');
-        $response->writeContinue();
-    }
-
-    /** @expectedException Exception */
-    public function testWriteContinueAfterWriteHeadShouldThrowException()
-    {
-        $conn = $this
-            ->getMockBuilder('React\Socket\ConnectionInterface')
-            ->getMock();
-        $conn
-            ->expects($this->once())
-            ->method('write');
-
-        $response = new Response($conn);
-        $response->writeHead();
-        $response->writeContinue();
-    }
-
-    /** @test */
     public function shouldRemoveNewlinesFromHeaders()
     {
         $expected = '';
@@ -549,18 +500,6 @@ class ResponseTest extends TestCase
         $response->close();
 
         $response->writeHead();
-    }
-
-    public function testWriteContinueAfterCloseIsNoOp()
-    {
-        $input = $this->getMockBuilder('React\Stream\WritableStreamInterface')->getMock();
-        $input->expects($this->once())->method('close');
-        $input->expects($this->never())->method('write');
-
-        $response = new Response($input);
-        $response->close();
-
-        $response->writeContinue();
     }
 
     public function testEndAfterCloseIsNoOp()
