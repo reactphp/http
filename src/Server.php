@@ -6,6 +6,10 @@ use Evenement\EventEmitter;
 use React\Socket\ServerInterface as SocketServerInterface;
 use React\Socket\ConnectionInterface;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use RingCentral;
+use React\Stream\ReadableStream;
+use React\Promise\Promise;
 
 /**
  * The `Server` class is responsible for handling incoming connections and then
@@ -183,8 +187,6 @@ class Server extends EventEmitter
             }
         }
 
-        $response = new Response($conn, $request->getProtocolVersion());
-
         $contentLength = 0;
         $stream = new CloseProtectionStream($conn);
         if ($request->hasHeader('Transfer-Encoding')) {
@@ -226,7 +228,22 @@ class Server extends EventEmitter
         );
 
         $callback = $this->callback;
-        $callback($request, $response);
+        $promise = \React\Promise\resolve($callback($request));
+
+        $that = $this;
+        $promise->then(
+            function ($response) use ($that, $conn, $request) {
+                if (!$response instanceof ResponseInterface) {
+                    $that->emit('error', array(new \InvalidArgumentException('Invalid response type')));
+                    return $that->writeError($conn, 500);
+                }
+                $that->handleResponse($conn, $response, $request->getProtocolVersion());
+            },
+            function ($ex) use ($that, $conn) {
+                $that->emit('error', array($ex));
+                return $that->writeError($conn, 500);
+            }
+        );
 
         if ($contentLength === 0) {
             // If Body is empty or Content-Length is 0 and won't emit further data,
@@ -244,11 +261,76 @@ class Server extends EventEmitter
             $message .= ': ' . ResponseCodes::$statusTexts[$code];
         }
 
-        $response = new Response($conn);
-        $response->writeHead($code, array(
-            'Content-Length' => strlen($message),
-            'Content-Type' => 'text/plain'
-        ));
-        $response->end($message);
+        $response = new Response(
+            $code,
+            array(
+                'Content-Length' => strlen($message),
+                'Content-Type' => 'text/plain'
+            ),
+            $message
+        );
+
+        $this->handleResponse($conn, $response, '1.1');
+    }
+
+
+    /** @internal */
+    public function handleResponse(ConnectionInterface $connection, ResponseInterface $response, $protocolVersion)
+    {
+        $response = $response->withProtocolVersion($protocolVersion);
+
+        // assign default "X-Powered-By" header as first for history reasons
+        if (!$response->hasHeader('X-Powered-By')) {
+            $response = $response->withHeader('X-Powered-By', 'React/alpha');
+        }
+
+        if ($response->hasHeader('X-Powered-By') && $response->getHeaderLine('X-Powered-By') === ''){
+            $response = $response->withoutHeader('X-Powered-By');
+        }
+
+        $response = $response->withoutHeader('Transfer-Encoding');
+
+        // assign date header if no 'date' is given, use the current time where this code is running
+        if (!$response->hasHeader('Date')) {
+            // IMF-fixdate  = day-name "," SP date1 SP time-of-day SP GMT
+            $response = $response->withHeader('Date', gmdate('D, d M Y H:i:s') . ' GMT');
+        }
+
+        if ($response->hasHeader('Date') && $response->getHeaderLine('Date') === ''){
+            $response = $response->withoutHeader('Date');
+        }
+
+        if (!$response->getBody() instanceof HttpBodyStream) {
+            $response = $response->withHeader('Content-Length', $response->getBody()->getSize());
+        } elseif (!$response->hasHeader('Content-Length') && $protocolVersion === '1.1') {
+            // assign chunked transfer-encoding if no 'content-length' is given for HTTP/1.1 responses
+            $response = $response->withHeader('Transfer-Encoding', 'chunked');
+        }
+
+        // HTTP/1.1 assumes persistent connection support by default
+        // we do not support persistent connections, so let the client know
+        if ($protocolVersion === '1.1') {
+            $response = $response->withHeader('Connection', 'close');
+        }
+
+        $this->handleResponseBody($response, $connection);
+    }
+
+    private function handleResponseBody(ResponseInterface $response, ConnectionInterface $connection)
+    {
+        if (!$response->getBody() instanceof HttpBodyStream) {
+            $connection->write(RingCentral\Psr7\str($response));
+            return $connection->end();
+        }
+
+        $body = $response->getBody();
+        $stream = $body;
+
+        if ($response->getHeaderLine('Transfer-Encoding') === 'chunked') {
+            $stream = new ChunkedEncoder($body);
+        }
+
+        $connection->write(RingCentral\Psr7\str($response));
+        $stream->pipe($connection);
     }
 }
