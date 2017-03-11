@@ -55,7 +55,19 @@ class RequestHeaderParser extends EventEmitter
     {
         list($headers, $bodyBuffer) = explode("\r\n\r\n", $data, 2);
 
+        $asterisk = false;
+        if (strpos($headers, 'OPTIONS * ') === 0) {
+            $asterisk = true;
+            $headers = 'OPTIONS / ' . substr($headers, 10);
+        }
+
         $request = g7\parse_request($headers);
+
+        if ($asterisk) {
+            $request = $request->withUri(
+                $request->getUri()->withPath('')
+            )->withRequestTarget('*');
+        }
 
         return array($request, $bodyBuffer);
     }
