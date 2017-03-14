@@ -14,42 +14,6 @@ class RequestTest extends TestCase
         $this->stream = $this->getMockBuilder('React\Stream\ReadableStreamInterface')->getMock();
     }
 
-    /** @test */
-    public function expectsContinueShouldBeFalseByDefault()
-    {
-        $headers = array();
-        $request = new Request(new Psr('GET', '/', $headers, null, '1.1'), $this->stream);
-
-        $this->assertFalse($request->expectsContinue());
-    }
-
-    /** @test */
-    public function expectsContinueShouldBeTrueIfContinueExpected()
-    {
-        $headers = array('Expect' => array('100-continue'));
-        $request = new Request(new Psr('GET', '/', $headers, null, '1.1'), $this->stream);
-
-        $this->assertTrue($request->expectsContinue());
-    }
-
-    /** @test */
-    public function expectsContinueShouldBeTrueIfContinueExpectedCaseInsensitive()
-    {
-        $headers = array('EXPECT' => array('100-CONTINUE'));
-        $request = new Request(new Psr('GET', '/', $headers, null, '1.1'), $this->stream);
-
-        $this->assertTrue($request->expectsContinue());
-    }
-
-    /** @test */
-    public function expectsContinueShouldBeFalseForHttp10()
-    {
-        $headers = array('Expect' => array('100-continue'));
-        $request = new Request(new Psr('GET', '/', $headers, null, '1.0'), $this->stream);
-
-        $this->assertFalse($request->expectsContinue());
-    }
-
     public function testEmptyHeader()
     {
         $request = new Request(new Psr('GET', '/', array()), $this->stream);

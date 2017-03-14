@@ -1464,6 +1464,80 @@ class ServerTest extends TestCase
         $this->assertInstanceOf('InvalidArgumentException', $error);
     }
 
+    public function test100ContinueRequestWillBeHandled()
+    {
+        $server = new Server($this->socket);
+        $server->on('request', $this->expectCallableOnce());
+
+        $this->connection
+            ->expects($this->once())
+            ->method('write')
+            ->with("HTTP/1.1 100 Continue\r\n\r\n");
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Expect: 100-continue\r\n";
+        $data .= "\r\n";
+
+        $this->connection->emit('data', array($data));
+    }
+
+    public function testContinueWontBeSendForHttp10()
+    {
+        $server = new Server($this->socket);
+        $server->on('request', $this->expectCallableOnce());
+
+        $this->connection
+            ->expects($this->never())
+            ->method('write');
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.0\r\n";
+        $data .= "Expect: 100-continue\r\n";
+        $data .= "\r\n";
+
+        $this->connection->emit('data', array($data));
+    }
+
+    public function testContinueWithLaterResponse()
+    {
+        $server = new Server($this->socket);
+        $server->on('request', function (Request $request, Response $response) {
+            $response->writeHead();
+            $response->end();
+        });
+
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Expect: 100-continue\r\n";
+        $data .= "\r\n";
+
+        $this->connection->emit('data', array($data));
+
+        $this->assertContains("HTTP/1.1 100 Continue\r\n\r\n", $buffer);
+        $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
+    }
+
     private function createGetRequest()
     {
         $data = "GET / HTTP/1.1\r\n";
