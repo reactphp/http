@@ -9,19 +9,36 @@ use Psr\Http\Message\RequestInterface;
 
 /**
  * The `Server` class is responsible for handling incoming connections and then
- * emit a `request` event for each incoming HTTP request.
+ * processing each incoming HTTP request.
+ *
+ * It attaches itself to an instance of `React\Socket\ServerInterface` which
+ * emits underlying streaming connections in order to then parse incoming data
+ * as HTTP.
+ *
+ * For each request, it executes the callback function passed to the
+ * constructor with the respective [`Request`](#request) and
+ * [`Response`](#response) objects:
  *
  * ```php
  * $socket = new React\Socket\Server(8080, $loop);
  *
- * $http = new React\Http\Server($socket);
+ * $http = new Server($socket, function (Request $request, Response $response) {
+ *     $response->writeHead(200, array('Content-Type' => 'text/plain'));
+ *     $response->end("Hello World!\n");
+ * });
  * ```
  *
- * For each incoming connection, it emits a `request` event with the respective
- * [`Request`](#request) and [`Response`](#response) objects:
+ * Similarly, you can also attach this to a
+ * [`React\Socket\SecureServer`](https://github.com/reactphp/socket#secureserver)
+ * in order to start a secure HTTPS server like this:
  *
  * ```php
- * $http->on('request', function (Request $request, Response $response) {
+ * $socket = new React\Socket\Server(8080, $loop);
+ * $socket = new React\Socket\SecureServer($socket, $loop, array(
+ *     'local_cert' => __DIR__ . '/localhost.pem'
+ * ));
+ *
+ * $http = new Server($socket, function (Request $request, Response $response) {
  *     $response->writeHead(200, array('Content-Type' => 'text/plain'));
  *     $response->end("Hello World!\n");
  * });
@@ -36,22 +53,21 @@ use Psr\Http\Message\RequestInterface;
  * The [Response](#response) still needs to be created as described in the
  * examples above.
  *
- * See also [`Request`](#request) and [`Response`](#response) for more details.
- *
- * > Note that you SHOULD always listen for the `request` event.
- *   Failing to do so will result in the server parsing the incoming request,
- *   but never sending a response back to the client.
+ * See also [`Request`](#request) and [`Response`](#response)
+ * for more details(e.g. the request data body).
  *
  * The `Server` supports both HTTP/1.1 and HTTP/1.0 request messages.
- * If a client sends an invalid request message or uses an invalid HTTP protocol
- * version, it will emit an `error` event, send an HTTP error response to the
- * client and close the connection:
+ * If a client sends an invalid request message, uses an invalid HTTP protocol
+ * version or sends an invalid `Transfer-Encoding` in the request header, it will
+ * emit an `error` event, send an HTTP error response to the client and
+ * close the connection:
  *
  * ```php
  * $http->on('error', function (Exception $e) {
  *     echo 'Error: ' . $e->getMessage() . PHP_EOL;
  * });
  * ```
+ *
  * The request object can also emit an error. Checkout [Request](#request)
  * for more details.
  *
@@ -60,17 +76,26 @@ use Psr\Http\Message\RequestInterface;
  */
 class Server extends EventEmitter
 {
+    private $callback;
+
     /**
      * Creates a HTTP server that accepts connections from the given socket.
      *
      * It attaches itself to an instance of `React\Socket\ServerInterface` which
      * emits underlying streaming connections in order to then parse incoming data
-     * as HTTP:
+     * as HTTP.
+     *
+     * For each request, it executes the callback function passed to the
+     * constructor with the respective [`Request`](#request) and
+     * [`Response`](#response) objects:
      *
      * ```php
      * $socket = new React\Socket\Server(8080, $loop);
      *
-     * $http = new React\Http\Server($socket);
+     * $http = new Server($socket, function (Request $request, Response $response) {
+     *     $response->writeHead(200, array('Content-Type' => 'text/plain'));
+     *     $response->end("Hello World!\n");
+     * });
      * ```
      *
      * Similarly, you can also attach this to a
@@ -78,19 +103,28 @@ class Server extends EventEmitter
      * in order to start a secure HTTPS server like this:
      *
      * ```php
-     * $socket = new Server(8080, $loop);
-     * $socket = new SecureServer($socket, $loop, array(
+     * $socket = new React\Socket\Server(8080, $loop);
+     * $socket = new React\Socket\SecureServer($socket, $loop, array(
      *     'local_cert' => __DIR__ . '/localhost.pem'
      * ));
      *
-     * $http = new React\Http\Server($socket);
-     * ```
+     * $http = new Server($socket, function (Request $request, Response $response) {
+     *    $response->writeHead(200, array('Content-Type' => 'text/plain'));
+     *    $response->end("Hello World!\n");
+     * });
+     *```
      *
      * @param \React\Socket\ServerInterface $io
+     * @param callable $callback
      */
-    public function __construct(SocketServerInterface $io)
+    public function __construct(SocketServerInterface $io, $callback)
     {
+        if (!is_callable($callback)) {
+            throw new \InvalidArgumentException();
+        }
+
         $io->on('connection', array($this, 'handleConnection'));
+        $this->callback = $callback;
     }
 
     /** @internal */
@@ -191,7 +225,8 @@ class Server extends EventEmitter
             '[]'
         );
 
-        $this->emit('request', array($request, $response));
+        $callback = $this->callback;
+        $callback($request, $response);
 
         if ($contentLength === 0) {
             // If Body is empty or Content-Length is 0 and won't emit further data,

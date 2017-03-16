@@ -36,8 +36,7 @@ class ServerTest extends TestCase
 
     public function testRequestEventWillNotBeEmittedForIncompleteHeaders()
     {
-        $server = new Server($this->socket);
-        $server->on('request', $this->expectCallableNever());
+        $server = new Server($this->socket, $this->expectCallableNever());
 
         $this->socket->emit('connection', array($this->connection));
 
@@ -48,8 +47,7 @@ class ServerTest extends TestCase
 
     public function testRequestEventIsEmitted()
     {
-        $server = new Server($this->socket);
-        $server->on('request', $this->expectCallableOnce());
+        $server = new Server($this->socket, $this->expectCallableOnce());
 
         $this->socket->emit('connection', array($this->connection));
 
@@ -63,8 +61,7 @@ class ServerTest extends TestCase
         $requestAssertion = null;
         $responseAssertion = null;
 
-        $server = new Server($this->socket);
-        $server->on('request', function ($request, $response) use (&$i, &$requestAssertion, &$responseAssertion) {
+        $server = new Server($this->socket, function ($request, $response) use (&$i, &$requestAssertion, &$responseAssertion) {
             $i++;
             $requestAssertion = $request;
             $responseAssertion = $response;
@@ -92,8 +89,7 @@ class ServerTest extends TestCase
 
     public function testRequestPauseWillbeForwardedToConnection()
     {
-        $server = new Server($this->socket);
-        $server->on('request', function (Request $request) {
+        $server = new Server($this->socket, function (Request $request) {
             $request->pause();
         });
 
@@ -111,8 +107,8 @@ class ServerTest extends TestCase
 
     public function testRequestResumeWillbeForwardedToConnection()
     {
-        $server = new Server($this->socket);
-        $server->on('request', function (Request $request) {
+
+        $server = new Server($this->socket, function (Request $request) {
             $request->resume();
         });
 
@@ -125,8 +121,7 @@ class ServerTest extends TestCase
 
     public function testRequestCloseWillPauseConnection()
     {
-        $server = new Server($this->socket);
-        $server->on('request', function (Request $request) {
+        $server = new Server($this->socket, function (Request $request) {
             $request->close();
         });
 
@@ -139,8 +134,7 @@ class ServerTest extends TestCase
 
     public function testRequestPauseAfterCloseWillNotBeForwarded()
     {
-        $server = new Server($this->socket);
-        $server->on('request', function (Request $request) {
+        $server = new Server($this->socket, function (Request $request) {
             $request->close();
             $request->pause();
         });
@@ -154,8 +148,7 @@ class ServerTest extends TestCase
 
     public function testRequestResumeAfterCloseWillNotBeForwarded()
     {
-        $server = new Server($this->socket);
-        $server->on('request', function (Request $request) {
+        $server = new Server($this->socket, function (Request $request) {
             $request->close();
             $request->resume();
         });
@@ -172,8 +165,7 @@ class ServerTest extends TestCase
     {
         $never = $this->expectCallableNever();
 
-        $server = new Server($this->socket);
-        $server->on('request', function (Request $request) use ($never) {
+        $server = new Server($this->socket, function (Request $request) use ($never) {
             $request->on('data', $never);
         });
 
@@ -187,8 +179,7 @@ class ServerTest extends TestCase
     {
         $once = $this->expectCallableOnceWith('incomplete');
 
-        $server = new Server($this->socket);
-        $server->on('request', function (Request $request) use ($once) {
+        $server = new Server($this->socket, function (Request $request) use ($once) {
             $request->on('data', $once);
         });
 
@@ -207,8 +198,7 @@ class ServerTest extends TestCase
     {
         $once = $this->expectCallableOnceWith('incomplete');
 
-        $server = new Server($this->socket);
-        $server->on('request', function (Request $request) use ($once) {
+        $server = new Server($this->socket, function (Request $request) use ($once) {
             $request->on('data', $once);
         });
 
@@ -228,8 +218,7 @@ class ServerTest extends TestCase
 
     public function testResponseContainsPoweredByHeader()
     {
-        $server = new Server($this->socket);
-        $server->on('request', function (Request $request, Response $response) {
+        $server = new Server($this->socket, function (Request $request, Response $response) {
             $response->writeHead();
             $response->end();
         });
@@ -257,8 +246,7 @@ class ServerTest extends TestCase
 
     public function testClosingResponseDoesNotSendAnyData()
     {
-        $server = new Server($this->socket);
-        $server->on('request', function (Request $request, Response $response) {
+        $server = new Server($this->socket, function (Request $request, Response $response) {
             $response->close();
         });
 
@@ -274,8 +262,7 @@ class ServerTest extends TestCase
 
     public function testResponseContainsSameRequestProtocolVersionAndChunkedBodyForHttp11()
     {
-        $server = new Server($this->socket);
-        $server->on('request', function (Request $request, Response $response) {
+        $server = new Server($this->socket, function (Request $request, Response $response) {
             $response->writeHead();
             $response->end('bye');
         });
@@ -304,8 +291,7 @@ class ServerTest extends TestCase
 
     public function testResponseContainsSameRequestProtocolVersionAndRawBodyForHttp10()
     {
-        $server = new Server($this->socket);
-        $server->on('request', function (Request $request, Response $response) {
+        $server = new Server($this->socket, function (Request $request, Response $response) {
             $response->writeHead();
             $response->end('bye');
         });
@@ -335,7 +321,7 @@ class ServerTest extends TestCase
     public function testRequestInvalidHttpProtocolVersionWillEmitErrorAndSendErrorResponse()
     {
         $error = null;
-        $server = new Server($this->socket);
+        $server = new Server($this->socket, $this->expectCallableNever());
         $server->on('error', function ($message) use (&$error) {
             $error = $message;
         });
@@ -364,32 +350,10 @@ class ServerTest extends TestCase
         $this->assertContains("\r\n\r\nError 505: HTTP Version Not Supported", $buffer);
     }
 
-    public function testServerWithNoRequestListenerDoesNotSendAnythingToConnection()
-    {
-        $server = new Server($this->socket);
-
-        $this->connection
-            ->expects($this->never())
-            ->method('write');
-
-        $this->connection
-            ->expects($this->never())
-            ->method('end');
-
-        $this->connection
-            ->expects($this->never())
-            ->method('close');
-
-        $this->socket->emit('connection', array($this->connection));
-
-        $data = $this->createGetRequest();
-        $this->connection->emit('data', array($data));
-    }
-
     public function testRequestOverflowWillEmitErrorAndSendErrorResponse()
     {
         $error = null;
-        $server = new Server($this->socket);
+        $server = new Server($this->socket, $this->expectCallableNever());
         $server->on('error', function ($message) use (&$error) {
             $error = $message;
         });
@@ -422,7 +386,7 @@ class ServerTest extends TestCase
     public function testRequestInvalidWillEmitErrorAndSendErrorResponse()
     {
         $error = null;
-        $server = new Server($this->socket);
+        $server = new Server($this->socket, $this->expectCallableNever());
         $server->on('error', function ($message) use (&$error) {
             $error = $message;
         });
@@ -453,14 +417,12 @@ class ServerTest extends TestCase
 
     public function testBodyDataWillBeSendViaRequestEvent()
     {
-        $server = new Server($this->socket);
-
         $dataEvent = $this->expectCallableOnceWith('hello');
         $endEvent = $this->expectCallableOnce();
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+        $server = new Server($this->socket, function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
             $request->on('data', $dataEvent);
             $request->on('end', $endEvent);
             $request->on('close', $closeEvent);
@@ -481,15 +443,13 @@ class ServerTest extends TestCase
 
     public function testChunkedEncodedRequestWillBeParsedForRequestEvent()
     {
-        $server = new Server($this->socket);
-
         $dataEvent = $this->expectCallableOnceWith('hello');
         $endEvent = $this->expectCallableOnce();
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
         $requestValidation = null;
 
-        $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent, &$requestValidation) {
+        $server = new Server($this->socket, function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent, &$requestValidation) {
             $request->on('data', $dataEvent);
             $request->on('end', $endEvent);
             $request->on('close', $closeEvent);
@@ -514,19 +474,18 @@ class ServerTest extends TestCase
 
     public function testChunkedEncodedRequestAdditionalDataWontBeEmitted()
     {
-        $server = new Server($this->socket);
-
         $dataEvent = $this->expectCallableOnceWith('hello');
         $endEvent = $this->expectCallableOnce();
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+        $server = new Server($this->socket, function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
             $request->on('data', $dataEvent);
             $request->on('end', $endEvent);
             $request->on('close', $closeEvent);
             $request->on('error', $errorEvent);
         });
+
 
         $this->socket->emit('connection', array($this->connection));
 
@@ -544,14 +503,12 @@ class ServerTest extends TestCase
 
     public function testEmptyChunkedEncodedRequest()
     {
-        $server = new Server($this->socket);
-
         $dataEvent = $this->expectCallableNever();
         $endEvent = $this->expectCallableOnce();
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+        $server = new Server($this->socket, function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
             $request->on('data', $dataEvent);
             $request->on('end', $endEvent);
             $request->on('close', $closeEvent);
@@ -572,19 +529,18 @@ class ServerTest extends TestCase
 
     public function testChunkedIsUpperCase()
     {
-        $server = new Server($this->socket);
-
         $dataEvent = $this->expectCallableOnceWith('hello');
         $endEvent = $this->expectCallableOnce();
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+        $server = new Server($this->socket, function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
             $request->on('data', $dataEvent);
             $request->on('end', $endEvent);
             $request->on('close', $closeEvent);
             $request->on('error', $errorEvent);
         });
+
 
         $this->socket->emit('connection', array($this->connection));
 
@@ -601,19 +557,18 @@ class ServerTest extends TestCase
 
     public function testChunkedIsMixedUpperAndLowerCase()
     {
-        $server = new Server($this->socket);
-
         $dataEvent = $this->expectCallableOnceWith('hello');
         $endEvent = $this->expectCallableOnce();
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+        $server = new Server($this->socket, function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
             $request->on('data', $dataEvent);
             $request->on('end', $endEvent);
             $request->on('close', $closeEvent);
             $request->on('error', $errorEvent);
         });
+
 
         $this->socket->emit('connection', array($this->connection));
 
@@ -630,7 +585,7 @@ class ServerTest extends TestCase
     public function testRequestHttp11WithoutHostWillEmitErrorAndSendErrorResponse()
     {
         $error = null;
-        $server = new Server($this->socket);
+        $server = new Server($this->socket, $this->expectCallableNever());
         $server->on('error', function ($message) use (&$error) {
             $error = $message;
         });
@@ -662,7 +617,7 @@ class ServerTest extends TestCase
     public function testRequestHttp11WithMalformedHostWillEmitErrorAndSendErrorResponse()
     {
         $error = null;
-        $server = new Server($this->socket);
+        $server = new Server($this->socket, $this->expectCallableNever());
         $server->on('error', function ($message) use (&$error) {
             $error = $message;
         });
@@ -694,7 +649,7 @@ class ServerTest extends TestCase
     public function testRequestHttp11WithInvalidHostUriComponentsWillEmitErrorAndSendErrorResponse()
     {
         $error = null;
-        $server = new Server($this->socket);
+        $server = new Server($this->socket, $this->expectCallableNever());
         $server->on('error', function ($message) use (&$error) {
             $error = $message;
         });
@@ -725,8 +680,7 @@ class ServerTest extends TestCase
 
     public function testRequestHttp10WithoutHostEmitsRequestWithNoError()
     {
-        $server = new Server($this->socket);
-        $server->on('request', $this->expectCallableOnce());
+        $server = new Server($this->socket, $this->expectCallableOnce());
         $server->on('error', $this->expectCallableNever());
 
         $this->socket->emit('connection', array($this->connection));
@@ -737,14 +691,12 @@ class ServerTest extends TestCase
 
     public function testWontEmitFurtherDataWhenContentLengthIsReached()
     {
-        $server = new Server($this->socket);
-
         $dataEvent = $this->expectCallableOnceWith('hello');
         $endEvent = $this->expectCallableOnce();
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+        $server = new Server($this->socket, function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
             $request->on('data', $dataEvent);
             $request->on('end', $endEvent);
             $request->on('close', $closeEvent);
@@ -766,19 +718,19 @@ class ServerTest extends TestCase
 
     public function testWontEmitFurtherDataWhenContentLengthIsReachedSplitted()
     {
-        $server = new Server($this->socket);
-
         $dataEvent = $this->expectCallableOnceWith('hello');
         $endEvent = $this->expectCallableOnce();
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+
+        $server = new Server($this->socket, function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
             $request->on('data', $dataEvent);
             $request->on('end', $endEvent);
             $request->on('close', $closeEvent);
             $request->on('error', $errorEvent);
         });
+
 
         $this->socket->emit('connection', array($this->connection));
 
@@ -798,14 +750,13 @@ class ServerTest extends TestCase
 
     public function testContentLengthContainsZeroWillEmitEndEvent()
     {
-        $server = new Server($this->socket);
 
         $dataEvent = $this->expectCallableNever();
         $endEvent = $this->expectCallableOnce();
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+        $server = new Server($this->socket, function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
             $request->on('data', $dataEvent);
             $request->on('end', $endEvent);
             $request->on('close', $closeEvent);
@@ -825,14 +776,12 @@ class ServerTest extends TestCase
 
     public function testContentLengthContainsZeroWillEmitEndEventAdditionalDataWillBeIgnored()
     {
-        $server = new Server($this->socket);
-
         $dataEvent = $this->expectCallableNever();
         $endEvent = $this->expectCallableOnce();
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+        $server = new Server($this->socket, function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
             $request->on('data', $dataEvent);
             $request->on('end', $endEvent);
             $request->on('close', $closeEvent);
@@ -853,14 +802,12 @@ class ServerTest extends TestCase
 
     public function testContentLengthContainsZeroWillEmitEndEventAdditionalDataWillBeIgnoredSplitted()
     {
-        $server = new Server($this->socket);
-
         $dataEvent = $this->expectCallableNever();
         $endEvent = $this->expectCallableOnce();
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+        $server = new Server($this->socket, function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
             $request->on('data', $dataEvent);
             $request->on('end', $endEvent);
             $request->on('close', $closeEvent);
@@ -884,15 +831,13 @@ class ServerTest extends TestCase
 
     public function testContentLengthWillBeIgnoredIfTransferEncodingIsSet()
     {
-        $server = new Server($this->socket);
-
         $dataEvent = $this->expectCallableOnceWith('hello');
         $endEvent = $this->expectCallableOnce();
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
         $requestValidation = null;
-        $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent, &$requestValidation) {
+        $server = new Server($this->socket, function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent, &$requestValidation) {
             $request->on('data', $dataEvent);
             $request->on('end', $endEvent);
             $request->on('close', $closeEvent);
@@ -922,15 +867,13 @@ class ServerTest extends TestCase
 
     public function testInvalidContentLengthWillBeIgnoreddIfTransferEncodingIsSet()
     {
-        $server = new Server($this->socket);
-
         $dataEvent = $this->expectCallableOnceWith('hello');
         $endEvent = $this->expectCallableOnce();
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
         $requestValidation = null;
-        $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent, &$requestValidation) {
+        $server = new Server($this->socket, function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent, &$requestValidation) {
             $request->on('data', $dataEvent);
             $request->on('end', $endEvent);
             $request->on('close', $closeEvent);
@@ -962,8 +905,7 @@ class ServerTest extends TestCase
     public function testNonIntegerContentLengthValueWillLeadToError()
     {
         $error = null;
-        $server = new Server($this->socket);
-        $server->on('request', $this->expectCallableNever());
+        $server = new Server($this->socket, $this->expectCallableNever());
         $server->on('error', function ($message) use (&$error) {
             $error = $message;
         });
@@ -999,8 +941,7 @@ class ServerTest extends TestCase
     public function testMultipleIntegerInContentLengthWillLeadToError()
     {
         $error = null;
-        $server = new Server($this->socket);
-        $server->on('request', $this->expectCallableNever());
+        $server = new Server($this->socket, $this->expectCallableNever());
         $server->on('error', function ($message) use (&$error) {
             $error = $message;
         });
@@ -1036,8 +977,7 @@ class ServerTest extends TestCase
     public function testInvalidChunkHeaderResultsInErrorOnRequestStream()
     {
         $errorEvent = $this->expectCallableOnceWith($this->isInstanceOf('Exception'));
-        $server = new Server($this->socket);
-        $server->on('request', function ($request, $response) use ($errorEvent){
+        $server = new Server($this->socket, function ($request, $response) use ($errorEvent){
             $request->on('error', $errorEvent);
         });
 
@@ -1059,8 +999,7 @@ class ServerTest extends TestCase
     public function testTooLongChunkHeaderResultsInErrorOnRequestStream()
     {
         $errorEvent = $this->expectCallableOnceWith($this->isInstanceOf('Exception'));
-        $server = new Server($this->socket);
-        $server->on('request', function ($request, $response) use ($errorEvent){
+        $server = new Server($this->socket, function ($request, $response) use ($errorEvent){
             $request->on('error', $errorEvent);
         });
 
@@ -1084,8 +1023,7 @@ class ServerTest extends TestCase
     public function testTooLongChunkBodyResultsInErrorOnRequestStream()
     {
         $errorEvent = $this->expectCallableOnceWith($this->isInstanceOf('Exception'));
-        $server = new Server($this->socket);
-        $server->on('request', function ($request, $response) use ($errorEvent){
+        $server = new Server($this->socket, function ($request, $response) use ($errorEvent){
             $request->on('error', $errorEvent);
         });
 
@@ -1107,8 +1045,7 @@ class ServerTest extends TestCase
     public function testUnexpectedEndOfConnectionWillResultsInErrorOnRequestStream()
     {
         $errorEvent = $this->expectCallableOnceWith($this->isInstanceOf('Exception'));
-        $server = new Server($this->socket);
-        $server->on('request', function ($request, $response) use ($errorEvent){
+        $server = new Server($this->socket, function ($request, $response) use ($errorEvent){
             $request->on('error', $errorEvent);
         });
 
@@ -1130,8 +1067,7 @@ class ServerTest extends TestCase
 
     public function testErrorInChunkedDecoderNeverClosesConnection()
     {
-        $server = new Server($this->socket);
-        $server->on('request', $this->expectCallableOnce());
+        $server = new Server($this->socket, $this->expectCallableOnce());
 
         $this->connection->expects($this->never())->method('close');
         $this->connection->expects($this->once())->method('pause');
@@ -1150,8 +1086,7 @@ class ServerTest extends TestCase
 
     public function testErrorInLengthLimitedStreamNeverClosesConnection()
     {
-        $server = new Server($this->socket);
-        $server->on('request', $this->expectCallableOnce());
+        $server = new Server($this->socket, $this->expectCallableOnce());
 
         $this->connection->expects($this->never())->method('close');
         $this->connection->expects($this->once())->method('pause');
@@ -1171,8 +1106,7 @@ class ServerTest extends TestCase
 
     public function testCloseRequestWillPauseConnection()
     {
-        $server = new Server($this->socket);
-        $server->on('request', function ($request, $response) {
+        $server = new Server($this->socket, function ($request, $response) {
             $request->close();
         });
 
@@ -1192,8 +1126,7 @@ class ServerTest extends TestCase
         $endEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server = new Server($this->socket);
-        $server->on('request', function ($request, $response) use ($dataEvent, $closeEvent, $endEvent, $errorEvent){
+        $server = new Server($this->socket, function ($request, $response) use ($dataEvent, $closeEvent, $endEvent, $errorEvent){
             $request->on('data', $dataEvent);
             $request->on('close', $closeEvent);
             $request->on('end', $endEvent);
@@ -1212,14 +1145,12 @@ class ServerTest extends TestCase
 
     public function testRequestWithoutDefinedLengthWillIgnoreDataEvent()
     {
-        $server = new Server($this->socket);
-
         $dataEvent = $this->expectCallableNever();
         $endEvent = $this->expectCallableOnce();
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server->on('request', function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+        $server = new Server($this->socket, function (Request $request, Response $response) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
             $request->on('data', $dataEvent);
             $request->on('end', $endEvent);
             $request->on('close', $closeEvent);
@@ -1236,9 +1167,7 @@ class ServerTest extends TestCase
 
     public function testResponseWillBeChunkDecodedByDefault()
     {
-        $server = new Server($this->socket);
-
-        $server->on('request', function (Request $request, Response $response) {
+        $server = new Server($this->socket, function (Request $request, Response $response) {
             $response->writeHead();
             $response->write('hello');
         });
@@ -1260,9 +1189,7 @@ class ServerTest extends TestCase
 
     public function testContentLengthWillBeRemovedForResponseStream()
     {
-        $server = new Server($this->socket);
-
-        $server->on('request', function (Request $request, Response $response) {
+        $server = new Server($this->socket, function (Request $request, Response $response) {
             $response->writeHead(
                 200,
                 array(
@@ -1299,9 +1226,7 @@ class ServerTest extends TestCase
 
     public function testOnlyAllowChunkedEncoding()
     {
-        $server = new Server($this->socket);
-
-        $server->on('request', function (Request $request, Response $response) {
+        $server = new Server($this->socket, function (Request $request, Response $response) {
             $response->writeHead(
                 200,
                 array(
@@ -1337,9 +1262,7 @@ class ServerTest extends TestCase
 
     public function testDateHeaderWillBeAddedWhenNoneIsGiven()
     {
-        $server = new Server($this->socket);
-
-        $server->on('request', function (Request $request, Response $response) {
+        $server = new Server($this->socket, function (Request $request, Response $response) {
             $response->writeHead(200);
         });
 
@@ -1368,9 +1291,7 @@ class ServerTest extends TestCase
 
     public function testAddCustomDateHeader()
     {
-        $server = new Server($this->socket);
-
-        $server->on('request', function (Request $request, Response $response) {
+        $server = new Server($this->socket, function (Request $request, Response $response) {
             $response->writeHead(200, array("Date" => "Tue, 15 Nov 1994 08:12:31 GMT"));
         });
 
@@ -1399,9 +1320,7 @@ class ServerTest extends TestCase
 
     public function testRemoveDateHeader()
     {
-        $server = new Server($this->socket);
-
-        $server->on('request', function (Request $request, Response $response) {
+        $server = new Server($this->socket, function (Request $request, Response $response) {
             $response->writeHead(200, array('Date' => array()));
         });
 
@@ -1432,8 +1351,7 @@ class ServerTest extends TestCase
     {
         $error = null;
 
-        $server = new Server($this->socket);
-        $server->on('request', $this->expectCallableNever());
+        $server = new Server($this->socket, $this->expectCallableNever());
         $server->on('error', function ($exception) use (&$error) {
             $error = $exception;
         });
@@ -1466,8 +1384,7 @@ class ServerTest extends TestCase
 
     public function test100ContinueRequestWillBeHandled()
     {
-        $server = new Server($this->socket);
-        $server->on('request', $this->expectCallableOnce());
+        $server = new Server($this->socket, $this->expectCallableOnce());
 
         $this->connection
             ->expects($this->once())
@@ -1487,8 +1404,7 @@ class ServerTest extends TestCase
 
     public function testContinueWontBeSendForHttp10()
     {
-        $server = new Server($this->socket);
-        $server->on('request', $this->expectCallableOnce());
+        $server = new Server($this->socket, $this->expectCallableOnce());
 
         $this->connection
             ->expects($this->never())
@@ -1505,8 +1421,7 @@ class ServerTest extends TestCase
 
     public function testContinueWithLaterResponse()
     {
-        $server = new Server($this->socket);
-        $server->on('request', function (Request $request, Response $response) {
+        $server = new Server($this->socket, function (Request $request, Response $response) {
             $response->writeHead();
             $response->end();
         });
@@ -1536,6 +1451,14 @@ class ServerTest extends TestCase
 
         $this->assertContains("HTTP/1.1 100 Continue\r\n\r\n", $buffer);
         $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testInvalidCallbackFunctionLeadsToException()
+    {
+        $server = new Server($this->socket, 'invalid');
     }
 
     private function createGetRequest()

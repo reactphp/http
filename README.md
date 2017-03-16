@@ -31,8 +31,7 @@ This is an HTTP server which responds with `Hello World` to every request.
 $loop = React\EventLoop\Factory::create();
 $socket = new React\Socket\Server(8080, $loop);
 
-$http = new React\Http\Server($socket);
-$http->on('request', function (Request $request, Response $response) {
+$http = new Server($socket, function (Request $request, Response $response) {
     $response->writeHead(200, array('Content-Type' => 'text/plain'));
     $response->end("Hello World!\n");
 });
@@ -47,16 +46,23 @@ See also the [examples](examples).
 ### Server
 
 The `Server` class is responsible for handling incoming connections and then
-emit a `request` event for each incoming HTTP request.
+processing each incoming HTTP request.
 
 It attaches itself to an instance of `React\Socket\ServerInterface` which
 emits underlying streaming connections in order to then parse incoming data
-as HTTP:
+as HTTP.
+
+For each request, it executes the callback function passed to the
+constructor with the respective [`Request`](#request) and
+[`Response`](#response) objects:
 
 ```php
 $socket = new React\Socket\Server(8080, $loop);
 
-$http = new React\Http\Server($socket);
+$http = new Server($socket, function (Request $request, Response $response) {
+    $response->writeHead(200, array('Content-Type' => 'text/plain'));
+    $response->end("Hello World!\n");
+});
 ```
 
 Similarly, you can also attach this to a
@@ -64,19 +70,12 @@ Similarly, you can also attach this to a
 in order to start a secure HTTPS server like this:
 
 ```php
-$socket = new Server(8080, $loop);
-$socket = new SecureServer($socket, $loop, array(
+$socket = new React\Socket\Server(8080, $loop);
+$socket = new React\Socket\SecureServer($socket, $loop, array(
     'local_cert' => __DIR__ . '/localhost.pem'
 ));
 
-$http = new React\Http\Server($socket);
-```
-
-For each incoming connection, it emits a `request` event with the respective
-[`Request`](#request) and [`Response`](#response) objects:
-
-```php
-$http->on('request', function (Request $request, Response $response) {
+$http = new Server($socket, function (Request $request, Response $response) {
     $response->writeHead(200, array('Content-Type' => 'text/plain'));
     $response->end("Hello World!\n");
 });
@@ -91,18 +90,14 @@ This ensures you will receive the request body without a delay as expected.
 The [Response](#response) still needs to be created as described in the
 examples above.
 
-See also [`Request`](#request) and [`Response`](#response) for more details.
-
-> Note that you SHOULD always listen for the `request` event.
-Failing to do so will result in the server parsing the incoming request,
-but never sending a response back to the client.
-
-Checkout [Request](#request) for details about the request data body.
+See also [`Request`](#request) and [`Response`](#response)
+for more details(e.g. the request data body).
 
 The `Server` supports both HTTP/1.1 and HTTP/1.0 request messages.
 If a client sends an invalid request message, uses an invalid HTTP protocol
 version or sends an invalid `Transfer-Encoding` in the request header, it will
-emit an `error` event, send an HTTP error response to the client and close the connection:
+emit an `error` event, send an HTTP error response to the client and
+close the connection:
 
 ```php
 $http->on('error', function (Exception $e) {
@@ -110,7 +105,8 @@ $http->on('error', function (Exception $e) {
 });
 ```
 
-The request object can also emit an error. Checkout [Request](#request) for more details.
+The request object can also emit an error. Checkout [Request](#request)
+for more details.
 
 ### Request
 
@@ -125,7 +121,7 @@ Listen on the `data` event and the `end` event of the [Request](#request)
 to evaluate the data of the request body:
 
 ```php
-$http->on('request', function (Request $request, Response $response) {
+$http = new Server($socket, function (Request $request, Response $response) {
     $contentLength = 0;
     $request->on('data', function ($data) use (&$contentLength) {
         $contentLength += strlen($data);
