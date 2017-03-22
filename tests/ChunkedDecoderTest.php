@@ -447,4 +447,36 @@ class ChunkedDecoderTest extends TestCase
 
         $this->input->emit('data', array("\r\nhello\r\n"));
     }
+
+    public function testUpperCaseHexWillBeHandled()
+    {
+        $this->parser->on('data', $this->expectCallableOnceWith('0123456790'));
+        $this->parser->on('error', $this->expectCallableNever());
+        $this->parser->on('end', $this->expectCallableNever());
+        $this->parser->on('close', $this->expectCallableNever());
+
+        $this->input->emit('data', array("A\r\n0123456790\r\n"));
+    }
+
+    public function testLowerCaseHexWillBeHandled()
+    {
+        $this->parser->on('data', $this->expectCallableOnceWith('0123456790'));
+        $this->parser->on('error', $this->expectCallableNever());
+        $this->parser->on('end', $this->expectCallableNever());
+        $this->parser->on('close', $this->expectCallableNever());
+
+        $this->input->emit('data', array("a\r\n0123456790\r\n"));
+    }
+
+    public function testMixedUpperAndLowerCaseHexValuesInHeaderWillBeHandled()
+    {
+        $data = str_repeat('1', (int)hexdec('AA'));
+
+        $this->parser->on('data', $this->expectCallableOnceWith($data));
+        $this->parser->on('error', $this->expectCallableNever());
+        $this->parser->on('end', $this->expectCallableNever());
+        $this->parser->on('close', $this->expectCallableNever());
+
+        $this->input->emit('data', array("aA\r\n" . $data . "\r\n"));
+    }
 }
