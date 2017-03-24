@@ -58,6 +58,8 @@ $http = new Server($socket, function (RequestInterface $request, Response $respo
 });
 ```
 
+See also the [first example](examples) for more details.
+
 Similarly, you can also attach this to a
 [`React\Socket\SecureServer`](https://github.com/reactphp/socket#secureserver)
 in order to start a secure HTTPS server like this:
@@ -73,6 +75,8 @@ $http = new Server($socket, function (RequestInterface $request, Response $respo
     $response->end("Hello World!\n");
 });
 ```
+
+See also [example #11](examples) for more details.
 
 When HTTP/1.1 clients want to send a bigger request body, they MAY send only
 the request headers with an additional `Expect: 100-continue` header and
@@ -174,6 +178,8 @@ $http = new Server($socket, function (RequestInterface $request, Response $respo
 The above example simply counts the number of bytes received in the request body.
 This can be used as a skeleton for buffering or processing the request body.
 
+See also [example #4](examples) for more details.
+
 The `data` event will be emitted whenever new data is available on the request
 body stream.
 The server automatically takes care of decoding chunked transfer encoding
@@ -223,6 +229,8 @@ $http = new Server($socket, function (RequestInterface $request, Response $respo
 The `Response` class is responsible for streaming the outgoing response body.
 
 It implements the `WritableStreamInterface`.
+
+See also [example #3](examples) for more details.
 
 The constructor is internal, you SHOULD NOT call this yourself.
 The `Server` is responsible for emitting `Request` and `Response` objects.
