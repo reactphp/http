@@ -20,17 +20,22 @@ use React\Promise\Promise;
  * as HTTP.
  *
  * For each request, it executes the callback function passed to the
- * constructor with the respective [`Request`](#request) and
- * [`Response`](#response) objects:
+ * constructor with the respective [request](#request) and
+ * [response](#response) objects:
  *
  * ```php
  * $socket = new React\Socket\Server(8080, $loop);
  *
- * $http = new Server($socket, function (RequestInterface $request, Response $response) {
- *     $response->writeHead(200, array('Content-Type' => 'text/plain'));
- *     $response->end("Hello World!\n");
+ * $http = new Server($socket, function (RequestInterface $request) {
+ *     return new Response(
+ *         200,
+ *         array('Content-Type' => 'text/plain'),
+ *         "Hello World!\n"
+ *     );
  * });
  * ```
+ *
+ * See also the [first example](examples) for more details.
  *
  * Similarly, you can also attach this to a
  * [`React\Socket\SecureServer`](https://github.com/reactphp/socket#secureserver)
@@ -42,11 +47,16 @@ use React\Promise\Promise;
  *     'local_cert' => __DIR__ . '/localhost.pem'
  * ));
  *
- * $http = new Server($socket, function (RequestInterface $request, Response $response) {
- *     $response->writeHead(200, array('Content-Type' => 'text/plain'));
- *     $response->end("Hello World!\n");
+ * $http = new Server($socket, function (RequestInterface $request) {
+ *     return new Response(
+ *         200,
+ *         array('Content-Type' => 'text/plain'),
+ *         "Hello World!\n"
+ *     );
  * });
  * ```
+ *
+ * See also [example #11](examples) for more details.
  *
  * When HTTP/1.1 clients want to send a bigger request body, they MAY send only
  * the request headers with an additional `Expect: 100-continue` header and
@@ -57,8 +67,8 @@ use React\Promise\Promise;
  * The [Response](#response) still needs to be created as described in the
  * examples above.
  *
- * See also [`Request`](#request) and [`Response`](#response)
- * for more details(e.g. the request data body).
+ * See also [request](#request) and [response](#response)
+ * for more details (e.g. the request data body).
  *
  * The `Server` supports both HTTP/1.1 and HTTP/1.0 request messages.
  * If a client sends an invalid request message, uses an invalid HTTP protocol
@@ -72,8 +82,8 @@ use React\Promise\Promise;
  * });
  * ```
  *
- * The request object can also emit an error. Checkout [Request](#request)
- * for more details.
+ * Note that the request object can also emit an error.
+ * Check out [request](#request) for more details.
  *
  * @see Request
  * @see Response

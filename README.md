@@ -11,7 +11,6 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
   * [Server](#server)
   * [Request](#request)
   * [Response](#response)
-    * [writeHead()](#writehead)
 * [Install](#install)
 * [Tests](#tests)
 * [License](#license)
@@ -24,9 +23,12 @@ This is an HTTP server which responds with `Hello World` to every request.
 $loop = React\EventLoop\Factory::create();
 $socket = new React\Socket\Server(8080, $loop);
 
-$http = new Server($socket, function (RequestInterface $request, Response $response) {
-    $response->writeHead(200, array('Content-Type' => 'text/plain'));
-    $response->end("Hello World!\n");
+$http = new Server($socket, function (RequestInterface $request) {
+    return new Response(
+        200,
+        array('Content-Type' => 'text/plain'),
+        "Hello World!\n"
+    );
 });
 
 $loop->run();
@@ -52,9 +54,12 @@ constructor with the respective [request](#request) and
 ```php
 $socket = new React\Socket\Server(8080, $loop);
 
-$http = new Server($socket, function (RequestInterface $request, Response $response) {
-    $response->writeHead(200, array('Content-Type' => 'text/plain'));
-    $response->end("Hello World!\n");
+$http = new Server($socket, function (RequestInterface $request) {
+    return new Response(
+        200,
+        array('Content-Type' => 'text/plain'),
+        "Hello World!\n"
+    );
 });
 ```
 
@@ -70,9 +75,12 @@ $socket = new React\Socket\SecureServer($socket, $loop, array(
     'local_cert' => __DIR__ . '/localhost.pem'
 ));
 
-$http = new Server($socket, function (RequestInterface $request, Response $response) {
-    $response->writeHead(200, array('Content-Type' => 'text/plain'));
-    $response->end("Hello World!\n");
+$http = new Server($socket, function (RequestInterface $request) {
+    return new Response(
+        200,
+        array('Content-Type' => 'text/plain'),
+        "Hello World!\n"
+    );
 });
 ```
 
@@ -102,6 +110,22 @@ $http->on('error', function (Exception $e) {
 });
 ```
 
+The server will also emit an `error` event if you return an invalid
+type in the callback function or have a unhandled `Exception`.
+If your callback function throws an exception,
+the `Server` will emit a `RuntimeException` and add the thrown exception
+as previous:
+
+```php
+$http->on('error', function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
+    if ($e->getPrevious() !== null) {
+        $previousException = $e->getPrevious();
+        echo $previousException->getMessage() . PHP_EOL;
+    }
+});
+```
+
 Note that the request object can also emit an error.
 Check out [request](#request) for more details.
 
@@ -117,10 +141,15 @@ This request object implements the
 and will be passed to the callback function like this.
 
  ```php 
-$http = new Server($socket, function (RequestInterface $request, Response $response) {
-    $response->writeHead(200, array('Content-Type' => 'text/plain'));
-    $response->write("The method of the request is: " . $request->getMethod());
-    $response->end("The requested path is: " . $request->getUri()->getPath());
+$http = new Server($socket, function (RequestInterface $request) {
+    $body = "The method of the request is: " . $request->getMethod();
+    $body .= "The requested path is: " . $request->getUri()->getPath();
+
+    return new Response(
+        200,
+        array('Content-Type' => 'text/plain'),
+        $body
+    );
 });
 ```
 
@@ -155,22 +184,31 @@ Instead, you should use the `ReactPHP ReadableStreamInterface` which
 gives you access to the incoming request body as the individual chunks arrive:
 
 ```php
-$http = new Server($socket, function (RequestInterface $request, Response $response) {
-    $contentLength = 0;
-    $body = $request->getBody();
-    $body->on('data', function ($data) use (&$contentLength) {
-        $contentLength += strlen($data);
-    });
+$http = new Server($socket, function (RequestInterface $request) {
+    return new Promise(function ($resolve, $reject) use ($request) {
+        $contentLength = 0;
+        $request->getBody()->on('data', function ($data) use (&$contentLength) {
+            $contentLength += strlen($data);
+        });
 
-    $body->on('end', function () use ($response, &$contentLength){
-        $response->writeHead(200, array('Content-Type' => 'text/plain'));
-        $response->end("The length of the submitted request body is: " . $contentLength);
-    });
+        $request->getBody()->on('end', function () use ($resolve, &$contentLength){
+            $response = new Response(
+                200,
+                array('Content-Type' => 'text/plain'),
+                "The length of the submitted request body is: " . $contentLength
+            );
+            $resolve($response);
+        });
 
-    // an error occures e.g. on invalid chunked encoded data or an unexpected 'end' event 
-    $body->on('error', function (\Exception $exception) use ($response, &$contentLength) {
-        $response->writeHead(400, array('Content-Type' => 'text/plain'));
-        $response->end("An error occured while reading at length: " . $contentLength);
+        // an error occures e.g. on invalid chunked encoded data or an unexpected 'end' event
+        $request->getBody()->on('error', function (\Exception $exception) use ($resolve, &$contentLength) {
+            $response = new Response(
+                400,
+                array('Content-Type' => 'text/plain'),
+                "An error occured while reading at length: " . $contentLength
+            );
+            $resolve($response);
+        });
     });
 });
 ```
@@ -210,109 +248,176 @@ Note that this value may be `null` if the request body size is unknown in
 advance because the request message uses chunked transfer encoding.
 
 ```php 
-$http = new Server($socket, function (RequestInterface $request, Response $response) {
+$http = new Server($socket, function (RequestInterface $request) {
     $size = $request->getBody()->getSize();
     if ($size === null) {
-        $response->writeHead(411, array('Content-Type' => 'text/plain'));
-        $response->write('The request does not contain an explicit length.');
-        $response->write('This server does not accept chunked transfer encoding.');
-        $response->end();
-        return;
+        $body = 'The request does not contain an explicit length.';
+        $body .= 'This server does not accept chunked transfer encoding.';
+
+        return new Response(
+            411,
+            array('Content-Type' => 'text/plain'),
+            $body
+        );
     }
-    $response->writeHead(200, array('Content-Type' => 'text/plain'));
-    $response->end("Request body size: " . $size . " bytes\n");
+
+    return new Response(
+        200,
+        array('Content-Type' => 'text/plain'),
+        "Request body size: " . $size . " bytes\n"
+    );
 });
 ```
 
 ### Response
 
-The `Response` class is responsible for streaming the outgoing response body.
+The callback function passed to the constructor of the [Server](#server)
+is responsible for processing the request and returning a response,
+which will be delivered to the client.
+This function MUST return an instance imlementing
+[PSR-7 ResponseInterface](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#33-psrhttpmessageresponseinterface)
+object or a 
+[ReactPHP Promise](https://github.com/reactphp/promise#reactpromise)
+which will resolve a `PSR-7 ResponseInterface` object.
 
-It implements the `WritableStreamInterface`.
+You will find a `Response` class
+which implements the `PSR-7 ResponseInterface` in this project.
+We use instantiation of this class in our projects,
+but feel free to use any implemantation of the 
+`PSR-7 ResponseInterface` you prefer.
 
-See also [example #3](examples) for more details.
-
-The constructor is internal, you SHOULD NOT call this yourself.
-The `Server` is responsible for emitting `Request` and `Response` objects.
-
-The `Response` will automatically use the same HTTP protocol version as the
-corresponding `Request`.
-
-HTTP/1.1 responses will automatically apply chunked transfer encoding if
-no `Content-Length` header has been set.
-See [`writeHead()`](#writehead) for more details.
-
-See the above usage example and the class outline for details.
-
-#### writeHead()
-
-The `writeHead(int $status = 200, array $headers = array(): void` method can be used to
-write the given HTTP message header.
-
-This method MUST be invoked once before calling `write()` or `end()` to send
-the actual HTTP message body:
-
-```php
-$response->writeHead(200, array(
-    'Content-Type' => 'text/plain'
-));
-$response->end('Hello World!');
+```php 
+$http = new Server($socket, function (RequestInterface $request) {
+    return new Response(
+        200,
+        array('Content-Type' => 'text/plain'),
+        "Hello World!\n"
+    );
+});
 ```
 
-Calling this method more than once will result in an `Exception`
-(unless the response has ended/closed already).
-Calling this method after the response has ended/closed is a NOOP.
+The example above returns the response directly, because it needs
+no time to be processed.
+Using a database, the file system or long calculations 
+(in fact every action that will take >=1ms) to create your
+response, will slow down the server.
+To prevent this you SHOULD use a
+[ReactPHP Promise](https://github.com/reactphp/promise#reactpromise).
+This example shows how such a long-term action could look like:
 
-Unless you specify a `Content-Length` header yourself, HTTP/1.1 responses
-will automatically use chunked transfer encoding and send the respective header
+```php
+$server = new \React\Http\Server($socket, function (RequestInterface $request) use ($loop) {
+    return new Promise(function ($resolve, $reject) use ($request, $loop) {
+        $loop->addTimer(1.5, function() use ($loop, $resolve) {
+            $response = new Response(
+                200,
+                array('Content-Type' => 'text/plain'),
+                "Hello world"
+            );
+            $resolve($response);
+        });
+    });
+});
+```
+
+The above example will create a response after 1.5 second.
+This example shows that you need a promise,
+if your response needs time to created.
+The `ReactPHP Promise` will resolve in a `Response` object when the request
+body ends.
+
+The `Response` class in this project supports to add an instance which implements the
+[ReactPHP ReadableStreamInterface](https://github.com/reactphp/stream#readablestreaminterface)
+for the response body.
+So you are able stream data directly into the response body.
+Note that other implementations of the `PSR-7 ResponseInterface` likely
+only support string.
+
+```php
+$server = new Server($socket, function (RequestInterface $request) use ($loop) {
+    $stream = new ReadableStream();
+
+    $timer = $loop->addPeriodicTimer(0.5, function () use ($stream) {
+        $stream->emit('data', array(microtime(true) . PHP_EOL));
+    });
+
+    $loop->addTimer(5, function() use ($loop, $timer, $stream) {
+        $loop->cancelTimer($timer);
+        $stream->emit('end');
+    });
+
+    return new Response(200, array('Content-Type' => 'text/plain'), $stream);
+});
+```
+
+The above example will emit every 0.5 seconds the current Unix timestamp 
+with microseconds as float to the client and will end after 5 seconds.
+This is just a example you could use of the streaming,
+you could also send a big amount of data via little chunks 
+or use it for body data that needs to calculated.
+
+If the response body is a `string` a `Content-Length` header will be added automatically.
+Unless you specify a `Content-Length` header for a ReactPHP `ReadableStreamInterface`
+response body yourself, HTTP/1.1 responses will automatically use chunked transfer encoding 
+and send the respective header
 (`Transfer-Encoding: chunked`) automatically. The server is responsible for handling
 `Transfer-Encoding` so you SHOULD NOT pass it yourself.
-If you know the length of your body, you MAY specify it like this instead:
+If you know the length of your stream body, you MAY specify it like this instead:
 
 ```php
-$data = 'Hello World!';
-
-$response->writeHead(200, array(
-    'Content-Type' => 'text/plain',
-    'Content-Length' => strlen($data)
-));
-$response->end($data);
+$stream = new ReadableStream()
+$server = new Server($socket, function (RequestInterface $request) use ($loop, $stream) {
+    return new Response(
+        200,
+        array(
+            'Content-Length' => '5',
+            'Content-Type' => 'text/plain',
+        ),
+        $stream
+    );
+});
 ```
+An invalid return value or an unhandled `Exception` in the code of the callback
+function, will result in an `500 Internal Server Error` message.
+Make sure to catch `Exceptions` to create own response messages.
+
+After the return in the callback function the response will be processed by the `Server`.
+The `Server` will add the protocol version of the request, so you don't have to.
 
 A `Date` header will be automatically added with the system date and time if none is given.
 You can add a custom `Date` header yourself like this:
 
 ```php
-$response->writeHead(200, array(
-    'Date' => date('D, d M Y H:i:s T')
-));
+$server = new Server($socket, function (RequestInterface $request) {
+    return new Response(200, array('Date' => date('D, d M Y H:i:s T')));
+});
 ```
 
 If you don't have a appropriate clock to rely on, you should
-unset this header with an empty array:
+unset this header with an empty string:
 
 ```php
-$response->writeHead(200, array(
-    'Date' => array()
-));
+$server = new Server($socket, function (RequestInterface $request) {
+    return new Response(200, array('Date' => ''));
+});
 ```
 
 Note that it will automatically assume a `X-Powered-By: react/alpha` header
 unless your specify a custom `X-Powered-By` header yourself:
 
 ```php
-$response->writeHead(200, array(
-    'X-Powered-By' => 'PHP 3'
-));
+$server = new Server($socket, function (RequestInterface $request) {
+    return new Response(200, array('X-Powered-By' => 'PHP 3'));
+});
 ```
 
-If you do not want to send this header at all, you can use an empty array as
+If you do not want to send this header at all, you can use an empty string as
 value like this:
 
 ```php
-$response->writeHead(200, array(
-    'X-Powered-By' => array()
-));
+$server = new Server($socket, function (RequestInterface $request) {
+    return new Response(200, array('X-Powered-By' => ''));
+});
 ```
 
 Note that persistent connections (`Connection: keep-alive`) are currently
