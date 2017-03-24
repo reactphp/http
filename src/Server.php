@@ -22,7 +22,7 @@ use Psr\Http\Message\RequestInterface;
  * ```php
  * $socket = new React\Socket\Server(8080, $loop);
  *
- * $http = new Server($socket, function (Request $request, Response $response) {
+ * $http = new Server($socket, function (RequestInterface $request, Response $response) {
  *     $response->writeHead(200, array('Content-Type' => 'text/plain'));
  *     $response->end("Hello World!\n");
  * });
@@ -38,7 +38,7 @@ use Psr\Http\Message\RequestInterface;
  *     'local_cert' => __DIR__ . '/localhost.pem'
  * ));
  *
- * $http = new Server($socket, function (Request $request, Response $response) {
+ * $http = new Server($socket, function (RequestInterface $request, Response $response) {
  *     $response->writeHead(200, array('Content-Type' => 'text/plain'));
  *     $response->end("Hello World!\n");
  * });
@@ -213,7 +213,7 @@ class Server extends EventEmitter
             $stream = new LengthLimitedStream($stream, $contentLength);
         }
 
-        $request = new Request($request, $stream);
+        $request = $request->withBody(new HttpBodyStream($stream, $contentLength));
 
         if ($request->getProtocolVersion() !== '1.0' && '100-continue' === strtolower($request->getHeaderLine('Expect'))) {
             $conn->write("HTTP/1.1 100 Continue\r\n\r\n");

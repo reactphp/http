@@ -10,13 +10,6 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
 * [Usage](#usage)
   * [Server](#server)
   * [Request](#request)
-    * [getMethod()](#getmethod)
-    * [getQueryParams()](#getqueryparams)
-    * [getProtocolVersion()](#getprotocolversion)
-    * [getHeaders()](#getheaders)
-    * [getHeader()](#getheader)
-    * [getHeaderLine()](#getheaderline)
-    * [hasHeader()](#hasheader)
   * [Response](#response)
     * [writeHead()](#writehead)
 * [Install](#install)
@@ -31,7 +24,7 @@ This is an HTTP server which responds with `Hello World` to every request.
 $loop = React\EventLoop\Factory::create();
 $socket = new React\Socket\Server(8080, $loop);
 
-$http = new Server($socket, function (Request $request, Response $response) {
+$http = new Server($socket, function (RequestInterface $request, Response $response) {
     $response->writeHead(200, array('Content-Type' => 'text/plain'));
     $response->end("Hello World!\n");
 });
@@ -53,13 +46,13 @@ emits underlying streaming connections in order to then parse incoming data
 as HTTP.
 
 For each request, it executes the callback function passed to the
-constructor with the respective [`Request`](#request) and
-[`Response`](#response) objects:
+constructor with the respective [request](#request) and
+[response](#response) objects:
 
 ```php
 $socket = new React\Socket\Server(8080, $loop);
 
-$http = new Server($socket, function (Request $request, Response $response) {
+$http = new Server($socket, function (RequestInterface $request, Response $response) {
     $response->writeHead(200, array('Content-Type' => 'text/plain'));
     $response->end("Hello World!\n");
 });
@@ -75,7 +68,7 @@ $socket = new React\Socket\SecureServer($socket, $loop, array(
     'local_cert' => __DIR__ . '/localhost.pem'
 ));
 
-$http = new Server($socket, function (Request $request, Response $response) {
+$http = new Server($socket, function (RequestInterface $request, Response $response) {
     $response->writeHead(200, array('Content-Type' => 'text/plain'));
     $response->end("Hello World!\n");
 });
@@ -90,8 +83,8 @@ This ensures you will receive the request body without a delay as expected.
 The [Response](#response) still needs to be created as described in the
 examples above.
 
-See also [`Request`](#request) and [`Response`](#response)
-for more details(e.g. the request data body).
+See also [request](#request) and [response](#response)
+for more details (e.g. the request data body).
 
 The `Server` supports both HTTP/1.1 and HTTP/1.0 request messages.
 If a client sends an invalid request message, uses an invalid HTTP protocol
@@ -105,98 +98,125 @@ $http->on('error', function (Exception $e) {
 });
 ```
 
-The request object can also emit an error. Checkout [Request](#request)
-for more details.
+Note that the request object can also emit an error.
+Check out [request](#request) for more details.
 
 ### Request
 
-The `Request` class is responsible for streaming the incoming request body
-and contains meta data which was parsed from the request headers.
-If the request body is chunked-encoded, the data will be decoded and emitted on the data event.
-The `Transfer-Encoding` header will be removed.
+An seen above, the `Server` class is responsible for handling incoming
+connections and then processing each incoming HTTP request.
 
-It implements the `ReadableStreamInterface`.
+The request object will be processed once the request headers have
+been received by the client.
+This request object implements the
+[PSR-7 RequestInterface](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#32-psrhttpmessagerequestinterface)
+and will be passed to the callback function like this.
 
-Listen on the `data` event and the `end` event of the [Request](#request)
-to evaluate the data of the request body:
+ ```php 
+$http = new Server($socket, function (RequestInterface $request, Response $response) {
+    $response->writeHead(200, array('Content-Type' => 'text/plain'));
+    $response->write("The method of the request is: " . $request->getMethod());
+    $response->end("The requested path is: " . $request->getUri()->getPath());
+});
+```
+
+For more details about the request object, check out the documentation of
+[PSR-7 RequestInterface](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#32-psrhttpmessagerequestinterface).
+
+Note that the request object will be processed once the request headers have
+been received.
+This means that this happens irrespective of (i.e. *before*) receiving the
+(potentially much larger) request body.
+While this may be uncommon in the PHP ecosystem, this is actually a very powerful
+approach that gives you several advantages not otherwise possible:
+
+* React to requests *before* receiving a large request body,
+  such as rejecting an unauthenticated request or one that exceeds allowed
+  message lengths (file uploads).
+* Start processing parts of the request body before the remainder of the request
+  body arrives or if the sender is slowly streaming data.
+* Process a large request body without having to buffer anything in memory,
+  such as accepting a huge file upload or possibly unlimited request body stream.
+
+The `getBody()` method can be used to access the request body stream.
+This method returns a stream instance that implements both the
+[PSR-7 StreamInterface](http://www.php-fig.org/psr/psr-7/#psrhttpmessagestreaminterface)
+and the [ReactPHP ReadableStreamInterface](https://github.com/reactphp/stream#readablestreaminterface).
+However, most of the `PSR-7 StreamInterface` methods have been
+designed under the assumption of being in control of the request body.
+Given that this does not apply to this server, the following
+`PSR-7 StreamInterface` methods are not used and SHOULD NOT be called:
+`tell()`, `eof()`, `seek()`, `rewind()`, `write()` and `read()`.
+Instead, you should use the `ReactPHP ReadableStreamInterface` which
+gives you access to the incoming request body as the individual chunks arrive:
 
 ```php
-$http = new Server($socket, function (Request $request, Response $response) {
+$http = new Server($socket, function (RequestInterface $request, Response $response) {
     $contentLength = 0;
-    $request->on('data', function ($data) use (&$contentLength) {
+    $body = $request->getBody();
+    $body->on('data', function ($data) use (&$contentLength) {
         $contentLength += strlen($data);
     });
 
-    $request->on('end', function () use ($response, &$contentLength){
+    $body->on('end', function () use ($response, &$contentLength){
         $response->writeHead(200, array('Content-Type' => 'text/plain'));
         $response->end("The length of the submitted request body is: " . $contentLength);
     });
 
     // an error occures e.g. on invalid chunked encoded data or an unexpected 'end' event 
-    $request->on('error', function (\Exception $exception) use ($response, &$contentLength) {
+    $body->on('error', function (\Exception $exception) use ($response, &$contentLength) {
         $response->writeHead(400, array('Content-Type' => 'text/plain'));
         $response->end("An error occured while reading at length: " . $contentLength);
     });
 });
 ```
 
-An error will just `pause` the connection instead of closing it. A response message
-can still be sent.
+The above example simply counts the number of bytes received in the request body.
+This can be used as a skeleton for buffering or processing the request body.
+
+The `data` event will be emitted whenever new data is available on the request
+body stream.
+The server automatically takes care of decoding chunked transfer encoding
+and will only emit the actual payload as data.
+In this case, the `Transfer-Encoding` header will be removed.
+
+The `end` event will be emitted when the request body stream terminates
+successfully, i.e. it was read until its expected end.
+
+The `error` event will be emitted in case the request stream contains invalid
+chunked data or the connection closes before the complete request stream has
+been received.
+The server will automatically `pause()` the connection instead of closing it.
+A response message can still be sent (unless the connection is already closed).
 
 A `close` event will be emitted after an `error` or `end` event.
 
-The constructor is internal, you SHOULD NOT call this yourself.
-The `Server` is responsible for emitting `Request` and `Response` objects.
+For more details about the request body stream, check out the documentation of
+[ReactPHP ReadableStreamInterface](https://github.com/reactphp/stream#readablestreaminterface).
 
-See the above usage example and the class outline for details.
+The `getSize(): ?int` method can be used if you only want to know the request
+body size.
+This method returns the complete size of the request body as defined by the
+message boundaries.
+This value may be `0` if the request message does not contain a request body
+(such as a simple `GET` request).
+Note that this value may be `null` if the request body size is unknown in
+advance because the request message uses chunked transfer encoding.
 
-#### getMethod()
-
-The `getMethod(): string` method can be used to
-return the request method.
-
-#### getPath()
-
-The `getPath(): string` method can be used to
-return the request path.
-
-#### getQueryParams()
-
-The `getQueryParams(): array` method can be used to
-return an array with all query parameters ($_GET).
-
-#### getProtocolVersion()
-
-The `getProtocolVersion(): string` method can be used to
-return the HTTP protocol version (such as "1.0" or "1.1").
-
-#### getHeaders()
-
-The `getHeaders(): array` method can be used to
-return an array with ALL headers.
-
-The keys represent the header name in the exact case in which they were
-originally specified. The values will be an array of strings for each
-value for the respective header name.
-
-#### getHeader()
-
-The `getHeader(string $name): string[]` method can be used to
-retrieve a message header value by the given case-insensitive name.
-
-Returns a list of all values for this header name or an empty array if header was not found
-
-#### getHeaderLine()
-
-The `getHeaderLine(string $name): string` method can be used to
-retrieve a comma-separated string of the values for a single header.
-
-Returns a comma-separated list of all values for this header name or an empty string if header was not found
-
-#### hasHeader()
-
-The `hasHeader(string $name): bool` method can be used to
-check if a header exists by the given case-insensitive name.
+```php 
+$http = new Server($socket, function (RequestInterface $request, Response $response) {
+    $size = $request->getBody()->getSize();
+    if ($size === null) {
+        $response->writeHead(411, array('Content-Type' => 'text/plain'));
+        $response->write('The request does not contain an explicit length.');
+        $response->write('This server does not accept chunked transfer encoding.');
+        $response->end();
+        return;
+    }
+    $response->writeHead(200, array('Content-Type' => 'text/plain'));
+    $response->end("Request body size: " . $size . " bytes\n");
+});
+```
 
 ### Response
 
