@@ -1657,6 +1657,11 @@ class ServerTest extends TestCase
             return "invalid";
         });
 
+        $exception = null;
+        $server->on('error', function (\Exception $ex) use (&$exception) {
+            $exception = $ex;
+        });
+
         $buffer = '';
         $this->connection
             ->expects($this->any())
@@ -1678,6 +1683,7 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
 
         $this->assertContains("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
+        $this->assertInstanceOf('RuntimeException', $exception);
     }
 
     public function testResolveWrongTypeInPromiseWillResultInError()
@@ -1804,6 +1810,108 @@ class ServerTest extends TestCase
         $this->assertContains("hello", $buffer);
 
         $this->assertNotContains("Transfer-Encoding", $buffer);
+    }
+
+    public function testReturnRequestWillBeHandled()
+    {
+        $server = new Server($this->socket, function (RequestInterface $request) {
+            return new Response();
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.0\r\n\r\n";
+
+        $data = $this->createGetRequest();
+
+        $this->connection->emit('data', array($data));
+
+        $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
+    }
+
+    public function testExceptionThrowInCallBackFunctionWillResultInErrorMessage()
+    {
+        $server = new Server($this->socket, function (RequestInterface $request) {
+            throw new \Exception('hello');
+        });
+
+        $exception = null;
+        $server->on('error', function (\Exception $ex) use (&$exception) {
+            $exception = $ex;
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.0\r\n\r\n";
+
+        $data = $this->createGetRequest();
+
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('RuntimeException', $exception);
+        $this->assertContains("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
+        $this->assertEquals('hello', $exception->getPrevious()->getMessage());
+    }
+
+    public function testRejectOfNonExceptionWillResultInErrorMessage()
+    {
+        $server = new Server($this->socket, function (RequestInterface $request) {
+            return new Promise(function ($resolve, $reject) {
+                $reject('Invalid type');
+            });
+        });
+
+        $exception = null;
+        $server->on('error', function (\Exception $ex) use (&$exception) {
+            $exception = $ex;
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.0\r\n\r\n";
+
+        $data = $this->createGetRequest();
+
+        $this->connection->emit('data', array($data));
+
+        $this->assertContains("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
+        $this->assertInstanceOf('RuntimeException', $exception);
     }
 
     private function createGetRequest()
