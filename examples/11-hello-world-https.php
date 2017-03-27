@@ -14,9 +14,12 @@ $socket = new SecureServer($socket, $loop, array(
     'local_cert' => isset($argv[2]) ? $argv[2] : __DIR__ . '/localhost.pem'
 ));
 
-$server = new \React\Http\Server($socket, function (RequestInterface $request, Response $response) {
-    $response->writeHead(200, array('Content-Type' => 'text/plain'));
-    $response->end("Hello world!\n");
+$server = new \React\Http\Server($socket, function (RequestInterface $request) {
+    return new Response(
+        200,
+        array('Content-Type' => 'text/plain'),
+        "Hello world!\n"
+    );
 });
 
 //$socket->on('error', 'printf');

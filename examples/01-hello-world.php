@@ -4,6 +4,7 @@ use React\EventLoop\Factory;
 use React\Socket\Server;
 use React\Http\Response;
 use Psr\Http\Message\RequestInterface;
+use React\Promise\Promise;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -14,7 +15,6 @@ $server = new \React\Http\Server($socket, function (RequestInterface $request) {
     return new Response(
         200,
         array(
-            'Content-Length' => strlen("Hello world\n"),
             'Content-Type' => 'text/plain'
         ),
         "Hello world\n"
