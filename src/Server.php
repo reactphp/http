@@ -228,19 +228,29 @@ class Server extends EventEmitter
         );
 
         $callback = $this->callback;
-        $promise = \React\Promise\resolve($callback($request));
+        $promise = new Promise(function ($resolve, $reject) use ($callback, $request) {
+            $resolve($callback($request));
+        });
 
         $that = $this;
         $promise->then(
             function ($response) use ($that, $conn, $request) {
                 if (!$response instanceof ResponseInterface) {
-                    $that->emit('error', array(new \InvalidArgumentException('Invalid response type')));
+                    $message = 'The response callback is expected to resolve with an object implementing Psr\Http\Message\ResponseInterface, but resolved with "%s" instead.';
+                    $message = sprintf($message, is_object($response) ? get_class($response) : gettype($response));
+                    $exception = new \RuntimeException($message);
+
+                    $that->emit('error', array($exception));
                     return $that->writeError($conn, 500);
                 }
                 $that->handleResponse($conn, $response, $request->getProtocolVersion());
             },
-            function ($ex) use ($that, $conn) {
-                $that->emit('error', array($ex));
+            function ($error) use ($that, $conn) {
+                $message = 'The response callback is expected to resolve with an object implementing Psr\Http\Message\ResponseInterface, but rejected with "%s" instead.';
+                $message = sprintf($message, is_object($error) ? get_class($error) : gettype($error));
+                $exception = new \RuntimeException($message, null, $error instanceof \Exception ? $error : null);
+
+                $that->emit('error', array($exception));
                 return $that->writeError($conn, 500);
             }
         );
@@ -264,7 +274,6 @@ class Server extends EventEmitter
         $response = new Response(
             $code,
             array(
-                'Content-Length' => strlen($message),
                 'Content-Type' => 'text/plain'
             ),
             $message
