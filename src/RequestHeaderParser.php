@@ -55,18 +55,37 @@ class RequestHeaderParser extends EventEmitter
     {
         list($headers, $bodyBuffer) = explode("\r\n\r\n", $data, 2);
 
-        $asterisk = false;
+        $originalTarget = null;
         if (strpos($headers, 'OPTIONS * ') === 0) {
-            $asterisk = true;
+            $originalTarget = '*';
             $headers = 'OPTIONS / ' . substr($headers, 10);
+        } elseif (strpos($headers, 'CONNECT ') === 0) {
+            $parts = explode(' ', $headers, 3);
+            $uri = parse_url('tcp://' . $parts[1]);
+
+            // check this is a valid authority-form request-target (host:port)
+            if (isset($uri['scheme'], $uri['host'], $uri['port']) && count($uri) === 3) {
+                $originalTarget = $parts[1];
+                $parts[1] = '/';
+                $headers = implode(' ', $parts);
+            }
         }
 
         $request = g7\parse_request($headers);
 
-        if ($asterisk) {
+        // Do not assume this is HTTPS when this happens to be port 443
+        // detecting HTTPS is left up to the socket layer (TLS detection)
+        if ($request->getUri()->getScheme() === 'https') {
             $request = $request->withUri(
-                $request->getUri()->withPath('')
-            )->withRequestTarget('*');
+                $request->getUri()->withScheme('http')->withPort(443)
+            );
+        }
+
+        if ($originalTarget !== null) {
+            $request = $request->withUri(
+                $request->getUri()->withPath(''),
+                true
+            )->withRequestTarget($originalTarget);
         }
 
         return array($request, $bodyBuffer);
