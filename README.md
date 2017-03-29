@@ -269,6 +269,27 @@ $http = new Server($socket, function (RequestInterface $request) {
 });
 ```
 
+Note that the server supports *any* request method (including custom and non-
+standard ones) and all request-target formats defined in the HTTP specs for each
+respective method.
+You can use `getMethod(): string` and `getRequestTarget(): string` to
+check this is an accepted request and may want to reject other requests with
+an appropriate error code, such as `400` (Bad Request) or `405` (Method Not
+Allowed).
+
+> The `CONNECT` method is useful in a tunneling setup (HTTPS proxy) and not
+  something most HTTP servers would want to care about.
+  Note that if you want to handle this method, the client MAY send a different
+  request-target than the `Host` header field (such as removing default ports)
+  and the request-target MUST take precendence when forwarding.
+  The HTTP specs define an opaque "tunneling mode" for this method and make no
+  use of the message body.
+  For consistency reasons, this library uses the message body of the request and
+  response for tunneled application data.
+  This implies that that a `2xx` (Successful) response to a `CONNECT` request
+  can in fact use a streaming response body for the tunneled application data.
+  See also [example #21](examples) for more details.
+
 ### Response
 
 The callback function passed to the constructor of the [Server](#server)
@@ -393,13 +414,24 @@ message body as per the HTTP specs.
 This means that your callback does not have to take special care of this and any
 response body will simply be ignored.
 
-Similarly, any response with a `1xx` (Informational) or `204` (No Content)
-status code will *not* include a `Content-Length` or `Transfer-Encoding`
-header as these do not apply to these messages.
+Similarly, any `2xx` (Successful) response to a `CONNECT` request, any response
+with a `1xx` (Informational) or `204` (No Content) status code will *not*
+include a `Content-Length` or `Transfer-Encoding` header as these do not apply
+to these messages.
 Note that a response to a `HEAD` request and any response with a `304` (Not
 Modified) status code MAY include these headers even though
 the message does not contain a response body, because these header would apply
 to the message if the same request would have used an (unconditional) `GET`.
+
+> The `CONNECT` method is useful in a tunneling setup (HTTPS proxy) and not
+  something most HTTP servers would want to care about.
+  The HTTP specs define an opaque "tunneling mode" for this method and make no
+  use of the message body.
+  For consistency reasons, this library uses the message body of the request and
+  response for tunneled application data.
+  This implies that that a `2xx` (Successful) response to a `CONNECT` request
+  can in fact use a streaming response body for the tunneled application data.
+  See also [example #21](examples) for more details.
 
 A `Date` header will be automatically added with the system date and time if none is given.
 You can add a custom `Date` header yourself like this:
