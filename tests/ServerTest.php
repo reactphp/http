@@ -1877,6 +1877,43 @@ class ServerTest extends TestCase
         $this->assertEquals('hello', $exception->getPrevious()->getMessage());
     }
 
+    /**
+     * @requires PHP 7
+     */
+    public function testThrowableThrowInCallBackFunctionWillResultInErrorMessage()
+    {
+        $server = new Server($this->socket, function (RequestInterface $request) {
+            throw new \Error('hello');
+        });
+
+        $exception = null;
+        $server->on('error', function (\Exception $ex) use (&$exception) {
+            $exception = $ex;
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('RuntimeException', $exception);
+        $this->assertContains("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
+        $this->assertEquals('hello', $exception->getPrevious()->getMessage());
+    }
+
     public function testRejectOfNonExceptionWillResultInErrorMessage()
     {
         $server = new Server($this->socket, function (RequestInterface $request) {

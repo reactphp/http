@@ -258,7 +258,14 @@ class Server extends EventEmitter
             function ($error) use ($that, $conn) {
                 $message = 'The response callback is expected to resolve with an object implementing Psr\Http\Message\ResponseInterface, but rejected with "%s" instead.';
                 $message = sprintf($message, is_object($error) ? get_class($error) : gettype($error));
-                $exception = new \RuntimeException($message, null, $error instanceof \Exception ? $error : null);
+
+                $previous = null;
+
+                if ($error instanceof \Throwable || $error instanceof \Exception) {
+                    $previous = $error;
+                }
+
+                $exception = new \RuntimeException($message, null, $previous);
 
                 $that->emit('error', array($exception));
                 return $that->writeError($conn, 500);
