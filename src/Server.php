@@ -7,9 +7,8 @@ use React\Socket\ServerInterface as SocketServerInterface;
 use React\Socket\ConnectionInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use RingCentral;
 use React\Promise\Promise;
-use RingCentral\Psr7\Request;
+use RingCentral\Psr7 as Psr7Implementation;
 
 /**
  * The `Server` class is responsible for handling incoming connections and then
@@ -291,7 +290,7 @@ class Server extends EventEmitter
         );
 
         if ($request === null) {
-            $request = new Request('GET', '/', array(), null, '1.1');
+            $request = new Psr7Implementation\Request('GET', '/', array(), null, '1.1');
         }
 
         $this->handleResponse($conn, $request, $response);
@@ -337,13 +336,19 @@ class Server extends EventEmitter
             $response = $response->withHeader('Connection', 'close');
         }
 
+        // response to HEAD and 1xx, 204 and 304 responses MUST NOT include a body
+        $code = $response->getStatusCode();
+        if ($request->getMethod() === 'HEAD' || ($code >= 100 && $code < 200) || $code === 204 || $code === 304) {
+            $response = $response->withBody(Psr7Implementation\stream_for(''));
+        }
+
         $this->handleResponseBody($response, $connection);
     }
 
     private function handleResponseBody(ResponseInterface $response, ConnectionInterface $connection)
     {
         if (!$response->getBody() instanceof HttpBodyStream) {
-            $connection->write(RingCentral\Psr7\str($response));
+            $connection->write(Psr7Implementation\str($response));
             return $connection->end();
         }
 
@@ -354,7 +359,7 @@ class Server extends EventEmitter
             $stream = new ChunkedEncoder($body);
         }
 
-        $connection->write(RingCentral\Psr7\str($response));
+        $connection->write(Psr7Implementation\str($response));
         $stream->pipe($connection);
     }
 }

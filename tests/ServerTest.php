@@ -331,6 +331,87 @@ class ServerTest extends TestCase
         $this->assertContains("bye", $buffer);
     }
 
+    public function testResponseContainsNoResponseBodyForHeadRequest()
+    {
+        $server = new Server($this->socket, function (RequestInterface $request) {
+            return new Response(200, array(), 'bye');
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "HEAD / HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertNotContains("bye", $buffer);
+    }
+
+    public function testResponseContainsNoResponseBodyForNoContentStatus()
+    {
+        $server = new Server($this->socket, function (RequestInterface $request) {
+            return new Response(204, array(), 'bye');
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertContains("HTTP/1.1 204 No Content\r\n", $buffer);
+        $this->assertNotContains("bye", $buffer);
+    }
+
+    public function testResponseContainsNoResponseBodyForNotModifiedStatus()
+    {
+        $server = new Server($this->socket, function (RequestInterface $request) {
+            return new Response(304, array(), 'bye');
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertContains("HTTP/1.1 304 Not Modified\r\n", $buffer);
+        $this->assertNotContains("bye", $buffer);
+    }
+
     public function testRequestInvalidHttpProtocolVersionWillEmitErrorAndSendErrorResponse()
     {
         $error = null;
@@ -977,6 +1058,42 @@ class ServerTest extends TestCase
 
         $this->assertContains("HTTP/1.1 400 Bad Request\r\n", $buffer);
         $this->assertContains("\r\n\r\nError 400: Bad Request", $buffer);
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+    }
+
+    public function testNonIntegerContentLengthValueWillLeadToErrorWithNoBodyForHeadRequest()
+    {
+        $error = null;
+        $server = new Server($this->socket, $this->expectCallableNever());
+        $server->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "HEAD / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Content-Length: bla\r\n";
+        $data .= "\r\n";
+        $data .= "hello";
+
+        $this->connection->emit('data', array($data));
+
+        $this->assertContains("HTTP/1.1 400 Bad Request\r\n", $buffer);
+        $this->assertNotContains("\r\n\r\nError 400: Bad Request", $buffer);
         $this->assertInstanceOf('InvalidArgumentException', $error);
     }
 
