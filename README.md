@@ -356,12 +356,14 @@ This is just a example you could use of the streaming,
 you could also send a big amount of data via little chunks 
 or use it for body data that needs to calculated.
 
-If the response body is a `string` a `Content-Length` header will be added automatically.
-Unless you specify a `Content-Length` header for a ReactPHP `ReadableStreamInterface`
-response body yourself, HTTP/1.1 responses will automatically use chunked transfer encoding 
-and send the respective header
-(`Transfer-Encoding: chunked`) automatically. The server is responsible for handling
-`Transfer-Encoding` so you SHOULD NOT pass it yourself.
+If the response body is a `string`, a `Content-Length` header will be added
+automatically.
+If the response body is a ReactPHP `ReadableStreamInterface` and you do not
+specify a `Content-Length` header, HTTP/1.1 responses will automatically use
+chunked transfer encoding and send the respective header
+(`Transfer-Encoding: chunked`) automatically.
+The server is responsible for handling `Transfer-Encoding`, so you SHOULD NOT
+pass this header yourself.
 If you know the length of your stream body, you MAY specify it like this instead:
 
 ```php
@@ -387,9 +389,17 @@ The `Server` will add the protocol version of the request, so you don't have to.
 
 Any response to a `HEAD` request and any response with a `1xx` (Informational),
 `204` (No Content) or `304` (Not Modified) status code will *not* include a
-message body as per the HTTP spec.
+message body as per the HTTP specs.
 This means that your callback does not have to take special care of this and any
 response body will simply be ignored.
+
+Similarly, any response with a `1xx` (Informational) or `204` (No Content)
+status code will *not* include a `Content-Length` or `Transfer-Encoding`
+header as these do not apply to these messages.
+Note that a response to a `HEAD` request and any response with a `304` (Not
+Modified) status code MAY include these headers even though
+the message does not contain a response body, because these header would apply
+to the message if the same request would have used an (unconditional) `GET`.
 
 A `Date` header will be automatically added with the system date and time if none is given.
 You can add a custom `Date` header yourself like this:

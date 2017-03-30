@@ -336,8 +336,13 @@ class Server extends EventEmitter
             $response = $response->withHeader('Connection', 'close');
         }
 
-        // response to HEAD and 1xx, 204 and 304 responses MUST NOT include a body
+        // response code 1xx and 204 MUST NOT include Content-Length or Transfer-Encoding header
         $code = $response->getStatusCode();
+        if (($code >= 100 && $code < 200) || $code === 204) {
+            $response = $response->withoutHeader('Content-Length')->withoutHeader('Transfer-Encoding');
+        }
+
+        // response to HEAD and 1xx, 204 and 304 responses MUST NOT include a body
         if ($request->getMethod() === 'HEAD' || ($code >= 100 && $code < 200) || $code === 204 || $code === 304) {
             $response = $response->withBody(Psr7Implementation\stream_for(''));
         }

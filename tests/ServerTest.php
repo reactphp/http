@@ -358,7 +358,7 @@ class ServerTest extends TestCase
         $this->assertNotContains("bye", $buffer);
     }
 
-    public function testResponseContainsNoResponseBodyForNoContentStatus()
+    public function testResponseContainsNoResponseBodyAndNoContentLengthForNoContentStatus()
     {
         $server = new Server($this->socket, function (RequestInterface $request) {
             return new Response(204, array(), 'bye');
@@ -382,6 +382,7 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
 
         $this->assertContains("HTTP/1.1 204 No Content\r\n", $buffer);
+        $this->assertNotContains("\r\n\Content-Length: 3\r\n", $buffer);
         $this->assertNotContains("bye", $buffer);
     }
 
@@ -409,6 +410,7 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
 
         $this->assertContains("HTTP/1.1 304 Not Modified\r\n", $buffer);
+        $this->assertContains("\r\nContent-Length: 3\r\n", $buffer);
         $this->assertNotContains("bye", $buffer);
     }
 
