@@ -377,12 +377,19 @@ $server = new Server($socket, function (RequestInterface $request) use ($loop, $
     );
 });
 ```
+
 An invalid return value or an unhandled `Exception` in the code of the callback
 function, will result in an `500 Internal Server Error` message.
 Make sure to catch `Exceptions` to create own response messages.
 
 After the return in the callback function the response will be processed by the `Server`.
 The `Server` will add the protocol version of the request, so you don't have to.
+
+Any response to a `HEAD` request and any response with a `1xx` (Informational),
+`204` (No Content) or `304` (Not Modified) status code will *not* include a
+message body as per the HTTP spec.
+This means that your callback does not have to take special care of this and any
+response body will simply be ignored.
 
 A `Date` header will be automatically added with the system date and time if none is given.
 You can add a custom `Date` header yourself like this:
