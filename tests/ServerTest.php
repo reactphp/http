@@ -1907,7 +1907,15 @@ class ServerTest extends TestCase
 
         $data = $this->createGetRequest();
 
-        $this->connection->emit('data', array($data));
+        try {
+            $this->connection->emit('data', array($data));
+        } catch (\Error $e) {
+            $this->markTestSkipped(
+                'A \Throwable bubbled out of the request callback. ' .
+                'This happened most probably due to react/promise:^1.0 being installed ' .
+                'which does not support \Throwable.'
+            );
+        }
 
         $this->assertInstanceOf('RuntimeException', $exception);
         $this->assertContains("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
