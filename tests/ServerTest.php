@@ -98,10 +98,31 @@ class ServerTest extends TestCase
 
         $this->assertSame(1, $i);
         $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
-        $this->assertSame('/', $requestAssertion->getUri()->getPath());
         $this->assertSame('GET', $requestAssertion->getMethod());
+        $this->assertSame('/', $requestAssertion->getRequestTarget());
+        $this->assertSame('/', $requestAssertion->getUri()->getPath());
+        $this->assertSame('http://example.com/', (string)$requestAssertion->getUri());
         $this->assertSame('127.0.0.1', $requestAssertion->remoteAddress);
+    }
 
+    public function testRequestOptionsAsterisk()
+    {
+        $requestAssertion = null;
+        $server = new Server($this->socket, function ($request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "OPTIONS * HTTP/1.1\r\nHost: example.com\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertSame('OPTIONS', $requestAssertion->getMethod());
+        $this->assertSame('*', $requestAssertion->getRequestTarget());
+        $this->assertSame('', $requestAssertion->getUri()->getPath());
+        $this->assertSame('http://example.com', (string)$requestAssertion->getUri());
     }
 
     public function testRequestPauseWillbeForwardedToConnection()
