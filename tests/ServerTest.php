@@ -331,6 +331,89 @@ class ServerTest extends TestCase
         $this->assertContains("bye", $buffer);
     }
 
+    public function testResponseContainsNoResponseBodyForHeadRequest()
+    {
+        $server = new Server($this->socket, function (RequestInterface $request) {
+            return new Response(200, array(), 'bye');
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "HEAD / HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertNotContains("bye", $buffer);
+    }
+
+    public function testResponseContainsNoResponseBodyAndNoContentLengthForNoContentStatus()
+    {
+        $server = new Server($this->socket, function (RequestInterface $request) {
+            return new Response(204, array(), 'bye');
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertContains("HTTP/1.1 204 No Content\r\n", $buffer);
+        $this->assertNotContains("\r\n\Content-Length: 3\r\n", $buffer);
+        $this->assertNotContains("bye", $buffer);
+    }
+
+    public function testResponseContainsNoResponseBodyForNotModifiedStatus()
+    {
+        $server = new Server($this->socket, function (RequestInterface $request) {
+            return new Response(304, array(), 'bye');
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertContains("HTTP/1.1 304 Not Modified\r\n", $buffer);
+        $this->assertContains("\r\nContent-Length: 3\r\n", $buffer);
+        $this->assertNotContains("bye", $buffer);
+    }
+
     public function testRequestInvalidHttpProtocolVersionWillEmitErrorAndSendErrorResponse()
     {
         $error = null;
@@ -980,6 +1063,42 @@ class ServerTest extends TestCase
         $this->assertInstanceOf('InvalidArgumentException', $error);
     }
 
+    public function testNonIntegerContentLengthValueWillLeadToErrorWithNoBodyForHeadRequest()
+    {
+        $error = null;
+        $server = new Server($this->socket, $this->expectCallableNever());
+        $server->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "HEAD / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Content-Length: bla\r\n";
+        $data .= "\r\n";
+        $data .= "hello";
+
+        $this->connection->emit('data', array($data));
+
+        $this->assertContains("HTTP/1.1 400 Bad Request\r\n", $buffer);
+        $this->assertNotContains("\r\n\r\nError 400: Bad Request", $buffer);
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+    }
+
     public function testMultipleIntegerInContentLengthWillLeadToError()
     {
         $error = null;
@@ -1448,6 +1567,39 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
 
         $this->assertContains("HTTP/1.1 501 Not Implemented\r\n", $buffer);
+        $this->assertContains("\r\n\r\nError 501: Not Implemented", $buffer);
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+    }
+
+    public function testOnlyChunkedEncodingIsAllowedForTransferEncodingWithHttp10()
+    {
+        $error = null;
+
+        $server = new Server($this->socket, $this->expectCallableNever());
+        $server->on('error', function ($exception) use (&$error) {
+            $error = $exception;
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.0\r\n";
+        $data .= "Transfer-Encoding: custom\r\n";
+        $data .= "\r\n";
+
+        $this->connection->emit('data', array($data));
+
+        $this->assertContains("HTTP/1.0 501 Not Implemented\r\n", $buffer);
         $this->assertContains("\r\n\r\nError 501: Not Implemented", $buffer);
         $this->assertInstanceOf('InvalidArgumentException', $error);
     }

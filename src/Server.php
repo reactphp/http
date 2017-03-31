@@ -7,9 +7,8 @@ use React\Socket\ServerInterface as SocketServerInterface;
 use React\Socket\ConnectionInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use RingCentral;
-use React\Stream\ReadableStream;
 use React\Promise\Promise;
+use RingCentral\Psr7 as Psr7Implementation;
 
 /**
  * The `Server` class is responsible for handling incoming connections and then
@@ -176,7 +175,8 @@ class Server extends EventEmitter
         // only support HTTP/1.1 and HTTP/1.0 requests
         if ($request->getProtocolVersion() !== '1.1' && $request->getProtocolVersion() !== '1.0') {
             $this->emit('error', array(new \InvalidArgumentException('Received request with invalid protocol version')));
-            return $this->writeError($conn, 505);
+            $request = $request->withProtocolVersion('1.1');
+            return $this->writeError($conn, 505, $request);
         }
 
         // HTTP/1.1 requests MUST include a valid host header (host and optional port)
@@ -193,7 +193,7 @@ class Server extends EventEmitter
             unset($parts['scheme'], $parts['host'], $parts['port']);
             if ($parts === false || $parts) {
                 $this->emit('error', array(new \InvalidArgumentException('Invalid Host header for HTTP/1.1 request')));
-                return $this->writeError($conn, 400);
+                return $this->writeError($conn, 400, $request);
             }
         }
 
@@ -203,7 +203,7 @@ class Server extends EventEmitter
 
             if (strtolower($request->getHeaderLine('Transfer-Encoding')) !== 'chunked') {
                 $this->emit('error', array(new \InvalidArgumentException('Only chunked-encoding is allowed for Transfer-Encoding')));
-                return $this->writeError($conn, 501);
+                return $this->writeError($conn, 501, $request);
             }
 
             $stream = new ChunkedDecoder($stream);
@@ -219,7 +219,7 @@ class Server extends EventEmitter
             if ((string)$contentLength !== (string)$string) {
                 // Content-Length value is not an integer or not a single integer
                 $this->emit('error', array(new \InvalidArgumentException('The value of `Content-Length` is not valid')));
-                return $this->writeError($conn, 400);
+                return $this->writeError($conn, 400, $request);
             }
 
             $stream = new LengthLimitedStream($stream, $contentLength);
@@ -251,17 +251,17 @@ class Server extends EventEmitter
                     $exception = new \RuntimeException($message);
 
                     $that->emit('error', array($exception));
-                    return $that->writeError($conn, 500);
+                    return $that->writeError($conn, 500, $request);
                 }
-                $that->handleResponse($conn, $response, $request->getProtocolVersion());
+                $that->handleResponse($conn, $request, $response);
             },
-            function ($error) use ($that, $conn) {
+            function ($error) use ($that, $conn, $request) {
                 $message = 'The response callback is expected to resolve with an object implementing Psr\Http\Message\ResponseInterface, but rejected with "%s" instead.';
                 $message = sprintf($message, is_object($error) ? get_class($error) : gettype($error));
                 $exception = new \RuntimeException($message, null, $error instanceof \Exception ? $error : null);
 
                 $that->emit('error', array($exception));
-                return $that->writeError($conn, 500);
+                return $that->writeError($conn, 500, $request);
             }
         );
 
@@ -274,7 +274,7 @@ class Server extends EventEmitter
     }
 
     /** @internal */
-    public function writeError(ConnectionInterface $conn, $code)
+    public function writeError(ConnectionInterface $conn, $code, RequestInterface $request = null)
     {
         $message = 'Error ' . $code;
         if (isset(ResponseCodes::$statusTexts[$code])) {
@@ -289,14 +289,18 @@ class Server extends EventEmitter
             $message
         );
 
-        $this->handleResponse($conn, $response, '1.1');
+        if ($request === null) {
+            $request = new Psr7Implementation\Request('GET', '/', array(), null, '1.1');
+        }
+
+        $this->handleResponse($conn, $request, $response);
     }
 
 
     /** @internal */
-    public function handleResponse(ConnectionInterface $connection, ResponseInterface $response, $protocolVersion)
+    public function handleResponse(ConnectionInterface $connection, RequestInterface $request, ResponseInterface $response)
     {
-        $response = $response->withProtocolVersion($protocolVersion);
+        $response = $response->withProtocolVersion($request->getProtocolVersion());
 
         // assign default "X-Powered-By" header as first for history reasons
         if (!$response->hasHeader('X-Powered-By')) {
@@ -321,15 +325,26 @@ class Server extends EventEmitter
 
         if (!$response->getBody() instanceof HttpBodyStream) {
             $response = $response->withHeader('Content-Length', $response->getBody()->getSize());
-        } elseif (!$response->hasHeader('Content-Length') && $protocolVersion === '1.1') {
+        } elseif (!$response->hasHeader('Content-Length') && $request->getProtocolVersion() === '1.1') {
             // assign chunked transfer-encoding if no 'content-length' is given for HTTP/1.1 responses
             $response = $response->withHeader('Transfer-Encoding', 'chunked');
         }
 
         // HTTP/1.1 assumes persistent connection support by default
         // we do not support persistent connections, so let the client know
-        if ($protocolVersion === '1.1') {
+        if ($request->getProtocolVersion() === '1.1') {
             $response = $response->withHeader('Connection', 'close');
+        }
+
+        // response code 1xx and 204 MUST NOT include Content-Length or Transfer-Encoding header
+        $code = $response->getStatusCode();
+        if (($code >= 100 && $code < 200) || $code === 204) {
+            $response = $response->withoutHeader('Content-Length')->withoutHeader('Transfer-Encoding');
+        }
+
+        // response to HEAD and 1xx, 204 and 304 responses MUST NOT include a body
+        if ($request->getMethod() === 'HEAD' || ($code >= 100 && $code < 200) || $code === 204 || $code === 304) {
+            $response = $response->withBody(Psr7Implementation\stream_for(''));
         }
 
         $this->handleResponseBody($response, $connection);
@@ -338,7 +353,7 @@ class Server extends EventEmitter
     private function handleResponseBody(ResponseInterface $response, ConnectionInterface $connection)
     {
         if (!$response->getBody() instanceof HttpBodyStream) {
-            $connection->write(RingCentral\Psr7\str($response));
+            $connection->write(Psr7Implementation\str($response));
             return $connection->end();
         }
 
@@ -349,7 +364,7 @@ class Server extends EventEmitter
             $stream = new ChunkedEncoder($body);
         }
 
-        $connection->write(RingCentral\Psr7\str($response));
+        $connection->write(Psr7Implementation\str($response));
         $stream->pipe($connection);
     }
 }
