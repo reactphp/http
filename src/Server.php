@@ -24,7 +24,7 @@ use RingCentral\Psr7 as Psr7Implementation;
  * ```php
  * $socket = new React\Socket\Server(8080, $loop);
  *
- * $http = new Server($socket, function (RequestInterface $request) {
+ * $http = new Server($socket, function (ServerRequestInterface $request) {
  *     return new Response(
  *         200,
  *         array('Content-Type' => 'text/plain'),
@@ -45,7 +45,7 @@ use RingCentral\Psr7 as Psr7Implementation;
  *     'local_cert' => __DIR__ . '/localhost.pem'
  * ));
  *
- * $http = new Server($socket, function (RequestInterface $request) {
+ * $http = new Server($socket, function (ServerRequestInterface $request) {
  *     return new Response(
  *         200,
  *         array('Content-Type' => 'text/plain'),
@@ -80,6 +80,22 @@ use RingCentral\Psr7 as Psr7Implementation;
  * });
  * ```
  *
+ * The server will also emit an `error` event if you return an invalid
+ * type in the callback function or have a unhandled `Exception`.
+ * If your callback function throws an exception,
+ * the `Server` will emit a `RuntimeException` and add the thrown exception
+ * as previous:
+ *
+ * ```php
+ * $http->on('error', function (Exception $e) {
+ *     echo 'Error: ' . $e->getMessage() . PHP_EOL;
+ *     if ($e->getPrevious() !== null) {
+ *         $previousException = $e->getPrevious();
+ *         echo $previousException->getMessage() . PHP_EOL;
+ *     }
+ * });
+ * ```
+ *
  * Note that the request object can also emit an error.
  * Check out [request](#request) for more details.
  *
@@ -98,15 +114,17 @@ class Server extends EventEmitter
      * as HTTP.
      *
      * For each request, it executes the callback function passed to the
-     * constructor with the respective [`Request`](#request) and
-     * [`Response`](#response) objects:
+     * constructor with the respective [`request`](#request) object:
      *
      * ```php
      * $socket = new React\Socket\Server(8080, $loop);
      *
-     * $http = new Server($socket, function (Request $request, Response $response) {
-     *     $response->writeHead(200, array('Content-Type' => 'text/plain'));
-     *     $response->end("Hello World!\n");
+     * $http = new Server($socket, function (ServerRequestInterface $request) {
+     *     return new Response(
+     *         200,
+     *         array('Content-Type' => 'text/plain'),
+     *         "Hello World!\n"
+     *     );
      * });
      * ```
      *
@@ -120,9 +138,12 @@ class Server extends EventEmitter
      *     'local_cert' => __DIR__ . '/localhost.pem'
      * ));
      *
-     * $http = new Server($socket, function (Request $request, Response $response) {
-     *    $response->writeHead(200, array('Content-Type' => 'text/plain'));
-     *    $response->end("Hello World!\n");
+     * $http = new Server($socket, function (ServerRequestInterface $request $request) {
+     *     return new Response(
+     *         200,
+     *         array('Content-Type' => 'text/plain'),
+     *         "Hello World!\n"
+     *     );
      * });
      *```
      *
