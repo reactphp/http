@@ -282,7 +282,9 @@ class Server extends EventEmitter
             }
         );
 
-        if ($contentLength === 0) {
+        $upgradeConnection = $request->hasHeader('Connection') && $request->getHeaderLine('Connection') === 'Upgrade';
+
+        if (!$upgradeConnection && $contentLength === 0) {
             // If Body is empty or Content-Length is 0 and won't emit further data,
             // 'data' events from other streams won't be called anymore
             $stream->emit('end');
@@ -349,7 +351,7 @@ class Server extends EventEmitter
 
         // HTTP/1.1 assumes persistent connection support by default
         // we do not support persistent connections, so let the client know
-        if ($request->getProtocolVersion() === '1.1') {
+        if ($request->getProtocolVersion() === '1.1' && $response->getStatusCode() !== 101) {
             $response = $response->withHeader('Connection', 'close');
         }
 
@@ -359,9 +361,12 @@ class Server extends EventEmitter
             $response = $response->withoutHeader('Content-Length')->withoutHeader('Transfer-Encoding');
         }
 
-        // response to HEAD and 1xx, 204 and 304 responses MUST NOT include a body
-        if ($request->getMethod() === 'HEAD' || ($code >= 100 && $code < 200) || $code === 204 || $code === 304) {
-            $response = $response->withBody(Psr7Implementation\stream_for(''));
+        // 101 response (Upgrade) should hold onto the body
+        if ($code !== 101) {
+            // response to HEAD and 1xx, 204 and 304 responses MUST NOT include a body
+            if ($request->getMethod() === 'HEAD' || ($code >= 100 && $code < 200) || $code === 204 || $code === 304) {
+                $response = $response->withBody(Psr7Implementation\stream_for(''));
+            }
         }
 
         $this->handleResponseBody($response, $connection);
