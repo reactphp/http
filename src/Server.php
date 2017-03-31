@@ -199,7 +199,24 @@ class Server extends EventEmitter
 
         $contentLength = 0;
         $stream = new CloseProtectionStream($conn);
-        if ($request->hasHeader('Transfer-Encoding')) {
+        if ($request->getMethod() === 'CONNECT') {
+            // CONNECT method MUST use authority-form request target
+            $parts = parse_url('tcp://' . $request->getRequestTarget());
+            if (!isset($parts['scheme'], $parts['host'], $parts['port']) || count($parts) !== 3) {
+                $this->emit('error', array(new \InvalidArgumentException('CONNECT method MUST use authority-form request target')));
+                return $this->writeError($conn, 400);
+            }
+
+            // CONNECT uses undelimited body until connection closes
+            $request = $request->withoutHeader('Transfer-Encoding');
+            $request = $request->withoutHeader('Content-Length');
+            $contentLength = null;
+
+            // emit end event before the actual close event
+            $stream->on('close', function () use ($stream) {
+                $stream->emit('end');
+            });
+        } else if ($request->hasHeader('Transfer-Encoding')) {
 
             if (strtolower($request->getHeaderLine('Transfer-Encoding')) !== 'chunked') {
                 $this->emit('error', array(new \InvalidArgumentException('Only chunked-encoding is allowed for Transfer-Encoding')));
@@ -336,9 +353,9 @@ class Server extends EventEmitter
             $response = $response->withHeader('Connection', 'close');
         }
 
-        // response code 1xx and 204 MUST NOT include Content-Length or Transfer-Encoding header
+        // 2xx response to CONNECT and 1xx and 204 MUST NOT include Content-Length or Transfer-Encoding header
         $code = $response->getStatusCode();
-        if (($code >= 100 && $code < 200) || $code === 204) {
+        if (($request->getMethod() === 'CONNECT' && $code >= 200 && $code < 300) || ($code >= 100 && $code < 200) || $code === 204) {
             $response = $response->withoutHeader('Content-Length')->withoutHeader('Transfer-Encoding');
         }
 

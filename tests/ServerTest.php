@@ -66,21 +66,7 @@ class ServerTest extends TestCase
     {
         $i = 0;
         $requestAssertion = null;
-
-        $buffer = '';
-
-        $this->connection
-            ->expects($this->any())
-            ->method('write')
-            ->will(
-                $this->returnCallback(
-                    function ($data) use (&$buffer) {
-                        $buffer .= $data;
-                    }
-                )
-            );
-
-        $server = new Server($this->socket, function ($request) use (&$i, &$requestAssertion) {
+        $server = new Server($this->socket, function (RequestInterface $request) use (&$i, &$requestAssertion) {
             $i++;
             $requestAssertion = $request;
             return \React\Promise\resolve(new Response());
@@ -102,13 +88,80 @@ class ServerTest extends TestCase
         $this->assertSame('/', $requestAssertion->getRequestTarget());
         $this->assertSame('/', $requestAssertion->getUri()->getPath());
         $this->assertSame('http://example.com/', (string)$requestAssertion->getUri());
+        $this->assertSame('example.com:80', $requestAssertion->getHeaderLine('Host'));
         $this->assertSame('127.0.0.1', $requestAssertion->remoteAddress);
+    }
+
+    public function testRequestGetWithHostAndCustomPort()
+    {
+        $requestAssertion = null;
+        $server = new Server($this->socket, function (RequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\nHost: example.com:8080\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertSame('GET', $requestAssertion->getMethod());
+        $this->assertSame('/', $requestAssertion->getRequestTarget());
+        $this->assertSame('/', $requestAssertion->getUri()->getPath());
+        $this->assertSame('http://example.com:8080/', (string)$requestAssertion->getUri());
+        $this->assertSame(8080, $requestAssertion->getUri()->getPort());
+        $this->assertSame('example.com:8080', $requestAssertion->getHeaderLine('Host'));
+    }
+
+    public function testRequestGetWithHostAndHttpsPort()
+    {
+        $requestAssertion = null;
+        $server = new Server($this->socket, function (RequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\nHost: example.com:443\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertSame('GET', $requestAssertion->getMethod());
+        $this->assertSame('/', $requestAssertion->getRequestTarget());
+        $this->assertSame('/', $requestAssertion->getUri()->getPath());
+        $this->assertSame('http://example.com:443/', (string)$requestAssertion->getUri());
+        $this->assertSame(443, $requestAssertion->getUri()->getPort());
+        $this->assertSame('example.com:443', $requestAssertion->getHeaderLine('Host'));
+    }
+
+    public function testRequestGetWithHostAndDefaultPortWillBeIgnored()
+    {
+        $requestAssertion = null;
+        $server = new Server($this->socket, function (RequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\nHost: example.com:80\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertSame('GET', $requestAssertion->getMethod());
+        $this->assertSame('/', $requestAssertion->getRequestTarget());
+        $this->assertSame('/', $requestAssertion->getUri()->getPath());
+        $this->assertSame('http://example.com/', (string)$requestAssertion->getUri());
+        $this->assertSame(null, $requestAssertion->getUri()->getPort());
+        $this->assertSame('example.com:80', $requestAssertion->getHeaderLine('Host'));
     }
 
     public function testRequestOptionsAsterisk()
     {
         $requestAssertion = null;
-        $server = new Server($this->socket, function ($request) use (&$requestAssertion) {
+        $server = new Server($this->socket, function (RequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
             return new Response();
         });
@@ -123,6 +176,95 @@ class ServerTest extends TestCase
         $this->assertSame('*', $requestAssertion->getRequestTarget());
         $this->assertSame('', $requestAssertion->getUri()->getPath());
         $this->assertSame('http://example.com', (string)$requestAssertion->getUri());
+        $this->assertSame('example.com', $requestAssertion->getHeaderLine('Host'));
+    }
+
+    public function testRequestNonOptionsWithAsteriskRequestTargetWillReject()
+    {
+        $server = new Server($this->socket, $this->expectCallableNever());
+        $server->on('error', $this->expectCallableOnce());
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET * HTTP/1.1\r\nHost: example.com\r\n\r\n";
+        $this->connection->emit('data', array($data));
+    }
+
+    public function testRequestConnectAuthorityForm()
+    {
+        $requestAssertion = null;
+        $server = new Server($this->socket, function (RequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "CONNECT example.com:443 HTTP/1.1\r\nHost: example.com:443\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertSame('CONNECT', $requestAssertion->getMethod());
+        $this->assertSame('example.com:443', $requestAssertion->getRequestTarget());
+        $this->assertSame('', $requestAssertion->getUri()->getPath());
+        $this->assertSame('http://example.com:443', (string)$requestAssertion->getUri());
+        $this->assertSame(443, $requestAssertion->getUri()->getPort());
+        $this->assertSame('example.com:443', $requestAssertion->getHeaderLine('host'));
+    }
+
+    public function testRequestConnectAuthorityFormWithDefaultPortWillBeIgnored()
+    {
+        $requestAssertion = null;
+        $server = new Server($this->socket, function (RequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "CONNECT example.com:80 HTTP/1.1\r\nHost: example.com:80\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertSame('CONNECT', $requestAssertion->getMethod());
+        $this->assertSame('example.com:80', $requestAssertion->getRequestTarget());
+        $this->assertSame('', $requestAssertion->getUri()->getPath());
+        $this->assertSame('http://example.com', (string)$requestAssertion->getUri());
+        $this->assertSame(null, $requestAssertion->getUri()->getPort());
+        $this->assertSame('example.com:80', $requestAssertion->getHeaderLine('Host'));
+    }
+
+    public function testRequestConnectAuthorityFormNonMatchingHostWillBePassedAsIs()
+    {
+        $requestAssertion = null;
+        $server = new Server($this->socket, function (RequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "CONNECT example.com:80 HTTP/1.1\r\nHost: example.com\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertSame('CONNECT', $requestAssertion->getMethod());
+        $this->assertSame('example.com:80', $requestAssertion->getRequestTarget());
+        $this->assertSame('', $requestAssertion->getUri()->getPath());
+        $this->assertSame('http://example.com', (string)$requestAssertion->getUri());
+        $this->assertSame(null, $requestAssertion->getUri()->getPort());
+        $this->assertSame('example.com', $requestAssertion->getHeaderLine('host'));
+    }
+
+    public function testRequestNonConnectWithAuthorityRequestTargetWillReject()
+    {
+        $server = new Server($this->socket, $this->expectCallableNever());
+        $server->on('error', $this->expectCallableOnce());
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET example.com:80 HTTP/1.1\r\nHost: example.com\r\n\r\n";
+        $this->connection->emit('data', array($data));
     }
 
     public function testRequestPauseWillbeForwardedToConnection()
