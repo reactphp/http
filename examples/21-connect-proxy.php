@@ -4,18 +4,14 @@ use React\EventLoop\Factory;
 use React\Socket\Server;
 use React\Http\Response;
 use Psr\Http\Message\RequestInterface;
-use React\SocketClient\TcpConnector;
+use React\SocketClient\Connector;
 use React\SocketClient\ConnectionInterface;
-use React\SocketClient\DnsConnector;
 
 require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
 $socket = new Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
-
-$resolver = new \React\Dns\Resolver\Factory();
-$resolver = $resolver->create('8.8.8.8', $loop);
-$connector = new DnsConnector(new TcpConnector($loop), $resolver);
+$connector = new Connector($loop);
 
 $server = new \React\Http\Server($socket, function (RequestInterface $request) use ($connector) {
     if ($request->getMethod() !== 'CONNECT') {
