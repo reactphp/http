@@ -254,6 +254,22 @@ class Server extends EventEmitter
             '[]'
         );
 
+        // Update request URI to "https" scheme if the connection is encrypted
+        $meta = isset($conn->stream) ? stream_get_meta_data($conn->stream) : array();
+        if (isset($meta['crypto']) && $meta['crypto']) {
+            // The request URI may omit default ports here, so try to parse port
+            // from Host header field (if possible)
+            $port = $request->getUri()->getPort();
+            if ($port === null) {
+                $port = parse_url('tcp://' . $request->getHeaderLine('Host'), PHP_URL_PORT);
+            }
+
+            $request = $request->withUri(
+                $request->getUri()->withScheme('https')->withPort($port),
+                true
+            );
+        }
+
         $callback = $this->callback;
         $promise = new Promise(function ($resolve, $reject) use ($callback, $request) {
             $resolve($callback($request));
