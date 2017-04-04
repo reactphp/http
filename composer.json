@@ -18,6 +18,6 @@
     },
     "require-dev": {
         "phpunit/phpunit": "^4.8.10||^5.0",
-        "react/socket-client": "^0.7"
+        "react/socket": "^0.7"
     }
 }

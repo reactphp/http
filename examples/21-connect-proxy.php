@@ -4,8 +4,8 @@ use React\EventLoop\Factory;
 use React\Socket\Server;
 use React\Http\Response;
 use Psr\Http\Message\RequestInterface;
-use React\SocketClient\Connector;
-use React\SocketClient\ConnectionInterface;
+use React\Socket\Connector;
+use React\Socket\ConnectionInterface;
 
 require __DIR__ . '/../vendor/autoload.php';
 
