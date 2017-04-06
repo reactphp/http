@@ -16,4 +16,14 @@ class SocketServerStub extends EventEmitter implements ServerInterface
      {
          // NO-OP
      }
+
+     public function pause()
+     {
+         // NO-OP
+     }
+
+     public function resume()
+     {
+         // NO-OP
+     }
 }
