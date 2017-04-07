@@ -341,7 +341,7 @@ class Server extends EventEmitter
         }
 
         if (!$response->getBody() instanceof HttpBodyStream) {
-            $response = $response->withHeader('Content-Length', $response->getBody()->getSize());
+            $response = $response->withHeader('Content-Length', (string)$response->getBody()->getSize());
         } elseif (!$response->hasHeader('Content-Length') && $request->getProtocolVersion() === '1.1') {
             // assign chunked transfer-encoding if no 'content-length' is given for HTTP/1.1 responses
             $response = $response->withHeader('Transfer-Encoding', 'chunked');
