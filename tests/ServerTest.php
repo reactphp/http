@@ -2241,14 +2241,15 @@ class ServerTest extends TestCase
 
     public function testConnectionUpgradeEcho()
     {
-        $server = new Server($this->socket, function (RequestInterface $request) {
+        $that = $this;
+        $server = new Server($this->socket, function (RequestInterface $request) use ($that) {
             $responseStream = new ReadableStream();
             $request->getBody()->on('data', function ($data) use ($responseStream) {
-                $responseStream->emit('data', [$data]);
+                $responseStream->emit('data', array($data));
             });
 
-            $this->assertEquals('Upgrade', $request->getHeaderLine('Connection'));
-            $this->assertEquals('echo', $request->getHeaderLine('Upgrade'));
+            $that->assertEquals('Upgrade', $request->getHeaderLine('Connection'));
+            $that->assertEquals('echo', $request->getHeaderLine('Upgrade'));
 
             $response = new Response(
                 101,
@@ -2286,8 +2287,9 @@ class ServerTest extends TestCase
 
     public function testUpgradeWithNoProtocolRespondsWithError()
     {
-        $server = new Server($this->socket, function (RequestInterface $request) {
-            $this->fail('Callback should not be called');
+        $that = $this;
+        $server = new Server($this->socket, function (RequestInterface $request) use ($that) {
+            $that->fail('Callback should not be called');
         });
 
         $exception = null;
@@ -2321,10 +2323,11 @@ class ServerTest extends TestCase
 
     public function testUpgrade101MustContainUpgradeHeaderWithNewProtocol()
     {
-        $server = new Server($this->socket, function (RequestInterface $request) {
+        $that = $this;
+        $server = new Server($this->socket, function (RequestInterface $request) use ($that) {
             $responseStream = new ReadableStream();
-            $this->assertEquals('Upgrade', $request->getHeaderLine('Connection'));
-            $this->assertEquals('echo', $request->getHeaderLine('Upgrade'));
+            $that->assertEquals('Upgrade', $request->getHeaderLine('Connection'));
+            $that->assertEquals('echo', $request->getHeaderLine('Upgrade'));
 
             $response = new Response(
                 101,
@@ -2362,10 +2365,11 @@ class ServerTest extends TestCase
 
     public function testUpgradeProtocolMustBeOneRequested()
     {
-        $server = new Server($this->socket, function (RequestInterface $request) {
+        $that = $this;
+        $server = new Server($this->socket, function (RequestInterface $request) use ($that) {
             $responseStream = new ReadableStream();
-            $this->assertEquals('Upgrade', $request->getHeaderLine('Connection'));
-            $this->assertEquals('echo', $request->getHeaderLine('Upgrade'));
+            $that->assertEquals('Upgrade', $request->getHeaderLine('Connection'));
+            $that->assertEquals('echo', $request->getHeaderLine('Upgrade'));
 
             $response = new Response(
                 101,

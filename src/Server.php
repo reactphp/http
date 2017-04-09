@@ -244,7 +244,7 @@ class Server extends EventEmitter
 
         $upgradeRequest = false;
         if ($request->getProtocolVersion() !== '1.0' && $request->hasHeader('Connection') && strtolower($request->getHeaderLine('Connection')) === "upgrade") {
-            if (!$request->hasHeader('Upgrade') || empty($request->getHeaderLine('Upgrade'))) {
+            if (!$request->hasHeader('Upgrade') || $request->getHeaderLine('Upgrade') === '') {
                 // MUST have Upgrade options
                 $this->emit('error', array(new \InvalidArgumentException('Connection upgrade must specify upgrade protocol.')));
                 return $this->writeError($conn, 400, $request);
