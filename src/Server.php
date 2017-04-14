@@ -255,8 +255,7 @@ class Server extends EventEmitter
         );
 
         // Update request URI to "https" scheme if the connection is encrypted
-        $meta = isset($conn->stream) ? stream_get_meta_data($conn->stream) : array();
-        if (isset($meta['crypto']) && $meta['crypto']) {
+        if ($this->isConnectionEncrypted($conn)) {
             // The request URI may omit default ports here, so try to parse port
             // from Host header field (if possible)
             $port = $request->getUri()->getPort();
@@ -399,5 +398,28 @@ class Server extends EventEmitter
 
         $connection->write(Psr7Implementation\str($response));
         $stream->pipe($connection);
+    }
+
+    /**
+     * @param ConnectionInterface $conn
+     * @return bool
+     * @codeCoverageIgnore
+     */
+    private function isConnectionEncrypted(ConnectionInterface $conn)
+    {
+        // Legacy PHP < 7 does not offer any direct access to check crypto parameters
+        // We work around by accessing the context options and assume that only
+        // secure connections *SHOULD* set the "ssl" context options by default.
+        if (PHP_VERSION_ID < 70000) {
+            $context = isset($conn->stream) ? stream_context_get_options($conn->stream) : array();
+
+            return (isset($context['ssl']) && $context['ssl']);
+        }
+
+        // Modern PHP 7+ offers more reliable access to check crypto parameters
+        // by checking stream crypto meta data that is only then made available.
+        $meta = isset($conn->stream) ? stream_get_meta_data($conn->stream) : array();
+
+        return (isset($meta['crypto']) && $meta['crypto']);
     }
 }
