@@ -77,7 +77,8 @@ class RequestHeaderParser extends EventEmitter
         // detecting HTTPS is left up to the socket layer (TLS detection)
         if ($request->getUri()->getScheme() === 'https') {
             $request = $request->withUri(
-                $request->getUri()->withScheme('http')->withPort(443)
+                $request->getUri()->withScheme('http')->withPort(443),
+                true
             );
         }
 
