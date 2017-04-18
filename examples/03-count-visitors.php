@@ -10,13 +10,12 @@ require __DIR__ . '/../vendor/autoload.php';
 $loop = Factory::create();
 $socket = new Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
 
-$server = new \React\Http\Server($socket, function (ServerRequestInterface $request) {
+$counter = 0;
+$server = new \React\Http\Server($socket, function (ServerRequestInterface $request) use (&$counter) {
     return new Response(
         200,
-        array(
-            'Content-Type' => 'text/plain'
-        ),
-        "Hello world\n"
+        array('Content-Type' => 'text/plain'),
+        "Welcome number " . ++$counter . "!\n"
     );
 });
 

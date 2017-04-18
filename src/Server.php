@@ -5,7 +5,6 @@ namespace React\Http;
 use Evenement\EventEmitter;
 use React\Socket\ServerInterface as SocketServerInterface;
 use React\Socket\ConnectionInterface;
-use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use React\Promise\Promise;
 use RingCentral\Psr7 as Psr7Implementation;
@@ -25,7 +24,7 @@ use RingCentral\Psr7 as Psr7Implementation;
  * ```php
  * $socket = new React\Socket\Server(8080, $loop);
  *
- * $http = new Server($socket, function (RequestInterface $request) {
+ * $http = new Server($socket, function (ServerRequestInterface $request) {
  *     return new Response(
  *         200,
  *         array('Content-Type' => 'text/plain'),
@@ -46,7 +45,7 @@ use RingCentral\Psr7 as Psr7Implementation;
  *     'local_cert' => __DIR__ . '/localhost.pem'
  * ));
  *
- * $http = new Server($socket, function (RequestInterface $request) {
+ * $http = new Server($socket, function (ServerRequestInterface $request) {
  *     return new Response(
  *         200,
  *         array('Content-Type' => 'text/plain'),
@@ -81,6 +80,22 @@ use RingCentral\Psr7 as Psr7Implementation;
  * });
  * ```
  *
+ * The server will also emit an `error` event if you return an invalid
+ * type in the callback function or have a unhandled `Exception`.
+ * If your callback function throws an exception,
+ * the `Server` will emit a `RuntimeException` and add the thrown exception
+ * as previous:
+ *
+ * ```php
+ * $http->on('error', function (Exception $e) {
+ *     echo 'Error: ' . $e->getMessage() . PHP_EOL;
+ *     if ($e->getPrevious() !== null) {
+ *         $previousException = $e->getPrevious();
+ *         echo $previousException->getMessage() . PHP_EOL;
+ *     }
+ * });
+ * ```
+ *
  * Note that the request object can also emit an error.
  * Check out [request](#request) for more details.
  *
@@ -99,15 +114,17 @@ class Server extends EventEmitter
      * as HTTP.
      *
      * For each request, it executes the callback function passed to the
-     * constructor with the respective [`Request`](#request) and
-     * [`Response`](#response) objects:
+     * constructor with the respective [`request`](#request) object:
      *
      * ```php
      * $socket = new React\Socket\Server(8080, $loop);
      *
-     * $http = new Server($socket, function (Request $request, Response $response) {
-     *     $response->writeHead(200, array('Content-Type' => 'text/plain'));
-     *     $response->end("Hello World!\n");
+     * $http = new Server($socket, function (ServerRequestInterface $request) {
+     *     return new Response(
+     *         200,
+     *         array('Content-Type' => 'text/plain'),
+     *         "Hello World!\n"
+     *     );
      * });
      * ```
      *
@@ -121,9 +138,12 @@ class Server extends EventEmitter
      *     'local_cert' => __DIR__ . '/localhost.pem'
      * ));
      *
-     * $http = new Server($socket, function (Request $request, Response $response) {
-     *    $response->writeHead(200, array('Content-Type' => 'text/plain'));
-     *    $response->end("Hello World!\n");
+     * $http = new Server($socket, function (ServerRequestInterface $request $request) {
+     *     return new Response(
+     *         200,
+     *         array('Content-Type' => 'text/plain'),
+     *         "Hello World!\n"
+     *     );
      * });
      *```
      *
@@ -146,7 +166,7 @@ class Server extends EventEmitter
         $that = $this;
         $parser = new RequestHeaderParser();
         $listener = array($parser, 'feed');
-        $parser->on('headers', function (RequestInterface $request, $bodyBuffer) use ($conn, $listener, $parser, $that) {
+        $parser->on('headers', function (ServerRequest $request, $bodyBuffer) use ($conn, $listener, $parser, $that) {
             // parsing request completed => stop feeding parser
             $conn->removeListener('data', $listener);
 
@@ -170,7 +190,7 @@ class Server extends EventEmitter
     }
 
     /** @internal */
-    public function handleRequest(ConnectionInterface $conn, RequestInterface $request)
+    public function handleRequest(ConnectionInterface $conn, ServerRequest $request)
     {
         // only support HTTP/1.1 and HTTP/1.0 requests
         if ($request->getProtocolVersion() !== '1.1' && $request->getProtocolVersion() !== '1.0') {
@@ -248,11 +268,25 @@ class Server extends EventEmitter
             $conn->write("HTTP/1.1 100 Continue\r\n\r\n");
         }
 
-        // attach remote ip to the request as metadata
-        $request->remoteAddress = trim(
-            parse_url('tcp://' . $conn->getRemoteAddress(), PHP_URL_HOST),
-            '[]'
+        $serverParams = array(
+            'request_time' => time(),
+            'request_time_float' => microtime(true),
+            'https' => $this->isConnectionEncrypted($conn) ? 'on' : null
         );
+
+        if ($conn->getRemoteAddress() !== null) {
+            $remoteAddress = parse_url('tcp://' . $conn->getRemoteAddress());
+            $serverParams['remote_address'] = $remoteAddress['host'];
+            $serverParams['remote_port'] = $remoteAddress['port'];
+        }
+
+        if ($conn->getLocalAddress() !== null) {
+            $localAddress = parse_url('tcp://' . $conn->getLocalAddress());
+            $serverParams['server_address'] = $localAddress['host'];
+            $serverParams['server_port'] = $localAddress['port'];
+        }
+
+        $request = $request->withServerParams($serverParams);
 
         // Update request URI to "https" scheme if the connection is encrypted
         if ($this->isConnectionEncrypted($conn)) {
@@ -306,7 +340,7 @@ class Server extends EventEmitter
     }
 
     /** @internal */
-    public function writeError(ConnectionInterface $conn, $code, RequestInterface $request = null)
+    public function writeError(ConnectionInterface $conn, $code, ServerRequest $request = null)
     {
         $message = 'Error ' . $code;
         if (isset(ResponseCodes::$statusTexts[$code])) {
@@ -322,7 +356,7 @@ class Server extends EventEmitter
         );
 
         if ($request === null) {
-            $request = new Psr7Implementation\Request('GET', '/', array(), null, '1.1');
+            $request = new ServerRequest('GET', '/', array(), null, '1.1');
         }
 
         $this->handleResponse($conn, $request, $response);
@@ -330,7 +364,7 @@ class Server extends EventEmitter
 
 
     /** @internal */
-    public function handleResponse(ConnectionInterface $connection, RequestInterface $request, ResponseInterface $response)
+    public function handleResponse(ConnectionInterface $connection, ServerRequest $request, ResponseInterface $response)
     {
         $response = $response->withProtocolVersion($request->getProtocolVersion());
 

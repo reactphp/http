@@ -7,6 +7,7 @@ use Psr\Http\Message\RequestInterface;
 use React\Http\Response;
 use React\Stream\ReadableStream;
 use React\Promise\Promise;
+use Psr\Http\Message\ServerRequestInterface;
 
 class ServerTest extends TestCase
 {
@@ -73,9 +74,9 @@ class ServerTest extends TestCase
         });
 
         $this->connection
-            ->expects($this->once())
+            ->expects($this->any())
             ->method('getRemoteAddress')
-            ->willReturn('127.0.0.1');
+            ->willReturn('127.0.0.1:8080');
 
         $this->socket->emit('connection', array($this->connection));
 
@@ -85,11 +86,13 @@ class ServerTest extends TestCase
         $this->assertSame(1, $i);
         $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
         $this->assertSame('GET', $requestAssertion->getMethod());
+
+        $serverParams = $requestAssertion->getServerParams();
         $this->assertSame('/', $requestAssertion->getRequestTarget());
         $this->assertSame('/', $requestAssertion->getUri()->getPath());
         $this->assertSame('http://example.com/', (string)$requestAssertion->getUri());
         $this->assertSame('example.com:80', $requestAssertion->getHeaderLine('Host'));
-        $this->assertSame('127.0.0.1', $requestAssertion->remoteAddress);
+        $this->assertSame('127.0.0.1', $serverParams['remote_address']);
     }
 
     public function testRequestGetWithHostAndCustomPort()
@@ -2219,14 +2222,185 @@ class ServerTest extends TestCase
 
         $this->socket->emit('connection', array($this->connection));
 
-        $data = "GET / HTTP/1.0\r\n\r\n";
+        $data = $this->createGetRequest();
+
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('RuntimeException', $exception);
+    }
+
+    public function testCookieWillBeAddedToServerRequest()
+    {
+        $requestValidation = null;
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use (&$requestValidation) {
+            $requestValidation = $request;
+            return new Response();
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Cookie: hello=world\r\n";
+        $data .= "\r\n";
+
+        $this->connection->emit('data', array($data));
+
+        $this->assertEquals(array('hello' => 'world'), $requestValidation->getCookieParams());
+    }
+
+    public function testMultipleCookiesWontBeAddedToServerRequest()
+    {
+        $requestValidation = null;
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use (&$requestValidation) {
+            $requestValidation = $request;
+            return new Response();
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Cookie: hello=world\r\n";
+        $data .= "Cookie: test=failed\r\n";
+        $data .= "\r\n";
+
+        $this->connection->emit('data', array($data));
+
+        $this->assertEquals(array(), $requestValidation->getCookieParams());
+    }
+
+    public function testCookieWithSepeartorWillBeAddedToServerRequest()
+    {
+        $requestValidation = null;
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use (&$requestValidation) {
+            $requestValidation = $request;
+            return new Response();
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Cookie: hello=world;test=abc\r\n";
+        $data .= "\r\n";
+
+        $this->connection->emit('data', array($data));
+
+        $this->assertEquals(array('hello' => 'world', 'test' => 'abc'), $requestValidation->getCookieParams());
+    }
+
+    public function testServerRequestParams()
+    {
+        $requestValidation = null;
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use (&$requestValidation) {
+            $requestValidation = $request;
+            return new Response();
+        });
+
+        $this->connection
+            ->expects($this->any())
+            ->method('getRemoteAddress')
+            ->willReturn('192.168.1.2:80');
+
+        $this->connection
+            ->expects($this->any())
+            ->method('getLocalAddress')
+            ->willReturn('127.0.0.1:8080');
+
+        $this->socket->emit('connection', array($this->connection));
 
         $data = $this->createGetRequest();
 
         $this->connection->emit('data', array($data));
 
-        $this->assertContains("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
-        $this->assertInstanceOf('RuntimeException', $exception);
+        $serverParams = $requestValidation->getServerParams();
+
+        $this->assertEquals('127.0.0.1', $serverParams['server_address']);
+        $this->assertEquals('8080', $serverParams['server_port']);
+
+        $this->assertEquals('192.168.1.2', $serverParams['remote_address']);
+        $this->assertEquals('80', $serverParams['remote_port']);
+
+        $this->assertNotNull($serverParams['request_time']);
+        $this->assertNotNull($serverParams['request_time_float']);
+    }
+
+    public function testServerRequestParameterRemoteAddressNotAvailableWontAddParameter()
+    {
+        $requestValidation = null;
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use (&$requestValidation) {
+            $requestValidation = $request;
+            return new Response();
+        });
+
+        $this->connection
+            ->expects($this->any())
+            ->method('getRemoteAddress')
+            ->willReturn(null);
+
+        $this->connection
+            ->expects($this->any())
+            ->method('getLocalAddress')
+            ->willReturn('127.0.0.1:8080');
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+
+        $this->connection->emit('data', array($data));
+
+        $serverParams = $requestValidation->getServerParams();
+
+        $this->assertArrayNotHasKey('remote_address', $serverParams);
+        $this->assertArrayNotHasKey('remote_port', $serverParams);
+
+        $this->assertEquals('127.0.0.1', $serverParams['server_address']);
+        $this->assertEquals('8080', $serverParams['server_port']);
+
+        $this->assertNotNull($serverParams['request_time']);
+        $this->assertNotNull($serverParams['request_time_float']);
+
+        $this->assertEquals(null, $serverParams['https']);
+    }
+
+    public function testServerRequestParameterServerAddressNotAvailableWontAddParameter()
+    {
+        $requestValidation = null;
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use (&$requestValidation) {
+            $requestValidation = $request;
+            return new Response();
+        });
+
+        $this->connection
+            ->expects($this->any())
+            ->method('getRemoteAddress')
+            ->willReturn('192.168.1.2:80');
+
+        $this->connection
+            ->expects($this->any())
+            ->method('getLocalAddress')
+            ->willReturn(null);
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+
+        $this->connection->emit('data', array($data));
+
+        $serverParams = $requestValidation->getServerParams();
+
+        $this->assertArrayNotHasKey('server_address', $serverParams);
+        $this->assertArrayNotHasKey('server_port', $serverParams);
+
+        $this->assertEquals('192.168.1.2', $serverParams['remote_address']);
+        $this->assertEquals('80', $serverParams['remote_port']);
+
+        $this->assertNotNull($serverParams['request_time']);
+        $this->assertNotNull($serverParams['request_time_float']);
     }
 
     private function createGetRequest()
