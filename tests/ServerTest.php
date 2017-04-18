@@ -267,6 +267,32 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
+    public function testRequestWithoutHostEventUsesSocketAddress()
+    {
+        $requestAssertion = null;
+
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $this->connection
+            ->expects($this->once())
+            ->method('getLocalAddress')
+            ->willReturn('127.0.0.1:80');
+
+        $data = "GET /test HTTP/1.0\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertSame('GET', $requestAssertion->getMethod());
+        $this->assertSame('/test', $requestAssertion->getRequestTarget());
+        $this->assertEquals('http://127.0.0.1/test', $requestAssertion->getUri());
+        $this->assertSame('/test', $requestAssertion->getUri()->getPath());
+    }
+
     public function testRequestAbsoluteEvent()
     {
         $requestAssertion = null;
