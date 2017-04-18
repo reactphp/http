@@ -155,26 +155,26 @@ $http = new Server($socket, function (ServerRequestInterface $request) {
 });
 ```
 
-The `Server` will currently add server-side parameters, analog to the `$_SERVER` variable:
+The `getServerParams(): mixed[]` method can be used to
+get server-side parameters similar to the `$_SERVER` variable.
+The following parameters are currently available:
 
-* `server_address`
-  The current IP address of the server
-* `server_port`
-  The current port of the server
 * `remote_address`
   The IP address of the request sender
 * `remote_port`
   Port of the request sender
+* `server_address`
+  The IP address of the server
+* `server_port`
+  The port of the server
 * `request_time`
-  Unix timestamp of the moment, the complete request header was received
+  Unix timestamp when the complete request header has been received,
+  as integer similar to `time()`
 * `request_time_float`
-  Unix timestamp in microseconds of the moment, the complete request header was
-  received
+  Unix timestamp when the complete request header has been received,
+  as float similar to `microtime(true)`
 * `https`
-  Set to 'on' if the request used HTTPS, otherwise it will be set to null
-
-The `server` and `remote` parameters MAY missing if the client or server unexpected
-closes the connection.
+  Set to 'on' if the request used HTTPS, otherwise it will be set to `null`
 
 ```php 
 $http = new Server($socket, function (ServerRequestInterface $request) {
@@ -188,10 +188,49 @@ $http = new Server($socket, function (ServerRequestInterface $request) {
 });
 ```
 
+See also [example #2](examples).
+
+The `getCookieParams(): string[]` method can be used to
+get all cookies sent with the current request.
+
+```php 
+$http = new Server($socket, function (ServerRequestInterface $request) {
+    $key = 'react\php';
+
+    if (isset($request->getCookieParams()[$key])) {
+        $body = "Your cookie value is: " . $request->getCookieParams()[$key];
+
+        return new Response(
+            200,
+            array('Content-Type' => 'text/plain'),
+            $body
+        );
+    }
+
+    return new Response(
+        200,
+        array(
+            'Content-Type' => 'text/plain',
+            'Set-Cookie' => urlencode($key) . '=' . urlencode('test;more')
+        ),
+        "Your cookie has been set."
+    );
+});
+```
+
+The above example will try to set a cookie on first access and
+will try to print the cookie value on all subsequent tries.
+Note how the example uses the `urlencode()` function to encode
+non-alphanumeric characters.
+This encoding is also used internally when decoding the name and value of cookies
+(which is in line with other implementations, such as PHP's cookie functions).
+
+See also [example #7](examples) for more details.
+
 For more details about the request object, check out the documentation of
-[PSR-7 RequestInterface](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#32-psrhttpmessagerequestinterface).
-and
 [PSR-7 ServerRequestInterface](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#321-psrhttpmessageserverrequestinterface)
+and
+[PSR-7 RequestInterface](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#32-psrhttpmessagerequestinterface).
 
 Note that the request object will be processed once the request headers have
 been received.
@@ -326,41 +365,6 @@ Allowed).
   This implies that that a `2xx` (Successful) response to a `CONNECT` request
   can in fact use a streaming response body for the tunneled application data.
   See also [example #21](examples) for more details.
-
-The cookies of the request, will also be added to the request object by the `Server`:
-
-```php 
-$http = new Server($socket, function (ServerRequestInterface $request) {
-    $key = 'react\php';
-
-    if (isset($request->getCookieParams()[$key])) {
-        $body = "Your cookie value is: " . $request->getCookieParams()[$key];
-
-        return new Response(
-            200,
-            array('Content-Type' => 'text/plain'),
-            $body
-        );
-    }
-
-    return new Response(
-        200,
-        array(
-            'Content-Type' => 'text/plain',
-            'Set-Cookie' => urlencode($key) . '=' . urlencode('test;more')
-        ),
-        "Your cookie has been set."
-    );
-});
-```
-
-The above example should be executed via a web browser, a cookie will be set
-on the first request contation the key-value pair 'test=php'.
-On a second request to the server the cookie is accessed by the `getCookieParams()`
-method, and will be written into the body.
-The example uses the `urlencode()` function to encode non-alphanumeric characters.
-This encoding is also used internally when decoding the name and value of cookies
-(which is in line with other implementations, such as PHP's cookie functions).
 
 ### Response
 
