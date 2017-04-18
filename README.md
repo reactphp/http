@@ -286,6 +286,12 @@ URI which provides you access to individiual URI components.
 Note that (depending on the given `request-target`) certain URI components may
 or may not be present, for example the `getPath(): string` method will return
 an empty string for requests in `asterisk-form` or `authority-form`.
+Its `getHost(): string` method will return the host as determined by the
+effective request URI, which defaults to the local socket address if a HTTP/1.0
+client did not specify one (i.e. no `Host` header).
+Its `getScheme(): string` method will return `http` or `https` depending
+on whether the request was made over a secure TLS connection to the target host.
+
 You can use `getMethod(): string` and `getRequestTarget(): string` to
 check this is an accepted request and may want to reject other requests with
 an appropriate error code, such as `400` (Bad Request) or `405` (Method Not

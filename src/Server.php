@@ -198,6 +198,16 @@ class Server extends EventEmitter
             }
         }
 
+        // set URI components from socket address if not already filled via Host header
+        if ($request->getUri()->getHost() === '') {
+            $parts = parse_url('tcp://' . $conn->getLocalAddress());
+
+            $request = $request->withUri(
+                $request->getUri()->withScheme('http')->withHost($parts['host'])->withPort($parts['port']),
+                true
+            );
+        }
+
         $contentLength = 0;
         $stream = new CloseProtectionStream($conn);
         if ($request->getMethod() === 'CONNECT') {
