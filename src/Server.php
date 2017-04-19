@@ -9,6 +9,7 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use React\Promise\Promise;
 use RingCentral\Psr7 as Psr7Implementation;
+use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * The `Server` class is responsible for handling incoming connections and then
@@ -170,7 +171,7 @@ class Server extends EventEmitter
     }
 
     /** @internal */
-    public function handleRequest(ConnectionInterface $conn, RequestInterface $request)
+    public function handleRequest(ConnectionInterface $conn, ServerRequestInterface $request)
     {
         // only support HTTP/1.1 and HTTP/1.0 requests
         if ($request->getProtocolVersion() !== '1.1' && $request->getProtocolVersion() !== '1.0') {
@@ -306,7 +307,7 @@ class Server extends EventEmitter
     }
 
     /** @internal */
-    public function writeError(ConnectionInterface $conn, $code, RequestInterface $request = null)
+    public function writeError(ConnectionInterface $conn, $code, ServerRequestInterface $request = null)
     {
         $message = 'Error ' . $code;
         if (isset(ResponseCodes::$statusTexts[$code])) {
@@ -322,7 +323,7 @@ class Server extends EventEmitter
         );
 
         if ($request === null) {
-            $request = new Psr7Implementation\Request('GET', '/', array(), null, '1.1');
+            $request = new ServerRequest('GET', '/', array(), null, '1.1');
         }
 
         $this->handleResponse($conn, $request, $response);
@@ -330,7 +331,7 @@ class Server extends EventEmitter
 
 
     /** @internal */
-    public function handleResponse(ConnectionInterface $connection, RequestInterface $request, ResponseInterface $response)
+    public function handleResponse(ConnectionInterface $connection, ServerRequestInterface $request, ResponseInterface $response)
     {
         $response = $response->withProtocolVersion($request->getProtocolVersion());
 

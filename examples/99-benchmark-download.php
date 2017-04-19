@@ -9,7 +9,7 @@
 use React\EventLoop\Factory;
 use React\Socket\Server;
 use React\Http\Response;
-use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use React\Stream\ReadableStream;
 
 require __DIR__ . '/../vendor/autoload.php';
@@ -62,7 +62,7 @@ class ChunkRepeater extends ReadableStream
     }
 }
 
-$server = new \React\Http\Server($socket, function (RequestInterface $request) use ($loop) {
+$server = new \React\Http\Server($socket, function (ServerRequestInterface $request) use ($loop) {
     switch ($request->getUri()->getPath()) {
         case '/':
             return new Response(
