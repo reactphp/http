@@ -72,6 +72,13 @@ class RequestHeaderParser extends EventEmitter
         }
 
         $request = g7\parse_request($headers);
+        $request = new ServerRequest(
+            $request->getMethod(),
+            $request->getUri(),
+            $request->getHeaders(),
+            $request->getBody(),
+            $request->getProtocolVersion()
+        );
 
         // Do not assume this is HTTPS when this happens to be port 443
         // detecting HTTPS is left up to the socket layer (TLS detection)
