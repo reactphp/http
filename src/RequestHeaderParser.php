@@ -30,7 +30,7 @@ class RequestHeaderParser extends EventEmitter
         }
 
         if ($currentHeaderSize > $this->maxSize) {
-            $this->emit('error', array(new \OverflowException("Maximum header size of {$this->maxSize} exceeded."), $this));
+            $this->emit('error', array(new \OverflowException("Maximum header size of {$this->maxSize} exceeded.", 431), $this));
             $this->removeAllListeners();
             return;
         }
@@ -109,6 +109,28 @@ class RequestHeaderParser extends EventEmitter
             // make sure value contains valid host component (IP or hostname), but no fragment
             if (!isset($parts['scheme'], $parts['host']) || $parts['scheme'] !== 'http' || isset($parts['fragment'])) {
                 throw new \InvalidArgumentException('Invalid absolute-form request-target');
+            }
+        }
+
+        // only support HTTP/1.1 and HTTP/1.0 requests
+        if ($request->getProtocolVersion() !== '1.1' && $request->getProtocolVersion() !== '1.0') {
+            throw new \InvalidArgumentException('Received request with invalid protocol version', 505);
+        }
+
+        // HTTP/1.1 requests MUST include a valid host header (host and optional port)
+        // https://tools.ietf.org/html/rfc7230#section-5.4
+        if ($request->getProtocolVersion() === '1.1') {
+            $parts = parse_url('http://' . $request->getHeaderLine('Host'));
+
+            // make sure value contains valid host component (IP or hostname)
+            if (!$parts || !isset($parts['scheme'], $parts['host'])) {
+                $parts = false;
+            }
+
+            // make sure value does not contain any other URI component
+            unset($parts['scheme'], $parts['host'], $parts['port']);
+            if ($parts === false || $parts) {
+                throw new \InvalidArgumentException('Invalid Host header for HTTP/1.1 request');
             }
         }
 
