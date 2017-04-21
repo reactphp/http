@@ -125,8 +125,8 @@ class ServerRequest extends Request implements ServerRequestInterface
      */
     public static function parseCookie($cookie)
     {
-        // PSR-7 `getHeadline('Cookies')` will return multiple
-        // cookie header coma-seperated. Multiple cookie headers
+        // PSR-7 `getHeaderLine('Cookies')` will return multiple
+        // cookie header comma-seperated. Multiple cookie headers
         // are not allowed according to https://tools.ietf.org/html/rfc6265#section-5.4
         if (strpos($cookie, ',') !== false) {
             return false;
@@ -136,7 +136,9 @@ class ServerRequest extends Request implements ServerRequestInterface
         $result = array();
 
         foreach ($cookieArray as $pair) {
+            $pair = trim($pair);
             $nameValuePair = explode('=', $pair, 2);
+
             if (count($nameValuePair) === 2) {
                 $key = urldecode($nameValuePair[0]);
                 $value = urldecode($nameValuePair[1]);

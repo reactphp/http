@@ -2390,6 +2390,68 @@ class ServerTest extends TestCase
         $this->assertEquals('bar', $queryParams['test']);
     }
 
+    public function testCookieWillBeAddedToServerRequest()
+    {
+        $requestValidation = null;
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use (&$requestValidation) {
+            $requestValidation = $request;
+            return new Response();
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Cookie: hello=world\r\n";
+        $data .= "\r\n";
+
+        $this->connection->emit('data', array($data));
+
+        $this->assertEquals(array('hello' => 'world'), $requestValidation->getCookieParams());
+    }
+
+    public function testMultipleCookiesWontBeAddedToServerRequest()
+    {
+        $requestValidation = null;
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use (&$requestValidation) {
+            $requestValidation = $request;
+            return new Response();
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Cookie: hello=world\r\n";
+        $data .= "Cookie: test=failed\r\n";
+        $data .= "\r\n";
+
+        $this->connection->emit('data', array($data));
+        $this->assertEquals(array(), $requestValidation->getCookieParams());
+    }
+
+    public function testCookieWithSeparatorWillBeAddedToServerRequest()
+    {
+        $requestValidation = null;
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use (&$requestValidation) {
+            $requestValidation = $request;
+            return new Response();
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Cookie: hello=world; test=abc\r\n";
+        $data .= "\r\n";
+
+        $this->connection->emit('data', array($data));
+        $this->assertEquals(array('hello' => 'world', 'test' => 'abc'), $requestValidation->getCookieParams());
+    }
+
     private function createGetRequest()
     {
         $data = "GET / HTTP/1.1\r\n";
