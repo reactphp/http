@@ -16,6 +16,28 @@ class ServerRequest extends Request implements ServerRequestInterface
     private $queryParams = array();
     private $parsedBody = null;
 
+    /**
+     * @param null|string $method HTTP method for the request.
+     * @param null|string|UriInterface $uri URI for the request.
+     * @param array $headers Headers for the message.
+     * @param string|resource|StreamInterface $body Message body.
+     * @param string $protocolVersion HTTP protocol version.
+     * @param array server-side parameters
+     *
+     * @throws InvalidArgumentException for an invalid URI
+     */
+    public function __construct(
+        $method,
+        $uri,
+        array $headers = array(),
+        $body = null,
+        $protocolVersion = '1.1',
+        $serverParams = array()
+    ) {
+        $this->serverParams = $serverParams;
+        parent::__construct($method, $uri, $headers, $body, $protocolVersion);
+    }
+
     public function getServerParams()
     {
         return $this->serverParams;

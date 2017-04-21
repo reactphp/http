@@ -146,7 +146,8 @@ class Server extends EventEmitter
     {
         $that = $this;
         $parser = new RequestHeaderParser(
-            ($this->isConnectionEncrypted($conn) ? 'https://' : 'http://') . $conn->getLocalAddress()
+            ($this->isConnectionEncrypted($conn) ? 'https://' : 'http://') . $conn->getLocalAddress(),
+            'tcp://' . $conn->getRemoteAddress()
         );
 
         $listener = array($parser, 'feed');
@@ -226,12 +227,6 @@ class Server extends EventEmitter
         if ($request->getProtocolVersion() !== '1.0' && '100-continue' === strtolower($request->getHeaderLine('Expect'))) {
             $conn->write("HTTP/1.1 100 Continue\r\n\r\n");
         }
-
-        // attach remote ip to the request as metadata
-        $request->remoteAddress = trim(
-            parse_url('tcp://' . $conn->getRemoteAddress(), PHP_URL_HOST),
-            '[]'
-        );
 
         $callback = $this->callback;
         $promise = new Promise(function ($resolve, $reject) use ($callback, $request) {
