@@ -17,11 +17,13 @@ class RequestHeaderParser extends EventEmitter
     private $buffer = '';
     private $maxSize = 4096;
 
-    private $uri;
+    private $localSocketUri;
+    private $remoteSocketUri;
 
-    public function __construct($localSocketUri = '')
+    public function __construct($localSocketUri = null, $remoteSocketUri = null)
     {
-        $this->uri = $localSocketUri;
+        $this->localSocketUri = $localSocketUri;
+        $this->remoteSocketUri = $remoteSocketUri;
     }
 
     public function feed($data)
@@ -85,13 +87,34 @@ class RequestHeaderParser extends EventEmitter
 
         // create new obj implementing ServerRequestInterface by preserving all
         // previous properties and restoring original request-target
+        $serverParams = array(
+            'REQUEST_TIME' => time(),
+            'REQUEST_TIME_FLOAT' => microtime(true)
+        );
+
+        if ($this->remoteSocketUri !== null) {
+            $remoteAddress = parse_url($this->remoteSocketUri);
+            $serverParams['REMOTE_ADDR'] = $remoteAddress['host'];
+            $serverParams['REMOTE_PORT'] = $remoteAddress['port'];
+        }
+
+        if ($this->localSocketUri !== null) {
+            $localAddress = parse_url($this->localSocketUri);
+            $serverParams['SERVER_ADDR'] = $localAddress['host'];
+            $serverParams['SERVER_PORT'] = $localAddress['port'];
+            if (isset($localAddress['scheme']) && $localAddress['scheme'] === 'https') {
+                $serverParams['HTTPS'] = 'on';
+            }
+        }
+
         $target = $request->getRequestTarget();
         $request = new ServerRequest(
             $request->getMethod(),
             $request->getUri(),
             $request->getHeaders(),
             $request->getBody(),
-            $request->getProtocolVersion()
+            $request->getProtocolVersion(),
+            $serverParams
         );
         $request = $request->withRequestTarget($target);
 
@@ -144,7 +167,7 @@ class RequestHeaderParser extends EventEmitter
 
         // set URI components from socket address if not already filled via Host header
         if ($request->getUri()->getHost() === '') {
-            $parts = parse_url($this->uri);
+            $parts = parse_url($this->localSocketUri);
 
             $request = $request->withUri(
                 $request->getUri()->withScheme('http')->withHost($parts['host'])->withPort($parts['port']),
@@ -162,7 +185,7 @@ class RequestHeaderParser extends EventEmitter
         }
 
         // Update request URI to "https" scheme if the connection is encrypted
-        $parts = parse_url($this->uri);
+        $parts = parse_url($this->localSocketUri);
         if (isset($parts['scheme']) && $parts['scheme'] === 'https') {
             // The request URI may omit default ports here, so try to parse port
             // from Host header field (if possible)

@@ -69,18 +69,21 @@ class ServerTest extends TestCase
         $server = new Server($this->socket, function (ServerRequestInterface $request) use (&$i, &$requestAssertion) {
             $i++;
             $requestAssertion = $request;
+
             return \React\Promise\resolve(new Response());
         });
 
         $this->connection
-            ->expects($this->once())
+            ->expects($this->any())
             ->method('getRemoteAddress')
-            ->willReturn('127.0.0.1');
+            ->willReturn('127.0.0.1:8080');
 
         $this->socket->emit('connection', array($this->connection));
 
         $data = $this->createGetRequest();
         $this->connection->emit('data', array($data));
+
+        $serverParams = $requestAssertion->getServerParams();
 
         $this->assertSame(1, $i);
         $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
@@ -89,7 +92,7 @@ class ServerTest extends TestCase
         $this->assertSame('/', $requestAssertion->getUri()->getPath());
         $this->assertSame('http://example.com/', (string)$requestAssertion->getUri());
         $this->assertSame('example.com', $requestAssertion->getHeaderLine('Host'));
-        $this->assertSame('127.0.0.1', $requestAssertion->remoteAddress);
+        $this->assertSame('127.0.0.1', $serverParams['REMOTE_ADDR']);
     }
 
     public function testRequestGetWithHostAndCustomPort()
@@ -288,7 +291,7 @@ class ServerTest extends TestCase
         });
 
         $this->connection
-            ->expects($this->once())
+            ->expects($this->any())
             ->method('getLocalAddress')
             ->willReturn('127.0.0.1:80');
 
@@ -2330,6 +2333,40 @@ class ServerTest extends TestCase
 
         $this->assertContains("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
         $this->assertInstanceOf('RuntimeException', $exception);
+    }
+
+    public function testServerRequestParams()
+    {
+        $requestValidation = null;
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use (&$requestValidation) {
+            $requestValidation = $request;
+            return new Response();
+        });
+
+        $this->connection
+            ->expects($this->any())
+            ->method('getRemoteAddress')
+            ->willReturn('192.168.1.2:80');
+
+        $this->connection
+            ->expects($this->any())
+            ->method('getLocalAddress')
+            ->willReturn('127.0.0.1:8080');
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+
+        $this->connection->emit('data', array($data));
+
+        $serverParams = $requestValidation->getServerParams();
+
+        $this->assertEquals('127.0.0.1', $serverParams['SERVER_ADDR']);
+        $this->assertEquals('8080', $serverParams['SERVER_PORT']);
+        $this->assertEquals('192.168.1.2', $serverParams['REMOTE_ADDR']);
+        $this->assertEquals('80', $serverParams['REMOTE_PORT']);
+        $this->assertNotNull($serverParams['REQUEST_TIME']);
+        $this->assertNotNull($serverParams['REQUEST_TIME_FLOAT']);
     }
 
     private function createGetRequest()
