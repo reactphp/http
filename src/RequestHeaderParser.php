@@ -126,6 +126,11 @@ class RequestHeaderParser extends EventEmitter
             $request = $request->withQueryParams($queryParams);
         }
 
+        $cookies = ServerRequest::parseCookie($request->getHeaderLine('Cookie'));
+        if ($cookies !== false) {
+            $request = $request->withCookieParams($cookies);
+        }
+
         // re-apply actual request target from above
         if ($originalTarget !== null) {
             $uri = $request->getUri()->withPath('');
