@@ -199,6 +199,39 @@ class RequestHeaderParserTest extends TestCase
         $this->assertSame('Invalid absolute-form request-target', $error->getMessage());
     }
 
+    public function testInvalidHostHeaderForHttp11()
+    {
+        $error = null;
+
+        $parser = new RequestHeaderParser();
+        $parser->on('headers', $this->expectCallableNever());
+        $parser->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $parser->feed("GET / HTTP/1.1\r\nHost: a/b/c\r\n\r\n");
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+        $this->assertSame('Invalid Host header for HTTP/1.1 request', $error->getMessage());
+    }
+
+    public function testInvalidHttpVersion()
+    {
+        $error = null;
+
+        $parser = new RequestHeaderParser();
+        $parser->on('headers', $this->expectCallableNever());
+        $parser->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $parser->feed("GET / HTTP/1.2\r\n\r\n");
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+        $this->assertSame(505, $error->getCode());
+        $this->assertSame('Received request with invalid protocol version', $error->getMessage());
+    }
+
     private function createGetRequest()
     {
         $data = "GET / HTTP/1.1\r\n";

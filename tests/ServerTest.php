@@ -256,6 +256,17 @@ class ServerTest extends TestCase
         $this->assertSame('example.com', $requestAssertion->getHeaderLine('host'));
     }
 
+    public function testRequestConnectOriginFormRequestTargetWillReject()
+    {
+        $server = new Server($this->socket, $this->expectCallableNever());
+        $server->on('error', $this->expectCallableOnce());
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "CONNECT / HTTP/1.1\r\nHost: example.com\r\n\r\n";
+        $this->connection->emit('data', array($data));
+    }
+
     public function testRequestNonConnectWithAuthorityRequestTargetWillReject()
     {
         $server = new Server($this->socket, $this->expectCallableNever());

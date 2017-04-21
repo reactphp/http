@@ -165,7 +165,7 @@ class Server extends EventEmitter
 
             $that->writeError(
                 $conn,
-                ($e instanceof \OverflowException) ? 431 : 400
+                $e->getCode() !== 0 ? $e->getCode() : 400
             );
         });
     }
@@ -173,31 +173,6 @@ class Server extends EventEmitter
     /** @internal */
     public function handleRequest(ConnectionInterface $conn, ServerRequestInterface $request)
     {
-        // only support HTTP/1.1 and HTTP/1.0 requests
-        if ($request->getProtocolVersion() !== '1.1' && $request->getProtocolVersion() !== '1.0') {
-            $this->emit('error', array(new \InvalidArgumentException('Received request with invalid protocol version')));
-            $request = $request->withProtocolVersion('1.1');
-            return $this->writeError($conn, 505, $request);
-        }
-
-        // HTTP/1.1 requests MUST include a valid host header (host and optional port)
-        // https://tools.ietf.org/html/rfc7230#section-5.4
-        if ($request->getProtocolVersion() === '1.1') {
-            $parts = parse_url('http://' . $request->getHeaderLine('Host'));
-
-            // make sure value contains valid host component (IP or hostname)
-            if (!$parts || !isset($parts['scheme'], $parts['host'])) {
-                $parts = false;
-            }
-
-            // make sure value does not contain any other URI component
-            unset($parts['scheme'], $parts['host'], $parts['port']);
-            if ($parts === false || $parts) {
-                $this->emit('error', array(new \InvalidArgumentException('Invalid Host header for HTTP/1.1 request')));
-                return $this->writeError($conn, 400, $request);
-            }
-        }
-
         // set URI components from socket address if not already filled via Host header
         if ($request->getUri()->getHost() === '') {
             $parts = parse_url('tcp://' . $conn->getLocalAddress());
