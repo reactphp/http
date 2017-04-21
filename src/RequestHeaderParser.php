@@ -71,7 +71,12 @@ class RequestHeaderParser extends EventEmitter
             }
         }
 
+        // parse request headers into obj implementing RequestInterface
         $request = g7\parse_request($headers);
+
+        // create new obj implementing ServerRequestInterface by preserving all
+        // previous properties and restoring original request target-target
+        $target = $request->getRequestTarget();
         $request = new ServerRequest(
             $request->getMethod(),
             $request->getUri(),
@@ -79,6 +84,7 @@ class RequestHeaderParser extends EventEmitter
             $request->getBody(),
             $request->getProtocolVersion()
         );
+        $request = $request->withRequestTarget($target);
 
         // Do not assume this is HTTPS when this happens to be port 443
         // detecting HTTPS is left up to the socket layer (TLS detection)
@@ -94,6 +100,16 @@ class RequestHeaderParser extends EventEmitter
                 $request->getUri()->withPath(''),
                 true
             )->withRequestTarget($originalTarget);
+        }
+
+        // ensure absolute-form request-target contains a valid URI
+        if (strpos($request->getRequestTarget(), '://') !== false) {
+            $parts = parse_url($request->getRequestTarget());
+
+            // make sure value contains valid host component (IP or hostname), but no fragment
+            if (!isset($parts['scheme'], $parts['host']) || $parts['scheme'] !== 'http' || isset($parts['fragment'])) {
+                throw new \InvalidArgumentException('Invalid absolute-form request-target');
+            }
         }
 
         return array($request, $bodyBuffer);

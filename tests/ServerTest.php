@@ -267,6 +267,117 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
+    public function testRequestAbsoluteEvent()
+    {
+        $requestAssertion = null;
+
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET http://example.com/test HTTP/1.1\r\nHost: example.com\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertSame('GET', $requestAssertion->getMethod());
+        $this->assertSame('http://example.com/test', $requestAssertion->getRequestTarget());
+        $this->assertEquals('http://example.com/test', $requestAssertion->getUri());
+        $this->assertSame('/test', $requestAssertion->getUri()->getPath());
+        $this->assertSame('example.com', $requestAssertion->getHeaderLine('Host'));
+    }
+
+    public function testRequestAbsoluteAddsMissingHostEvent()
+    {
+        $requestAssertion = null;
+
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
+        $server->on('error', 'printf');
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET http://example.com:8080/test HTTP/1.0\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertSame('GET', $requestAssertion->getMethod());
+        $this->assertSame('http://example.com:8080/test', $requestAssertion->getRequestTarget());
+        $this->assertEquals('http://example.com:8080/test', $requestAssertion->getUri());
+        $this->assertSame('/test', $requestAssertion->getUri()->getPath());
+        $this->assertSame('example.com:8080', $requestAssertion->getHeaderLine('Host'));
+    }
+
+    public function testRequestAbsoluteNonMatchingHostWillBePassedAsIs()
+    {
+        $requestAssertion = null;
+
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET http://example.com/test HTTP/1.1\r\nHost: other.example.org\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertSame('GET', $requestAssertion->getMethod());
+        $this->assertSame('http://example.com/test', $requestAssertion->getRequestTarget());
+        $this->assertEquals('http://example.com/test', $requestAssertion->getUri());
+        $this->assertSame('/test', $requestAssertion->getUri()->getPath());
+        $this->assertSame('other.example.org', $requestAssertion->getHeaderLine('Host'));
+    }
+
+    public function testRequestOptionsAsteriskEvent()
+    {
+        $requestAssertion = null;
+
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "OPTIONS * HTTP/1.1\r\nHost: example.com\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertSame('OPTIONS', $requestAssertion->getMethod());
+        $this->assertSame('*', $requestAssertion->getRequestTarget());
+        $this->assertEquals('http://example.com', $requestAssertion->getUri());
+        $this->assertSame('', $requestAssertion->getUri()->getPath());
+        $this->assertSame('example.com', $requestAssertion->getHeaderLine('Host'));
+    }
+
+    public function testRequestOptionsAbsoluteEvent()
+    {
+        $requestAssertion = null;
+
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "OPTIONS http://example.com HTTP/1.1\r\nHost: example.com\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertSame('OPTIONS', $requestAssertion->getMethod());
+        $this->assertSame('http://example.com', $requestAssertion->getRequestTarget());
+        $this->assertEquals('http://example.com', $requestAssertion->getUri());
+        $this->assertSame('', $requestAssertion->getUri()->getPath());
+        $this->assertSame('example.com', $requestAssertion->getHeaderLine('Host'));
+    }
+
     public function testRequestPauseWillbeForwardedToConnection()
     {
         $server = new Server($this->socket, function (ServerRequestInterface $request) {

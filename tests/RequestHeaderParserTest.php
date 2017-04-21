@@ -167,6 +167,38 @@ class RequestHeaderParserTest extends TestCase
         $this->assertSame(0, count($parser->listeners('error')));
     }
 
+    public function testInvalidAbsoluteFormSchemeEmitsError()
+    {
+        $error = null;
+
+        $parser = new RequestHeaderParser();
+        $parser->on('headers', $this->expectCallableNever());
+        $parser->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $parser->feed("GET tcp://example.com:80/ HTTP/1.0\r\n\r\n");
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+        $this->assertSame('Invalid absolute-form request-target', $error->getMessage());
+    }
+
+    public function testInvalidAbsoluteFormWithFragmentEmitsError()
+    {
+        $error = null;
+
+        $parser = new RequestHeaderParser();
+        $parser->on('headers', $this->expectCallableNever());
+        $parser->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $parser->feed("GET http://example.com:80/#home HTTP/1.0\r\n\r\n");
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+        $this->assertSame('Invalid absolute-form request-target', $error->getMessage());
+    }
+
     private function createGetRequest()
     {
         $data = "GET / HTTP/1.1\r\n";
