@@ -287,12 +287,12 @@ class ServerTest extends TestCase
             return new Response();
         });
 
-        $this->socket->emit('connection', array($this->connection));
-
         $this->connection
             ->expects($this->once())
             ->method('getLocalAddress')
             ->willReturn('127.0.0.1:80');
+
+        $this->socket->emit('connection', array($this->connection));
 
         $data = "GET /test HTTP/1.0\r\n\r\n";
         $this->connection->emit('data', array($data));

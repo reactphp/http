@@ -49,7 +49,7 @@ class RequestHeaderParserTest extends TestCase
         $this->assertSame('GET', $request->getMethod());
         $this->assertEquals('http://example.com/', $request->getUri());
         $this->assertSame('1.1', $request->getProtocolVersion());
-        $this->assertSame(array('Host' => array('example.com:80'), 'Connection' => array('close')), $request->getHeaders());
+        $this->assertSame(array('Host' => array('example.com'), 'Connection' => array('close')), $request->getHeaders());
 
         $this->assertSame('RANDOM DATA', $bodyBuffer);
     }
@@ -87,11 +87,41 @@ class RequestHeaderParserTest extends TestCase
         $this->assertEquals('http://example.com/foo?bar=baz', $request->getUri());
         $this->assertSame('1.1', $request->getProtocolVersion());
         $headers = array(
-            'Host' => array('example.com:80'),
+            'Host' => array('example.com'),
             'User-Agent' => array('react/alpha'),
             'Connection' => array('close'),
         );
         $this->assertSame($headers, $request->getHeaders());
+    }
+
+    public function testHeaderEventWithShouldApplyDefaultAddressFromConstructor()
+    {
+        $request = null;
+
+        $parser = new RequestHeaderParser('http://127.1.1.1:8000');
+        $parser->on('headers', function ($parsedRequest) use (&$request) {
+            $request = $parsedRequest;
+        });
+
+        $parser->feed("GET /foo HTTP/1.0\r\n\r\n");
+
+        $this->assertEquals('http://127.1.1.1:8000/foo', $request->getUri());
+        $this->assertEquals('127.1.1.1:8000', $request->getHeaderLine('Host'));
+    }
+
+    public function testHeaderEventViaHttpsShouldApplySchemeFromConstructor()
+    {
+        $request = null;
+
+        $parser = new RequestHeaderParser('https://127.1.1.1:8000');
+        $parser->on('headers', function ($parsedRequest) use (&$request) {
+            $request = $parsedRequest;
+        });
+
+        $parser->feed("GET /foo HTTP/1.0\r\nHost: example.com\r\n\r\n");
+
+        $this->assertEquals('https://example.com/foo', $request->getUri());
+        $this->assertEquals('example.com', $request->getHeaderLine('Host'));
     }
 
     public function testHeaderOverflowShouldEmitError()
@@ -137,7 +167,7 @@ class RequestHeaderParserTest extends TestCase
         $parser->feed($data);
 
         $headers = array(
-            'Host' => array('example.com:80'),
+            'Host' => array('example.com'),
             'User-Agent' => array('react/alpha'),
             'Connection' => array('close'),
         );

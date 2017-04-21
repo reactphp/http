@@ -145,7 +145,10 @@ class Server extends EventEmitter
     public function handleConnection(ConnectionInterface $conn)
     {
         $that = $this;
-        $parser = new RequestHeaderParser();
+        $parser = new RequestHeaderParser(
+            ($this->isConnectionEncrypted($conn) ? 'https://' : 'http://') . $conn->getLocalAddress()
+        );
+
         $listener = array($parser, 'feed');
         $parser->on('headers', function (RequestInterface $request, $bodyBuffer) use ($conn, $listener, $parser, $that) {
             // parsing request completed => stop feeding parser
@@ -173,34 +176,6 @@ class Server extends EventEmitter
     /** @internal */
     public function handleRequest(ConnectionInterface $conn, ServerRequestInterface $request)
     {
-        // set URI components from socket address if not already filled via Host header
-        if ($request->getUri()->getHost() === '') {
-            $parts = parse_url('tcp://' . $conn->getLocalAddress());
-
-            $request = $request->withUri(
-                $request->getUri()->withScheme('http')->withHost($parts['host'])->withPort($parts['port']),
-                true
-            );
-        }
-
-        // Update request URI to "https" scheme if the connection is encrypted
-        if ($this->isConnectionEncrypted($conn)) {
-            // The request URI may omit default ports here, so try to parse port
-            // from Host header field (if possible)
-            $port = $request->getUri()->getPort();
-            if ($port === null) {
-                $port = parse_url('tcp://' . $request->getHeaderLine('Host'), PHP_URL_PORT); // @codeCoverageIgnore
-            }
-
-            $request = $request->withUri(
-                $request->getUri()->withScheme('https')->withPort($port),
-                true
-            );
-        }
-
-        // always sanitize Host header because it contains critical routing information
-        $request = $request->withHeader('Host', $request->getUri()->withUserInfo('')->getAuthority());
-
         $contentLength = 0;
         $stream = new CloseProtectionStream($conn);
         if ($request->getMethod() === 'CONNECT') {

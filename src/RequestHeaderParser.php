@@ -17,6 +17,13 @@ class RequestHeaderParser extends EventEmitter
     private $buffer = '';
     private $maxSize = 4096;
 
+    private $uri;
+
+    public function __construct($localSocketUri = '')
+    {
+        $this->uri = $localSocketUri;
+    }
+
     public function feed($data)
     {
         $this->buffer .= $data;
@@ -88,15 +95,6 @@ class RequestHeaderParser extends EventEmitter
         );
         $request = $request->withRequestTarget($target);
 
-        // Do not assume this is HTTPS when this happens to be port 443
-        // detecting HTTPS is left up to the socket layer (TLS detection)
-        if ($request->getUri()->getScheme() === 'https') {
-            $request = $request->withUri(
-                $request->getUri()->withScheme('http')->withPort(443),
-                true
-            );
-        }
-
         // re-apply actual request target from above
         if ($originalTarget !== null) {
             $uri = $request->getUri()->withPath('');
@@ -113,6 +111,11 @@ class RequestHeaderParser extends EventEmitter
             )->withRequestTarget($originalTarget);
         }
 
+        // only support HTTP/1.1 and HTTP/1.0 requests
+        if ($request->getProtocolVersion() !== '1.1' && $request->getProtocolVersion() !== '1.0') {
+            throw new \InvalidArgumentException('Received request with invalid protocol version', 505);
+        }
+
         // ensure absolute-form request-target contains a valid URI
         if (strpos($request->getRequestTarget(), '://') !== false) {
             $parts = parse_url($request->getRequestTarget());
@@ -121,11 +124,6 @@ class RequestHeaderParser extends EventEmitter
             if (!isset($parts['scheme'], $parts['host']) || $parts['scheme'] !== 'http' || isset($parts['fragment'])) {
                 throw new \InvalidArgumentException('Invalid absolute-form request-target');
             }
-        }
-
-        // only support HTTP/1.1 and HTTP/1.0 requests
-        if ($request->getProtocolVersion() !== '1.1' && $request->getProtocolVersion() !== '1.0') {
-            throw new \InvalidArgumentException('Received request with invalid protocol version', 505);
         }
 
         // Optional Host header value MUST be valid (host and optional port)
@@ -143,6 +141,44 @@ class RequestHeaderParser extends EventEmitter
                 throw new \InvalidArgumentException('Invalid Host header value');
             }
         }
+
+        // set URI components from socket address if not already filled via Host header
+        if ($request->getUri()->getHost() === '') {
+            $parts = parse_url($this->uri);
+
+            $request = $request->withUri(
+                $request->getUri()->withScheme('http')->withHost($parts['host'])->withPort($parts['port']),
+                true
+            );
+        }
+
+        // Do not assume this is HTTPS when this happens to be port 443
+        // detecting HTTPS is left up to the socket layer (TLS detection)
+        if ($request->getUri()->getScheme() === 'https') {
+            $request = $request->withUri(
+                $request->getUri()->withScheme('http')->withPort(443),
+                true
+            );
+        }
+
+        // Update request URI to "https" scheme if the connection is encrypted
+        $parts = parse_url($this->uri);
+        if (isset($parts['scheme']) && $parts['scheme'] === 'https') {
+            // The request URI may omit default ports here, so try to parse port
+            // from Host header field (if possible)
+            $port = $request->getUri()->getPort();
+            if ($port === null) {
+                $port = parse_url('tcp://' . $request->getHeaderLine('Host'), PHP_URL_PORT); // @codeCoverageIgnore
+            }
+
+            $request = $request->withUri(
+                $request->getUri()->withScheme('https')->withPort($port),
+                true
+            );
+        }
+
+        // always sanitize Host header because it contains critical routing information
+        $request = $request->withUri($request->getUri()->withUserInfo('u')->withUserInfo(''));
 
         return array($request, $bodyBuffer);
     }
