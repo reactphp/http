@@ -292,6 +292,9 @@ client did not specify one (i.e. no `Host` header).
 Its `getScheme(): string` method will return `http` or `https` depending
 on whether the request was made over a secure TLS connection to the target host.
 
+The `Host` header value will be sanitized to match this host component plus the
+port component only if it is non-standard for this URI scheme.
+
 You can use `getMethod(): string` and `getRequestTarget(): string` to
 check this is an accepted request and may want to reject other requests with
 an appropriate error code, such as `400` (Bad Request) or `405` (Method Not
@@ -300,7 +303,7 @@ Allowed).
 > The `CONNECT` method is useful in a tunneling setup (HTTPS proxy) and not
   something most HTTP servers would want to care about.
   Note that if you want to handle this method, the client MAY send a different
-  request-target than the `Host` header field (such as removing default ports)
+  request-target than the `Host` header value (such as removing default ports)
   and the request-target MUST take precendence when forwarding.
   The HTTP specs define an opaque "tunneling mode" for this method and make no
   use of the message body.
