@@ -55,6 +55,8 @@ class RequestHeaderParser extends EventEmitter
     {
         list($headers, $bodyBuffer) = explode("\r\n\r\n", $data, 2);
 
+        // parser does not support asterisk-form and authority-form
+        // remember original target and temporarily replace and re-apply below
         $originalTarget = null;
         if (strpos($headers, 'OPTIONS * ') === 0) {
             $originalTarget = '*';
@@ -75,7 +77,7 @@ class RequestHeaderParser extends EventEmitter
         $request = g7\parse_request($headers);
 
         // create new obj implementing ServerRequestInterface by preserving all
-        // previous properties and restoring original request target-target
+        // previous properties and restoring original request-target
         $target = $request->getRequestTarget();
         $request = new ServerRequest(
             $request->getMethod(),
@@ -95,9 +97,18 @@ class RequestHeaderParser extends EventEmitter
             );
         }
 
+        // re-apply actual request target from above
         if ($originalTarget !== null) {
+            $uri = $request->getUri()->withPath('');
+
+            // re-apply host and port from request-target if given
+            $parts = parse_url('tcp://' . $originalTarget);
+            if (isset($parts['host'], $parts['port'])) {
+                $uri = $uri->withHost($parts['host'])->withPort($parts['port']);
+            }
+
             $request = $request->withUri(
-                $request->getUri()->withPath(''),
+                $uri,
                 true
             )->withRequestTarget($originalTarget);
         }
@@ -117,9 +128,8 @@ class RequestHeaderParser extends EventEmitter
             throw new \InvalidArgumentException('Received request with invalid protocol version', 505);
         }
 
-        // HTTP/1.1 requests MUST include a valid host header (host and optional port)
-        // https://tools.ietf.org/html/rfc7230#section-5.4
-        if ($request->getProtocolVersion() === '1.1') {
+        // Optional Host header value MUST be valid (host and optional port)
+        if ($request->hasHeader('Host')) {
             $parts = parse_url('http://' . $request->getHeaderLine('Host'));
 
             // make sure value contains valid host component (IP or hostname)
@@ -130,7 +140,7 @@ class RequestHeaderParser extends EventEmitter
             // make sure value does not contain any other URI component
             unset($parts['scheme'], $parts['host'], $parts['port']);
             if ($parts === false || $parts) {
-                throw new \InvalidArgumentException('Invalid Host header for HTTP/1.1 request');
+                throw new \InvalidArgumentException('Invalid Host header value');
             }
         }
 

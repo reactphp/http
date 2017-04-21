@@ -199,7 +199,7 @@ class RequestHeaderParserTest extends TestCase
         $this->assertSame('Invalid absolute-form request-target', $error->getMessage());
     }
 
-    public function testInvalidHostHeaderForHttp11()
+    public function testInvalidHeaderContainsFullUri()
     {
         $error = null;
 
@@ -209,10 +209,26 @@ class RequestHeaderParserTest extends TestCase
             $error = $message;
         });
 
-        $parser->feed("GET / HTTP/1.1\r\nHost: a/b/c\r\n\r\n");
+        $parser->feed("GET / HTTP/1.1\r\nHost: http://user:pass@host/\r\n\r\n");
 
         $this->assertInstanceOf('InvalidArgumentException', $error);
-        $this->assertSame('Invalid Host header for HTTP/1.1 request', $error->getMessage());
+        $this->assertSame('Invalid Host header value', $error->getMessage());
+    }
+
+    public function testInvalidAbsoluteFormWithHostHeaderEmpty()
+    {
+        $error = null;
+
+        $parser = new RequestHeaderParser();
+        $parser->on('headers', $this->expectCallableNever());
+        $parser->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $parser->feed("GET http://example.com/ HTTP/1.1\r\nHost: \r\n\r\n");
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+        $this->assertSame('Invalid Host header value', $error->getMessage());
     }
 
     public function testInvalidHttpVersion()

@@ -183,6 +183,24 @@ class Server extends EventEmitter
             );
         }
 
+        // Update request URI to "https" scheme if the connection is encrypted
+        if ($this->isConnectionEncrypted($conn)) {
+            // The request URI may omit default ports here, so try to parse port
+            // from Host header field (if possible)
+            $port = $request->getUri()->getPort();
+            if ($port === null) {
+                $port = parse_url('tcp://' . $request->getHeaderLine('Host'), PHP_URL_PORT); // @codeCoverageIgnore
+            }
+
+            $request = $request->withUri(
+                $request->getUri()->withScheme('https')->withPort($port),
+                true
+            );
+        }
+
+        // always sanitize Host header because it contains critical routing information
+        $request = $request->withHeader('Host', $request->getUri()->withUserInfo('')->getAuthority());
+
         $contentLength = 0;
         $stream = new CloseProtectionStream($conn);
         if ($request->getMethod() === 'CONNECT') {
@@ -239,21 +257,6 @@ class Server extends EventEmitter
             parse_url('tcp://' . $conn->getRemoteAddress(), PHP_URL_HOST),
             '[]'
         );
-
-        // Update request URI to "https" scheme if the connection is encrypted
-        if ($this->isConnectionEncrypted($conn)) {
-            // The request URI may omit default ports here, so try to parse port
-            // from Host header field (if possible)
-            $port = $request->getUri()->getPort();
-            if ($port === null) {
-                $port = parse_url('tcp://' . $request->getHeaderLine('Host'), PHP_URL_PORT);
-            }
-
-            $request = $request->withUri(
-                $request->getUri()->withScheme('https')->withPort($port),
-                true
-            );
-        }
 
         $callback = $this->callback;
         $promise = new Promise(function ($resolve, $reject) use ($callback, $request) {
