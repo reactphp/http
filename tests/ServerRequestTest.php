@@ -105,4 +105,81 @@ class ServerRequestTest extends TestCase
         $this->assertEquals('1.0', $request->getProtocolVersion());
         $this->assertEquals('127.0.0.1', $serverParams['SERVER_ADDR']);
     }
+
+    public function testParseSingleCookieNameValuePairWillReturnValidArray()
+    {
+        $cookieString = 'hello=world';
+        $cookies = ServerRequest::parseCookie($cookieString);
+        $this->assertEquals(array('hello' => 'world'), $cookies);
+    }#
+
+    public function testParseMultipleCookieNameValuePaiWillReturnValidArray()
+    {
+        $cookieString = 'hello=world;test=abc';
+        $cookies = ServerRequest::parseCookie($cookieString);
+        $this->assertEquals(array('hello' => 'world', 'test' => 'abc'), $cookies);
+    }
+
+    public function testParseMultipleCookieNameValuePairWillReturnFalse()
+    {
+        // Could be done through multiple 'Cookie' headers
+        // getHeaderLine('Cookie') will return a value seperated by coma
+        // e.g.
+        // GET / HTTP/1.1\r\n
+        // Host: test.org\r\n
+        // Cookie: hello=world\r\n
+        // Cookie: test=abc\r\n\r\n
+        $cookieString = 'hello=world,test=abc';
+        $cookies = ServerRequest::parseCookie($cookieString);
+        $this->assertEquals(false, $cookies);
+    }
+
+    public function testOnlyFirstSetWillBeAddedToCookiesArray()
+    {
+        $cookieString = 'hello=world;hello=abc';
+        $cookies = ServerRequest::parseCookie($cookieString);
+        $this->assertEquals(array('hello' => 'abc'), $cookies);
+    }
+
+    public function testOtherEqualSignsWillBeAddedToValueAndWillReturnValidArray()
+    {
+        $cookieString = 'hello=world=test=php';
+        $cookies = ServerRequest::parseCookie($cookieString);
+        $this->assertEquals(array('hello' => 'world=test=php'), $cookies);
+    }
+
+    public function testSingleCookieValueInCookiesReturnsEmptyArray()
+    {
+        $cookieString = 'world';
+        $cookies = ServerRequest::parseCookie($cookieString);
+        $this->assertEquals(array(), $cookies);
+    }
+
+    public function testSingleMutlipleCookieValuesReturnsEmptyArray()
+    {
+        $cookieString = 'world;test';
+        $cookies = ServerRequest::parseCookie($cookieString);
+        $this->assertEquals(array(), $cookies);
+    }
+
+    public function testSingleValueIsValidInMultipleValueCookieWillReturnValidArray()
+    {
+        $cookieString = 'world;test=php';
+        $cookies = ServerRequest::parseCookie($cookieString);
+        $this->assertEquals(array('test' => 'php'), $cookies);
+    }
+
+    public function testUrlEncodingForValueWillReturnValidArray()
+    {
+        $cookieString = 'hello=world%21;test=100%25%20coverage';
+        $cookies = ServerRequest::parseCookie($cookieString);
+        $this->assertEquals(array('hello' => 'world!', 'test' => '100% coverage'), $cookies);
+    }
+
+    public function testUrlEncodingForKeyWillReturnValidArray()
+    {
+        $cookieString = 'react%3Bphp=is%20great';
+        $cookies = ServerRequest::parseCookie($cookieString);
+        $this->assertEquals(array('react;php' => 'is great'), $cookies);
+    }
 }
