@@ -145,7 +145,10 @@ class Server extends EventEmitter
     public function handleConnection(ConnectionInterface $conn)
     {
         $that = $this;
-        $parser = new RequestHeaderParser();
+        $parser = new RequestHeaderParser(
+            ($this->isConnectionEncrypted($conn) ? 'https://' : 'http://') . $conn->getLocalAddress()
+        );
+
         $listener = array($parser, 'feed');
         $parser->on('headers', function (RequestInterface $request, $bodyBuffer) use ($conn, $listener, $parser, $that) {
             // parsing request completed => stop feeding parser
@@ -165,7 +168,7 @@ class Server extends EventEmitter
 
             $that->writeError(
                 $conn,
-                ($e instanceof \OverflowException) ? 431 : 400
+                $e->getCode() !== 0 ? $e->getCode() : 400
             );
         });
     }
@@ -173,31 +176,6 @@ class Server extends EventEmitter
     /** @internal */
     public function handleRequest(ConnectionInterface $conn, ServerRequestInterface $request)
     {
-        // only support HTTP/1.1 and HTTP/1.0 requests
-        if ($request->getProtocolVersion() !== '1.1' && $request->getProtocolVersion() !== '1.0') {
-            $this->emit('error', array(new \InvalidArgumentException('Received request with invalid protocol version')));
-            $request = $request->withProtocolVersion('1.1');
-            return $this->writeError($conn, 505, $request);
-        }
-
-        // HTTP/1.1 requests MUST include a valid host header (host and optional port)
-        // https://tools.ietf.org/html/rfc7230#section-5.4
-        if ($request->getProtocolVersion() === '1.1') {
-            $parts = parse_url('http://' . $request->getHeaderLine('Host'));
-
-            // make sure value contains valid host component (IP or hostname)
-            if (!$parts || !isset($parts['scheme'], $parts['host'])) {
-                $parts = false;
-            }
-
-            // make sure value does not contain any other URI component
-            unset($parts['scheme'], $parts['host'], $parts['port']);
-            if ($parts === false || $parts) {
-                $this->emit('error', array(new \InvalidArgumentException('Invalid Host header for HTTP/1.1 request')));
-                return $this->writeError($conn, 400, $request);
-            }
-        }
-
         $contentLength = 0;
         $stream = new CloseProtectionStream($conn);
         if ($request->getMethod() === 'CONNECT') {
@@ -254,21 +232,6 @@ class Server extends EventEmitter
             parse_url('tcp://' . $conn->getRemoteAddress(), PHP_URL_HOST),
             '[]'
         );
-
-        // Update request URI to "https" scheme if the connection is encrypted
-        if ($this->isConnectionEncrypted($conn)) {
-            // The request URI may omit default ports here, so try to parse port
-            // from Host header field (if possible)
-            $port = $request->getUri()->getPort();
-            if ($port === null) {
-                $port = parse_url('tcp://' . $request->getHeaderLine('Host'), PHP_URL_PORT);
-            }
-
-            $request = $request->withUri(
-                $request->getUri()->withScheme('https')->withPort($port),
-                true
-            );
-        }
 
         $callback = $this->callback;
         $promise = new Promise(function ($resolve, $reject) use ($callback, $request) {

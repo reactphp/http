@@ -88,7 +88,7 @@ class ServerTest extends TestCase
         $this->assertSame('/', $requestAssertion->getRequestTarget());
         $this->assertSame('/', $requestAssertion->getUri()->getPath());
         $this->assertSame('http://example.com/', (string)$requestAssertion->getUri());
-        $this->assertSame('example.com:80', $requestAssertion->getHeaderLine('Host'));
+        $this->assertSame('example.com', $requestAssertion->getHeaderLine('Host'));
         $this->assertSame('127.0.0.1', $requestAssertion->remoteAddress);
     }
 
@@ -155,7 +155,7 @@ class ServerTest extends TestCase
         $this->assertSame('/', $requestAssertion->getUri()->getPath());
         $this->assertSame('http://example.com/', (string)$requestAssertion->getUri());
         $this->assertSame(null, $requestAssertion->getUri()->getPort());
-        $this->assertSame('example.com:80', $requestAssertion->getHeaderLine('Host'));
+        $this->assertSame('example.com', $requestAssertion->getHeaderLine('Host'));
     }
 
     public function testRequestOptionsAsterisk()
@@ -209,7 +209,7 @@ class ServerTest extends TestCase
         $this->assertSame('', $requestAssertion->getUri()->getPath());
         $this->assertSame('http://example.com:443', (string)$requestAssertion->getUri());
         $this->assertSame(443, $requestAssertion->getUri()->getPort());
-        $this->assertSame('example.com:443', $requestAssertion->getHeaderLine('host'));
+        $this->assertSame('example.com:443', $requestAssertion->getHeaderLine('Host'));
     }
 
     public function testRequestConnectAuthorityFormWithDefaultPortWillBeIgnored()
@@ -231,10 +231,10 @@ class ServerTest extends TestCase
         $this->assertSame('', $requestAssertion->getUri()->getPath());
         $this->assertSame('http://example.com', (string)$requestAssertion->getUri());
         $this->assertSame(null, $requestAssertion->getUri()->getPort());
-        $this->assertSame('example.com:80', $requestAssertion->getHeaderLine('Host'));
+        $this->assertSame('example.com', $requestAssertion->getHeaderLine('Host'));
     }
 
-    public function testRequestConnectAuthorityFormNonMatchingHostWillBePassedAsIs()
+    public function testRequestConnectAuthorityFormNonMatchingHostWillBeOverwritten()
     {
         $requestAssertion = null;
         $server = new Server($this->socket, function (ServerRequestInterface $request) use (&$requestAssertion) {
@@ -244,7 +244,7 @@ class ServerTest extends TestCase
 
         $this->socket->emit('connection', array($this->connection));
 
-        $data = "CONNECT example.com:80 HTTP/1.1\r\nHost: example.com\r\n\r\n";
+        $data = "CONNECT example.com:80 HTTP/1.1\r\nHost: other.example.org\r\n\r\n";
         $this->connection->emit('data', array($data));
 
         $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
@@ -253,7 +253,18 @@ class ServerTest extends TestCase
         $this->assertSame('', $requestAssertion->getUri()->getPath());
         $this->assertSame('http://example.com', (string)$requestAssertion->getUri());
         $this->assertSame(null, $requestAssertion->getUri()->getPort());
-        $this->assertSame('example.com', $requestAssertion->getHeaderLine('host'));
+        $this->assertSame('example.com', $requestAssertion->getHeaderLine('Host'));
+    }
+
+    public function testRequestConnectOriginFormRequestTargetWillReject()
+    {
+        $server = new Server($this->socket, $this->expectCallableNever());
+        $server->on('error', $this->expectCallableOnce());
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "CONNECT / HTTP/1.1\r\nHost: example.com\r\n\r\n";
+        $this->connection->emit('data', array($data));
     }
 
     public function testRequestNonConnectWithAuthorityRequestTargetWillReject()
@@ -265,6 +276,32 @@ class ServerTest extends TestCase
 
         $data = "GET example.com:80 HTTP/1.1\r\nHost: example.com\r\n\r\n";
         $this->connection->emit('data', array($data));
+    }
+
+    public function testRequestWithoutHostEventUsesSocketAddress()
+    {
+        $requestAssertion = null;
+
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
+
+        $this->connection
+            ->expects($this->once())
+            ->method('getLocalAddress')
+            ->willReturn('127.0.0.1:80');
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET /test HTTP/1.0\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertSame('GET', $requestAssertion->getMethod());
+        $this->assertSame('/test', $requestAssertion->getRequestTarget());
+        $this->assertEquals('http://127.0.0.1/test', $requestAssertion->getUri());
+        $this->assertSame('/test', $requestAssertion->getUri()->getPath());
     }
 
     public function testRequestAbsoluteEvent()
@@ -312,7 +349,7 @@ class ServerTest extends TestCase
         $this->assertSame('example.com:8080', $requestAssertion->getHeaderLine('Host'));
     }
 
-    public function testRequestAbsoluteNonMatchingHostWillBePassedAsIs()
+    public function testRequestAbsoluteNonMatchingHostWillBeOverwritten()
     {
         $requestAssertion = null;
 
@@ -331,7 +368,7 @@ class ServerTest extends TestCase
         $this->assertSame('http://example.com/test', $requestAssertion->getRequestTarget());
         $this->assertEquals('http://example.com/test', $requestAssertion->getUri());
         $this->assertSame('/test', $requestAssertion->getUri()->getPath());
-        $this->assertSame('other.example.org', $requestAssertion->getHeaderLine('Host'));
+        $this->assertSame('example.com', $requestAssertion->getHeaderLine('Host'));
     }
 
     public function testRequestOptionsAsteriskEvent()
@@ -965,39 +1002,7 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
-    public function testRequestHttp11WithoutHostWillEmitErrorAndSendErrorResponse()
-    {
-        $error = null;
-        $server = new Server($this->socket, $this->expectCallableNever());
-        $server->on('error', function ($message) use (&$error) {
-            $error = $message;
-        });
-
-        $buffer = '';
-
-        $this->connection
-            ->expects($this->any())
-            ->method('write')
-            ->will(
-                $this->returnCallback(
-                    function ($data) use (&$buffer) {
-                        $buffer .= $data;
-                    }
-                )
-            );
-
-        $this->socket->emit('connection', array($this->connection));
-
-        $data = "GET / HTTP/1.1\r\n\r\n";
-        $this->connection->emit('data', array($data));
-
-        $this->assertInstanceOf('InvalidArgumentException', $error);
-
-        $this->assertContains("HTTP/1.1 400 Bad Request\r\n", $buffer);
-        $this->assertContains("\r\n\r\nError 400: Bad Request", $buffer);
-    }
-
-    public function testRequestHttp11WithMalformedHostWillEmitErrorAndSendErrorResponse()
+    public function testRequestWithMalformedHostWillEmitErrorAndSendErrorResponse()
     {
         $error = null;
         $server = new Server($this->socket, $this->expectCallableNever());
@@ -1029,7 +1034,7 @@ class ServerTest extends TestCase
         $this->assertContains("\r\n\r\nError 400: Bad Request", $buffer);
     }
 
-    public function testRequestHttp11WithInvalidHostUriComponentsWillEmitErrorAndSendErrorResponse()
+    public function testRequestWithInvalidHostUriComponentsWillEmitErrorAndSendErrorResponse()
     {
         $error = null;
         $server = new Server($this->socket, $this->expectCallableNever());
@@ -1059,19 +1064,6 @@ class ServerTest extends TestCase
 
         $this->assertContains("HTTP/1.1 400 Bad Request\r\n", $buffer);
         $this->assertContains("\r\n\r\nError 400: Bad Request", $buffer);
-    }
-
-    public function testRequestHttp10WithoutHostEmitsRequestWithNoError()
-    {
-        $server = new Server($this->socket, function (ServerRequestInterface $request) {
-            return \React\Promise\resolve(new Response());
-        });
-        $server->on('error', $this->expectCallableNever());
-
-        $this->socket->emit('connection', array($this->connection));
-
-        $data = "GET / HTTP/1.0\r\n\r\n";
-        $this->connection->emit('data', array($data));
     }
 
     public function testWontEmitFurtherDataWhenContentLengthIsReached()
