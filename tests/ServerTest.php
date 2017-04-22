@@ -2332,6 +2332,252 @@ class ServerTest extends TestCase
         $this->assertInstanceOf('RuntimeException', $exception);
     }
 
+    private function getUpgradeHeader()
+    {
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: localhost\r\n";
+        $data .= "Connection: Upgrade\r\n";
+        $data .= "Upgrade: echo\r\n\r\n";
+
+        return $data;
+    }
+
+    public function testConnectionUpgradeEcho()
+    {
+        $that = $this;
+        $server = new Server($this->socket, function (RequestInterface $request) use ($that) {
+            $responseStream = new ReadableStream();
+            $request->getBody()->on('data', function ($data) use ($responseStream) {
+                $responseStream->emit('data', array($data));
+            });
+
+            $that->assertEquals('Upgrade', $request->getHeaderLine('Connection'));
+            $that->assertEquals('echo', $request->getHeaderLine('Upgrade'));
+
+            $response = new Response(
+                101,
+                array(
+                    'Connection' => 'Upgrade',
+                    'Upgrade'    => 'echo'
+                ),
+                $responseStream);
+            return $response;
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $this->connection->emit('data', array($this->getUpgradeHeader()));
+
+        $this->connection->emit('data', array('text to be echoed'));
+
+        $this->assertStringStartsWith("HTTP/1.1 101 Switching Protocols\r\n", $buffer);
+        $this->assertContains("\r\nConnection: Upgrade\r\n", $buffer);
+        $this->assertContains("\r\nUpgrade: echo\r\n", $buffer);
+        $this->assertStringEndsWith("\r\n\r\ntext to be echoed", $buffer);
+    }
+
+    public function testUpgradeWithNoProtocolRespondsWithError()
+    {
+        $that = $this;
+        $server = new Server($this->socket, function (RequestInterface $request) use ($that) {
+            $that->fail('Callback should not be called');
+        });
+
+        $exception = null;
+        $server->on('error', function (\Exception $ex) use (&$exception) {
+            $exception = $ex;
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: localhost\r\n";
+        $data .= "Connection: Upgrade\r\n\r\n";
+
+        $this->connection->emit('data', array($this->getUpgradeHeader()));
+
+        $this->assertStringStartsWith("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
+        $this->assertInstanceOf('RuntimeException', $exception);
+    }
+
+    public function testUpgrade101MustContainUpgradeHeaderWithNewProtocol()
+    {
+        $that = $this;
+        $server = new Server($this->socket, function (RequestInterface $request) use ($that) {
+            $responseStream = new ReadableStream();
+            $that->assertEquals('Upgrade', $request->getHeaderLine('Connection'));
+            $that->assertEquals('echo', $request->getHeaderLine('Upgrade'));
+
+            $response = new Response(
+                101,
+                array(
+                    'Connection' => 'Upgrade'
+                ),
+                $responseStream);
+            return $response;
+        });
+
+        $exception = null;
+        $server->on('error', function (\Exception $ex) use (&$exception) {
+            $exception = $ex;
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $this->connection->emit('data', array($this->getUpgradeHeader()));
+
+        $this->assertStringStartsWith("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
+        $this->assertInstanceOf('RuntimeException', $exception);
+    }
+
+    public function testUpgradeProtocolMustBeOneRequested()
+    {
+        $that = $this;
+        $server = new Server($this->socket, function (RequestInterface $request) use ($that) {
+            $responseStream = new ReadableStream();
+            $that->assertEquals('Upgrade', $request->getHeaderLine('Connection'));
+            $that->assertEquals('echo', $request->getHeaderLine('Upgrade'));
+
+            $response = new Response(
+                101,
+                array(
+                    'Connection' => 'Upgrade',
+                    'Upgrade'    => 'notecho'
+                ),
+                $responseStream);
+            return $response;
+        });
+
+        $exception = null;
+        $server->on('error', function (\Exception $ex) use (&$exception) {
+            $exception = $ex;
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $this->connection->emit('data', array($this->getUpgradeHeader()));
+
+        $this->assertStringStartsWith("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
+        $this->assertInstanceOf('RuntimeException', $exception);
+    }
+
+    public function testUpgrade426WithUpgradeHeader()
+    {
+        $server = new Server($this->socket, function (RequestInterface $request) {
+            $response = new Response(
+                426,
+                array(
+                    'Upgrade' => 'something'
+                ));
+            return $response;
+        });
+
+        $exception = null;
+        $server->on('error', function (\Exception $ex) use (&$exception) {
+            $exception = $ex;
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $this->connection->emit('data', array($this->getUpgradeHeader()));
+
+        $this->assertStringStartsWith("HTTP/1.1 426 Upgrade Required\r\n", $buffer);
+    }
+
+    public function testUpgrade426MustContainUpgradeHeaderWithProtocol()
+    {
+        $server = new Server($this->socket, function (RequestInterface $request) {
+            $response = new Response(
+                426,
+                array());
+            return $response;
+        });
+
+        $exception = null;
+        $server->on('error', function (\Exception $ex) use (&$exception) {
+            $exception = $ex;
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $this->connection->emit('data', array($this->getUpgradeHeader()));
+
+        $this->assertStringStartsWith("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
+        $this->assertInstanceOf('RuntimeException', $exception);
+    }
+
     private function createGetRequest()
     {
         $data = "GET / HTTP/1.1\r\n";

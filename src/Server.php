@@ -221,6 +221,16 @@ class Server extends EventEmitter
             $stream = new LengthLimitedStream($stream, $contentLength);
         }
 
+        $upgradeRequest = false;
+        if ($request->getProtocolVersion() !== '1.0' && $request->hasHeader('Connection') && strtolower($request->getHeaderLine('Connection')) === "upgrade") {
+            if (!$request->hasHeader('Upgrade') || $request->getHeaderLine('Upgrade') === '') {
+                // MUST have Upgrade options
+                $this->emit('error', array(new \InvalidArgumentException('Connection upgrade must specify upgrade protocol.')));
+                return $this->writeError($conn, 400, $request);
+            }
+            $upgradeRequest = true;
+        }
+
         $request = $request->withBody(new HttpBodyStream($stream, $contentLength));
 
         if ($request->getProtocolVersion() !== '1.0' && '100-continue' === strtolower($request->getHeaderLine('Expect'))) {
@@ -240,7 +250,7 @@ class Server extends EventEmitter
 
         $that = $this;
         $promise->then(
-            function ($response) use ($that, $conn, $request) {
+            function ($response) use ($that, $conn, $request, $contentLength, $stream, $upgradeRequest) {
                 if (!$response instanceof ResponseInterface) {
                     $message = 'The response callback is expected to resolve with an object implementing Psr\Http\Message\ResponseInterface, but resolved with "%s" instead.';
                     $message = sprintf($message, is_object($response) ? get_class($response) : gettype($response));
@@ -249,6 +259,71 @@ class Server extends EventEmitter
                     $that->emit('error', array($exception));
                     return $that->writeError($conn, 500, $request);
                 }
+
+                if ($response->getStatusCode() === 426) {
+                    if (!$response->hasHeader('Upgrade') || $response->getHeaderLine('Upgrade') === '') {
+                        $message = 'HTTP 1.1 426 response requires `Upgrade` header.';
+                        $exception = new \RuntimeException($message);
+
+                        $that->emit('error', array($exception));
+                        return $that->writeError($conn, 500, $request);
+                    }
+                }
+
+                $upgradeConnection = false;
+                if ($response->getStatusCode() === 101) {
+                    if (!$upgradeRequest) {
+                        $message = 'HTTP status 101 is not valid when no upgrade was requested';
+                        $exception = new \RuntimeException($message);
+
+                        $that->emit('error', array($exception));
+                        return $that->writeError($conn, 500, $request);
+                    }
+
+                    if ($response->getProtocolVersion() === '1.0') {
+                        $message = 'HTTP status 101 is not valid with protocol version 1.0';
+                        $exception = new \RuntimeException($message);
+
+                        $that->emit('error', array($exception));
+                        return $that->writeError($conn, 500, $request);
+                    }
+
+                    if (!$response->hasHeader('Connection') || strtolower($response->getHeaderLine('Connection')) !== 'upgrade') {
+                        $message = 'HTTP 1.1 Upgrade requires `Connection: upgrade` header.';
+                        $exception = new \RuntimeException($message);
+
+                        $that->emit('error', array($exception));
+                        return $that->writeError($conn, 500, $request);
+                    }
+
+                    if (!$response->hasHeader('Upgrade') || $response->getHeaderLine('Upgrade') === '') {
+                        $message = 'HTTP 1.1 Upgrade requires `Upgrade` header with exactly one protocol specified.';
+                        $exception = new \RuntimeException($message);
+
+                        $that->emit('error', array($exception));
+                        return $that->writeError($conn, 500, $request);
+                    }
+
+                    $requestedProtocols = explode(',', preg_replace('/\s+/', '', $request->getHeaderLine('Upgrade')));
+
+                    if (!in_array(trim($response->getHeaderLine('Upgrade')), $requestedProtocols)) {
+                        $message = 'Upgrade requires response protocol to be one of the `Upgrade` protocols specified by the request.';
+                        $exception = new \RuntimeException($message);
+
+                        $that->emit('error', array($exception));
+                        return $that->writeError($conn, 500, $request);
+                    }
+
+                    $upgradeConnection = true;
+                }
+
+                if (!$upgradeConnection && $contentLength === 0) {
+                    // If Body is empty or Content-Length is 0 and won't emit further data,
+                    // 'data' events from other streams won't be called anymore
+                    $stream->emit('end');
+                    $stream->close();
+                }
+
                 $that->handleResponse($conn, $request, $response);
             },
             function ($error) use ($that, $conn, $request) {
@@ -260,13 +335,6 @@ class Server extends EventEmitter
                 return $that->writeError($conn, 500, $request);
             }
         );
-
-        if ($contentLength === 0) {
-            // If Body is empty or Content-Length is 0 and won't emit further data,
-            // 'data' events from other streams won't be called anymore
-            $stream->emit('end');
-            $stream->close();
-        }
     }
 
     /** @internal */
@@ -328,7 +396,7 @@ class Server extends EventEmitter
 
         // HTTP/1.1 assumes persistent connection support by default
         // we do not support persistent connections, so let the client know
-        if ($request->getProtocolVersion() === '1.1') {
+        if ($request->getProtocolVersion() === '1.1' && $response->getStatusCode() !== 101) {
             $response = $response->withHeader('Connection', 'close');
         }
 
@@ -338,9 +406,12 @@ class Server extends EventEmitter
             $response = $response->withoutHeader('Content-Length')->withoutHeader('Transfer-Encoding');
         }
 
-        // response to HEAD and 1xx, 204 and 304 responses MUST NOT include a body
-        if ($request->getMethod() === 'HEAD' || ($code >= 100 && $code < 200) || $code === 204 || $code === 304) {
-            $response = $response->withBody(Psr7Implementation\stream_for(''));
+        // 101 response (Upgrade) should hold onto the body
+        if ($code !== 101) {
+            // response to HEAD and 1xx, 204 and 304 responses MUST NOT include a body
+            if ($request->getMethod() === 'HEAD' || ($code >= 100 && $code < 200) || $code === 204 || $code === 304) {
+                $response = $response->withBody(Psr7Implementation\stream_for(''));
+            }
         }
 
         $this->handleResponseBody($response, $connection);
