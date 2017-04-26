@@ -190,6 +190,36 @@ $http = new Server($socket, function (ServerRequestInterface $request) {
 
 See also [example #2](examples).
 
+The `getQueryParams(): array` method can be used to get the query parameters
+similiar to the `$_GET` variable.
+
+```php
+$http = new Server($socket, function (ServerRequestInterface $request) {
+    $queryParams = $request->getQueryParams();
+
+    $body = 'The query parameter "foo" is not set. Click the following link ';
+    $body .= '<a href="/?foo=bar">to use query parameter in your request</a>';
+
+    if (isset($queryParams['foo'])) {
+        $body = 'The value of "foo" is: ' . htmlspecialchars($queryParams['foo']);
+    }
+
+    return new Response(
+        200,
+        array('Content-Type' => 'text/html'),
+        $body
+    );
+});
+```
+
+The response in the above example will return a response body with a link.
+The URL contains the query parameter `foo` with the value `bar`.
+Use [`htmlentities`](http://php.net/manual/en/function.htmlentities.php)
+like in this example to prevent
+[Cross-Site Scripting (abbreviated as XSS)](https://en.wikipedia.org/wiki/Cross-site_scripting).
+
+See also [example #3](examples).
+
 For more details about the request object, check out the documentation of
 [PSR-7 ServerRequestInterface](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#321-psrhttpmessageserverrequestinterface)
 and
