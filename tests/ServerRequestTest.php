@@ -84,4 +84,25 @@ class ServerRequestTest extends TestCase
         $this->assertNotSame($request, $this->request);
         $this->assertEquals(array('test' => 'world'), $request->getParsedBody());
     }
+
+    public function testServerRequestParameter()
+    {
+        $body = 'hello=world';
+        $request = new ServerRequest(
+            'POST',
+            'http://127.0.0.1',
+            array('Content-Length' => strlen($body)),
+            $body,
+            '1.0',
+            array('SERVER_ADDR' => '127.0.0.1')
+        );
+
+        $serverParams = $request->getServerParams();
+        $this->assertEquals('POST', $request->getMethod());
+        $this->assertEquals('http://127.0.0.1', $request->getUri());
+        $this->assertEquals('11', $request->getHeaderLine('Content-Length'));
+        $this->assertEquals('hello=world', $request->getBody());
+        $this->assertEquals('1.0', $request->getProtocolVersion());
+        $this->assertEquals('127.0.0.1', $serverParams['SERVER_ADDR']);
+    }
 }

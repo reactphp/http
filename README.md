@@ -155,12 +155,47 @@ $http = new Server($socket, function (ServerRequestInterface $request) {
 });
 ```
 
+The `getServerParams(): mixed[]` method can be used to
+get server-side parameters similar to the `$_SERVER` variable.
+The following parameters are currently available:
+
+* `REMOTE_ADDR`
+  The IP address of the request sender
+* `REMOTE_PORT`
+  Port of the request sender
+* `SERVER_ADDR`
+  The IP address of the server
+* `SERVER_PORT`
+  The port of the server
+* `REQUEST_TIME`
+  Unix timestamp when the complete request header has been received,
+  as integer similar to `time()`
+* `REQUEST_TIME_FLOAT`
+  Unix timestamp when the complete request header has been received,
+  as float similar to `microtime(true)`
+* `HTTPS`
+  Set to 'on' if the request used HTTPS, otherwise it won't be set
+
+```php 
+$http = new Server($socket, function (ServerRequestInterface $request) {
+    $body = "Your IP is: " . $request->getServerParams()['REMOTE_ADDR'];
+
+    return new Response(
+        200,
+        array('Content-Type' => 'text/plain'),
+        $body
+    );
+});
+```
+
+See also [example #2](examples).
+
 For more details about the request object, check out the documentation of
 [PSR-7 ServerRequestInterface](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#321-psrhttpmessageserverrequestinterface)
 and
 [PSR-7 RequestInterface](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#32-psrhttpmessagerequestinterface).
 
-> Currently the the server params, cookies and uploaded files are not added by the
+> Currently the cookies and uploaded files are not added by the
   `Server`, but you can add these parameters by yourself using the given methods.
   The next versions of this project will cover these features.
 

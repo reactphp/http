@@ -278,6 +278,83 @@ class RequestHeaderParserTest extends TestCase
         $this->assertSame('Received request with invalid protocol version', $error->getMessage());
     }
 
+    public function testServerParamsWillBeSetOnHttpsRequest()
+    {
+        $request = null;
+
+        $parser = new RequestHeaderParser(
+            'https://127.1.1.1:8000',
+            'https://192.168.1.1:8001'
+        );
+
+        $parser->on('headers', function ($parsedRequest) use (&$request) {
+            $request = $parsedRequest;
+        });
+
+        $parser->feed("GET /foo HTTP/1.0\r\nHost: example.com\r\n\r\n");
+        $serverParams = $request->getServerParams();
+
+        $this->assertEquals('on', $serverParams['HTTPS']);
+        $this->assertNotEmpty($serverParams['REQUEST_TIME']);
+        $this->assertNotEmpty($serverParams['REQUEST_TIME_FLOAT']);
+
+        $this->assertEquals('127.1.1.1', $serverParams['SERVER_ADDR']);
+        $this->assertEquals('8000', $serverParams['SERVER_PORT']);
+
+        $this->assertEquals('192.168.1.1', $serverParams['REMOTE_ADDR']);
+        $this->assertEquals('8001', $serverParams['REMOTE_PORT']);
+    }
+
+    public function testServerParamsWillBeSetOnHttpRequest()
+    {
+        $request = null;
+
+        $parser = new RequestHeaderParser(
+            'http://127.1.1.1:8000',
+            'http://192.168.1.1:8001'
+        );
+
+        $parser->on('headers', function ($parsedRequest) use (&$request) {
+            $request = $parsedRequest;
+        });
+
+        $parser->feed("GET /foo HTTP/1.0\r\nHost: example.com\r\n\r\n");
+        $serverParams = $request->getServerParams();
+
+        $this->assertArrayNotHasKey('HTTPS', $serverParams);
+        $this->assertNotEmpty($serverParams['REQUEST_TIME']);
+        $this->assertNotEmpty($serverParams['REQUEST_TIME_FLOAT']);
+
+        $this->assertEquals('127.1.1.1', $serverParams['SERVER_ADDR']);
+        $this->assertEquals('8000', $serverParams['SERVER_PORT']);
+
+        $this->assertEquals('192.168.1.1', $serverParams['REMOTE_ADDR']);
+        $this->assertEquals('8001', $serverParams['REMOTE_PORT']);
+    }
+
+    public function testServerParamsWontBeSetOnMissingUrls()
+    {
+        $request = null;
+
+        $parser = new RequestHeaderParser();
+
+        $parser->on('headers', function ($parsedRequest) use (&$request) {
+            $request = $parsedRequest;
+        });
+
+        $parser->feed("GET /foo HTTP/1.0\r\nHost: example.com\r\n\r\n");
+        $serverParams = $request->getServerParams();
+
+        $this->assertNotEmpty($serverParams['REQUEST_TIME']);
+        $this->assertNotEmpty($serverParams['REQUEST_TIME_FLOAT']);
+
+        $this->assertArrayNotHasKey('SERVER_ADDR', $serverParams);
+        $this->assertArrayNotHasKey('SERVER_PORT', $serverParams);
+
+        $this->assertArrayNotHasKey('REMOTE_ADDR', $serverParams);
+        $this->assertArrayNotHasKey('REMOTE_PORT', $serverParams);
+    }
+
     private function createGetRequest()
     {
         $data = "GET / HTTP/1.1\r\n";
