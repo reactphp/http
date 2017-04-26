@@ -118,6 +118,14 @@ class RequestHeaderParser extends EventEmitter
         );
         $request = $request->withRequestTarget($target);
 
+        // Add query params
+        $queryString = $request->getUri()->getQuery();
+        if ($queryString !== '') {
+            $queryParams = array();
+            parse_str($queryString, $queryParams);
+            $request = $request->withQueryParams($queryParams);
+        }
+
         // re-apply actual request target from above
         if ($originalTarget !== null) {
             $uri = $request->getUri()->withPath('');
