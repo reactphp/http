@@ -26,7 +26,7 @@ use Psr\Http\Message\ServerRequestInterface;
  * ```php
  * $socket = new React\Socket\Server(8080, $loop);
  *
- * $http = new Server($socket, function (RequestInterface $request) {
+ * $http = new Server($socket, function (ServerRequestInterface $request) {
  *     return new Response(
  *         200,
  *         array('Content-Type' => 'text/plain'),
@@ -47,7 +47,7 @@ use Psr\Http\Message\ServerRequestInterface;
  *     'local_cert' => __DIR__ . '/localhost.pem'
  * ));
  *
- * $http = new Server($socket, function (RequestInterface $request) {
+ * $http = new Server($socket, function (ServerRequestInterface $request) {
  *     return new Response(
  *         200,
  *         array('Content-Type' => 'text/plain'),
@@ -94,39 +94,6 @@ class Server extends EventEmitter
 
     /**
      * Creates a HTTP server that accepts connections from the given socket.
-     *
-     * It attaches itself to an instance of `React\Socket\ServerInterface` which
-     * emits underlying streaming connections in order to then parse incoming data
-     * as HTTP.
-     *
-     * For each request, it executes the callback function passed to the
-     * constructor with the respective [`Request`](#request) and
-     * [`Response`](#response) objects:
-     *
-     * ```php
-     * $socket = new React\Socket\Server(8080, $loop);
-     *
-     * $http = new Server($socket, function (Request $request, Response $response) {
-     *     $response->writeHead(200, array('Content-Type' => 'text/plain'));
-     *     $response->end("Hello World!\n");
-     * });
-     * ```
-     *
-     * Similarly, you can also attach this to a
-     * [`React\Socket\SecureServer`](https://github.com/reactphp/socket#secureserver)
-     * in order to start a secure HTTPS server like this:
-     *
-     * ```php
-     * $socket = new React\Socket\Server(8080, $loop);
-     * $socket = new React\Socket\SecureServer($socket, $loop, array(
-     *     'local_cert' => __DIR__ . '/localhost.pem'
-     * ));
-     *
-     * $http = new Server($socket, function (Request $request, Response $response) {
-     *    $response->writeHead(200, array('Content-Type' => 'text/plain'));
-     *    $response->end("Hello World!\n");
-     * });
-     *```
      *
      * @param \React\Socket\ServerInterface $io
      * @param callable $callback
