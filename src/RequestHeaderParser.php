@@ -181,6 +181,9 @@ class RequestHeaderParser extends EventEmitter
         // set URI components from socket address if not already filled via Host header
         if ($request->getUri()->getHost() === '') {
             $parts = parse_url($this->localSocketUri);
+            if (!isset($parts['host'], $parts['port'])) {
+                $parts = array('host' => '127.0.0.1', 'port' => 80);
+            }
 
             $request = $request->withUri(
                 $request->getUri()->withScheme('http')->withHost($parts['host'])->withPort($parts['port']),
