@@ -90,6 +90,7 @@ class ServerTest extends TestCase
         $this->assertSame('GET', $requestAssertion->getMethod());
         $this->assertSame('/', $requestAssertion->getRequestTarget());
         $this->assertSame('/', $requestAssertion->getUri()->getPath());
+        $this->assertSame(array(), $requestAssertion->getQueryParams());
         $this->assertSame('http://example.com/', (string)$requestAssertion->getUri());
         $this->assertSame('example.com', $requestAssertion->getHeaderLine('Host'));
         $this->assertSame('127.0.0.1', $serverParams['REMOTE_ADDR']);
@@ -2367,6 +2368,26 @@ class ServerTest extends TestCase
         $this->assertEquals('80', $serverParams['REMOTE_PORT']);
         $this->assertNotNull($serverParams['REQUEST_TIME']);
         $this->assertNotNull($serverParams['REQUEST_TIME_FLOAT']);
+    }
+
+    public function testQueryParametersWillBeAddedToRequest()
+    {
+        $requestValidation = null;
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use (&$requestValidation) {
+            $requestValidation = $request;
+            return new Response();
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET /foo.php?hello=world&test=bar HTTP/1.0\r\n\r\n";
+
+        $this->connection->emit('data', array($data));
+
+        $queryParams = $requestValidation->getQueryParams();
+
+        $this->assertEquals('world', $queryParams['hello']);
+        $this->assertEquals('bar', $queryParams['test']);
     }
 
     private function createGetRequest()

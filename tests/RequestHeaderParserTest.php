@@ -355,6 +355,23 @@ class RequestHeaderParserTest extends TestCase
         $this->assertArrayNotHasKey('REMOTE_PORT', $serverParams);
     }
 
+    public function testQueryParmetersWillBeSet()
+    {
+        $request = null;
+
+        $parser = new RequestHeaderParser();
+
+        $parser->on('headers', function ($parsedRequest) use (&$request) {
+            $request = $parsedRequest;
+        });
+
+        $parser->feed("GET /foo.php?hello=world&test=this HTTP/1.0\r\nHost: example.com\r\n\r\n");
+        $queryParams = $request->getQueryParams();
+
+        $this->assertEquals('world', $queryParams['hello']);
+        $this->assertEquals('this', $queryParams['test']);
+    }
+
     private function createGetRequest()
     {
         $data = "GET / HTTP/1.1\r\n";
