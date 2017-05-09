@@ -33,4 +33,15 @@ class Response extends Psr7Response
             $reason
         );
     }
+
+    /**
+     * Get connected client
+     *
+     * @return ConnectionInterface
+     */
+    public function getConnection()
+    {
+        return $this->conn;
+    }
+
 }
