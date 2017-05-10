@@ -225,7 +225,7 @@ For more details about the request object, check out the documentation of
 and
 [PSR-7 RequestInterface](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#32-psrhttpmessagerequestinterface).
 
-> Currently the cookies and uploaded files are not added by the
+> Currently the uploaded files are not added by the
   `Server`, but you can add these parameters by yourself using the given methods.
   The next versions of this project will cover these features.
 
@@ -377,6 +377,43 @@ Allowed).
   This implies that that a `2xx` (Successful) response to a `CONNECT` request
   can in fact use a streaming response body for the tunneled application data.
   See also [example #21](examples) for more details.
+
+The `getCookieParams(): string[]` method can be used to
+get all cookies sent with the current request.
+
+```php 
+$http = new Server($socket, function (ServerRequestInterface $request) {
+    $key = 'react\php';
+
+    if (isset($request->getCookieParams()[$key])) {
+        $body = "Your cookie value is: " . $request->getCookieParams()[$key];
+
+        return new Response(
+            200,
+            array('Content-Type' => 'text/plain'),
+            $body
+        );
+    }
+
+    return new Response(
+        200,
+        array(
+            'Content-Type' => 'text/plain',
+            'Set-Cookie' => urlencode($key) . '=' . urlencode('test;more')
+        ),
+        "Your cookie has been set."
+    );
+});
+```
+
+The above example will try to set a cookie on first access and
+will try to print the cookie value on all subsequent tries.
+Note how the example uses the `urlencode()` function to encode
+non-alphanumeric characters.
+This encoding is also used internally when decoding the name and value of cookies
+(which is in line with other implementations, such as PHP's cookie functions).
+
+See also [example #6](examples) for more details.
 
 ### Response
 
