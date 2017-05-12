@@ -3,13 +3,13 @@
 namespace React\Tests\Http;
 
 use React\Http\Response;
-use React\Stream\ReadableStream;
+use React\Stream\ThroughStream;
 
 class ResponseTest extends TestCase
 {
     public function testResponseBodyWillBeHttpBodyStream()
     {
-        $response = new Response(200, array(), new ReadableStream());
+        $response = new Response(200, array(), new ThroughStream());
         $this->assertInstanceOf('React\Http\HttpBodyStream', $response->getBody());
     }
 

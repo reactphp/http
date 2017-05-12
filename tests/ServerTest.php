@@ -5,7 +5,7 @@ namespace React\Tests\Http;
 use React\Http\Server;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Response;
-use React\Stream\ReadableStream;
+use React\Stream\ThroughStream;
 use React\Promise\Promise;
 
 class ServerTest extends TestCase
@@ -1611,7 +1611,7 @@ class ServerTest extends TestCase
 
     public function testResponseWillBeChunkDecodedByDefault()
     {
-        $stream = new ReadableStream();
+        $stream = new ThroughStream();
         $server = new Server($this->socket, function (ServerRequestInterface $request) use ($stream) {
             $response = new Response(200, array(), $stream);
             return \React\Promise\resolve($response);
@@ -1680,7 +1680,7 @@ class ServerTest extends TestCase
 
     public function testOnlyAllowChunkedEncoding()
     {
-        $stream = new ReadableStream();
+        $stream = new ThroughStream();
         $server = new Server($this->socket, function (ServerRequestInterface $request) use ($stream) {
             $response = new Response(
                 200,
@@ -1977,7 +1977,7 @@ class ServerTest extends TestCase
 
     public function testHttpBodyStreamAsBodyWillStreamData()
     {
-        $input = new ReadableStream();
+        $input = new ThroughStream();
 
         $server = new Server($this->socket, function (ServerRequestInterface $request) use ($input) {
             $response = new Response(200, array(), $input);
@@ -2012,7 +2012,7 @@ class ServerTest extends TestCase
 
     public function testHttpBodyStreamWithContentLengthWillStreamTillLength()
     {
-        $input = new ReadableStream();
+        $input = new ThroughStream();
 
         $server = new Server($this->socket, function (ServerRequestInterface $request) use ($input) {
             $response = new Response(200, array('Content-Length' => 5), $input);

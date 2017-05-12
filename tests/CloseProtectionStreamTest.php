@@ -3,7 +3,7 @@
 namespace React\Tests\Http;
 
 use React\Http\CloseProtectionStream;
-use React\Stream\ReadableStream;
+use React\Stream\ThroughStream;
 
 class CloseProtectionStreamTest extends TestCase
 {
@@ -19,7 +19,7 @@ class CloseProtectionStreamTest extends TestCase
 
     public function testErrorWontCloseStream()
     {
-        $input = new ReadableStream();
+        $input = new ThroughStream();
 
         $protection = new CloseProtectionStream($input);
         $protection->on('error', $this->expectCallableOnce());
@@ -44,7 +44,7 @@ class CloseProtectionStreamTest extends TestCase
 
     public function testInputStreamIsNotReadableAfterClose()
     {
-        $input = new ReadableStream();
+        $input = new ThroughStream();
 
         $protection = new CloseProtectionStream($input);
         $protection->on('close', $this->expectCallableOnce());
@@ -57,7 +57,7 @@ class CloseProtectionStreamTest extends TestCase
 
     public function testPipeStream()
     {
-        $input = new ReadableStream();
+        $input = new ThroughStream();
 
         $protection = new CloseProtectionStream($input);
         $dest = $this->getMockBuilder('React\Stream\WritableStreamInterface')->getMock();
@@ -69,7 +69,7 @@ class CloseProtectionStreamTest extends TestCase
 
     public function testStopEmittingDataAfterClose()
     {
-        $input = new ReadableStream();
+        $input = new ThroughStream();
 
         $protection = new CloseProtectionStream($input);
         $protection->on('data', $this->expectCallableNever());
@@ -86,7 +86,7 @@ class CloseProtectionStreamTest extends TestCase
 
     public function testErrorIsNeverCalledAfterClose()
     {
-        $input = new ReadableStream();
+        $input = new ThroughStream();
 
         $protection = new CloseProtectionStream($input);
         $protection->on('data', $this->expectCallableNever());
@@ -103,7 +103,7 @@ class CloseProtectionStreamTest extends TestCase
 
     public function testEndWontBeEmittedAfterClose()
     {
-        $input = new ReadableStream();
+        $input = new ThroughStream();
 
         $protection = new CloseProtectionStream($input);
         $protection->on('data', $this->expectCallableNever());
