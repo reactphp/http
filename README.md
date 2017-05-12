@@ -559,17 +559,33 @@ to the message if the same request would have used an (unconditional) `GET`.
   implements ReactPHP's
   [`DuplexStreamInterface`](https://github.com/reactphp/stream#duplexstreaminterface)
   (such as the `ThroughStream` in the above example).
-
+>
 > For *most* cases, this will simply only consume its readable side and forward
   (send) any data that is emitted by the stream, thus entirely ignoring the
   writable side of the stream.
-  If however this is a `2xx` (Successful) response to a `CONNECT` method, it
-  will also *write* data to the writable side of the stream.
+  If however this is either a `101` (Switching Protocols) response or a `2xx`
+  (Successful) response to a `CONNECT` method, it will also *write* data to the
+  writable side of the stream.
   This can be avoided by either rejecting all requests with the `CONNECT`
   method (which is what most *normal* origin HTTP servers would likely do) or
   or ensuring that only ever an instance of `ReadableStreamInterface` is
   used.
-  
+>
+> The `101` (Switching Protocols) response code is useful for the more advanced
+  `Upgrade` requests, such as upgrading to the WebSocket protocol or
+  implementing custom protocol logic that is out of scope of the HTTP specs and
+  this HTTP library.
+  If you want to handle the `Upgrade: WebSocket` header, you will likely want
+  to look into using [Ratchet](http://socketo.me/) instead.
+  If you want to handle a custom protocol, you will likely want to look into the
+  [HTTP specs](https://tools.ietf.org/html/rfc7230#section-6.7) and also see
+  [examples #31 and #32](examples) for more details.
+  In particular, the `101` (Switching Protocols) response code MUST NOT be used
+  unless you send an `Upgrade` response header value that is also present in
+  the corresponding HTTP/1.1 `Upgrade` request header value.
+  The server automatically takes care of sending a `Connection: upgrade`
+  header value in this case, so you don't have to.
+>
 > The `CONNECT` method is useful in a tunneling setup (HTTPS proxy) and not
   something most origin HTTP servers would want to care about.
   The HTTP specs define an opaque "tunneling mode" for this method and make no
