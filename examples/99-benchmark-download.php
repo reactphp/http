@@ -10,7 +10,9 @@ use React\EventLoop\Factory;
 use React\Socket\Server;
 use React\Http\Response;
 use Psr\Http\Message\ServerRequestInterface;
-use React\Stream\ReadableStream;
+use Evenement\EventEmitter;
+use React\Stream\ReadableStreamInterface;
+use React\Stream\WritableStreamInterface;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -18,12 +20,13 @@ $loop = Factory::create();
 $socket = new Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
 
 /** A readable stream that can emit a lot of data */
-class ChunkRepeater extends ReadableStream
+class ChunkRepeater extends EventEmitter implements ReadableStreamInterface
 {
     private $chunk;
     private $count;
     private $position = 0;
     private $paused = true;
+    private $closed = false;
 
     public function __construct($chunk, $count)
     {
@@ -38,7 +41,7 @@ class ChunkRepeater extends ReadableStream
 
     public function resume()
     {
-        if (!$this->paused) {
+        if (!$this->paused || $this->closed) {
             return;
         }
 
@@ -54,6 +57,28 @@ class ChunkRepeater extends ReadableStream
             $this->emit('end');
             $this->close();
         }
+    }
+
+    public function pipe(WritableStreamInterface $dest, array $options = array())
+    {
+        return;
+    }
+
+    public function isReadable()
+    {
+        return !$this->closed;
+    }
+
+    public function close()
+    {
+        if ($this->closed) {
+            return;
+        }
+
+        $this->closed = true;
+        $this->count = 0;
+        $this->paused = true;
+        $this->emit('close');
     }
 
     public function getSize()
