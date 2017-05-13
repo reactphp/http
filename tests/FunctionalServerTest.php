@@ -13,7 +13,7 @@ use Clue\React\Block;
 use React\Http\Response;
 use React\Socket\SecureServer;
 
-class FunctionServerTest extends TestCase
+class FunctionalServerTest extends TestCase
 {
     public function testPlainHttpOnRandomPort()
     {
@@ -26,7 +26,7 @@ class FunctionServerTest extends TestCase
         });
 
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
-            $conn->write("GET / HTTP/1.0\r\nHost: " . $conn->getRemoteAddress() . "\r\n\r\n");
+            $conn->write("GET / HTTP/1.0\r\nHost: " . noScheme($conn->getRemoteAddress()) . "\r\n\r\n");
 
             return BufferedSink::createPromise($conn);
         });
@@ -34,7 +34,7 @@ class FunctionServerTest extends TestCase
         $response = Block\await($result, $loop, 1.0);
 
         $this->assertContains("HTTP/1.0 200 OK", $response);
-        $this->assertContains('http://' . $socket->getAddress() . '/', $response);
+        $this->assertContains('http://' . noScheme($socket->getAddress()) . '/', $response);
 
         $socket->close();
     }
@@ -58,7 +58,7 @@ class FunctionServerTest extends TestCase
         $response = Block\await($result, $loop, 1.0);
 
         $this->assertContains("HTTP/1.0 200 OK", $response);
-        $this->assertContains('http://' . $socket->getAddress() . '/', $response);
+        $this->assertContains('http://' . noScheme($socket->getAddress()) . '/', $response);
 
         $socket->close();
     }
@@ -106,8 +106,8 @@ class FunctionServerTest extends TestCase
             return new Response(200, array(), (string)$request->getUri());
         });
 
-        $result = $connector->connect('tls://' . $socket->getAddress())->then(function (ConnectionInterface $conn) {
-            $conn->write("GET / HTTP/1.0\r\nHost: " . $conn->getRemoteAddress() . "\r\n\r\n");
+        $result = $connector->connect('tls://' . noScheme($socket->getAddress()))->then(function (ConnectionInterface $conn) {
+            $conn->write("GET / HTTP/1.0\r\nHost: " . noScheme($conn->getRemoteAddress()) . "\r\n\r\n");
 
             return BufferedSink::createPromise($conn);
         });
@@ -115,7 +115,7 @@ class FunctionServerTest extends TestCase
         $response = Block\await($result, $loop, 1.0);
 
         $this->assertContains("HTTP/1.0 200 OK", $response);
-        $this->assertContains('https://' . $socket->getAddress() . '/', $response);
+        $this->assertContains('https://' . noScheme($socket->getAddress()) . '/', $response);
 
         $socket->close();
     }
@@ -139,7 +139,7 @@ class FunctionServerTest extends TestCase
             return new Response(200, array(), (string)$request->getUri());
         });
 
-        $result = $connector->connect('tls://' . $socket->getAddress())->then(function (ConnectionInterface $conn) {
+        $result = $connector->connect('tls://' . noScheme($socket->getAddress()))->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\n\r\n");
 
             return BufferedSink::createPromise($conn);
@@ -148,7 +148,7 @@ class FunctionServerTest extends TestCase
         $response = Block\await($result, $loop, 1.0);
 
         $this->assertContains("HTTP/1.0 200 OK", $response);
-        $this->assertContains('https://' . $socket->getAddress() . '/', $response);
+        $this->assertContains('https://' . noScheme($socket->getAddress()) . '/', $response);
 
         $socket->close();
     }
@@ -232,7 +232,7 @@ class FunctionServerTest extends TestCase
             return new Response(200, array(), (string)$request->getUri());
         });
 
-        $result = $connector->connect('tls://' . $socket->getAddress())->then(function (ConnectionInterface $conn) {
+        $result = $connector->connect('tls://' . noScheme($socket->getAddress()))->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n");
 
             return BufferedSink::createPromise($conn);
@@ -269,7 +269,7 @@ class FunctionServerTest extends TestCase
             return new Response(200, array(), (string)$request->getUri());
         });
 
-        $result = $connector->connect('tls://' . $socket->getAddress())->then(function (ConnectionInterface $conn) {
+        $result = $connector->connect('tls://' . noScheme($socket->getAddress()))->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\n\r\n");
 
             return BufferedSink::createPromise($conn);
@@ -298,7 +298,7 @@ class FunctionServerTest extends TestCase
         });
 
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
-            $conn->write("GET / HTTP/1.0\r\nHost: " . $conn->getRemoteAddress() . "\r\n\r\n");
+            $conn->write("GET / HTTP/1.0\r\nHost: " . noScheme($conn->getRemoteAddress()) . "\r\n\r\n");
 
             return BufferedSink::createPromise($conn);
         });
@@ -334,8 +334,8 @@ class FunctionServerTest extends TestCase
             return new Response(200, array(), (string)$request->getUri() . 'x' . $request->getHeaderLine('Host'));
         });
 
-        $result = $connector->connect('tls://' . $socket->getAddress())->then(function (ConnectionInterface $conn) {
-            $conn->write("GET / HTTP/1.0\r\nHost: " . $conn->getRemoteAddress() . "\r\n\r\n");
+        $result = $connector->connect('tls://' . noScheme($socket->getAddress()))->then(function (ConnectionInterface $conn) {
+            $conn->write("GET / HTTP/1.0\r\nHost: " . noScheme($conn->getRemoteAddress()) . "\r\n\r\n");
 
             return BufferedSink::createPromise($conn);
         });
@@ -347,4 +347,13 @@ class FunctionServerTest extends TestCase
 
         $socket->close();
     }
+}
+
+function noScheme($uri)
+{
+    $pos = strpos($uri, '://');
+    if ($pos !== false) {
+        $uri = substr($uri, $pos + 3);
+    }
+    return $uri;
 }
