@@ -15,6 +15,7 @@ use React\Stream\ReadableStreamInterface;
 use React\EventLoop\LoopInterface;
 use React\Promise\Promise;
 use React\Promise\PromiseInterface;
+use React\Promise\Stream;
 
 class FunctionalServerTest extends TestCase
 {
@@ -31,10 +32,10 @@ class FunctionalServerTest extends TestCase
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\nHost: " . noScheme($conn->getRemoteAddress()) . "\r\n\r\n");
 
-            return $conn;
+            return Stream\buffer($conn);
         });
 
-        $response = $this->buffer($result, $loop, 1.0);
+        $response = Block\await($result, $loop, 1.0);
 
         $this->assertContains("HTTP/1.0 200 OK", $response);
         $this->assertContains('http://' . noScheme($socket->getAddress()) . '/', $response);
@@ -55,10 +56,10 @@ class FunctionalServerTest extends TestCase
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\n\r\n");
 
-            return $conn;
+            return Stream\buffer($conn);
         });
 
-        $response = $this->buffer($result, $loop, 1.0);
+        $response = Block\await($result, $loop, 1.0);
 
         $this->assertContains("HTTP/1.0 200 OK", $response);
         $this->assertContains('http://' . noScheme($socket->getAddress()) . '/', $response);
@@ -79,10 +80,10 @@ class FunctionalServerTest extends TestCase
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\nHost: localhost:1000\r\n\r\n");
 
-            return $conn;
+            return Stream\buffer($conn);
         });
 
-        $response = $this->buffer($result, $loop, 1.0);
+        $response = Block\await($result, $loop, 1.0);
 
         $this->assertContains("HTTP/1.0 200 OK", $response);
         $this->assertContains('http://localhost:1000/', $response);
@@ -112,10 +113,10 @@ class FunctionalServerTest extends TestCase
         $result = $connector->connect('tls://' . noScheme($socket->getAddress()))->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\nHost: " . noScheme($conn->getRemoteAddress()) . "\r\n\r\n");
 
-            return $conn;
+            return Stream\buffer($conn);
         });
 
-        $response = $this->buffer($result, $loop, 1.0);
+        $response = Block\await($result, $loop, 1.0);
 
         $this->assertContains("HTTP/1.0 200 OK", $response);
         $this->assertContains('https://' . noScheme($socket->getAddress()) . '/', $response);
@@ -145,10 +146,10 @@ class FunctionalServerTest extends TestCase
         $result = $connector->connect('tls://' . noScheme($socket->getAddress()))->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\n\r\n");
 
-            return $conn;
+            return Stream\buffer($conn);
         });
 
-        $response = $this->buffer($result, $loop, 1.0);
+        $response = Block\await($result, $loop, 1.0);
 
         $this->assertContains("HTTP/1.0 200 OK", $response);
         $this->assertContains('https://' . noScheme($socket->getAddress()) . '/', $response);
@@ -173,10 +174,10 @@ class FunctionalServerTest extends TestCase
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n");
 
-            return $conn;
+            return Stream\buffer($conn);
         });
 
-        $response = $this->buffer($result, $loop, 1.0);
+        $response = Block\await($result, $loop, 1.0);
 
         $this->assertContains("HTTP/1.0 200 OK", $response);
         $this->assertContains('http://127.0.0.1/', $response);
@@ -201,10 +202,10 @@ class FunctionalServerTest extends TestCase
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\n\r\n");
 
-            return $conn;
+            return Stream\buffer($conn);
         });
 
-        $response = $this->buffer($result, $loop, 1.0);
+        $response = Block\await($result, $loop, 1.0);
 
         $this->assertContains("HTTP/1.0 200 OK", $response);
         $this->assertContains('http://127.0.0.1/', $response);
@@ -238,10 +239,10 @@ class FunctionalServerTest extends TestCase
         $result = $connector->connect('tls://' . noScheme($socket->getAddress()))->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n");
 
-            return $conn;
+            return Stream\buffer($conn);
         });
 
-        $response = $this->buffer($result, $loop, 1.0);
+        $response = Block\await($result, $loop, 1.0);
 
         $this->assertContains("HTTP/1.0 200 OK", $response);
         $this->assertContains('https://127.0.0.1/', $response);
@@ -275,10 +276,10 @@ class FunctionalServerTest extends TestCase
         $result = $connector->connect('tls://' . noScheme($socket->getAddress()))->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\n\r\n");
 
-            return $conn;
+            return Stream\buffer($conn);
         });
 
-        $response = $this->buffer($result, $loop, 1.0);
+        $response = Block\await($result, $loop, 1.0);
 
         $this->assertContains("HTTP/1.0 200 OK", $response);
         $this->assertContains('https://127.0.0.1/', $response);
@@ -303,10 +304,10 @@ class FunctionalServerTest extends TestCase
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\nHost: " . noScheme($conn->getRemoteAddress()) . "\r\n\r\n");
 
-            return $conn;
+            return Stream\buffer($conn);
         });
 
-        $response = $this->buffer($result, $loop, 1.0);
+        $response = Block\await($result, $loop, 1.0);
 
         $this->assertContains("HTTP/1.0 200 OK", $response);
         $this->assertContains('http://127.0.0.1:443/', $response);
@@ -340,39 +341,15 @@ class FunctionalServerTest extends TestCase
         $result = $connector->connect('tls://' . noScheme($socket->getAddress()))->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\nHost: " . noScheme($conn->getRemoteAddress()) . "\r\n\r\n");
 
-            return $conn;
+            return Stream\buffer($conn);
         });
 
-        $response = $this->buffer($result, $loop, 1.0);
+        $response = Block\await($result, $loop, 1.0);
 
         $this->assertContains("HTTP/1.0 200 OK", $response);
         $this->assertContains('https://127.0.0.1:80/', $response);
 
         $socket->close();
-    }
-
-    protected function buffer(PromiseInterface $promise, LoopInterface $loop, $timeout)
-    {
-        return Block\await($promise->then(function (ReadableStreamInterface $stream) {
-            return new Promise(
-                function ($resolve, $reject) use ($stream) {
-                    $buffer = '';
-                    $stream->on('data', function ($chunk) use (&$buffer) {
-                        $buffer .= $chunk;
-                    });
-
-                    $stream->on('error', $reject);
-
-                    $stream->on('close', function () use (&$buffer, $resolve) {
-                        $resolve($buffer);
-                    });
-                },
-                function () use ($stream) {
-                    $stream->close();
-                    throw new \RuntimeException();
-                }
-            );
-        }), $loop, $timeout);
     }
 }
 
