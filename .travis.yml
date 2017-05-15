@@ -16,6 +16,8 @@ matrix:
     - php: 7.0
       env:
         - DEPENDENCIES=lowest
+  allow_failures:
+    - php: hhvm
 
 install:
   - composer install --no-interaction
