@@ -2,14 +2,14 @@
 
 namespace React\Tests\Http;
 
-use React\Stream\ReadableStream;
+use React\Stream\ThroughStream;
 use React\Http\ChunkedDecoder;
 
 class ChunkedDecoderTest extends TestCase
 {
     public function setUp()
     {
-        $this->input = new ReadableStream();
+        $this->input = new ThroughStream();
         $this->parser = new ChunkedDecoder($this->input);
     }
 
@@ -386,7 +386,7 @@ class ChunkedDecoderTest extends TestCase
 
     public function testOutputStreamCanCloseInputStream()
     {
-        $input = new ReadableStream();
+        $input = new ThroughStream();
         $input->on('close', $this->expectCallableOnce());
 
         $stream = new ChunkedDecoder($input);

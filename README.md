@@ -477,11 +477,11 @@ The `Response` class in this project supports to add an instance which implement
 for the response body.
 So you are able stream data directly into the response body.
 Note that other implementations of the `PSR-7 ResponseInterface` likely
-only support string.
+only support strings.
 
 ```php
 $server = new Server($socket, function (ServerRequestInterface $request) use ($loop) {
-    $stream = new ReadableStream();
+    $stream = new ThroughStream();
 
     $timer = $loop->addPeriodicTimer(0.5, function () use ($stream) {
         $stream->emit('data', array(microtime(true) . PHP_EOL));
@@ -513,7 +513,7 @@ pass this header yourself.
 If you know the length of your stream body, you MAY specify it like this instead:
 
 ```php
-$stream = new ReadableStream()
+$stream = new ThroughStream()
 $server = new Server($socket, function (ServerRequestInterface $request) use ($loop, $stream) {
     return new Response(
         200,

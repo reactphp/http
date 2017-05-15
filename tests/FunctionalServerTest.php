@@ -8,10 +8,14 @@ use React\Http\Server;
 use Psr\Http\Message\RequestInterface;
 use React\Socket\Connector;
 use React\Socket\ConnectionInterface;
-use React\Stream\BufferedSink;
 use Clue\React\Block;
 use React\Http\Response;
 use React\Socket\SecureServer;
+use React\Stream\ReadableStreamInterface;
+use React\EventLoop\LoopInterface;
+use React\Promise\Promise;
+use React\Promise\PromiseInterface;
+use React\Promise\Stream;
 
 class FunctionalServerTest extends TestCase
 {
@@ -28,7 +32,7 @@ class FunctionalServerTest extends TestCase
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\nHost: " . noScheme($conn->getRemoteAddress()) . "\r\n\r\n");
 
-            return BufferedSink::createPromise($conn);
+            return Stream\buffer($conn);
         });
 
         $response = Block\await($result, $loop, 1.0);
@@ -52,7 +56,7 @@ class FunctionalServerTest extends TestCase
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\n\r\n");
 
-            return BufferedSink::createPromise($conn);
+            return Stream\buffer($conn);
         });
 
         $response = Block\await($result, $loop, 1.0);
@@ -76,7 +80,7 @@ class FunctionalServerTest extends TestCase
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\nHost: localhost:1000\r\n\r\n");
 
-            return BufferedSink::createPromise($conn);
+            return Stream\buffer($conn);
         });
 
         $response = Block\await($result, $loop, 1.0);
@@ -109,7 +113,7 @@ class FunctionalServerTest extends TestCase
         $result = $connector->connect('tls://' . noScheme($socket->getAddress()))->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\nHost: " . noScheme($conn->getRemoteAddress()) . "\r\n\r\n");
 
-            return BufferedSink::createPromise($conn);
+            return Stream\buffer($conn);
         });
 
         $response = Block\await($result, $loop, 1.0);
@@ -142,7 +146,7 @@ class FunctionalServerTest extends TestCase
         $result = $connector->connect('tls://' . noScheme($socket->getAddress()))->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\n\r\n");
 
-            return BufferedSink::createPromise($conn);
+            return Stream\buffer($conn);
         });
 
         $response = Block\await($result, $loop, 1.0);
@@ -170,7 +174,7 @@ class FunctionalServerTest extends TestCase
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n");
 
-            return BufferedSink::createPromise($conn);
+            return Stream\buffer($conn);
         });
 
         $response = Block\await($result, $loop, 1.0);
@@ -198,7 +202,7 @@ class FunctionalServerTest extends TestCase
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\n\r\n");
 
-            return BufferedSink::createPromise($conn);
+            return Stream\buffer($conn);
         });
 
         $response = Block\await($result, $loop, 1.0);
@@ -235,7 +239,7 @@ class FunctionalServerTest extends TestCase
         $result = $connector->connect('tls://' . noScheme($socket->getAddress()))->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n");
 
-            return BufferedSink::createPromise($conn);
+            return Stream\buffer($conn);
         });
 
         $response = Block\await($result, $loop, 1.0);
@@ -272,7 +276,7 @@ class FunctionalServerTest extends TestCase
         $result = $connector->connect('tls://' . noScheme($socket->getAddress()))->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\n\r\n");
 
-            return BufferedSink::createPromise($conn);
+            return Stream\buffer($conn);
         });
 
         $response = Block\await($result, $loop, 1.0);
@@ -300,7 +304,7 @@ class FunctionalServerTest extends TestCase
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\nHost: " . noScheme($conn->getRemoteAddress()) . "\r\n\r\n");
 
-            return BufferedSink::createPromise($conn);
+            return Stream\buffer($conn);
         });
 
         $response = Block\await($result, $loop, 1.0);
@@ -337,7 +341,7 @@ class FunctionalServerTest extends TestCase
         $result = $connector->connect('tls://' . noScheme($socket->getAddress()))->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\nHost: " . noScheme($conn->getRemoteAddress()) . "\r\n\r\n");
 
-            return BufferedSink::createPromise($conn);
+            return Stream\buffer($conn);
         });
 
         $response = Block\await($result, $loop, 1.0);

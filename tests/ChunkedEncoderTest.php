@@ -2,7 +2,7 @@
 
 namespace React\Tests\Http;
 
-use React\Stream\ReadableStream;
+use React\Stream\ThroughStream;
 use React\Http\ChunkedEncoder;
 
 class ChunkedEncoderTest extends TestCase
@@ -12,7 +12,7 @@ class ChunkedEncoderTest extends TestCase
 
     public function setUp()
     {
-        $this->input = new ReadableStream();
+        $this->input = new ThroughStream();
         $this->chunkedStream = new ChunkedEncoder($this->input);
     }
 
