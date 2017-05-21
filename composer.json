@@ -8,7 +8,7 @@
         "ringcentral/psr7": "^1.2",
         "react/socket": "^1.0 || ^0.8 || ^0.7 || ^0.6 || ^0.5",
         "react/stream": "^1.0 || ^0.7 || ^0.6 || ^0.5 || ^0.4.6",
-        "react/promise": "^2.0 || ^1.1",
+        "react/promise": "^2.1 || ^1.2.1",
         "evenement/evenement": "^2.0 || ^1.0"
     },
     "autoload": {

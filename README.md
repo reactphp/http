@@ -471,6 +471,11 @@ This example shows that you need a promise,
 if your response needs time to created.
 The `ReactPHP Promise` will resolve in a `Response` object when the request
 body ends.
+If the client closes the connection while the promise is still pending, the
+promise will automatically be cancelled.
+The promise cancellation handler can be used to clean up any pending resources
+allocated in this case (if applicable).
+If a promise is resolved after the client closes, it will simply be ignored.
 
 The `Response` class in this project supports to add an instance which implements the
 [ReactPHP ReadableStreamInterface](https://github.com/reactphp/stream#readablestreaminterface)
