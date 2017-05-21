@@ -32,7 +32,7 @@ $server = new \React\Http\Server($socket, function (ServerRequestInterface $requ
     });
 
     // try to connect to given target host
-    $promise = $connector->connect($request->getRequestTarget())->then(
+    return $connector->connect($request->getRequestTarget())->then(
         function (ConnectionInterface $remote) use ($body, &$buffer) {
             // connection established => forward data
             $body->pipe($remote);
@@ -57,13 +57,6 @@ $server = new \React\Http\Server($socket, function (ServerRequestInterface $requ
             );
         }
     );
-
-    // cancel pending connection if request closes prematurely
-    $body->on('close', function () use ($promise) {
-        $promise->cancel();
-    });
-
-    return $promise;
 });
 
 //$server->on('error', 'printf');
