@@ -423,7 +423,7 @@ class ServerTest extends TestCase
     {
         $server = new Server($this->socket, function (ServerRequestInterface $request) {
             $request->getBody()->pause();
-            return \React\Promise\resolve(new Response());
+            return new Response();
         });
 
         $this->connection->expects($this->once())->method('pause');
@@ -442,7 +442,7 @@ class ServerTest extends TestCase
     {
         $server = new Server($this->socket, function (ServerRequestInterface $request) {
             $request->getBody()->resume();
-            return \React\Promise\resolve(new Response());
+            return new Response();
         });
 
         $this->connection->expects($this->once())->method('resume');
@@ -456,7 +456,7 @@ class ServerTest extends TestCase
     {
         $server = new Server($this->socket, function (ServerRequestInterface $request) {
             $request->getBody()->close();
-            return \React\Promise\resolve(new Response());
+            return new Response();
         });
 
         $this->connection->expects($this->once())->method('pause');
@@ -472,7 +472,7 @@ class ServerTest extends TestCase
             $request->getBody()->close();
             $request->getBody()->pause();#
 
-            return \React\Promise\resolve(new Response());
+            return new Response();
         });
 
         $this->connection->expects($this->once())->method('pause');
@@ -488,7 +488,7 @@ class ServerTest extends TestCase
             $request->getBody()->close();
             $request->getBody()->resume();
 
-            return \React\Promise\resolve(new Response());
+            return new Response();
         });
 
         $this->connection->expects($this->once())->method('pause');
@@ -506,7 +506,7 @@ class ServerTest extends TestCase
         $server = new Server($this->socket, function (ServerRequestInterface $request) use ($never) {
             $request->getBody()->on('data', $never);
 
-            return \React\Promise\resolve(new Response());
+            return new Response();
         });
 
         $this->socket->emit('connection', array($this->connection));
@@ -522,7 +522,7 @@ class ServerTest extends TestCase
         $server = new Server($this->socket, function (ServerRequestInterface $request) use ($once) {
             $request->getBody()->on('data', $once);
 
-            return \React\Promise\resolve(new Response());
+            return new Response();
         });
 
         $this->socket->emit('connection', array($this->connection));
@@ -543,7 +543,7 @@ class ServerTest extends TestCase
         $server = new Server($this->socket, function (ServerRequestInterface $request) use ($once) {
             $request->getBody()->on('data', $once);
 
-            return \React\Promise\resolve(new Response());
+            return new Response();
         });
 
         $this->socket->emit('connection', array($this->connection));
@@ -563,7 +563,7 @@ class ServerTest extends TestCase
     public function testResponseContainsPoweredByHeader()
     {
         $server = new Server($this->socket, function (ServerRequestInterface $request) {
-            return \React\Promise\resolve(new Response());
+            return new Response();
         });
 
         $buffer = '';
@@ -585,6 +585,65 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
 
         $this->assertContains("\r\nX-Powered-By: React/alpha\r\n", $buffer);
+    }
+
+    public function testPendingPromiseWillNotSendAnything()
+    {
+        $never = $this->expectCallableNever();
+
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use ($never) {
+            return new Promise(function () { }, $never);
+        });
+
+        $buffer = '';
+
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+        $this->connection->emit('data', array($data));
+
+        $this->assertEquals('', $buffer);
+    }
+
+    public function testPendingPromiseWillBeCancelledIfConnectionCloses()
+    {
+        $once = $this->expectCallableOnce();
+
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use ($once) {
+            return new Promise(function () { }, $once);
+        });
+
+        $buffer = '';
+
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+        $this->connection->emit('data', array($data));
+        $this->connection->emit('close');
+
+        $this->assertEquals('', $buffer);
     }
 
     public function testResponseContainsSameRequestProtocolVersionAndChunkedBodyForHttp11()

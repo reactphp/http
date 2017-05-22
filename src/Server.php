@@ -10,6 +10,7 @@ use Psr\Http\Message\ResponseInterface;
 use React\Promise\Promise;
 use RingCentral\Psr7 as Psr7Implementation;
 use Psr\Http\Message\ServerRequestInterface;
+use React\Promise\CancellablePromiseInterface;
 
 /**
  * The `Server` class is responsible for handling incoming connections and then
@@ -210,9 +211,18 @@ class Server extends EventEmitter
         }
 
         $callback = $this->callback;
-        $promise = new Promise(function ($resolve, $reject) use ($callback, $request) {
-            $resolve($callback($request));
+        $cancel = null;
+        $promise = new Promise(function ($resolve, $reject) use ($callback, $request, &$cancel) {
+            $cancel = $callback($request);
+            $resolve($cancel);
         });
+
+        // cancel pending promise once connection closes
+        if ($cancel instanceof CancellablePromiseInterface) {
+            $conn->on('close', function () use ($cancel) {
+                $cancel->cancel();
+            });
+        }
 
         $that = $this;
         $promise->then(
