@@ -79,6 +79,8 @@ class RequestHeaderParser extends EventEmitter
                 $originalTarget = $parts[1];
                 $parts[1] = '/';
                 $headers = implode(' ', $parts);
+            } else {
+                throw new \InvalidArgumentException('CONNECT method MUST use authority-form request target');
             }
         }
 
