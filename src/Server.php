@@ -162,13 +162,6 @@ class Server extends EventEmitter
         $contentLength = 0;
         $stream = new CloseProtectionStream($conn);
         if ($request->getMethod() === 'CONNECT') {
-            // CONNECT method MUST use authority-form request target
-            $parts = parse_url('tcp://' . $request->getRequestTarget());
-            if (!isset($parts['scheme'], $parts['host'], $parts['port']) || count($parts) !== 3) {
-                $this->emit('error', array(new \InvalidArgumentException('CONNECT method MUST use authority-form request target')));
-                return $this->writeError($conn, 400);
-            }
-
             // CONNECT uses undelimited body until connection closes
             $request = $request->withoutHeader('Transfer-Encoding');
             $request = $request->withoutHeader('Content-Length');
