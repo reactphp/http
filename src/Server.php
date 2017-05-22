@@ -11,6 +11,7 @@ use React\Promise\Promise;
 use RingCentral\Psr7 as Psr7Implementation;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Promise\CancellablePromiseInterface;
+use React\Stream\WritableStreamInterface;
 
 /**
  * The `Server` class is responsible for handling incoming connections and then
@@ -161,18 +162,7 @@ class Server extends EventEmitter
     {
         $contentLength = 0;
         $stream = new CloseProtectionStream($conn);
-        if ($request->getMethod() === 'CONNECT') {
-            // CONNECT uses undelimited body until connection closes
-            $request = $request->withoutHeader('Transfer-Encoding');
-            $request = $request->withoutHeader('Content-Length');
-            $contentLength = null;
-
-            // emit end event before the actual close event
-            $stream->on('close', function () use ($stream) {
-                $stream->emit('end');
-            });
-        } else if ($request->hasHeader('Transfer-Encoding')) {
-
+        if ($request->hasHeader('Transfer-Encoding')) {
             if (strtolower($request->getHeaderLine('Transfer-Encoding')) !== 'chunked') {
                 $this->emit('error', array(new \InvalidArgumentException('Only chunked-encoding is allowed for Transfer-Encoding')));
                 return $this->writeError($conn, 501, $request);
@@ -320,6 +310,24 @@ class Server extends EventEmitter
         // response to HEAD and 1xx, 204 and 304 responses MUST NOT include a body
         if ($request->getMethod() === 'HEAD' || ($code >= 100 && $code < 200) || $code === 204 || $code === 304) {
             $response = $response->withBody(Psr7Implementation\stream_for(''));
+        }
+
+        // 2xx reponse to CONNECT forwards tunneled application data through duplex stream
+        $body = $response->getBody();
+        if ($request->getMethod() === 'CONNECT' && $code >= 200 && $code < 300 && $body instanceof HttpBodyStream && $body->input instanceof WritableStreamInterface) {
+            if ($request->getBody()->isReadable()) {
+                // request is still streaming => wait for request close before forwarding following data from connection
+                $request->getBody()->on('close', function () use ($connection, $body) {
+                    if ($body->input->isWritable()) {
+                        $connection->pipe($body->input);
+                        $connection->resume();
+                    }
+                });
+            } elseif ($body->input->isWritable()) {
+                // request already closed => forward following data from connection
+                $connection->pipe($body->input);
+                $connection->resume();
+            }
         }
 
         $this->handleResponseBody($response, $connection);

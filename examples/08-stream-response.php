@@ -12,6 +12,10 @@ $loop = Factory::create();
 $socket = new Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
 
 $server = new \React\Http\Server($socket, function (ServerRequestInterface $request) use ($loop) {
+    if ($request->getMethod() !== 'GET' || $request->getUri()->getPath() !== '/') {
+        return new Response(404);
+    }
+
     $stream = new ThroughStream();
 
     $timer = $loop->addPeriodicTimer(0.5, function () use ($stream) {

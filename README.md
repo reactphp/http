@@ -370,13 +370,6 @@ Allowed).
   Note that if you want to handle this method, the client MAY send a different
   request-target than the `Host` header value (such as removing default ports)
   and the request-target MUST take precendence when forwarding.
-  The HTTP specs define an opaque "tunneling mode" for this method and make no
-  use of the message body.
-  For consistency reasons, this library uses the message body of the request and
-  response for tunneled application data.
-  This implies that that a `2xx` (Successful) response to a `CONNECT` request
-  can in fact use a streaming response body for the tunneled application data.
-  See also [example #21](examples) for more details.
 
 The `getCookieParams(): string[]` method can be used to
 get all cookies sent with the current request.
@@ -562,14 +555,35 @@ Modified) status code MAY include these headers even though
 the message does not contain a response body, because these header would apply
 to the message if the same request would have used an (unconditional) `GET`.
 
+> Note that special care has to be taken if you use a body stream instance that
+  implements ReactPHP's
+  [`DuplexStreamInterface`](https://github.com/reactphp/stream#duplexstreaminterface)
+  (such as the `ThroughStream` in the above example).
+
+> For *most* cases, this will simply only consume its readable side and forward
+  (send) any data that is emitted by the stream, thus entirely ignoring the
+  writable side of the stream.
+  If however this is a `2xx` (Successful) response to a `CONNECT` method, it
+  will also *write* data to the writable side of the stream.
+  This can be avoided by either rejecting all requests with the `CONNECT`
+  method (which is what most *normal* origin HTTP servers would likely do) or
+  or ensuring that only ever an instance of `ReadableStreamInterface` is
+  used.
+  
 > The `CONNECT` method is useful in a tunneling setup (HTTPS proxy) and not
-  something most HTTP servers would want to care about.
+  something most origin HTTP servers would want to care about.
   The HTTP specs define an opaque "tunneling mode" for this method and make no
   use of the message body.
-  For consistency reasons, this library uses the message body of the request and
-  response for tunneled application data.
+  For consistency reasons, this library uses a `DuplexStreamInterface` in the
+  response body for tunneled application data.
   This implies that that a `2xx` (Successful) response to a `CONNECT` request
-  can in fact use a streaming response body for the tunneled application data.
+  can in fact use a streaming response body for the tunneled application data,
+  so that any raw data the client sends over the connection will be piped
+  through the writable stream for consumption.
+  Note that while the HTTP specs make no use of the request body for `CONNECT`
+  requests, one may still be present. Normal request body processing applies
+  here and the connection will only turn to "tunneling mode" after the request
+  body has been processed (which should be empty in most cases).
   See also [example #22](examples) for more details.
 
 A `Date` header will be automatically added with the system date and time if none is given.
