@@ -507,6 +507,9 @@ This is just a example you could use of the streaming,
 you could also send a big amount of data via little chunks 
 or use it for body data that needs to calculated.
 
+If the request handler resolves with a response stream that is already closed,
+it will simply send an empty response body.
+
 If the response body is a `string`, a `Content-Length` header will be added
 automatically.
 If the response body is a ReactPHP `ReadableStreamInterface` and you do not

@@ -339,15 +339,22 @@ class Server extends EventEmitter
             return $connection->end();
         }
 
-        $body = $response->getBody();
-        $stream = $body;
-
-        if ($response->getHeaderLine('Transfer-Encoding') === 'chunked') {
-            $stream = new ChunkedEncoder($body);
-        }
+        $stream = $response->getBody();
 
         $connection->write(Psr7Implementation\str($response));
-        $stream->pipe($connection);
+        if ($stream->isReadable()) {
+            if ($response->getHeaderLine('Transfer-Encoding') === 'chunked') {
+                $stream = new ChunkedEncoder($stream);
+            }
+
+            $stream->pipe($connection);
+        } else {
+            if ($response->getHeaderLine('Transfer-Encoding') === 'chunked') {
+                $connection->write("0\r\n\r\n");
+            }
+
+            $connection->end();
+        }
     }
 
     /**

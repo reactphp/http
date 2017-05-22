@@ -16,6 +16,7 @@ use React\EventLoop\LoopInterface;
 use React\Promise\Promise;
 use React\Promise\PromiseInterface;
 use React\Promise\Stream;
+use React\Stream\ThroughStream;
 
 class FunctionalServerTest extends TestCase
 {
@@ -348,6 +349,33 @@ class FunctionalServerTest extends TestCase
 
         $this->assertContains("HTTP/1.0 200 OK", $response);
         $this->assertContains('https://127.0.0.1:80/', $response);
+
+        $socket->close();
+    }
+
+    public function testClosedStreamFromRequestHandlerWillBeSendEmptyBody()
+    {
+        $loop = Factory::create();
+        $socket = new Socket(0, $loop);
+        $connector = new Connector($loop);
+
+        $stream = new ThroughStream();
+        $stream->close();
+
+        $server = new Server($socket, function (RequestInterface $request) use ($stream) {
+            return new Response(200, array(), $stream);
+        });
+
+        $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) use ($loop) {
+            $conn->write("GET / HTTP/1.0\r\n\r\n");
+
+            return Stream\buffer($conn);
+        });
+
+        $response = Block\await($result, $loop, 1.0);
+
+        $this->assertStringStartsWith("HTTP/1.0 200 OK", $response);
+        $this->assertStringEndsWith("\r\n\r\n", $response);
 
         $socket->close();
     }

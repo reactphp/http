@@ -646,6 +646,68 @@ class ServerTest extends TestCase
         $this->assertEquals('', $buffer);
     }
 
+    public function testStreamAlreadyClosedWillSendEmptyBodyChunkedEncoded()
+    {
+        $stream = new ThroughStream();
+        $stream->close();
+
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use ($stream) {
+            return new Response(200, array(), $stream);
+        });
+
+        $buffer = '';
+
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertStringStartsWith("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertStringEndsWith("\r\n\r\n0\r\n\r\n", $buffer);
+    }
+
+    public function testStreamAlreadyClosedWillSendEmptyBodyPlainHttp10()
+    {
+        $stream = new ThroughStream();
+        $stream->close();
+
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use ($stream) {
+            return new Response(200, array(), $stream);
+        });
+
+        $buffer = '';
+
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.0\r\nHost: localhost\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertStringStartsWith("HTTP/1.0 200 OK\r\n", $buffer);
+        $this->assertStringEndsWith("\r\n\r\n", $buffer);
+}
+
     public function testResponseContainsSameRequestProtocolVersionAndChunkedBodyForHttp11()
     {
         $server = new Server($this->socket, function (ServerRequestInterface $request) {
