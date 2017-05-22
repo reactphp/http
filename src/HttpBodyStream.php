@@ -17,7 +17,7 @@ use React\Stream\Util;
  */
 class HttpBodyStream extends EventEmitter implements StreamInterface, ReadableStreamInterface
 {
-    private $input;
+    public $input;
     private $closed = false;
     private $size;
 

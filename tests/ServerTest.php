@@ -806,6 +806,54 @@ class ServerTest extends TestCase
         $this->connection->emit('close');
     }
 
+    public function testConnectResponseStreamWillPipeDataToConnection()
+    {
+        $stream = new ThroughStream();
+
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use ($stream) {
+            return new Response(200, array(), $stream);
+        });
+
+        $buffer = '';
+
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "CONNECT example.com:80 HTTP/1.1\r\nHost: example.com:80\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $stream->write('hello');
+        $stream->write('world');
+
+        $this->assertStringEndsWith("\r\n\r\nhelloworld", $buffer);
+    }
+
+    public function testConnectResponseStreamWillPipeDataFromConnection()
+    {
+        $stream = new ThroughStream();
+
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use ($stream) {
+            return new Response(200, array(), $stream);
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $this->connection->expects($this->once())->method('pipe')->with($stream);
+
+        $data = "CONNECT example.com:80 HTTP/1.1\r\nHost: example.com:80\r\n\r\n";
+        $this->connection->emit('data', array($data));
+    }
+
     public function testResponseContainsSameRequestProtocolVersionAndChunkedBodyForHttp11()
     {
         $server = new Server($this->socket, function (ServerRequestInterface $request) {
