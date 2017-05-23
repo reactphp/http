@@ -509,6 +509,12 @@ or use it for body data that needs to calculated.
 
 If the request handler resolves with a response stream that is already closed,
 it will simply send an empty response body.
+If the client closes the connection while the stream is still open, the
+response stream will automatically be closed.
+If a promise is resolved with a streaming body after the client closes, the
+response stream will automatically be closed.
+The `close` event can be used to clean up any pending resources allocated
+in this case (if applicable).
 
 If the response body is a `string`, a `Content-Length` header will be added
 automatically.
