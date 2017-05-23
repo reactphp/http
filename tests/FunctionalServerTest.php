@@ -353,7 +353,7 @@ class FunctionalServerTest extends TestCase
         $socket->close();
     }
 
-    public function testClosedStreamFromRequestHandlerWillBeSendEmptyBody()
+    public function testClosedStreamFromRequestHandlerWillSendEmptyBody()
     {
         $loop = Factory::create();
         $socket = new Socket(0, $loop);
@@ -373,6 +373,73 @@ class FunctionalServerTest extends TestCase
         });
 
         $response = Block\await($result, $loop, 1.0);
+
+        $this->assertStringStartsWith("HTTP/1.0 200 OK", $response);
+        $this->assertStringEndsWith("\r\n\r\n", $response);
+
+        $socket->close();
+    }
+
+    public function testStreamFromRequestHandlerWillBeClosedIfConnectionClosesWhileSendingBody()
+    {
+        $loop = Factory::create();
+        $socket = new Socket(0, $loop);
+        $connector = new Connector($loop);
+
+        $stream = new ThroughStream();
+        $stream->on('close', $this->expectCallableOnce());
+
+        $server = new Server($socket, function (RequestInterface $request) use ($stream) {
+            return new Response(200, array(), $stream);
+        });
+
+        $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) use ($loop) {
+            $conn->write("GET / HTTP/1.0\r\nContent-Length: 100\r\n\r\n");
+
+            $loop->addTimer(0.1, function() use ($conn) {
+                $conn->end();
+            });
+
+            return Stream\buffer($conn);
+        });
+
+        $response = Block\await($result, $loop, 1.0);
+
+        $this->assertStringStartsWith("HTTP/1.0 200 OK", $response);
+        $this->assertStringEndsWith("\r\n\r\n", $response);
+
+        $socket->close();
+    }
+
+    public function testStreamFromRequestHandlerWillBeClosedIfConnectionClosesButWillOnlyBeDetectedOnNextWrite()
+    {
+        $loop = Factory::create();
+        $socket = new Socket(0, $loop);
+        $connector = new Connector($loop);
+
+        $stream = new ThroughStream();
+        $stream->on('close', $this->expectCallableOnce());
+
+        $server = new Server($socket, function (RequestInterface $request) use ($stream) {
+            return new Response(200, array(), $stream);
+        });
+
+        $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) use ($loop) {
+            $conn->write("GET / HTTP/1.0\r\n\r\n");
+
+            $loop->addTimer(0.1, function() use ($conn) {
+                $conn->end();
+            });
+
+            return Stream\buffer($conn);
+        });
+
+        $response = Block\await($result, $loop, 1.0);
+
+        $stream->write('nope');
+        Block\sleep(0.1, $loop);
+        $stream->write('nope');
+        Block\sleep(0.1, $loop);
 
         $this->assertStringStartsWith("HTTP/1.0 200 OK", $response);
         $this->assertStringEndsWith("\r\n\r\n", $response);
