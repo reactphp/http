@@ -339,15 +339,35 @@ class Server extends EventEmitter
             return $connection->end();
         }
 
-        $body = $response->getBody();
-        $stream = $body;
+        $stream = $response->getBody();
 
-        if ($response->getHeaderLine('Transfer-Encoding') === 'chunked') {
-            $stream = new ChunkedEncoder($body);
+        // close response stream if connection is already closed
+        if (!$connection->isWritable()) {
+            return $stream->close();
         }
 
         $connection->write(Psr7Implementation\str($response));
-        $stream->pipe($connection);
+
+        if ($stream->isReadable()) {
+            if ($response->getHeaderLine('Transfer-Encoding') === 'chunked') {
+                $stream = new ChunkedEncoder($stream);
+            }
+
+            // Close response stream once connection closes.
+            // Note that this TCP/IP close detection may take some time,
+            // in particular this may only fire on a later read/write attempt
+            // because we stop/pause reading from the connection once the
+            // request has been processed.
+            $connection->on('close', array($stream, 'close'));
+
+            $stream->pipe($connection);
+        } else {
+            if ($response->getHeaderLine('Transfer-Encoding') === 'chunked') {
+                $connection->write("0\r\n\r\n");
+            }
+
+            $connection->end();
+        }
     }
 
     /**

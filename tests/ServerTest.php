@@ -646,6 +646,166 @@ class ServerTest extends TestCase
         $this->assertEquals('', $buffer);
     }
 
+    public function testStreamAlreadyClosedWillSendEmptyBodyChunkedEncoded()
+    {
+        $stream = new ThroughStream();
+        $stream->close();
+
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use ($stream) {
+            return new Response(200, array(), $stream);
+        });
+
+        $buffer = '';
+
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertStringStartsWith("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertStringEndsWith("\r\n\r\n0\r\n\r\n", $buffer);
+    }
+
+    public function testResponseStreamEndingWillSendEmptyBodyChunkedEncoded()
+    {
+        $stream = new ThroughStream();
+
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use ($stream) {
+            return new Response(200, array(), $stream);
+        });
+
+        $buffer = '';
+
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $stream->end();
+
+        $this->assertStringStartsWith("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertStringEndsWith("\r\n\r\n0\r\n\r\n", $buffer);
+    }
+
+    public function testResponseStreamAlreadyClosedWillSendEmptyBodyPlainHttp10()
+    {
+        $stream = new ThroughStream();
+        $stream->close();
+
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use ($stream) {
+            return new Response(200, array(), $stream);
+        });
+
+        $buffer = '';
+
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.0\r\nHost: localhost\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertStringStartsWith("HTTP/1.0 200 OK\r\n", $buffer);
+        $this->assertStringEndsWith("\r\n\r\n", $buffer);
+    }
+
+    public function testResponseStreamWillBeClosedIfConnectionIsAlreadyClosed()
+    {
+        $stream = new ThroughStream();
+        $stream->on('close', $this->expectCallableOnce());
+
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use ($stream) {
+            return new Response(200, array(), $stream);
+        });
+
+        $buffer = '';
+
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->connection = $this->getMockBuilder('React\Socket\Connection')
+            ->disableOriginalConstructor()
+            ->setMethods(
+                array(
+                    'write',
+                    'end',
+                    'close',
+                    'pause',
+                    'resume',
+                    'isReadable',
+                    'isWritable',
+                    'getRemoteAddress',
+                    'getLocalAddress',
+                    'pipe'
+                )
+            )
+            ->getMock();
+
+        $this->connection->expects($this->once())->method('isWritable')->willReturn(false);
+        $this->connection->expects($this->never())->method('write');
+        $this->connection->expects($this->never())->method('write');
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+        $this->connection->emit('data', array($data));
+    }
+
+    public function testResponseStreamWillBeClosedIfConnectionEmitsCloseEvent()
+    {
+        $stream = new ThroughStream();
+        $stream->on('close', $this->expectCallableOnce());
+
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use ($stream) {
+            return new Response(200, array(), $stream);
+        });
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+        $this->connection->emit('data', array($data));
+        $this->connection->emit('close');
+    }
+
     public function testResponseContainsSameRequestProtocolVersionAndChunkedBodyForHttp11()
     {
         $server = new Server($this->socket, function (ServerRequestInterface $request) {
