@@ -22,27 +22,10 @@ $server = new \React\Http\Server($socket, function (ServerRequestInterface $requ
         );
     }
 
-    // pause consuming request body
-    $body = $request->getBody();
-    $body->pause();
-
-    $buffer = '';
-    $body->on('data', function ($chunk) use (&$buffer) {
-        $buffer .= $chunk;
-    });
-
     // try to connect to given target host
     return $connector->connect($request->getRequestTarget())->then(
-        function (ConnectionInterface $remote) use ($body, &$buffer) {
+        function (ConnectionInterface $remote) {
             // connection established => forward data
-            $body->pipe($remote);
-            $body->resume();
-
-            if ($buffer !== '') {
-                $remote->write($buffer);
-                $buffer = '';
-            }
-
             return new Response(
                 200,
                 array(),

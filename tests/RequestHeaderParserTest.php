@@ -261,6 +261,22 @@ class RequestHeaderParserTest extends TestCase
         $this->assertSame('Invalid Host header value', $error->getMessage());
     }
 
+    public function testInvalidConnectRequestWithNonAuthorityForm()
+    {
+        $error = null;
+
+        $parser = new RequestHeaderParser();
+        $parser->on('headers', $this->expectCallableNever());
+        $parser->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $parser->feed("CONNECT http://example.com:8080/ HTTP/1.1\r\nHost: example.com:8080\r\n\r\n");
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+        $this->assertSame('CONNECT method MUST use authority-form request target', $error->getMessage());
+    }
+
     public function testInvalidHttpVersion()
     {
         $error = null;
