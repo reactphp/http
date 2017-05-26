@@ -300,7 +300,6 @@ class Server extends EventEmitter
         if ($request->getProtocolVersion() === '1.1') {
             $response = $response->withHeader('Connection', 'close');
         }
-
         // 2xx response to CONNECT and 1xx and 204 MUST NOT include Content-Length or Transfer-Encoding header
         $code = $response->getStatusCode();
         if (($request->getMethod() === 'CONNECT' && $code >= 200 && $code < 300) || ($code >= 100 && $code < 200) || $code === 204) {
@@ -308,13 +307,22 @@ class Server extends EventEmitter
         }
 
         // response to HEAD and 1xx, 204 and 304 responses MUST NOT include a body
-        if ($request->getMethod() === 'HEAD' || ($code >= 100 && $code < 200) || $code === 204 || $code === 304) {
+        // exclude status 101 (Switching Protocols) here for Upgrade request handling below
+        if ($request->getMethod() === 'HEAD' || $code === 100 || ($code > 101 && $code < 200) || $code === 204 || $code === 304) {
             $response = $response->withBody(Psr7Implementation\stream_for(''));
         }
 
-        // 2xx reponse to CONNECT forwards tunneled application data through duplex stream
+        // 101 (Switching Protocols) response uses Connection: upgrade header
+        // persistent connections are currently not supported, so do not use
+        // this for any other replies in order to preserve "Connection: close"
+        if ($code === 101) {
+            $response = $response->withHeader('Connection', 'upgrade');
+        }
+
+        // 101 (Switching Protocols) response (for Upgrade request) forwards upgraded data through duplex stream
+        // 2xx (Successful) response to CONNECT forwards tunneled application data through duplex stream
         $body = $response->getBody();
-        if ($request->getMethod() === 'CONNECT' && $code >= 200 && $code < 300 && $body instanceof HttpBodyStream && $body->input instanceof WritableStreamInterface) {
+        if (($code === 101 || ($request->getMethod() === 'CONNECT' && $code >= 200 && $code < 300)) && $body instanceof HttpBodyStream && $body->input instanceof WritableStreamInterface) {
             if ($request->getBody()->isReadable()) {
                 // request is still streaming => wait for request close before forwarding following data from connection
                 $request->getBody()->on('close', function () use ($connection, $body) {

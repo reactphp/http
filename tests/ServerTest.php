@@ -806,6 +806,121 @@ class ServerTest extends TestCase
         $this->connection->emit('close');
     }
 
+    public function testUpgradeInResponseCanBeUsedToAdvertisePossibleUpgrade()
+    {
+        $server = new Server($this->socket, function (ServerRequestInterface $request) {
+            return new Response(200, array('date' => '', 'x-powered-by' => '', 'Upgrade' => 'demo'), 'foo');
+        });
+
+        $buffer = '';
+
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertEquals("HTTP/1.1 200 OK\r\nUpgrade: demo\r\nContent-Length: 3\r\nConnection: close\r\n\r\nfoo", $buffer);
+    }
+
+    public function testUpgradeWishInRequestCanBeIgnoredByReturningNormalResponse()
+    {
+        $server = new Server($this->socket, function (ServerRequestInterface $request) {
+            return new Response(200, array('date' => '', 'x-powered-by' => ''), 'foo');
+        });
+
+        $buffer = '';
+
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\nUpgrade: demo\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertEquals("HTTP/1.1 200 OK\r\nContent-Length: 3\r\nConnection: close\r\n\r\nfoo", $buffer);
+    }
+
+    public function testUpgradeSwitchingProtocolIncludesConnectionUpgradeHeaderWithoutContentLength()
+    {
+        $server = new Server($this->socket, function (ServerRequestInterface $request) {
+            return new Response(101, array('date' => '', 'x-powered-by' => '', 'Upgrade' => 'demo'), 'foo');
+        });
+
+        $server->on('error', 'printf');
+
+        $buffer = '';
+
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\nUpgrade: demo\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertEquals("HTTP/1.1 101 Switching Protocols\r\nUpgrade: demo\r\nConnection: upgrade\r\n\r\nfoo", $buffer);
+    }
+
+    public function testUpgradeSwitchingProtocolWithStreamWillPipeDataToConnection()
+    {
+        $stream = new ThroughStream();
+
+        $server = new Server($this->socket, function (ServerRequestInterface $request) use ($stream) {
+            return new Response(101, array('date' => '', 'x-powered-by' => '', 'Upgrade' => 'demo'), $stream);
+        });
+
+        $buffer = '';
+
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\nUpgrade: demo\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $stream->write('hello');
+        $stream->write('world');
+
+        $this->assertEquals("HTTP/1.1 101 Switching Protocols\r\nUpgrade: demo\r\nConnection: upgrade\r\n\r\nhelloworld", $buffer);
+    }
+
     public function testConnectResponseStreamWillPipeDataToConnection()
     {
         $stream = new ThroughStream();
@@ -837,6 +952,7 @@ class ServerTest extends TestCase
 
         $this->assertStringEndsWith("\r\n\r\nhelloworld", $buffer);
     }
+
 
     public function testConnectResponseStreamWillPipeDataFromConnection()
     {

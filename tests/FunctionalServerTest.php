@@ -447,6 +447,41 @@ class FunctionalServerTest extends TestCase
         $socket->close();
     }
 
+    public function testUpgradeWithThroughStreamReturnsDataAsGiven()
+    {
+        $loop = Factory::create();
+        $socket = new Socket(0, $loop);
+        $connector = new Connector($loop);
+
+        $server = new Server($socket, function (RequestInterface $request) use ($loop) {
+            $stream = new ThroughStream();
+
+            $loop->addTimer(0.1, function () use ($stream) {
+                $stream->end();
+            });
+
+            return new Response(101, array('Upgrade' => 'echo'), $stream);
+        });
+
+        $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
+            $conn->write("GET / HTTP/1.1\r\nHost: example.com:80\r\nUpgrade: echo\r\n\r\n");
+
+            $conn->once('data', function () use ($conn) {
+                $conn->write('hello');
+                $conn->write('world');
+            });
+
+            return Stream\buffer($conn);
+        });
+
+        $response = Block\await($result, $loop, 1.0);
+
+        $this->assertStringStartsWith("HTTP/1.1 101 Switching Protocols\r\n", $response);
+        $this->assertStringEndsWith("\r\n\r\nhelloworld", $response);
+
+        $socket->close();
+    }
+
     public function testConnectWithThroughStreamReturnsDataAsGiven()
     {
         $loop = Factory::create();
