@@ -19,25 +19,23 @@ $ telnet localhost 1080
 Hint: try this with multiple connections :)
 */
 
-use React\EventLoop\Factory;
-use React\Http\Server;
-use React\Http\Response;
 use Psr\Http\Message\ServerRequestInterface;
-use React\Stream\ReadableStream;
-use React\Stream\ThroughStream;
+use React\EventLoop\Factory;
+use React\Http\Response;
+use React\Http\Server;
 use React\Stream\CompositeStream;
+use React\Stream\ThroughStream;
 
 require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
-$socket = new React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
 
 // simply use a shared duplex ThroughStream for all clients
 // it will simply emit any data that is sent to it
 // this means that any Upgraded data will simply be sent back to the client
 $chat = new ThroughStream();
 
-$server = new Server($socket, function (ServerRequestInterface $request) use ($loop, $chat) {
+$server = new Server(function (ServerRequestInterface $request) use ($loop, $chat) {
     if ($request->getHeaderLine('Upgrade') !== 'chat' || $request->getProtocolVersion() === '1.0') {
         return new Response(426, array('Upgrade' => 'chat'), '"Upgrade: chat" required');
     }
@@ -79,6 +77,9 @@ $server = new Server($socket, function (ServerRequestInterface $request) use ($l
         $stream
     );
 });
+
+$socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
+$server->listen($socket);
 
 echo 'Listening on ' . str_replace('tcp:', 'http:', $socket->getAddress()) . PHP_EOL;
 

@@ -1,18 +1,17 @@
 <?php
 
-use React\EventLoop\Factory;
-use React\Socket\Server;
-use React\Http\Response;
 use Psr\Http\Message\ServerRequestInterface;
+use React\EventLoop\Factory;
+use React\Http\Response;
+use React\Http\Server;
 use React\Promise\Promise;
 
 require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
-$socket = new Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
 
 $count = 0;
-$server = new \React\Http\Server($socket, function (ServerRequestInterface $request) use (&$count) {
+$server = new Server(function (ServerRequestInterface $request) use (&$count) {
     return new Promise(function ($resolve, $reject) use (&$count) {
         $count++;
 
@@ -29,6 +28,9 @@ $server = new \React\Http\Server($socket, function (ServerRequestInterface $requ
         $resolve($response);
     });
 });
+
+$socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
+$server->listen($socket);
 
 echo 'Listening on ' . str_replace('tcp:', 'http:', $socket->getAddress()) . PHP_EOL;
 

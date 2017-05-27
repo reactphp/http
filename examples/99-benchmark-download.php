@@ -6,18 +6,17 @@
 // $ ab -n10 -c10 http://localhost:8080/1g.bin
 // $ docker run -it --rm --net=host jordi/ab ab -n10 -c10 http://localhost:8080/1g.bin
 
-use React\EventLoop\Factory;
-use React\Socket\Server;
-use React\Http\Response;
-use Psr\Http\Message\ServerRequestInterface;
 use Evenement\EventEmitter;
+use Psr\Http\Message\ServerRequestInterface;
+use React\EventLoop\Factory;
+use React\Http\Response;
+use React\Http\Server;
 use React\Stream\ReadableStreamInterface;
 use React\Stream\WritableStreamInterface;
 
 require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
-$socket = new Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
 
 /** A readable stream that can emit a lot of data */
 class ChunkRepeater extends EventEmitter implements ReadableStreamInterface
@@ -87,7 +86,7 @@ class ChunkRepeater extends EventEmitter implements ReadableStreamInterface
     }
 }
 
-$server = new \React\Http\Server($socket, function (ServerRequestInterface $request) use ($loop) {
+$server = new Server(function (ServerRequestInterface $request) use ($loop) {
     switch ($request->getUri()->getPath()) {
         case '/':
             return new Response(
@@ -113,6 +112,9 @@ $server = new \React\Http\Server($socket, function (ServerRequestInterface $requ
         $stream
     );
 });
+
+$socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
+$server->listen($socket);
 
 echo 'Listening on ' . str_replace('tcp:', 'http:', $socket->getAddress()) . PHP_EOL;
 

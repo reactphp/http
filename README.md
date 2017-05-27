@@ -21,15 +21,17 @@ This is an HTTP server which responds with `Hello World` to every request.
 
 ```php
 $loop = React\EventLoop\Factory::create();
-$socket = new React\Socket\Server(8080, $loop);
 
-$http = new Server($socket, function (ServerRequestInterface $request) {
+$server = new Server(function (ServerRequestInterface $request) {
     return new Response(
         200,
         array('Content-Type' => 'text/plain'),
         "Hello World!\n"
     );
 });
+
+$socket = new React\Socket\Server(8080, $loop);
+$server->listen($socket);
 
 $loop->run();
 ```
@@ -43,18 +45,12 @@ See also the [examples](examples).
 The `Server` class is responsible for handling incoming connections and then
 processing each incoming HTTP request.
 
-It attaches itself to an instance of `React\Socket\ServerInterface` which
-emits underlying streaming connections in order to then parse incoming data
-as HTTP.
-
 For each request, it executes the callback function passed to the
-constructor with the respective [request](#request) and
-[response](#response) objects:
+constructor with the respective [request](#request) object and expects
+a respective [response](#response) object in return.
 
 ```php
-$socket = new React\Socket\Server(8080, $loop);
-
-$http = new Server($socket, function (ServerRequestInterface $request) {
+$server = new Server(function (ServerRequestInterface $request) {
     return new Response(
         200,
         array('Content-Type' => 'text/plain'),
@@ -63,25 +59,36 @@ $http = new Server($socket, function (ServerRequestInterface $request) {
 });
 ```
 
-See also the [first example](examples) for more details.
+In order to process any connections, the server needs to be attached to an
+instance of `React\Socket\ServerInterface` which emits underlying streaming
+connections in order to then parse incoming data as HTTP.
+
+You can attach this to a
+[`React\Socket\Server`](https://github.com/reactphp/socket#server)
+in order to start a plaintext HTTP server like this:
+
+```php
+$server = new Server($handler);
+
+$socket = new React\Socket\Server(8080, $loop);
+$server->listen($socket);
+```
+
+See also the `listen()` method and the [first example](examples) for more details.
 
 Similarly, you can also attach this to a
 [`React\Socket\SecureServer`](https://github.com/reactphp/socket#secureserver)
 in order to start a secure HTTPS server like this:
 
 ```php
+$server = new Server($handler);
+
 $socket = new React\Socket\Server(8080, $loop);
 $socket = new React\Socket\SecureServer($socket, $loop, array(
     'local_cert' => __DIR__ . '/localhost.pem'
 ));
 
-$http = new Server($socket, function (ServerRequestInterface $request) {
-    return new Response(
-        200,
-        array('Content-Type' => 'text/plain'),
-        "Hello World!\n"
-    );
-});
+$server->listen($socket);
 ```
 
 See also [example #11](examples) for more details.
@@ -105,7 +112,7 @@ emit an `error` event, send an HTTP error response to the client and
 close the connection:
 
 ```php
-$http->on('error', function (Exception $e) {
+$server->on('error', function (Exception $e) {
     echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
 ```
@@ -117,7 +124,7 @@ the `Server` will emit a `RuntimeException` and add the thrown exception
 as previous:
 
 ```php
-$http->on('error', function (Exception $e) {
+$server->on('error', function (Exception $e) {
     echo 'Error: ' . $e->getMessage() . PHP_EOL;
     if ($e->getPrevious() !== null) {
         $previousException = $e->getPrevious();
@@ -143,7 +150,7 @@ which in turn extends the
 and will be passed to the callback function like this.
 
  ```php 
-$http = new Server($socket, function (ServerRequestInterface $request) {
+$server = new Server(function (ServerRequestInterface $request) {
     $body = "The method of the request is: " . $request->getMethod();
     $body .= "The requested path is: " . $request->getUri()->getPath();
 
@@ -177,7 +184,7 @@ The following parameters are currently available:
   Set to 'on' if the request used HTTPS, otherwise it won't be set
 
 ```php 
-$http = new Server($socket, function (ServerRequestInterface $request) {
+$server = new Server(function (ServerRequestInterface $request) {
     $body = "Your IP is: " . $request->getServerParams()['REMOTE_ADDR'];
 
     return new Response(
@@ -194,7 +201,7 @@ The `getQueryParams(): array` method can be used to get the query parameters
 similiar to the `$_GET` variable.
 
 ```php
-$http = new Server($socket, function (ServerRequestInterface $request) {
+$server = new Server(function (ServerRequestInterface $request) {
     $queryParams = $request->getQueryParams();
 
     $body = 'The query parameter "foo" is not set. Click the following link ';
@@ -257,7 +264,7 @@ Instead, you should use the `ReactPHP ReadableStreamInterface` which
 gives you access to the incoming request body as the individual chunks arrive:
 
 ```php
-$http = new Server($socket, function (ServerRequestInterface $request) {
+$server = new Server(function (ServerRequestInterface $request) {
     return new Promise(function ($resolve, $reject) use ($request) {
         $contentLength = 0;
         $request->getBody()->on('data', function ($data) use (&$contentLength) {
@@ -321,7 +328,7 @@ Note that this value may be `null` if the request body size is unknown in
 advance because the request message uses chunked transfer encoding.
 
 ```php 
-$http = new Server($socket, function (ServerRequestInterface $request) {
+$server = new Server(function (ServerRequestInterface $request) {
     $size = $request->getBody()->getSize();
     if ($size === null) {
         $body = 'The request does not contain an explicit length.';
@@ -375,7 +382,7 @@ The `getCookieParams(): string[]` method can be used to
 get all cookies sent with the current request.
 
 ```php 
-$http = new Server($socket, function (ServerRequestInterface $request) {
+$server = new Server(function (ServerRequestInterface $request) {
     $key = 'react\php';
 
     if (isset($request->getCookieParams()[$key])) {
@@ -426,7 +433,7 @@ but feel free to use any implemantation of the
 `PSR-7 ResponseInterface` you prefer.
 
 ```php 
-$http = new Server($socket, function (ServerRequestInterface $request) {
+$server = new Server(function (ServerRequestInterface $request) {
     return new Response(
         200,
         array('Content-Type' => 'text/plain'),
@@ -445,7 +452,7 @@ To prevent this you SHOULD use a
 This example shows how such a long-term action could look like:
 
 ```php
-$server = new \React\Http\Server($socket, function (ServerRequestInterface $request) use ($loop) {
+$server = new Server(function (ServerRequestInterface $request) use ($loop) {
     return new Promise(function ($resolve, $reject) use ($request, $loop) {
         $loop->addTimer(1.5, function() use ($loop, $resolve) {
             $response = new Response(
@@ -478,7 +485,7 @@ Note that other implementations of the `PSR-7 ResponseInterface` likely
 only support strings.
 
 ```php
-$server = new Server($socket, function (ServerRequestInterface $request) use ($loop) {
+$server = new Server(function (ServerRequestInterface $request) use ($loop) {
     $stream = new ThroughStream();
 
     $timer = $loop->addPeriodicTimer(0.5, function () use ($stream) {
@@ -521,7 +528,7 @@ If you know the length of your stream body, you MAY specify it like this instead
 
 ```php
 $stream = new ThroughStream()
-$server = new Server($socket, function (ServerRequestInterface $request) use ($loop, $stream) {
+$server = new Server(function (ServerRequestInterface $request) use ($stream) {
     return new Response(
         200,
         array(
@@ -606,7 +613,7 @@ A `Date` header will be automatically added with the system date and time if non
 You can add a custom `Date` header yourself like this:
 
 ```php
-$server = new Server($socket, function (ServerRequestInterface $request) {
+$server = new Server(function (ServerRequestInterface $request) {
     return new Response(200, array('Date' => date('D, d M Y H:i:s T')));
 });
 ```
@@ -615,7 +622,7 @@ If you don't have a appropriate clock to rely on, you should
 unset this header with an empty string:
 
 ```php
-$server = new Server($socket, function (ServerRequestInterface $request) {
+$server = new Server(function (ServerRequestInterface $request) {
     return new Response(200, array('Date' => ''));
 });
 ```
@@ -624,7 +631,7 @@ Note that it will automatically assume a `X-Powered-By: react/alpha` header
 unless your specify a custom `X-Powered-By` header yourself:
 
 ```php
-$server = new Server($socket, function (ServerRequestInterface $request) {
+$server = new Server(function (ServerRequestInterface $request) {
     return new Response(200, array('X-Powered-By' => 'PHP 3'));
 });
 ```
@@ -633,7 +640,7 @@ If you do not want to send this header at all, you can use an empty string as
 value like this:
 
 ```php
-$server = new Server($socket, function (ServerRequestInterface $request) {
+$server = new Server(function (ServerRequestInterface $request) {
     return new Response(200, array('X-Powered-By' => ''));
 });
 ```
