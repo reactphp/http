@@ -1,19 +1,18 @@
 <?php
 
-use React\EventLoop\Factory;
-use React\Socket\Server;
-use React\Http\Response;
 use Psr\Http\Message\ServerRequestInterface;
+use React\EventLoop\Factory;
+use React\Http\Response;
+use React\Http\Server;
 use React\Socket\Connector;
 use React\Socket\ConnectionInterface;
 
 require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
-$socket = new Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
 $connector = new Connector($loop);
 
-$server = new \React\Http\Server($socket, function (ServerRequestInterface $request) use ($connector) {
+$server = new Server(function (ServerRequestInterface $request) use ($connector) {
     if ($request->getMethod() !== 'CONNECT') {
         return new Response(
             405,
@@ -42,7 +41,8 @@ $server = new \React\Http\Server($socket, function (ServerRequestInterface $requ
     );
 });
 
-//$server->on('error', 'printf');
+$socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
+$server->listen($socket);
 
 echo 'Listening on ' . str_replace('tcp:', 'http:', $socket->getAddress()) . PHP_EOL;
 
