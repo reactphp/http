@@ -44,6 +44,6 @@ $server = new \React\Http\Server($socket, function (ServerRequestInterface $requ
 
 //$server->on('error', 'printf');
 
-echo 'Listening on http://' . $socket->getAddress() . PHP_EOL;
+echo 'Listening on ' . str_replace('tcp:', 'http:', $socket->getAddress()) . PHP_EOL;
 
 $loop->run();

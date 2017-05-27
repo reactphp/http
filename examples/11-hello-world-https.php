@@ -24,6 +24,6 @@ $server = new \React\Http\Server($socket, function (ServerRequestInterface $requ
 
 //$socket->on('error', 'printf');
 
-echo 'Listening on https://' . $socket->getAddress() . PHP_EOL;
+echo 'Listening on ' . str_replace('tls:', 'https:', $socket->getAddress()) . PHP_EOL;
 
 $loop->run();
