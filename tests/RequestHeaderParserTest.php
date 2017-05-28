@@ -334,18 +334,50 @@ class RequestHeaderParserTest extends TestCase
             $request = $parsedRequest;
         });
 
-        $parser->feed("GET /foo HTTP/1.0\r\nHost: example.com\r\n\r\n");
+        $data = "GET /foo?s=hello&world=1 HTTP/1.0\r\nHost: example.com\r\n\r\n";
+
+        $parser->feed($data);
         $serverParams = $request->getServerParams();
 
         $this->assertArrayNotHasKey('HTTPS', $serverParams);
         $this->assertNotEmpty($serverParams['REQUEST_TIME']);
         $this->assertNotEmpty($serverParams['REQUEST_TIME_FLOAT']);
 
+        $this->assertEquals('GET', $serverParams['REQUEST_METHOD']);
+        $this->assertEquals(strlen($data), $serverParams['CONTENT_LENGTH']);
+        $this->assertEquals('reactphp/http', $serverParams['SERVER_SOFTWARE']);
+        $this->assertEquals('1.0', $serverParams['SERVER_PROTOCOL']);
+        $this->assertEquals('s=hello&world=1', $serverParams['QUERY_STRING']);
         $this->assertEquals('127.1.1.1', $serverParams['SERVER_ADDR']);
         $this->assertEquals('8000', $serverParams['SERVER_PORT']);
 
         $this->assertEquals('192.168.1.1', $serverParams['REMOTE_ADDR']);
         $this->assertEquals('8001', $serverParams['REMOTE_PORT']);
+    }
+
+    /**
+     * @dataProvider getServerParamsProvider
+     */
+    public function testServerParams($data, array $params)
+    {
+        $request = null;
+        $parser = new RequestHeaderParser(
+            'http://127.1.1.1:8000'
+        );
+
+        $parser->on(
+            'headers',
+            function ($parsedRequest) use (&$request) {
+                $request = $parsedRequest;
+            }
+        );
+
+        $parser->feed($data);
+        $serverParams = $request->getServerParams();
+
+        foreach ($params as $name => $expectedValue) {
+            $this->assertEquals($expectedValue, $serverParams[$name]);
+        }
     }
 
     public function testServerParamsWontBeSetOnMissingUrls()
@@ -407,5 +439,39 @@ class RequestHeaderParserTest extends TestCase
         $data .= "\r\n";
 
         return $data;
+    }
+
+    /**
+     * This is used to test different combinations of requests and ensure the
+     * server params are correct
+     */
+    public function getServerParamsProvider()
+    {
+        return [
+            [
+                "GET /foo HTTP/1.0\r\nHost: example.com\r\n\r\n",
+                [
+                    'QUERY_STRING' => '',
+                    'REQUEST_METHOD' => 'GET',
+                    'SERVER_PROTOCOL' => '1.0',
+                ],
+            ],
+            [
+                "POST /foo HTTP/1.0\r\nHost: example.com\r\n\r\n",
+                [
+                    'QUERY_STRING' => '',
+                    'REQUEST_METHOD' => 'POST',
+                    'SERVER_PROTOCOL' => '1.0',
+                ],
+            ],
+            [
+                "GET /foo?year=2017 HTTP/1.1\r\nHost: example.com\r\n\r\n",
+                [
+                    'QUERY_STRING' => 'year=2017',
+                    'REQUEST_METHOD' => 'GET',
+                    'SERVER_PROTOCOL' => '1.1',
+                ],
+            ],
+        ];
     }
 }
