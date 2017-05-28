@@ -1,16 +1,15 @@
 <?php
 
-use React\EventLoop\Factory;
-use React\Socket\Server;
-use React\Http\Response;
 use Psr\Http\Message\ServerRequestInterface;
+use React\EventLoop\Factory;
+use React\Http\Response;
+use React\Http\Server;
 
 require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
-$socket = new Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
 
-$server = new \React\Http\Server($socket, function (ServerRequestInterface $request) {
+$server = new Server(function (ServerRequestInterface $request) {
     $key = 'react\php';
 
     if (isset($request->getCookieParams()[$key])) {
@@ -32,6 +31,9 @@ $server = new \React\Http\Server($socket, function (ServerRequestInterface $requ
         "Your cookie has been set."
     );
 });
+
+$socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
+$server->listen($socket);
 
 echo 'Listening on ' . str_replace('tcp:', 'http:', $socket->getAddress()) . PHP_EOL;
 

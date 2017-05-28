@@ -3,7 +3,7 @@
 namespace React\Http;
 
 use Evenement\EventEmitter;
-use React\Socket\ServerInterface as SocketServerInterface;
+use React\Socket\ServerInterface;
 use React\Socket\ConnectionInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -17,18 +17,12 @@ use React\Stream\WritableStreamInterface;
  * The `Server` class is responsible for handling incoming connections and then
  * processing each incoming HTTP request.
  *
- * It attaches itself to an instance of `React\Socket\ServerInterface` which
- * emits underlying streaming connections in order to then parse incoming data
- * as HTTP.
- *
  * For each request, it executes the callback function passed to the
- * constructor with the respective [request](#request) and
- * [response](#response) objects:
+ * constructor with the respective [request](#request) object and expects
+ * a respective [response](#response) object in return.
  *
  * ```php
- * $socket = new React\Socket\Server(8080, $loop);
- *
- * $http = new Server($socket, function (ServerRequestInterface $request) {
+ * $server = new Server(function (ServerRequestInterface $request) {
  *     return new Response(
  *         200,
  *         array('Content-Type' => 'text/plain'),
@@ -37,28 +31,16 @@ use React\Stream\WritableStreamInterface;
  * });
  * ```
  *
- * See also the [first example](examples) for more details.
- *
- * Similarly, you can also attach this to a
- * [`React\Socket\SecureServer`](https://github.com/reactphp/socket#secureserver)
- * in order to start a secure HTTPS server like this:
+ * In order to process any connections, the server needs to be attached to an
+ * instance of `React\Socket\ServerInterface` which emits underlying streaming
+ * connections in order to then parse incoming data as HTTP.
  *
  * ```php
  * $socket = new React\Socket\Server(8080, $loop);
- * $socket = new React\Socket\SecureServer($socket, $loop, array(
- *     'local_cert' => __DIR__ . '/localhost.pem'
- * ));
- *
- * $http = new Server($socket, function (ServerRequestInterface $request) {
- *     return new Response(
- *         200,
- *         array('Content-Type' => 'text/plain'),
- *         "Hello World!\n"
- *     );
- * });
+ * $server->listen($socket);
  * ```
  *
- * See also [example #11](examples) for more details.
+ * See also the [listen()](#listen) method and the [first example](examples) for more details.
  *
  * When HTTP/1.1 clients want to send a bigger request body, they MAY send only
  * the request headers with an additional `Expect: 100-continue` header and
@@ -79,7 +61,7 @@ use React\Stream\WritableStreamInterface;
  * close the connection:
  *
  * ```php
- * $http->on('error', function (Exception $e) {
+ * $server->on('error', function (Exception $e) {
  *     echo 'Error: ' . $e->getMessage() . PHP_EOL;
  * });
  * ```
@@ -89,25 +71,77 @@ use React\Stream\WritableStreamInterface;
  *
  * @see Request
  * @see Response
+ * @see self::listen()
  */
 class Server extends EventEmitter
 {
     private $callback;
 
     /**
-     * Creates a HTTP server that accepts connections from the given socket.
+     * Creates an HTTP server that invokes the given callback for each incoming HTTP request
      *
-     * @param \React\Socket\ServerInterface $io
+     * In order to process any connections, the server needs to be attached to an
+     * instance of `React\Socket\ServerInterface` which emits underlying streaming
+     * connections in order to then parse incoming data as HTTP.
+     * See also [listen()](#listen) for more details.
+     *
      * @param callable $callback
+     * @see self::listen()
      */
-    public function __construct(SocketServerInterface $io, $callback)
+    public function __construct($callback)
     {
         if (!is_callable($callback)) {
             throw new \InvalidArgumentException();
         }
 
-        $io->on('connection', array($this, 'handleConnection'));
         $this->callback = $callback;
+    }
+
+    /**
+     * Starts listening for HTTP requests on the given socket server instance
+     *
+     * The server needs to be attached to an instance of
+     * `React\Socket\ServerInterface` which emits underlying streaming
+     * connections in order to then parse incoming data as HTTP.
+     * For each request, it executes the callback function passed to the
+     * constructor with the respective [request](#request) object and expects
+     * a respective [response](#response) object in return.
+     *
+     * You can attach this to a
+     * [`React\Socket\Server`](https://github.com/reactphp/socket#server)
+     * in order to start a plaintext HTTP server like this:
+     *
+     * ```php
+     * $server = new Server($handler);
+     *
+     * $socket = new React\Socket\Server(8080, $loop);
+     * $server->listen($socket);
+     * ```
+     *
+     * See also [example #1](examples) for more details.
+     *
+     * Similarly, you can also attach this to a
+     * [`React\Socket\SecureServer`](https://github.com/reactphp/socket#secureserver)
+     * in order to start a secure HTTPS server like this:
+     *
+     * ```php
+     * $server = new Server($handler);
+     *
+     * $socket = new React\Socket\Server(8080, $loop);
+     * $socket = new React\Socket\SecureServer($socket, $loop, array(
+     *     'local_cert' => __DIR__ . '/localhost.pem'
+     * ));
+     *
+     * $server->listen($socket);
+     * ```
+     *
+     * See also [example #11](examples) for more details.
+     *
+     * @param ServerInterface $socket
+     */
+    public function listen(ServerInterface $socket)
+    {
+        $socket->on('connection', array($this, 'handleConnection'));
     }
 
     /** @internal */
