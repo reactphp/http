@@ -1,6 +1,134 @@
 # Changelog
 
-## 0.6.0 (2016-03-09)
+## 0.7.0 (2017-05-29)
+
+*   Feature / BC break: Use PSR-7 (http-message) standard and
+    `Request-In-Response-Out`-style request handler callback.
+    Pass standard PSR-7 `ServerRequestInterface` and expect any standard
+    PSR-7 `ResponseInterface` in return for the request handler callback.
+    (#146 and #152 and #170 by @legionth)
+    
+    ```php
+    // old
+    $app = function (Request $request, Response $response) {
+        $response->writeHead(200, array('Content-Type' => 'text/plain'));
+        $response->end("Hello world!\n");
+    };
+
+    // new
+    $app = function (ServerRequestInterface $request) {
+        return new Response(
+            200,
+            array('Content-Type' => 'text/plain'),
+            "Hello world!\n"
+        );
+    };
+    ```
+
+    A `Content-Length` header will automatically be included if the size can be
+    determined from the response body.
+    (#164 by @maciejmrozinski)
+
+    The request handler callback will automatically make sure that responses to
+    HEAD requests and certain status codes, such as `204` (No Content), never
+    contain a response body.
+    (#156 by @clue)
+
+    The intermediary `100 Continue` response will automatically be sent if
+    demanded by a HTTP/1.1 client.
+    (#144 by @legionth)
+
+    The request handler callback can now return a standard `Promise` if
+    processing the request needs some time, such as when querying a database.
+    Similarly, the request handler may return a streaming response if the
+    response body comes from a `ReadableStreamInterface` or its size is
+    unknown in advance.
+
+    ```php
+    // old
+    $app = function (Request $request, Response $response) use ($db) {
+        $db->query()->then(function ($result) use ($response) {
+            $response->writeHead(200, array('Content-Type' => 'text/plain'));
+            $response->end($result);
+        });
+    };
+
+    // new
+    $app = function (ServerRequestInterface $request) use ($db) {
+        return $db->query()->then(function ($result) {
+            return new Response(
+                200,
+                array('Content-Type' => 'text/plain'),
+                $result
+            );
+        });
+    };
+    ```
+
+    Pending promies and response streams will automatically be canceled once the
+    client connection closes.
+    (#187 and #188 by @clue)
+
+    The `ServerRequestInterface` contains the full effective request URI,
+    server-side parameters, query parameters and parsed cookies values as
+    defined in PSR-7.
+    (#167 by @clue and #174, #175 and #180 by @legionth)
+
+    ```php
+    $app = function (ServerRequestInterface $request) {
+        return new Response(
+            200,
+            array('Content-Type' => 'text/plain'),
+            $request->getUri()->getScheme()
+        );
+    };
+    ```
+
+    Advanced: Support duplex stream response for `Upgrade` requests such as
+    `Upgrade: WebSocket` or custom protocols and `CONNECT` requests
+    (#189 and #190 by @clue)
+
+    >   Note that the request body will currently not be buffered and parsed by
+        default, which depending on your particilar use-case, may limit
+        interoperability with the PSR-7 (http-message) ecosystem.
+        The provided streaming request body interfaces allow you to perform
+        buffering and parsing as needed in the request handler callback.
+        See also the README and examples for more details.
+
+*   Feature / BC break: Replace `request` listener with callback function and
+    use `listen()` method to support multiple listening sockets
+    (#97 by @legionth and #193 by @clue)
+
+    ```php
+    // old
+    $server = new Server($socket);
+    $server->on('request', $app);
+
+    // new
+    $server = new Server($app);
+    $server->listen($socket);
+    ```
+
+*   Feature: Support the more advanced HTTP requests, such as 
+    `OPTIONS * HTTP/1.1` (`OPTIONS` method in asterisk-form),
+    `GET http://example.com/path HTTP/1.1` (plain proxy requests in absolute-form),
+    `CONNECT example.com:443 HTTP/1.1` (`CONNECT` proxy requests in authority-form)
+    and sanitize `Host` header value across all requests.
+    (#157, #158, #161, #165, #169 and #173 by @clue)
+
+*   Feature: Forward compatibility with Socket v1.0, v0.8, v0.7 and v0.6 and
+    forward compatibility with Stream v1.0 and v0.7
+    (#154, #163, #183, #184 and #191 by @clue)
+
+*   Feature: Simplify examples to ease getting started and
+    add benchmarking example
+    (#151 and #162 by @clue)
+
+*   Improve test suite by adding tests for case insensitive chunked transfer
+    encoding and ignoring HHVM test failures until Travis tests work again.
+    (#150 by @legionth and #185 by @clue)
+
+## 0.6.0 (2017-03-09)
 
 *   Feature / BC break: The `Request` and `Response` objects now follow strict
     stream semantics and their respective methods and events.
