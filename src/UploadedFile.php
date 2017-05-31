@@ -46,7 +46,7 @@ final class UploadedFile implements UploadedFileInterface
         $this->stream = $stream;
         $this->size = $size;
 
-        if (!is_int($error) || !in_array($error, [
+        if (!is_int($error) || !in_array($error, array(
             UPLOAD_ERR_OK,
             UPLOAD_ERR_INI_SIZE,
             UPLOAD_ERR_FORM_SIZE,
@@ -55,7 +55,7 @@ final class UploadedFile implements UploadedFileInterface
             UPLOAD_ERR_NO_TMP_DIR,
             UPLOAD_ERR_CANT_WRITE,
             UPLOAD_ERR_EXTENSION,
-        ])) {
+        ))) {
             throw new InvalidArgumentException(
                 'Invalid error code, must be an UPLOAD_ERR_* constant'
             );
