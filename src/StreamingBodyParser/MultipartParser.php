@@ -3,8 +3,8 @@
 namespace React\Http\StreamingBodyParser;
 
 use Evenement\EventEmitterTrait;
-use React\Http\File;
-use React\Http\Request;
+use Psr\Http\Message\RequestInterface;
+use React\Http\HttpBodyStream;
 use React\Promise\CancellablePromiseInterface;
 use React\Promise\Deferred;
 use React\Stream\ThroughStream;
@@ -34,9 +34,14 @@ class MultipartParser implements ParserInterface
     protected $boundary;
 
     /**
-     * @var Request
+     * @var RequestInterface
      */
     protected $request;
+
+    /**
+     * @var HttpBodyStream
+     */
+    protected $body;
 
     /**
      * @var CancellablePromiseInterface
@@ -49,31 +54,42 @@ class MultipartParser implements ParserInterface
     protected $onDataCallable;
 
     /**
-     * @param Request $request
+     * @param RequestInterface $request
      * @return ParserInterface
      */
-    public static function create(Request $request)
+    public static function create(RequestInterface $request)
     {
         return new static($request);
     }
 
-    private function __construct(Request $request)
+    private function __construct(RequestInterface $request)
     {
+        $this->onDataCallable = [$this, 'onData'];
         $this->promise = (new Deferred(function () {
-            $this->request->removeListener('data', $this->onDataCallable);
-            $this->request->close();
+            $this->body->removeListener('data', $this->onDataCallable);
+            $this->body->close();
         }))->promise();
         $this->request = $request;
-        $headers = $this->request->getHeaders();
-        $headers = array_change_key_case($headers, CASE_LOWER);
-        preg_match('/boundary="?(.*)"?$/', $headers['content-type'], $matches);
+        $this->body = $this->request->getBody();
 
-        $dataMethod = 'findBoundary';
+        $dataMethod = $this->determineOnDataMethod();
+        $this->setOnDataListener([$this, $dataMethod]);
+    }
+
+    protected function determineOnDataMethod()
+    {
+        if (!$this->request->hasHeader('content-type')) {
+            return 'findBoundary';
+        }
+
+        $contentType = $this->request->getHeaderLine('content-type');
+        preg_match('/boundary="?(.*)"?$/', $contentType, $matches);
         if (isset($matches[1])) {
             $this->setBoundary($matches[1]);
-            $dataMethod = 'onData';
+            return 'onData';
         }
-        $this->setOnDataListener([$this, $dataMethod]);
+
+        return 'findBoundary';
     }
 
     protected function setBoundary($boundary)
@@ -279,9 +295,9 @@ class MultipartParser implements ParserInterface
 
     protected function setOnDataListener(callable $callable)
     {
-        $this->request->removeListener('data', $this->onDataCallable);
+        $this->body->removeListener('data', $this->onDataCallable);
         $this->onDataCallable = $callable;
-        $this->request->on('data', $this->onDataCallable);
+        $this->body->on('data', $this->onDataCallable);
     }
 
     public function cancel()
