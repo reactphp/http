@@ -7,6 +7,9 @@ use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UploadedFileInterface;
 use RuntimeException;
 
+/**
+ * @internal
+ */
 final class UploadedFile implements UploadedFileInterface
 {
     /**
