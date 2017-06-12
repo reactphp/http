@@ -17,8 +17,8 @@ class MultipartParserTest extends TestCase
 
     public function testPostKey()
     {
-        $files = [];
-        $post = [];
+        $files = array();
+        $post = array();
 
         $stream = new ThroughStream();
         $boundary = "---------------------------5844729766471062541057622570";
@@ -32,7 +32,7 @@ class MultipartParserTest extends TestCase
             $post[$key] = $value;
         });
         $parser->on('file', function ($name, UploadedFileInterface $file) use (&$files) {
-            $files[] = [$name, $file];
+            $files[] = array($name, $file);
         });
 
         $data  = "--$boundary\r\n";
@@ -49,18 +49,18 @@ class MultipartParserTest extends TestCase
 
         $this->assertEmpty($files);
         $this->assertEquals(
-            [
+            array(
                 'users[one]' => 'single',
                 'users[two]' => 'second',
-            ],
+            ),
             $post
         );
     }
 
     public function testFileUpload()
     {
-        $files = [];
-        $post = [];
+        $files = array();
+        $post = array();
 
         $stream = new ThroughStream();
         $boundary = "---------------------------12758086162038677464950549563";
@@ -72,13 +72,13 @@ class MultipartParserTest extends TestCase
         $multipart = new MultipartParser($request);
 
         $multipart->on('post', function ($key, $value) use (&$post) {
-            $post[] = [$key => $value];
+            $post[] = array($key => $value);
         });
         $multipart->on('file', function ($name, UploadedFileInterface $file, $headers) use (&$files) {
             Stream\buffer($file->getStream())->done(function ($buffer) use ($name, $file, $headers, &$files) {
                 $body = new BufferStream(strlen($buffer));
                 $body->write($buffer);
-                $files[] = [
+                $files[] = array(
                     $name,
                     new UploadedFile(
                         $body,
@@ -88,7 +88,7 @@ class MultipartParserTest extends TestCase
                         $file->getClientMediaType()
                     ),
                     $headers,
-                ];
+                );
             });
         });
 
@@ -151,14 +151,14 @@ class MultipartParserTest extends TestCase
 
         $this->assertEquals(6, count($post));
         $this->assertEquals(
-            [
-                ['users[one]' => 'single'],
-                ['users[two]' => 'second'],
-                ['user' => 'single'],
-                ['user2' => 'second'],
-                ['users[]' => 'first in array'],
-                ['users[]' => 'second in array'],
-            ],
+            array(
+                array('users[one]' => 'single'),
+                array('users[two]' => 'second'),
+                array('user' => 'single'),
+                array('user2' => 'second'),
+                array('users[]' => 'first in array'),
+                array('users[]' => 'second in array'),
+            ),
             $post
         );
 
@@ -167,63 +167,63 @@ class MultipartParserTest extends TestCase
         $this->assertEquals('Us er.php', $files[0][1]->getClientFilename());
         $this->assertEquals('text/php', $files[0][1]->getClientMediaType());
         $this->assertEquals("<?php echo 'User';\r\n", $files[0][1]->getStream()->getContents());
-        $this->assertEquals([
-            'content-disposition' => [
+        $this->assertEquals(array(
+            'content-disposition' => array(
                 'form-data',
                 'name="file"',
                 'filename="Us er.php"',
-            ],
-            'content-type' => [
+            ),
+            'content-type' => array(
                 'text/php',
-            ],
-        ], $files[0][2]);
+            ),
+        ), $files[0][2]);
 
         $this->assertEquals('files[]', $files[1][0]);
         $this->assertEquals('blank.gif', $files[1][1]->getClientFilename());
         $this->assertEquals('image/gif', $files[1][1]->getClientMediaType());
         $this->assertEquals($file, $files[1][1]->getStream()->getContents());
-        $this->assertEquals([
-            'content-disposition' => [
+        $this->assertEquals(array(
+            'content-disposition' => array(
                 'form-data',
                 'name="files[]"',
                 'filename="blank.gif"',
-            ],
-            'content-type' => [
+            ),
+            'content-type' => array(
                 'image/gif',
-            ],
-            'x-foo-bar' => [
+            ),
+            'x-foo-bar' => array(
                 'base64',
-            ],
-        ], $files[1][2]);
+            ),
+        ), $files[1][2]);
 
         $this->assertEquals('files[]', $files[2][0]);
         $this->assertEquals('User.php', $files[2][1]->getClientFilename());
         $this->assertEquals('text/php', $files[2][1]->getClientMediaType());
         $this->assertEquals("<?php echo 'User';\r\n\r\n", $files[2][1]->getStream()->getContents());
-        $this->assertEquals([
-            'content-disposition' => [
+        $this->assertEquals(array(
+            'content-disposition' => array(
                 'form-data',
                 'name="files[]"',
                 'filename="User.php"',
-            ],
-            'content-type' => [
+            ),
+            'content-type' => array(
                 'text/php',
-            ],
-        ], $files[2][2]);
+            ),
+        ), $files[2][2]);
 
         $this->assertEquals('files[]', $files[3][0]);
         $this->assertEquals('Owner.php', $files[3][1]->getClientFilename());
         $this->assertEquals('text/php', $files[3][1]->getClientMediaType());
         $this->assertEquals("<?php echo 'Owner';\r\n\r\n", $files[3][1]->getStream()->getContents());
-        $this->assertEquals([
-            'content-disposition' => [
+        $this->assertEquals(array(
+            'content-disposition' => array(
                 'form-data',
                 'name="files[]"',
                 'filename="Owner.php"',
-            ],
-            'content-type' => [
+            ),
+            'content-type' => array(
                 'text/php',
-            ],
-        ], $files[3][2]);
+            ),
+        ), $files[3][2]);
     }
 }
