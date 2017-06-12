@@ -133,7 +133,6 @@ final class MultipartParser
             return;
         }
 
-        //$chunks = preg_split('/-+' . $this->boundary . '/', trim($split[0]), -1, PREG_SPLIT_NO_EMPTY);
         $chunks = preg_split('/-+' . $this->boundary . '/', $split[0], -1, PREG_SPLIT_NO_EMPTY);
         $headers = $this->parseHeaders(trim($chunks[0]));
         if (isset($headers['content-disposition']) && $this->headerStartsWith($headers['content-disposition'], 'filename')) {
