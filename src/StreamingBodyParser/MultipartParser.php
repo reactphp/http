@@ -2,7 +2,7 @@
 
 namespace React\Http\StreamingBodyParser;
 
-use Evenement\EventEmitterTrait;
+use Evenement\EventEmitter;
 use Psr\Http\Message\RequestInterface;
 use React\Http\HttpBodyStream;
 use React\Http\UploadedFile;
@@ -10,10 +10,8 @@ use React\Promise\CancellablePromiseInterface;
 use React\Promise\Deferred;
 use React\Stream\ThroughStream;
 
-final class MultipartParser
+final class MultipartParser extends EventEmitter
 {
-    use EventEmitterTrait;
-
     /**
      * @var string
      */
