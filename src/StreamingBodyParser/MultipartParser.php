@@ -55,10 +55,11 @@ final class MultipartParser extends EventEmitter
     public function __construct(RequestInterface $request)
     {
         $this->onDataCallable = array($this, 'onData');
-        $this->promise = (new Deferred(function () {
+        $deferred = new Deferred(function () {
             $this->body->removeListener('data', $this->onDataCallable);
             $this->body->close();
-        }))->promise();
+        });
+        $this->promise = $deferred->promise();
         $this->request = $request;
         $this->body = $this->request->getBody();
 
