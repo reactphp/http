@@ -197,26 +197,28 @@ final class MultipartParser extends EventEmitter
 
     protected function chunkStreamFunc(ThroughStream $stream)
     {
+        $that = $this;
+        $boundary = $this->boundary;
         $buffer = '';
-        $func = function($data) use (&$buffer, $stream) {
+        $func = function($data) use (&$buffer, $stream, $that, $boundary) {
             $buffer .= $data;
-            if (strpos($buffer, $this->boundary) !== false) {
-                $chunks = preg_split('/-+' . $this->boundary . '/', $buffer);
+            if (strpos($buffer, $boundary) !== false) {
+                $chunks = preg_split('/-+' . $boundary . '/', $buffer);
                 $chunk = array_shift($chunks);
-                $chunk = $this->stripTrainingEOL($chunk);
+                $chunk = $that->stripTrainingEOL($chunk);
                 $stream->end($chunk);
 
-                $this->setOnDataListener(array($this, 'onData'));
+                $that->setOnDataListener(array($that, 'onData'));
 
                 if (count($chunks) == 1) {
                     array_unshift($chunks, '');
                 }
 
-                $this->onData(implode('-' . $this->boundary, $chunks));
+                $that->onData(implode('-' . $boundary, $chunks));
                 return;
             }
 
-            if (strlen($buffer) >= strlen($this->boundary) * 3) {
+            if (strlen($buffer) >= strlen($boundary) * 3) {
                 $stream->write($buffer);
                 $buffer = '';
             }
@@ -288,7 +290,10 @@ final class MultipartParser extends EventEmitter
         return '';
     }
 
-    protected function setOnDataListener($callable)
+    /**
+     * @internal
+     */
+    public function setOnDataListener($callable)
     {
         $this->body->removeListener('data', $this->onDataCallable);
         $this->onDataCallable = $callable;
@@ -300,7 +305,10 @@ final class MultipartParser extends EventEmitter
         $this->promise->cancel();
     }
 
-    private function stripTrainingEOL($chunk)
+    /**
+     * @internal
+     */
+    public function stripTrainingEOL($chunk)
     {
         if (substr($chunk, -2) === "\r\n") {
             return substr($chunk, 0, -2);
