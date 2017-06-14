@@ -288,7 +288,7 @@ final class MultipartParser extends EventEmitter
         return '';
     }
 
-    protected function setOnDataListener(callable $callable)
+    protected function setOnDataListener($callable)
     {
         $this->body->removeListener('data', $this->onDataCallable);
         $this->onDataCallable = $callable;
