@@ -75,7 +75,7 @@ class MultipartParserTest extends TestCase
             $post[] = array($key => $value);
         });
         $multipart->on('file', function ($name, UploadedFileInterface $file, $headers) use (&$files) {
-            Stream\buffer($file->getStream())->done(function ($buffer) use ($name, $file, $headers, &$files) {
+            Stream\buffer($file->getStream())->then(function ($buffer) use ($name, $file, $headers, &$files) {
                 $body = new BufferStream(strlen($buffer));
                 $body->write($buffer);
                 $files[] = array(
@@ -89,6 +89,8 @@ class MultipartParserTest extends TestCase
                     ),
                     $headers,
                 );
+            }, function ($t) {
+                throw $t;
             });
         });
 
