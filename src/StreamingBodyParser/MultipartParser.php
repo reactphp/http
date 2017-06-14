@@ -54,7 +54,7 @@ final class MultipartParser extends EventEmitter
 
     public function __construct(RequestInterface $request)
     {
-        $this->onDataCallable = [$this, 'onData'];
+        $this->onDataCallable = array($this, 'onData');
         $this->promise = (new Deferred(function () {
             $this->body->removeListener('data', $this->onDataCallable);
             $this->body->close();
@@ -63,7 +63,7 @@ final class MultipartParser extends EventEmitter
         $this->body = $this->request->getBody();
 
         $dataMethod = $this->determineOnDataMethod();
-        $this->setOnDataListener([$this, $dataMethod]);
+        $this->setOnDataListener(array($this, $dataMethod));
     }
 
     protected function determineOnDataMethod()
@@ -97,7 +97,7 @@ final class MultipartParser extends EventEmitter
             $boundary = substr($this->buffer, 2, strpos($this->buffer, "\r\n"));
             $boundary = substr($boundary, 0, -2);
             $this->setBoundary($boundary);
-            $this->setOnDataListener([$this, 'onData']);
+            $this->setOnDataListener(array($this, 'onData'));
         }
     }
 
@@ -173,7 +173,7 @@ final class MultipartParser extends EventEmitter
         }
 
         $stream = new ThroughStream();
-        $this->emit('file', [
+        $this->emit('file', array(
             $this->getFieldFromHeader($headers['content-disposition'], 'name'),
             new UploadedFile(
                 new HttpBodyStream($stream, null),
@@ -183,7 +183,7 @@ final class MultipartParser extends EventEmitter
                 $headers['content-type'][0]
             ),
             $headers,
-        ]);
+        ));
 
         if (!$streaming) {
             $stream->end($body);
@@ -205,7 +205,7 @@ final class MultipartParser extends EventEmitter
                 $chunk = $this->stripTrainingEOL($chunk);
                 $stream->end($chunk);
 
-                $this->setOnDataListener([$this, 'onData']);
+                $this->setOnDataListener(array($this, 'onData'));
 
                 if (count($chunks) == 1) {
                     array_unshift($chunks, '');
@@ -228,18 +228,18 @@ final class MultipartParser extends EventEmitter
         foreach ($headers['content-disposition'] as $part) {
             if (strpos($part, 'name') === 0) {
                 preg_match('/name="?(.*)"$/', $part, $matches);
-                $this->emit('post', [
+                $this->emit('post', array(
                     $matches[1],
                     $body,
                     $headers,
-                ]);
+                ));
             }
         }
     }
 
     protected function parseHeaders($header)
     {
-        $headers = [];
+        $headers = array();
 
         foreach (explode("\r\n", trim($header)) as $line) {
             list($key, $values) = explode(':', $line, 2);
