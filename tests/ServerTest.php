@@ -225,6 +225,29 @@ class ServerTest extends TestCase
         $this->assertSame('example.com:443', $requestAssertion->getHeaderLine('Host'));
     }
 
+    public function testRequestConnectWithoutHostWillBeAdded()
+    {
+        $requestAssertion = null;
+        $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "CONNECT example.com:443 HTTP/1.1\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertSame('CONNECT', $requestAssertion->getMethod());
+        $this->assertSame('example.com:443', $requestAssertion->getRequestTarget());
+        $this->assertSame('', $requestAssertion->getUri()->getPath());
+        $this->assertSame('http://example.com:443', (string)$requestAssertion->getUri());
+        $this->assertSame(443, $requestAssertion->getUri()->getPort());
+        $this->assertSame('example.com:443', $requestAssertion->getHeaderLine('Host'));
+    }
+
     public function testRequestConnectAuthorityFormWithDefaultPortWillBeIgnored()
     {
         $requestAssertion = null;

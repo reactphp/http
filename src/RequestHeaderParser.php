@@ -77,7 +77,7 @@ class RequestHeaderParser extends EventEmitter
             // check this is a valid authority-form request-target (host:port)
             if (isset($uri['scheme'], $uri['host'], $uri['port']) && count($uri) === 3) {
                 $originalTarget = $parts[1];
-                $parts[1] = '/';
+                $parts[1] = 'http://' . $parts[1] . '/';
                 $headers = implode(' ', $parts);
             } else {
                 throw new \InvalidArgumentException('CONNECT method MUST use authority-form request target');
@@ -135,16 +135,8 @@ class RequestHeaderParser extends EventEmitter
 
         // re-apply actual request target from above
         if ($originalTarget !== null) {
-            $uri = $request->getUri()->withPath('');
-
-            // re-apply host and port from request-target if given
-            $parts = parse_url('tcp://' . $originalTarget);
-            if (isset($parts['host'], $parts['port'])) {
-                $uri = $uri->withHost($parts['host'])->withPort($parts['port']);
-            }
-
             $request = $request->withUri(
-                $uri,
+                $request->getUri()->withPath(''),
                 true
             )->withRequestTarget($originalTarget);
         }
