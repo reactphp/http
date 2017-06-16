@@ -6,8 +6,6 @@ use Evenement\EventEmitter;
 use Psr\Http\Message\RequestInterface;
 use React\Http\HttpBodyStream;
 use React\Http\UploadedFile;
-use React\Promise\CancellablePromiseInterface;
-use React\Promise\Deferred;
 use React\Stream\ThroughStream;
 
 final class MultipartParser extends EventEmitter
@@ -43,11 +41,6 @@ final class MultipartParser extends EventEmitter
     protected $body;
 
     /**
-     * @var CancellablePromiseInterface
-     */
-    protected $promise;
-
-    /**
      * @var callable
      */
     protected $onDataCallable;
@@ -55,14 +48,8 @@ final class MultipartParser extends EventEmitter
     public function __construct(RequestInterface $request)
     {
         $this->onDataCallable = array($this, 'onData');
-        $deferred = new Deferred(function () {
-            $this->body->removeListener('data', $this->onDataCallable);
-            $this->body->close();
-        });
-        $this->promise = $deferred->promise();
         $this->request = $request;
         $this->body = $this->request->getBody();
-
         $dataMethod = $this->determineOnDataMethod();
         $this->setOnDataListener(array($this, $dataMethod));
     }
@@ -302,7 +289,8 @@ final class MultipartParser extends EventEmitter
 
     public function cancel()
     {
-        $this->promise->cancel();
+        $this->body->removeListener('data', $this->onDataCallable);
+        $this->body->close();
     }
 
     /**
