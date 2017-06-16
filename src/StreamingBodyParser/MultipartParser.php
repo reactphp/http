@@ -123,7 +123,7 @@ final class MultipartParser extends EventEmitter
         $chunks = preg_split('/-+' . $this->boundary . '/', $this->buffer);
         $this->buffer = array_pop($chunks);
         foreach ($chunks as $chunk) {
-            $chunk = $this->stripTrainingEOL($chunk);
+            $chunk = $this->stripTrailingEOL($chunk);
             $this->parseChunk($chunk);
         }
 
@@ -205,7 +205,7 @@ final class MultipartParser extends EventEmitter
             if (strpos($buffer, $boundary) !== false) {
                 $chunks = preg_split('/-+' . $boundary . '/', $buffer);
                 $chunk = array_shift($chunks);
-                $chunk = $that->stripTrainingEOL($chunk);
+                $chunk = $that->stripTrailingEOL($chunk);
                 $stream->end($chunk);
 
                 $that->setOnDataListener(array($that, 'onData'));
@@ -308,7 +308,7 @@ final class MultipartParser extends EventEmitter
     /**
      * @internal
      */
-    public function stripTrainingEOL($chunk)
+    public function stripTrailingEOL($chunk)
     {
         if (substr($chunk, -2) === "\r\n") {
             return substr($chunk, 0, -2);
