@@ -176,7 +176,7 @@ class RequestHeaderParserTest extends TestCase
         $this->assertSame($body, $bodyBuffer);
     }
 
-    public function testGuzzleRequestParseException()
+    public function testInvalidEmptyRequestHeadersParseException()
     {
         $error = null;
 
@@ -192,7 +192,28 @@ class RequestHeaderParserTest extends TestCase
         $parser->feed("\r\n\r\n");
 
         $this->assertInstanceOf('InvalidArgumentException', $error);
-        $this->assertSame('Invalid message', $error->getMessage());
+        $this->assertSame('Unable to parse invalid request-line', $error->getMessage());
+        $this->assertSame(0, count($parser->listeners('headers')));
+        $this->assertSame(0, count($parser->listeners('error')));
+    }
+
+    public function testInvalidMalformedRequestLineParseException()
+    {
+        $error = null;
+
+        $parser = new RequestHeaderParser();
+        $parser->on('headers', $this->expectCallableNever());
+        $parser->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $this->assertSame(1, count($parser->listeners('headers')));
+        $this->assertSame(1, count($parser->listeners('error')));
+
+        $parser->feed("GET /\r\n\r\n");
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+        $this->assertSame('Unable to parse invalid request-line', $error->getMessage());
         $this->assertSame(0, count($parser->listeners('headers')));
         $this->assertSame(0, count($parser->listeners('error')));
     }

@@ -63,6 +63,14 @@ class RequestHeaderParser extends EventEmitter
 
     private function parseRequest($headers)
     {
+        // additional, stricter safe-guard for request line
+        // because request parser doesn't properly cope with invalid ones
+        if (!preg_match('#^[^ ]+ [^ ]+ HTTP/\d\.\d#m', $headers)) {
+            throw new \InvalidArgumentException('Unable to parse invalid request-line');
+        }
+
+        $lines = explode("\r\n", $headers);
+
         // parser does not support asterisk-form and authority-form
         // remember original target and temporarily replace and re-apply below
         $originalTarget = null;
