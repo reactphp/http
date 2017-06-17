@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.1 (2017-06-17)
+
+*   Fix: Fix parsing CONNECT request without `Host` header
+    (#201 by @clue)
+
+*   Internal preparation for future PSR-7 `UploadedFileInterface`
+    (#199 by @WyriHaximus)
+
 ## 0.7.0 (2017-05-29)
 
 *   Feature / BC break: Use PSR-7 (http-message) standard and
