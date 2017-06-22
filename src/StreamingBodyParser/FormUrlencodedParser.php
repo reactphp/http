@@ -15,17 +15,13 @@ final class FormUrlencodedParser extends EventEmitter
 
     /**
      * @var HttpBodyStream
-     *
-     * @internal
      */
-    public $body;
+    private $body;
 
     /**
      * @var string
-     *
-     * @internal
      */
-    public $buffer = '';
+    private $buffer = '';
 
     /**
      * @param RequestInterface $request
@@ -35,12 +31,7 @@ final class FormUrlencodedParser extends EventEmitter
         $this->request = $request;
         $this->body = $this->request->getBody();
         $this->body->on('data', array($this, 'onData'));
-        $that = $this;
-        $this->body->on('end', function () use ($that) {
-            $that->body->removeAllListeners();
-            $that->parse($that->buffer);
-            $that->emit('end');
-        });
+        $this->body->on('end', array($this, 'onEnd'));
     }
 
     /**
@@ -64,7 +55,14 @@ final class FormUrlencodedParser extends EventEmitter
     /**
      * @internal
      */
-    public function parse($buffer)
+    public function onEnd()
+    {
+        $this->body->removeAllListeners();
+        $this->parse($this->buffer);
+        $this->emit('end');
+    }
+
+    private function parse($buffer)
     {
         foreach (explode('&', $buffer) as $chunk) {
             $this->emit(
