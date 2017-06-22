@@ -67,11 +67,7 @@ final class FormUrlencodedParser extends EventEmitter
         foreach (explode('&', $buffer) as $chunk) {
             $kv = explode('=', $chunk);
             $kv[0] = rawurldecode($kv[0]);
-            if (!isset($kv[1])) {
-                $kv[1] = null;
-            } else {
-                $kv[1] = rawurldecode($kv[1]);
-            }
+            $kv[1] = isset($kv[1]) ? rawurldecode($kv[1]) : null;
             $this->emit(
                 'post',
                 $kv
