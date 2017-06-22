@@ -19,9 +19,10 @@ class FormUrlencodedParserTest extends TestCase
         $parser->on('post', function ($key, $value) use (&$post) {
             $post[] = array($key, $value);
         });
-        $stream->emit('data', array('user=single&user2=second&us'));
+        $stream->emit('data', array('hiphip&user=single&user2=second&us'));
         $this->assertEquals(
             array(
+                array('hiphip', null),
                 array('user', 'single'),
                 array('user2', 'second'),
             ),
@@ -30,6 +31,7 @@ class FormUrlencodedParserTest extends TestCase
         $stream->emit('data', array('ers%5B%5D=first%20in%20array&users%5B%5D=second%20in%20array'));
         $this->assertEquals(
             array(
+                array('hiphip', null),
                 array('user', 'single'),
                 array('user2', 'second'),
                 array('users[]', 'first in array'),
@@ -39,6 +41,7 @@ class FormUrlencodedParserTest extends TestCase
         $stream->end();
         $this->assertEquals(
             array(
+                array('hiphip', null),
                 array('user', 'single'),
                 array('user2', 'second'),
                 array('users[]', 'first in array'),
