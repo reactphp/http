@@ -420,7 +420,7 @@ See also [example #6](examples) for more details.
 The callback function passed to the constructor of the [Server](#server)
 is responsible for processing the request and returning a response,
 which will be delivered to the client.
-This function MUST return an instance imlementing
+This function MUST return an instance implementing
 [PSR-7 ResponseInterface](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#33-psrhttpmessageresponseinterface)
 object or a 
 [ReactPHP Promise](https://github.com/reactphp/promise#reactpromise)
