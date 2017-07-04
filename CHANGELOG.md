@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.2 (2017-07-04)
+
+*   Fix: Stricter check for invalid request-line in HTTP requests
+    (#206 by @clue)
+
+*   Refactor to use HTTP response reason phrases from response object
+    (#205 by @clue)
+
 ## 0.7.1 (2017-06-17)
 
 *   Fix: Fix parsing CONNECT request without `Host` header
