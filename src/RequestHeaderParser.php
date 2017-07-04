@@ -46,7 +46,7 @@ class RequestHeaderParser extends EventEmitter
 
         if (false !== $endOfHeader) {
             try {
-                $this->parseAndEmitRequest();
+                $this->parseAndEmitRequest($endOfHeader);
             } catch (Exception $exception) {
                 $this->emit('error', array($exception));
             }
@@ -54,15 +54,22 @@ class RequestHeaderParser extends EventEmitter
         }
     }
 
-    private function parseAndEmitRequest()
+    private function parseAndEmitRequest($endOfHeader)
     {
-        list($request, $bodyBuffer) = $this->parseRequest($this->buffer);
+        $request = $this->parseRequest((string)substr($this->buffer, 0, $endOfHeader));
+        $bodyBuffer = isset($this->buffer[$endOfHeader + 4]) ? substr($this->buffer, $endOfHeader + 4) : '';
         $this->emit('headers', array($request, $bodyBuffer));
     }
 
-    private function parseRequest($data)
+    private function parseRequest($headers)
     {
-        list($headers, $bodyBuffer) = explode("\r\n\r\n", $data, 2);
+        // additional, stricter safe-guard for request line
+        // because request parser doesn't properly cope with invalid ones
+        if (!preg_match('#^[^ ]+ [^ ]+ HTTP/\d\.\d#m', $headers)) {
+            throw new \InvalidArgumentException('Unable to parse invalid request-line');
+        }
+
+        $lines = explode("\r\n", $headers);
 
         // parser does not support asterisk-form and authority-form
         // remember original target and temporarily replace and re-apply below
@@ -213,6 +220,6 @@ class RequestHeaderParser extends EventEmitter
         // always sanitize Host header because it contains critical routing information
         $request = $request->withUri($request->getUri()->withUserInfo('u')->withUserInfo(''));
 
-        return array($request, $bodyBuffer);
+        return $request;
     }
 }
