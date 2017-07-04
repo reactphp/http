@@ -1217,7 +1217,7 @@ class ServerTest extends TestCase
 
         $this->assertContains("HTTP/1.1 505 HTTP Version not supported\r\n", $buffer);
         $this->assertContains("\r\n\r\n", $buffer);
-        $this->assertContains("Error 505: HTTP Version Not Supported", $buffer);
+        $this->assertContains("Error 505: HTTP Version not supported", $buffer);
     }
 
     public function testRequestOverflowWillEmitErrorAndSendErrorResponse()

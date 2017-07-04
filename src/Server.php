@@ -275,18 +275,21 @@ class Server extends EventEmitter
     /** @internal */
     public function writeError(ConnectionInterface $conn, $code, ServerRequestInterface $request = null)
     {
-        $message = 'Error ' . $code;
-        if (isset(ResponseCodes::$statusTexts[$code])) {
-            $message .= ': ' . ResponseCodes::$statusTexts[$code];
-        }
-
         $response = new Response(
             $code,
             array(
                 'Content-Type' => 'text/plain'
             ),
-            $message
+            'Error ' . $code
         );
+
+        // append reason phrase to response body if known
+        $reason = $response->getReasonPhrase();
+        if ($reason !== '') {
+            $body = $response->getBody();
+            $body->seek(0, SEEK_END);
+            $body->write(': ' . $reason);
+        }
 
         if ($request === null) {
             $request = new ServerRequest('GET', '/', array(), null, '1.1');
