@@ -52,11 +52,9 @@ class ChunkedEncoder extends EventEmitter implements ReadableStreamInterface
         }
 
         $this->closed = true;
-
-        $this->readable = false;
+        $this->input->close();
 
         $this->emit('close');
-
         $this->removeAllListeners();
     }
 

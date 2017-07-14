@@ -9,12 +9,13 @@ require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
 
-$counter = 0;
-$server = new Server(function (ServerRequestInterface $request) use (&$counter) {
+$server = new Server(function (ServerRequestInterface $request) {
+    $body = "Your IP is: " . $request->getServerParams()['REMOTE_ADDR'];
+
     return new Response(
         200,
         array('Content-Type' => 'text/plain'),
-        "Welcome number " . ++$counter . "!\n"
+        $body
     );
 });
 

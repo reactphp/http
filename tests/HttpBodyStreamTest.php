@@ -3,7 +3,7 @@
 namespace React\Tests\Http;
 
 use React\Http\HttpBodyStream;
-use React\Stream\ReadableStream;
+use React\Stream\ThroughStream;
 
 class HttpBodyStreamTest extends TestCase
 {
@@ -12,7 +12,7 @@ class HttpBodyStreamTest extends TestCase
 
     public function setUp()
     {
-        $this->input = new ReadableStream();
+        $this->input = new ThroughStream();
         $this->bodyStream = new HttpBodyStream($this->input, null);
     }
 

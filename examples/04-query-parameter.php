@@ -9,12 +9,20 @@ require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
 
-$counter = 0;
-$server = new Server(function (ServerRequestInterface $request) use (&$counter) {
+$server = new Server(function (ServerRequestInterface $request) {
+    $queryParams = $request->getQueryParams();
+
+    $body = 'The query parameter "foo" is not set. Click the following link ';
+    $body .= '<a href="/?foo=bar">to use query parameter in your request</a>';
+
+    if (isset($queryParams['foo'])) {
+        $body = 'The value of "foo" is: ' . htmlspecialchars($queryParams['foo']);
+    }
+
     return new Response(
         200,
-        array('Content-Type' => 'text/plain'),
-        "Welcome number " . ++$counter . "!\n"
+        array('Content-Type' => 'text/html'),
+        $body
     );
 });
 
