@@ -118,8 +118,8 @@ $server->on('error', function (Exception $e) {
 ```
 
 The server will also emit an `error` event if you return an invalid
-type in the callback function or have a unhandled `Exception`.
-If your callback function throws an exception,
+type in the callback function or have a unhandled `Exception` or `Throwable`.
+If your callback function throws an `Exception` or `Throwable`,
 the `Server` will emit a `RuntimeException` and add the thrown exception
 as previous:
 
@@ -540,9 +540,9 @@ $server = new Server(function (ServerRequestInterface $request) use ($stream) {
 });
 ```
 
-An invalid return value or an unhandled `Exception` in the code of the callback
-function, will result in an `500 Internal Server Error` message.
-Make sure to catch `Exceptions` to create own response messages.
+An invalid return value or an unhandled `Exception` or `Throwable` in the code
+of the callback function, will result in an `500 Internal Server Error` message.
+Make sure to catch `Exceptions` or `Throwables` to create own response messages.
 
 After the return in the callback function the response will be processed by the `Server`.
 The `Server` will add the protocol version of the request, so you don't have to.
