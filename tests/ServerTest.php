@@ -2810,7 +2810,7 @@ class ServerTest extends TestCase
      */
     public function testThrowableThrowInCallBackFunctionWillResultInErrorMessage()
     {
-        $server = new Server($this->socket, function (RequestInterface $request) {
+        $server = new Server(function (ServerRequestInterface $request) {
             throw new \Error('hello');
         });
 
@@ -2831,6 +2831,7 @@ class ServerTest extends TestCase
                 )
             );
 
+        $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
 
         $data = $this->createGetRequest();
