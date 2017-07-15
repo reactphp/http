@@ -2805,6 +2805,52 @@ class ServerTest extends TestCase
         $this->assertEquals('hello', $exception->getPrevious()->getMessage());
     }
 
+    /**
+     * @requires PHP 7
+     */
+    public function testThrowableThrowInCallBackFunctionWillResultInErrorMessage()
+    {
+        $server = new Server(function (ServerRequestInterface $request) {
+            throw new \Error('hello');
+        });
+
+        $exception = null;
+        $server->on('error', function (\Exception $ex) use (&$exception) {
+            $exception = $ex;
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+
+        try {
+            $this->connection->emit('data', array($data));
+        } catch (\Error $e) {
+            $this->markTestSkipped(
+                'A \Throwable bubbled out of the request callback. ' .
+                'This happened most probably due to react/promise:^1.0 being installed ' .
+                'which does not support \Throwable.'
+            );
+        }
+
+        $this->assertInstanceOf('RuntimeException', $exception);
+        $this->assertContains("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
+        $this->assertEquals('hello', $exception->getPrevious()->getMessage());
+    }
+
     public function testRejectOfNonExceptionWillResultInErrorMessage()
     {
         $server = new Server(function (ServerRequestInterface $request) {
