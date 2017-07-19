@@ -234,6 +234,22 @@ class RequestHeaderParserTest extends TestCase
         $this->assertSame('Invalid absolute-form request-target', $error->getMessage());
     }
 
+    public function testHttp11RequestWithNoHostHeaderEmitsError()
+    {
+        $error = null;
+
+        $parser = new RequestHeaderParser();
+        $parser->on('headers', $this->expectCallableNever());
+        $parser->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $parser->feed("GET / HTTP/1.1\r\n\r\n");
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+        $this->assertSame('A client must send a host header field in all HTTP/1.1 request messages', $error->getMessage());
+    }
+
     public function testInvalidAbsoluteFormWithFragmentEmitsError()
     {
         $error = null;
