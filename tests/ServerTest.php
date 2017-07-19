@@ -891,7 +891,7 @@ class ServerTest extends TestCase
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
 
-        $data = "GET / HTTP/1.1\r\n\r\n";
+        $data = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n";
         $this->connection->emit('data', array($data));
 
         $this->assertEquals("HTTP/1.1 200 OK\r\nUpgrade: demo\r\nContent-Length: 3\r\nConnection: close\r\n\r\nfoo", $buffer);
@@ -919,7 +919,7 @@ class ServerTest extends TestCase
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
 
-        $data = "GET / HTTP/1.1\r\nUpgrade: demo\r\n\r\n";
+        $data = "GET / HTTP/1.1\r\nUpgrade: demo\r\nHost: localhost\r\n\r\n";
         $this->connection->emit('data', array($data));
 
         $this->assertEquals("HTTP/1.1 200 OK\r\nContent-Length: 3\r\nConnection: close\r\n\r\nfoo", $buffer);
@@ -949,7 +949,7 @@ class ServerTest extends TestCase
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
 
-        $data = "GET / HTTP/1.1\r\nUpgrade: demo\r\n\r\n";
+        $data = "GET / HTTP/1.1\r\nUpgrade: demo\r\nHost: localhost\r\n\r\n";
         $this->connection->emit('data', array($data));
 
         $this->assertEquals("HTTP/1.1 101 Switching Protocols\r\nUpgrade: demo\r\nConnection: upgrade\r\n\r\nfoo", $buffer);
@@ -979,7 +979,7 @@ class ServerTest extends TestCase
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
 
-        $data = "GET / HTTP/1.1\r\nUpgrade: demo\r\n\r\n";
+        $data = "GET / HTTP/1.1\r\nUpgrade: demo\r\nHost: localhost\r\n\r\n";
         $this->connection->emit('data', array($data));
 
         $stream->write('hello');

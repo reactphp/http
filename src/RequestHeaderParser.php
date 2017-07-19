@@ -163,6 +163,10 @@ class RequestHeaderParser extends EventEmitter
             }
         }
 
+        if ($request->getProtocolVersion() === '1.1' && !$request->hasHeader('Host')) {
+            throw new \InvalidArgumentException('A client must send a host header field in all HTTP/1.1 request messages');
+        }
+
         // Optional Host header value MUST be valid (host and optional port)
         if ($request->hasHeader('Host')) {
             $parts = parse_url('http://' . $request->getHeaderLine('Host'));
