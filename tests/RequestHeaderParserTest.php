@@ -256,6 +256,22 @@ class RequestHeaderParserTest extends TestCase
         $this->assertSame($headers, $request->getHeaders());
     }
 
+    public function testUriStartingWithColonSlashSlashFails()
+    {
+        $error = null;
+
+        $parser = new RequestHeaderParser();
+        $parser->on('headers', $this->expectCallableNever());
+        $parser->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $parser->feed("GET ://example.com:80/ HTTP/1.0\r\n\r\n");
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+        $this->assertSame('Invalid request string', $error->getMessage());
+    }
+
     public function testInvalidAbsoluteFormWithFragmentEmitsError()
     {
         $error = null;
