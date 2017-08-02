@@ -234,6 +234,44 @@ class RequestHeaderParserTest extends TestCase
         $this->assertSame('Invalid absolute-form request-target', $error->getMessage());
     }
 
+    public function testOriginFormWithSchemeSeparatorInParam()
+    {
+        $request = null;
+
+        $parser = new RequestHeaderParser();
+        $parser->on('error', $this->expectCallableNever());
+        $parser->on('headers', function ($parsedRequest, $parsedBodyBuffer) use (&$request) {
+            $request = $parsedRequest;
+        });
+
+        $parser->feed("GET /somepath?param=http://example.com HTTP/1.1\r\nHost: localhost\r\n\r\n");
+
+        $this->assertInstanceOf('Psr\Http\Message\RequestInterface', $request);
+        $this->assertSame('GET', $request->getMethod());
+        $this->assertEquals('http://localhost/somepath?param=http://example.com', $request->getUri());
+        $this->assertSame('1.1', $request->getProtocolVersion());
+        $headers = array(
+            'Host' => array('localhost')
+        );
+        $this->assertSame($headers, $request->getHeaders());
+    }
+
+    public function testUriStartingWithColonSlashSlashFails()
+    {
+        $error = null;
+
+        $parser = new RequestHeaderParser();
+        $parser->on('headers', $this->expectCallableNever());
+        $parser->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $parser->feed("GET ://example.com:80/ HTTP/1.0\r\n\r\n");
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+        $this->assertSame('Invalid request string', $error->getMessage());
+    }
+
     public function testInvalidAbsoluteFormWithFragmentEmitsError()
     {
         $error = null;
