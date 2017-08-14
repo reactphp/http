@@ -3,11 +3,14 @@
 namespace React\Http;
 
 use Evenement\EventEmitter;
+use Interop\Http\ServerMiddleware\DelegateInterface;
+use Interop\Http\ServerMiddleware\MiddlewareInterface;
+use React\Http\Middleware\Callback;
 use React\Socket\ServerInterface;
 use React\Socket\ConnectionInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use React\Promise\Promise;
+use React\Promise;
 use RingCentral\Psr7 as Psr7Implementation;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Promise\CancellablePromiseInterface;
@@ -75,7 +78,7 @@ use React\Stream\WritableStreamInterface;
  */
 class Server extends EventEmitter
 {
-    private $callback;
+    private $middlewareStack;
 
     /**
      * Creates an HTTP server that invokes the given callback for each incoming HTTP request
@@ -85,16 +88,25 @@ class Server extends EventEmitter
      * connections in order to then parse incoming data as HTTP.
      * See also [listen()](#listen) for more details.
      *
-     * @param callable $callback
+     * @param MiddlewareInterface[] $middlewares
      * @see self::listen()
      */
-    public function __construct($callback)
+    public function __construct($middlewares)
     {
-        if (!is_callable($callback)) {
-            throw new \InvalidArgumentException();
+        if (is_array($middlewares)) {
+            $this->middlewareStack = new MiddlewareStack(
+                new Response(404),
+                $middlewares
+            );
+            return;
         }
 
-        $this->callback = $callback;
+        if ($middlewares instanceof MiddlewareStack) {
+            $this->middlewareStack = $middlewares;
+            return;
+        }
+
+        throw new \InvalidArgumentException();
     }
 
     /**
@@ -227,10 +239,10 @@ class Server extends EventEmitter
             $conn->write("HTTP/1.1 100 Continue\r\n\r\n");
         }
 
-        $callback = $this->callback;
+        $middlewareStack = $this->middlewareStack;
         $cancel = null;
-        $promise = new Promise(function ($resolve, $reject) use ($callback, $request, &$cancel) {
-            $cancel = $callback($request);
+        $promise = new Promise\Promise(function ($resolve, $reject) use ($middlewareStack, $request, &$cancel) {
+            $cancel = $middlewareStack->process($request);
             $resolve($cancel);
         });
 
