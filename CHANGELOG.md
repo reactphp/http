@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.3 (2017-08-14)
+
+*   Feature: Support `Throwable` when setting previous exception from server callback
+    (#155 by @jsor)
+
+*   Fix: Fixed URI parsing for origin-form requests that contain scheme separator
+    such as `/path?param=http://example.com`.
+    (#209 by @aaronbonneau)
+
+*   Improve test suite by locking Travis distro so new defaults will not break the build
+    (#211 by @clue)
+
 ## 0.7.2 (2017-07-04)
 
 *   Fix: Stricter check for invalid request-line in HTTP requests
