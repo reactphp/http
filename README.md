@@ -659,7 +659,7 @@ The recommended way to install this library is [through Composer](http://getcomp
 This will install the latest supported version:
 
 ```bash
-$ composer require react/http:^0.7.2
+$ composer require react/http:^0.7.3
 ```
 
 More details about version upgrades can be found in the [CHANGELOG](CHANGELOG.md).
