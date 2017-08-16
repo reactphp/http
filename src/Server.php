@@ -20,18 +20,20 @@ use React\Stream\WritableStreamInterface;
  * The `Server` class is responsible for handling incoming connections and then
  * processing each incoming HTTP request.
  *
- * For each request, it executes the callback function passed to the
+ * For each request, it executes the middleware stack passed to the
  * constructor with the respective [request](#request) object and expects
  * a respective [response](#response) object in return.
  *
  * ```php
- * $server = new Server(function (ServerRequestInterface $request) {
- *     return new Response(
- *         200,
- *         array('Content-Type' => 'text/plain'),
- *         "Hello World!\n"
- *     );
- * });
+ * $server = new Server([
+ *     new Callback(function (ServerRequestInterface $request) {
+ *         return new Response(
+ *             200,
+ *             array('Content-Type' => 'text/plain'),
+ *             "Hello World!\n"
+ *         );
+ *     })
+ * ]);
  * ```
  *
  * In order to process any connections, the server needs to be attached to an
@@ -78,17 +80,23 @@ use React\Stream\WritableStreamInterface;
  */
 class Server extends EventEmitter
 {
+    /**
+     * @var MiddlewareStackInterface
+     */
     private $middlewareStack;
 
     /**
-     * Creates an HTTP server that invokes the given callback for each incoming HTTP request
+     * Creates an HTTP server that invokes the given middleware stack for each
+     * incoming HTTP request. The middleware stack is either a concrete class
+     * implementing `React\Http\MiddlewareStackInterface` or an array of
+     * `React\Http\MiddlewareInterface`s.
      *
      * In order to process any connections, the server needs to be attached to an
      * instance of `React\Socket\ServerInterface` which emits underlying streaming
      * connections in order to then parse incoming data as HTTP.
      * See also [listen()](#listen) for more details.
      *
-     * @param MiddlewareInterface[] $middlewares
+     * @param MiddlewareInterface[]|MiddlewareStackInterface $middlewares
      * @see self::listen()
      */
     public function __construct($middlewares)
@@ -101,7 +109,7 @@ class Server extends EventEmitter
             return;
         }
 
-        if ($middlewares instanceof MiddlewareStack) {
+        if ($middlewares instanceof MiddlewareStackInterface) {
             $this->middlewareStack = $middlewares;
             return;
         }
