@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.4 (2017-08-16)
+
+*   Improvement: Target evenement 3.0 a long side 2.0 and 1.0
+    (#212 by @WyriHaximus)
+
 ## 0.7.3 (2017-08-14)
 
 *   Feature: Support `Throwable` when setting previous exception from server callback
