@@ -4,6 +4,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Middleware\Callback;
 use React\Http\MiddlewareInterface;
+use React\Http\MiddlewareStack;
 use React\Http\MiddlewareStackInterface;
 use React\Http\Response;
 use React\Http\Server;
@@ -43,22 +44,25 @@ $loop->addPeriodicTimer(1, function () use (&$counts, &$total) {
         'responses' => 0,
     );
 });
-$server = new Server(array(
-    new Incre($counts),
-    new Callback(function (ServerRequestInterface $request) use ($loop) {
-        $deferred = new Deferred();
-        $loop->addTimer(mt_rand(1, 10) / 10, function () use ($deferred) {
-            $deferred->resolve(new Response(
-                200,
-                array(
-                    'Content-Type' => 'text/plain'
-                ),
-                "Hello world\n"
-            ));
-        });
-        return $deferred->promise();
-    })
-));
+$server = new Server(new MiddlewareStack(
+    new Response(500),
+    array(
+        new Incre($counts),
+        new Callback(function (ServerRequestInterface $request) use ($loop) {
+            $deferred = new Deferred();
+            $loop->addTimer(mt_rand(1, 10) / 10, function () use ($deferred) {
+                $deferred->resolve(new Response(
+                    200,
+                    array(
+                        'Content-Type' => 'text/plain'
+                    ),
+                    "Hello world\n"
+                ));
+            });
+            return $deferred->promise();
+        })
+    ))
+);
 
 $socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
 $server->listen($socket);
