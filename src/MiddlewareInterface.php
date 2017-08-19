@@ -2,6 +2,7 @@
 
 namespace React\Http;
 
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Promise\PromiseInterface;
 
@@ -14,7 +15,7 @@ interface MiddlewareInterface
      * @param ServerRequestInterface $request
      * @param MiddlewareStackInterface $stack
      *
-     * @return PromiseInterface<ResponseInterface>
+     * @return ResponseInterface|PromiseInterface<ResponseInterface>
      */
     public function process(ServerRequestInterface $request, MiddlewareStackInterface $stack);
 }
