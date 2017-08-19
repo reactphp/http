@@ -118,7 +118,7 @@ class Server extends EventEmitter
             return;
         }
 
-        throw new \InvalidArgumentException('Only callables, MiddlewareInterface[], or MiddlewareStackInterface implementations are supported');
+        throw new \InvalidArgumentException('Only a callable, React\Http\MiddlewareInterface[], or a single React\Http\MiddlewareStackInterface implementation are supported');
     }
 
     /**
