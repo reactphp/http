@@ -111,7 +111,7 @@ class Server extends EventEmitter
             return;
         }
 
-        throw new \InvalidArgumentException();
+        throw new \InvalidArgumentException('Only MiddlewareInterface[] or MiddlewareStackInterface implementations are supported');
     }
 
     /**
