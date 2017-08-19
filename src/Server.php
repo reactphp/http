@@ -3,9 +3,6 @@
 namespace React\Http;
 
 use Evenement\EventEmitter;
-use Interop\Http\ServerMiddleware\DelegateInterface;
-use Interop\Http\ServerMiddleware\MiddlewareInterface;
-use React\Http\Middleware\Callback;
 use React\Socket\ServerInterface;
 use React\Socket\ConnectionInterface;
 use Psr\Http\Message\RequestInterface;
