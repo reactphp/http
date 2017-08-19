@@ -13,7 +13,7 @@ require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
 
-$server = new Server([
+$server = new Server(array(
     new LimitHandlers(3), // Only handle three requests concurrently
     new Buffer(), // Buffer the whole request body before proceeding
     new Callback(function (ServerRequestInterface $request) use ($loop) {
@@ -29,7 +29,7 @@ $server = new Server([
         });
         return $deferred->promise();
     })
-]);
+));
 
 $socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
 $server->listen($socket);

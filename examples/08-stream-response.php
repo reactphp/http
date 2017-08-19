@@ -2,7 +2,6 @@
 
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
-use React\Http\Middleware\Callback;
 use React\Http\Response;
 use React\Http\Server;
 use React\Stream\ThroughStream;
@@ -11,30 +10,28 @@ require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
 
-$server = new Server([
-    new Callback(function (ServerRequestInterface $request) use ($loop) {
-        if ($request->getMethod() !== 'GET' || $request->getUri()->getPath() !== '/') {
-            return new Response(404);
-        }
+$server = new Server($loop,function (ServerRequestInterface $request) use ($loop) {
+    if ($request->getMethod() !== 'GET' || $request->getUri()->getPath() !== '/') {
+        return new Response(404);
+    }
 
-        $stream = new ThroughStream();
+    $stream = new ThroughStream();
 
-        $timer = $loop->addPeriodicTimer(0.5, function () use ($stream) {
-            $stream->emit('data', array(microtime(true) . PHP_EOL));
-        });
+    $timer = $loop->addPeriodicTimer(0.5, function () use ($stream) {
+        $stream->emit('data', array(microtime(true) . PHP_EOL));
+    });
 
-        $loop->addTimer(5, function() use ($loop, $timer, $stream) {
-            $loop->cancelTimer($timer);
-            $stream->emit('end');
-        });
+    $loop->addTimer(5, function() use ($loop, $timer, $stream) {
+        $loop->cancelTimer($timer);
+        $stream->emit('end');
+    });
 
-        return new Response(
-            200,
-            array('Content-Type' => 'text/plain'),
-            $stream
-        );
-    })
-]);
+    return new Response(
+        200,
+        array('Content-Type' => 'text/plain'),
+        $stream
+    );
+});
 
 $socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
 $server->listen($socket);

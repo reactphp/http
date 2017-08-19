@@ -23,15 +23,13 @@ This is an HTTP server which responds with `Hello World` to every request.
 ```php
 $loop = React\EventLoop\Factory::create();
 
-$server = new Server([
-    new Callback(function (ServerRequestInterface $request) {
-        return new Response(
-            200,
-            array('Content-Type' => 'text/plain'),
-            "Hello World!\n"
-        );
-    }),
-]);
+$server = new Server(function (ServerRequestInterface $request) {
+    return new Response(
+        200,
+        array('Content-Type' => 'text/plain'),
+        "Hello World!\n"
+    );
+});
 
 $socket = new React\Socket\Server(8080, $loop);
 $server->listen($socket);
@@ -48,20 +46,18 @@ See also the [examples](examples).
 The `Server` class is responsible for handling incoming connections and then
 processing each incoming HTTP request.
 
-For each request, it executes the middleware stack passed to the
+For each request, it executes the callback function passed to the
 constructor with the respective [request](#request) object and expects
 a respective [response](#response) object in return.
 
 ```php
-$server = new Server([
-    new Callback(function (ServerRequestInterface $request) {
-        return new Response(
-            200,
-            array('Content-Type' => 'text/plain'),
-            "Hello World!\n"
-        );
-    }),
-]);
+$server = new Server(function (ServerRequestInterface $request) {
+    return new Response(
+        200,
+        array('Content-Type' => 'text/plain'),
+        "Hello World!\n"
+    );
+});
 ```
 
 In order to process any connections, the server needs to be attached to an
@@ -73,7 +69,7 @@ You can attach this to a
 in order to start a plaintext HTTP server like this:
 
 ```php
-$server = new Server($middlewareStack);
+$server = new Server($handler);
 
 $socket = new React\Socket\Server(8080, $loop);
 $server->listen($socket);
@@ -86,7 +82,7 @@ Similarly, you can also attach this to a
 in order to start a secure HTTPS server like this:
 
 ```php
-$server = new Server($middlewareStack);
+$server = new Server($handler);
 
 $socket = new React\Socket\Server(8080, $loop);
 $socket = new React\Socket\SecureServer($socket, $loop, array(
@@ -143,10 +139,10 @@ Check out [request](#request) for more details.
 
 ### Middleware
 
-As of `0.8` request handling is done via middlewares either by passing 
-an array with middlewares implementing 
-[`React\Http\MiddlewareInterface`](src/MiddlewareInterface.php)
-or by passing a concrete implementation of 
+As of `0.8` request handling is done via middlewares either by passing
+a `callable` as before, an array with middlewares implementing 
+[`React\Http\MiddlewareInterface`](src/MiddlewareInterface.php),
+passing a concrete implementation of 
 [`React\Http\MiddlewareStackInterface`](src/MiddlewareStackInterface.php)
 directly.
 
@@ -237,18 +233,16 @@ which in turn extends the
 and will be passed to the callback function like this.
 
  ```php 
-$server = new Server([
-    new Callback(function (ServerRequestInterface $request) {
-        $body = "The method of the request is: " . $request->getMethod();
-        $body .= "The requested path is: " . $request->getUri()->getPath();
-    
-        return new Response(
-            200,
-            array('Content-Type' => 'text/plain'),
-            $body
-        );
-    }),
-]);
+$server = new Server(function (ServerRequestInterface $request) {
+    $body = "The method of the request is: " . $request->getMethod();
+    $body .= "The requested path is: " . $request->getUri()->getPath();
+
+    return new Response(
+        200,
+        array('Content-Type' => 'text/plain'),
+        $body
+    );
+});
 ```
 
 The `getServerParams(): mixed[]` method can be used to
@@ -273,17 +267,15 @@ The following parameters are currently available:
   Set to 'on' if the request used HTTPS, otherwise it won't be set
 
 ```php 
-$server = new Server([
-    new Callback(function (ServerRequestInterface $request) {
-        $body = "Your IP is: " . $request->getServerParams()['REMOTE_ADDR'];
-    
-        return new Response(
-            200,
-            array('Content-Type' => 'text/plain'),
-            $body
-        );
-    }),
-]);
+$server = new Server(function (ServerRequestInterface $request) {
+    $body = "Your IP is: " . $request->getServerParams()['REMOTE_ADDR'];
+
+    return new Response(
+        200,
+        array('Content-Type' => 'text/plain'),
+        $body
+    );
+});
 ```
 
 See also [example #2](examples).
@@ -292,24 +284,22 @@ The `getQueryParams(): array` method can be used to get the query parameters
 similiar to the `$_GET` variable.
 
 ```php
-$server = new Server([
-    new Callback(function (ServerRequestInterface $request) {
-        $queryParams = $request->getQueryParams();
-    
-        $body = 'The query parameter "foo" is not set. Click the following link ';
-        $body .= '<a href="/?foo=bar">to use query parameter in your request</a>';
-    
-        if (isset($queryParams['foo'])) {
-            $body = 'The value of "foo" is: ' . htmlspecialchars($queryParams['foo']);
-        }
-    
-        return new Response(
-            200,
-            array('Content-Type' => 'text/html'),
-            $body
-        );
-    }),
-]);
+$server = new Server(function (ServerRequestInterface $request) {
+    $queryParams = $request->getQueryParams();
+
+    $body = 'The query parameter "foo" is not set. Click the following link ';
+    $body .= '<a href="/?foo=bar">to use query parameter in your request</a>';
+
+    if (isset($queryParams['foo'])) {
+        $body = 'The value of "foo" is: ' . htmlspecialchars($queryParams['foo']);
+    }
+
+    return new Response(
+        200,
+        array('Content-Type' => 'text/html'),
+        $body
+    );
+});
 ```
 
 The response in the above example will return a response body with a link.
@@ -357,35 +347,33 @@ Instead, you should use the `ReactPHP ReadableStreamInterface` which
 gives you access to the incoming request body as the individual chunks arrive:
 
 ```php
-$server = new Server([
-    new Callback(function (ServerRequestInterface $request) {
-        return new Promise(function ($resolve, $reject) use ($request) {
-            $contentLength = 0;
-            $request->getBody()->on('data', function ($data) use (&$contentLength) {
-                $contentLength += strlen($data);
-            });
-    
-            $request->getBody()->on('end', function () use ($resolve, &$contentLength){
-                $response = new Response(
-                    200,
-                    array('Content-Type' => 'text/plain'),
-                    "The length of the submitted request body is: " . $contentLength
-                );
-                $resolve($response);
-            });
-    
-            // an error occures e.g. on invalid chunked encoded data or an unexpected 'end' event
-            $request->getBody()->on('error', function (\Exception $exception) use ($resolve, &$contentLength) {
-                $response = new Response(
-                    400,
-                    array('Content-Type' => 'text/plain'),
-                    "An error occured while reading at length: " . $contentLength
-                );
-                $resolve($response);
-            });
-        })
-    }),
-]);
+$server = new Server(function (ServerRequestInterface $request) {
+    return new Promise(function ($resolve, $reject) use ($request) {
+        $contentLength = 0;
+        $request->getBody()->on('data', function ($data) use (&$contentLength) {
+            $contentLength += strlen($data);
+        });
+
+        $request->getBody()->on('end', function () use ($resolve, &$contentLength){
+            $response = new Response(
+                200,
+                array('Content-Type' => 'text/plain'),
+                "The length of the submitted request body is: " . $contentLength
+            );
+            $resolve($response);
+        });
+
+        // an error occures e.g. on invalid chunked encoded data or an unexpected 'end' event
+        $request->getBody()->on('error', function (\Exception $exception) use ($resolve, &$contentLength) {
+            $response = new Response(
+                400,
+                array('Content-Type' => 'text/plain'),
+                "An error occured while reading at length: " . $contentLength
+            );
+            $resolve($response);
+        });
+    });
+});
 ```
 
 The above example simply counts the number of bytes received in the request body.
@@ -423,27 +411,25 @@ Note that this value may be `null` if the request body size is unknown in
 advance because the request message uses chunked transfer encoding.
 
 ```php 
-$server = new Server([
-    new Callback(function (ServerRequestInterface $request) {
-        $size = $request->getBody()->getSize();
-        if ($size === null) {
-            $body = 'The request does not contain an explicit length.';
-            $body .= 'This server does not accept chunked transfer encoding.';
-    
-            return new Response(
-                411,
-                array('Content-Type' => 'text/plain'),
-                $body
-            );
-        }
-    
+$server = new Server(function (ServerRequestInterface $request) {
+    $size = $request->getBody()->getSize();
+    if ($size === null) {
+        $body = 'The request does not contain an explicit length.';
+        $body .= 'This server does not accept chunked transfer encoding.';
+
         return new Response(
-            200,
+            411,
             array('Content-Type' => 'text/plain'),
-            "Request body size: " . $size . " bytes\n"
+            $body
         );
-    }),
-]);
+    }
+
+    return new Response(
+        200,
+        array('Content-Type' => 'text/plain'),
+        "Request body size: " . $size . " bytes\n"
+    );
+});
 ```
 
 Note that the server supports *any* request method (including custom and non-
@@ -479,30 +465,28 @@ The `getCookieParams(): string[]` method can be used to
 get all cookies sent with the current request.
 
 ```php 
-$server = new Server([
-    new Callback(function (ServerRequestInterface $request) {
-        $key = 'react\php';
-    
-        if (isset($request->getCookieParams()[$key])) {
-            $body = "Your cookie value is: " . $request->getCookieParams()[$key];
-    
-            return new Response(
-                200,
-                array('Content-Type' => 'text/plain'),
-                $body
-            );
-        }
-    
+$server = new Server(function (ServerRequestInterface $request) {
+    $key = 'react\php';
+
+    if (isset($request->getCookieParams()[$key])) {
+        $body = "Your cookie value is: " . $request->getCookieParams()[$key];
+
         return new Response(
             200,
-            array(
-                'Content-Type' => 'text/plain',
-                'Set-Cookie' => urlencode($key) . '=' . urlencode('test;more')
-            ),
-            "Your cookie has been set."
+            array('Content-Type' => 'text/plain'),
+            $body
         );
-    }),
-]);
+    }
+
+    return new Response(
+        200,
+        array(
+            'Content-Type' => 'text/plain',
+            'Set-Cookie' => urlencode($key) . '=' . urlencode('test;more')
+        ),
+        "Your cookie has been set."
+    );
+});
 ```
 
 The above example will try to set a cookie on first access and
@@ -532,15 +516,13 @@ but feel free to use any implemantation of the
 `PSR-7 ResponseInterface` you prefer.
 
 ```php 
-$server = new Server([
-    new Callback(function (ServerRequestInterface $request) {
-        return new Response(
-            200,
-            array('Content-Type' => 'text/plain'),
-            "Hello World!\n"
-        );
-    }),
-]);
+$server = new Server(function (ServerRequestInterface $request) {
+    return new Response(
+        200,
+        array('Content-Type' => 'text/plain'),
+        "Hello World!\n"
+    );
+});
 ```
 
 The example above returns the response directly, because it needs
@@ -553,20 +535,18 @@ To prevent this you SHOULD use a
 This example shows how such a long-term action could look like:
 
 ```php
-$server = new Server([
-    new Callback(function (ServerRequestInterface $request) use ($loop) {
-        return new Promise(function ($resolve, $reject) use ($request, $loop) {
-            $loop->addTimer(1.5, function() use ($loop, $resolve) {
-                $response = new Response(
-                    200,
-                    array('Content-Type' => 'text/plain'),
-                    "Hello world"
-                );
-                $resolve($response);
-            });
+$server = new Server(function (ServerRequestInterface $request) use ($loop) {
+    return new Promise(function ($resolve, $reject) use ($request, $loop) {
+        $loop->addTimer(1.5, function() use ($loop, $resolve) {
+            $response = new Response(
+                200,
+                array('Content-Type' => 'text/plain'),
+                "Hello world"
+            );
+            $resolve($response);
         });
-    }),
-]);
+    });
+});
 ```
 
 The above example will create a response after 1.5 second.
@@ -588,22 +568,20 @@ Note that other implementations of the `PSR-7 ResponseInterface` likely
 only support strings.
 
 ```php
-$server = new Server([
-    new Callback(function (ServerRequestInterface $request) use ($loop) {
-        $stream = new ThroughStream();
-    
-        $timer = $loop->addPeriodicTimer(0.5, function () use ($stream) {
-            $stream->emit('data', array(microtime(true) . PHP_EOL));
-        });
-    
-        $loop->addTimer(5, function() use ($loop, $timer, $stream) {
-            $loop->cancelTimer($timer);
-            $stream->emit('end');
-        });
-    
-        return new Response(200, array('Content-Type' => 'text/plain'), $stream);
-    }),
-]);
+$server = new Server(function (ServerRequestInterface $request) use ($loop) {
+    $stream = new ThroughStream();
+
+    $timer = $loop->addPeriodicTimer(0.5, function () use ($stream) {
+        $stream->emit('data', array(microtime(true) . PHP_EOL));
+    });
+
+    $loop->addTimer(5, function() use ($loop, $timer, $stream) {
+        $loop->cancelTimer($timer);
+        $stream->emit('end');
+    });
+
+    return new Response(200, array('Content-Type' => 'text/plain'), $stream);
+});
 ```
 
 The above example will emit every 0.5 seconds the current Unix timestamp 
@@ -633,18 +611,16 @@ If you know the length of your stream body, you MAY specify it like this instead
 
 ```php
 $stream = new ThroughStream()
-$server = new Server([
-    new Callback(function (ServerRequestInterface $request) use ($stream) {
-        return new Response(
-            200,
-            array(
-                'Content-Length' => '5',
-                'Content-Type' => 'text/plain',
-            ),
-            $stream
-        );
-    }),
-]);
+$server = new Server(function (ServerRequestInterface $request) use ($stream) {
+    return new Response(
+        200,
+        array(
+            'Content-Length' => '5',
+            'Content-Type' => 'text/plain',
+        ),
+        $stream
+    );
+});
 ```
 
 An invalid return value or an unhandled `Exception` or `Throwable` in the code
@@ -720,44 +696,36 @@ A `Date` header will be automatically added with the system date and time if non
 You can add a custom `Date` header yourself like this:
 
 ```php
-$server = new Server([
-    new Callback(function (ServerRequestInterface $request) {
-        return new Response(200, array('Date' => date('D, d M Y H:i:s T')));
-    }),
-]);
+$server = new Server(function (ServerRequestInterface $request) {
+    return new Response(200, array('Date' => date('D, d M Y H:i:s T')));
+});
 ```
 
 If you don't have a appropriate clock to rely on, you should
 unset this header with an empty string:
 
 ```php
-$server = new Server([
-    new Callback(function (ServerRequestInterface $request) {
-        return new Response(200, array('Date' => ''));
-    }),
-]);
+$server = new Server(function (ServerRequestInterface $request) {
+    return new Response(200, array('Date' => ''));
+});
 ```
 
 Note that it will automatically assume a `X-Powered-By: react/alpha` header
 unless your specify a custom `X-Powered-By` header yourself:
 
 ```php
-$server = new Server([
-    new Callback(function (ServerRequestInterface $request) {
-        return new Response(200, array('X-Powered-By' => 'PHP 3'));
-    }),
-]);
+$server = new Server(function (ServerRequestInterface $request) {
+    return new Response(200, array('X-Powered-By' => 'PHP 3'));
+});
 ```
 
 If you do not want to send this header at all, you can use an empty string as
 value like this:
 
 ```php
-$server = new Server([
-    new Callback(function (ServerRequestInterface $request) {
-        return new Response(200, array('X-Powered-By' => ''));
-    }),
-]);
+$server = new Server(function (ServerRequestInterface $request) {
+    return new Response(200, array('X-Powered-By' => ''));
+});
 ```
 
 Note that persistent connections (`Connection: keep-alive`) are currently
@@ -774,7 +742,7 @@ The recommended way to install this library is [through Composer](http://getcomp
 This will install the latest supported version:
 
 ```bash
-$ composer require react/http:^0.7.3
+$ composer require react/http:^0.7.4
 ```
 
 More details about version upgrades can be found in the [CHANGELOG](CHANGELOG.md).

@@ -3,6 +3,7 @@
 namespace React\Http;
 
 use Evenement\EventEmitter;
+use React\Http\Middleware\Callback;
 use React\Socket\ServerInterface;
 use React\Socket\ConnectionInterface;
 use Psr\Http\Message\RequestInterface;
@@ -93,11 +94,17 @@ class Server extends EventEmitter
      * connections in order to then parse incoming data as HTTP.
      * See also [listen()](#listen) for more details.
      *
-     * @param MiddlewareInterface[]|MiddlewareStackInterface $middlewares
+     * @param callable|MiddlewareInterface[]|MiddlewareStackInterface $middlewares
      * @see self::listen()
      */
     public function __construct($middlewares)
     {
+        if (is_callable($middlewares)) {
+            $middlewares = array(
+                new Callback($middlewares),
+            );
+        }
+
         if (is_array($middlewares)) {
             $this->middlewareStack = new MiddlewareStack(
                 new Response(404),
@@ -111,7 +118,7 @@ class Server extends EventEmitter
             return;
         }
 
-        throw new \InvalidArgumentException('Only MiddlewareInterface[] or MiddlewareStackInterface implementations are supported');
+        throw new \InvalidArgumentException('Only callables, MiddlewareInterface[], or MiddlewareStackInterface implementations are supported');
     }
 
     /**

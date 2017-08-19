@@ -9,7 +9,6 @@
 use Evenement\EventEmitter;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
-use React\Http\Middleware\Callback;
 use React\Http\Response;
 use React\Http\Server;
 use React\Stream\ReadableStreamInterface;
@@ -87,34 +86,32 @@ class ChunkRepeater extends EventEmitter implements ReadableStreamInterface
     }
 }
 
-$server = new Server([
-    new Callback(function (ServerRequestInterface $request) use ($loop) {
-        switch ($request->getUri()->getPath()) {
-            case '/':
-                return new Response(
-                    200,
-                    array('Content-Type' => 'text/html'),
-                    '<html><a href="1g.bin">1g.bin</a><br/><a href="10g.bin">10g.bin</a></html>'
-                );
-            case '/1g.bin':
-                $stream = new ChunkRepeater(str_repeat('.', 1000000), 1000);
-                break;
-            case '/10g.bin':
-                $stream = new ChunkRepeater(str_repeat('.', 1000000), 10000);
-                break;
-            default:
-                return new Response(404);
-        }
+$server = new Server(function (ServerRequestInterface $request) use ($loop) {
+    switch ($request->getUri()->getPath()) {
+        case '/':
+            return new Response(
+                200,
+                array('Content-Type' => 'text/html'),
+                '<html><a href="1g.bin">1g.bin</a><br/><a href="10g.bin">10g.bin</a></html>'
+            );
+        case '/1g.bin':
+            $stream = new ChunkRepeater(str_repeat('.', 1000000), 1000);
+            break;
+        case '/10g.bin':
+            $stream = new ChunkRepeater(str_repeat('.', 1000000), 10000);
+            break;
+        default:
+            return new Response(404);
+    }
 
-        $loop->addTimer(0, array($stream, 'resume'));
+    $loop->addTimer(0, array($stream, 'resume'));
 
-        return new Response(
-            200,
-            array('Content-Type' => 'application/octet-data', 'Content-Length' => $stream->getSize()),
-            $stream
-        );
-    })
-]);
+    return new Response(
+        200,
+        array('Content-Type' => 'application/octet-data', 'Content-Length' => $stream->getSize()),
+        $stream
+    );
+});
 
 $socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
 $server->listen($socket);

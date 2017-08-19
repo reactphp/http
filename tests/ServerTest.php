@@ -2,7 +2,6 @@
 
 namespace React\Tests\Http;
 
-use React\Http\Middleware\Callback;
 use React\Http\Server;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Response;
@@ -42,9 +41,7 @@ class ServerTest extends TestCase
 
     public function testRequestEventWillNotBeEmittedForIncompleteHeaders()
     {
-        $server = new Server(array(
-            new Callback($this->expectCallableNever())
-        ));
+        $server = new Server($this->expectCallableNever());
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -56,11 +53,9 @@ class ServerTest extends TestCase
 
     public function testRequestEventIsEmitted()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            return \React\Promise\resolve(new Response());
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -73,14 +68,12 @@ class ServerTest extends TestCase
     {
         $i = 0;
         $requestAssertion = null;
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use (&$i, &$requestAssertion) {
-                $i++;
-                $requestAssertion = $request;
+        $server = new Server(function (ServerRequestInterface $request) use (&$i, &$requestAssertion) {
+            $i++;
+            $requestAssertion = $request;
 
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+            return \React\Promise\resolve(new Response());
+        });
 
         $this->connection
             ->expects($this->any())
@@ -109,12 +102,10 @@ class ServerTest extends TestCase
     public function testRequestGetWithHostAndCustomPort()
     {
         $requestAssertion = null;
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use (&$requestAssertion) {
-                $requestAssertion = $request;
-                return new Response();
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -134,12 +125,10 @@ class ServerTest extends TestCase
     public function testRequestGetWithHostAndHttpsPort()
     {
         $requestAssertion = null;
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use (&$requestAssertion) {
-                $requestAssertion = $request;
-                return new Response();
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -159,12 +148,10 @@ class ServerTest extends TestCase
     public function testRequestGetWithHostAndDefaultPortWillBeIgnored()
     {
         $requestAssertion = null;
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use (&$requestAssertion) {
-                $requestAssertion = $request;
-                return new Response();
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -184,12 +171,10 @@ class ServerTest extends TestCase
     public function testRequestOptionsAsterisk()
     {
         $requestAssertion = null;
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use (&$requestAssertion) {
-                $requestAssertion = $request;
-                return new Response();
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -207,9 +192,7 @@ class ServerTest extends TestCase
 
     public function testRequestNonOptionsWithAsteriskRequestTargetWillReject()
     {
-        $server = new Server(array(
-            new Callback($this->expectCallableNever())
-        ));
+        $server = new Server($this->expectCallableNever());
         $server->on('error', $this->expectCallableOnce());
 
         $server->listen($this->socket);
@@ -222,12 +205,10 @@ class ServerTest extends TestCase
     public function testRequestConnectAuthorityForm()
     {
         $requestAssertion = null;
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use (&$requestAssertion) {
-                $requestAssertion = $request;
-                return new Response();
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -247,12 +228,10 @@ class ServerTest extends TestCase
     public function testRequestConnectWithoutHostWillBeAdded()
     {
         $requestAssertion = null;
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use (&$requestAssertion) {
-                $requestAssertion = $request;
-                return new Response();
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -272,12 +251,10 @@ class ServerTest extends TestCase
     public function testRequestConnectAuthorityFormWithDefaultPortWillBeIgnored()
     {
         $requestAssertion = null;
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use (&$requestAssertion) {
-                $requestAssertion = $request;
-                return new Response();
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -297,12 +274,10 @@ class ServerTest extends TestCase
     public function testRequestConnectAuthorityFormNonMatchingHostWillBeOverwritten()
     {
         $requestAssertion = null;
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use (&$requestAssertion) {
-                $requestAssertion = $request;
-                return new Response();
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -321,9 +296,7 @@ class ServerTest extends TestCase
 
     public function testRequestConnectOriginFormRequestTargetWillReject()
     {
-        $server = new Server(array(
-            new Callback($this->expectCallableNever())
-        ));
+        $server = new Server($this->expectCallableNever());
         $server->on('error', $this->expectCallableOnce());
 
         $server->listen($this->socket);
@@ -335,9 +308,7 @@ class ServerTest extends TestCase
 
     public function testRequestNonConnectWithAuthorityRequestTargetWillReject()
     {
-        $server = new Server(array(
-            new Callback($this->expectCallableNever())
-        ));
+        $server = new Server($this->expectCallableNever());
         $server->on('error', $this->expectCallableOnce());
 
         $server->listen($this->socket);
@@ -351,12 +322,10 @@ class ServerTest extends TestCase
     {
         $requestAssertion = null;
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use (&$requestAssertion) {
-                $requestAssertion = $request;
-                return new Response();
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
 
         $this->connection
             ->expects($this->any())
@@ -380,12 +349,10 @@ class ServerTest extends TestCase
     {
         $requestAssertion = null;
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use (&$requestAssertion) {
-                $requestAssertion = $request;
-                return new Response();
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -405,12 +372,10 @@ class ServerTest extends TestCase
     {
         $requestAssertion = null;
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use (&$requestAssertion) {
-                $requestAssertion = $request;
-                return new Response();
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
         $server->on('error', 'printf');
 
         $server->listen($this->socket);
@@ -431,12 +396,10 @@ class ServerTest extends TestCase
     {
         $requestAssertion = null;
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use (&$requestAssertion) {
-                $requestAssertion = $request;
-                return new Response();
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -456,12 +419,10 @@ class ServerTest extends TestCase
     {
         $requestAssertion = null;
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use (&$requestAssertion) {
-                $requestAssertion = $request;
-                return new Response();
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -481,12 +442,10 @@ class ServerTest extends TestCase
     {
         $requestAssertion = null;
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use (&$requestAssertion) {
-                $requestAssertion = $request;
-                return new Response();
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+            return new Response();
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -504,12 +463,10 @@ class ServerTest extends TestCase
 
     public function testRequestPauseWillbeForwardedToConnection()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                $request->getBody()->pause();
-                return new Response();
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            $request->getBody()->pause();
+            return new Response();
+        });
 
         $this->connection->expects($this->once())->method('pause');
 
@@ -527,12 +484,10 @@ class ServerTest extends TestCase
 
     public function testRequestResumeWillbeForwardedToConnection()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                $request->getBody()->resume();
-                return new Response();
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            $request->getBody()->resume();
+            return new Response();
+        });
 
         $this->connection->expects($this->once())->method('resume');
 
@@ -545,12 +500,10 @@ class ServerTest extends TestCase
 
     public function testRequestCloseWillPauseConnection()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                $request->getBody()->close();
-                return new Response();
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            $request->getBody()->close();
+            return new Response();
+        });
 
         $this->connection->expects($this->once())->method('pause');
 
@@ -563,14 +516,12 @@ class ServerTest extends TestCase
 
     public function testRequestPauseAfterCloseWillNotBeForwarded()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                $request->getBody()->close();
-                $request->getBody()->pause();#
+        $server = new Server(function (ServerRequestInterface $request) {
+            $request->getBody()->close();
+            $request->getBody()->pause();#
 
-                return new Response();
-            })
-        ));
+            return new Response();
+        });
 
         $this->connection->expects($this->once())->method('pause');
 
@@ -583,14 +534,12 @@ class ServerTest extends TestCase
 
     public function testRequestResumeAfterCloseWillNotBeForwarded()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                $request->getBody()->close();
-                $request->getBody()->resume();
+        $server = new Server(function (ServerRequestInterface $request) {
+            $request->getBody()->close();
+            $request->getBody()->resume();
 
-                return new Response();
-            })
-        ));
+            return new Response();
+        });
 
         $this->connection->expects($this->once())->method('pause');
         $this->connection->expects($this->never())->method('resume');
@@ -606,13 +555,11 @@ class ServerTest extends TestCase
     {
         $never = $this->expectCallableNever();
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($never) {
-                $request->getBody()->on('data', $never);
+        $server = new Server(function (ServerRequestInterface $request) use ($never) {
+            $request->getBody()->on('data', $never);
 
-                return new Response();
-            })
-        ));
+            return new Response();
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -625,13 +572,11 @@ class ServerTest extends TestCase
     {
         $once = $this->expectCallableOnceWith('incomplete');
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($once) {
-                $request->getBody()->on('data', $once);
+        $server = new Server(function (ServerRequestInterface $request) use ($once) {
+            $request->getBody()->on('data', $once);
 
-                return new Response();
-            })
-        ));
+            return new Response();
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -649,13 +594,11 @@ class ServerTest extends TestCase
     {
         $once = $this->expectCallableOnceWith('incomplete');
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($once) {
-                $request->getBody()->on('data', $once);
+        $server = new Server(function (ServerRequestInterface $request) use ($once) {
+            $request->getBody()->on('data', $once);
 
-                return new Response();
-            })
-        ));
+            return new Response();
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -674,11 +617,9 @@ class ServerTest extends TestCase
 
     public function testResponseContainsPoweredByHeader()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                return new Response();
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            return new Response();
+        });
 
         $buffer = '';
 
@@ -706,11 +647,9 @@ class ServerTest extends TestCase
     {
         $never = $this->expectCallableNever();
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($never) {
-                return new Promise(function () { }, $never);
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use ($never) {
+            return new Promise(function () { }, $never);
+        });
 
         $buffer = '';
 
@@ -738,11 +677,9 @@ class ServerTest extends TestCase
     {
         $once = $this->expectCallableOnce();
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($once) {
-                return new Promise(function () { }, $once);
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use ($once) {
+            return new Promise(function () { }, $once);
+        });
 
         $buffer = '';
 
@@ -772,11 +709,9 @@ class ServerTest extends TestCase
         $stream = new ThroughStream();
         $stream->close();
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($stream) {
-                return new Response(200, array(), $stream);
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use ($stream) {
+            return new Response(200, array(), $stream);
+        });
 
         $buffer = '';
 
@@ -805,11 +740,9 @@ class ServerTest extends TestCase
     {
         $stream = new ThroughStream();
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($stream) {
-                return new Response(200, array(), $stream);
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use ($stream) {
+            return new Response(200, array(), $stream);
+        });
 
         $buffer = '';
 
@@ -841,11 +774,9 @@ class ServerTest extends TestCase
         $stream = new ThroughStream();
         $stream->close();
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($stream) {
-                return new Response(200, array(), $stream);
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use ($stream) {
+            return new Response(200, array(), $stream);
+        });
 
         $buffer = '';
 
@@ -875,11 +806,9 @@ class ServerTest extends TestCase
         $stream = new ThroughStream();
         $stream->on('close', $this->expectCallableOnce());
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($stream) {
-                return new Response(200, array(), $stream);
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use ($stream) {
+            return new Response(200, array(), $stream);
+        });
 
         $buffer = '';
 
@@ -928,11 +857,9 @@ class ServerTest extends TestCase
         $stream = new ThroughStream();
         $stream->on('close', $this->expectCallableOnce());
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($stream) {
-                return new Response(200, array(), $stream);
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use ($stream) {
+            return new Response(200, array(), $stream);
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -944,11 +871,9 @@ class ServerTest extends TestCase
 
     public function testUpgradeInResponseCanBeUsedToAdvertisePossibleUpgrade()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                return new Response(200, array('date' => '', 'x-powered-by' => '', 'Upgrade' => 'demo'), 'foo');
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            return new Response(200, array('date' => '', 'x-powered-by' => '', 'Upgrade' => 'demo'), 'foo');
+        });
 
         $buffer = '';
 
@@ -974,11 +899,9 @@ class ServerTest extends TestCase
 
     public function testUpgradeWishInRequestCanBeIgnoredByReturningNormalResponse()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                return new Response(200, array('date' => '', 'x-powered-by' => ''), 'foo');
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            return new Response(200, array('date' => '', 'x-powered-by' => ''), 'foo');
+        });
 
         $buffer = '';
 
@@ -1004,11 +927,9 @@ class ServerTest extends TestCase
 
     public function testUpgradeSwitchingProtocolIncludesConnectionUpgradeHeaderWithoutContentLength()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                return new Response(101, array('date' => '', 'x-powered-by' => '', 'Upgrade' => 'demo'), 'foo');
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            return new Response(101, array('date' => '', 'x-powered-by' => '', 'Upgrade' => 'demo'), 'foo');
+        });
 
         $server->on('error', 'printf');
 
@@ -1038,11 +959,9 @@ class ServerTest extends TestCase
     {
         $stream = new ThroughStream();
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($stream) {
-                return new Response(101, array('date' => '', 'x-powered-by' => '', 'Upgrade' => 'demo'), $stream);
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use ($stream) {
+            return new Response(101, array('date' => '', 'x-powered-by' => '', 'Upgrade' => 'demo'), $stream);
+        });
 
         $buffer = '';
 
@@ -1073,11 +992,9 @@ class ServerTest extends TestCase
     {
         $stream = new ThroughStream();
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($stream) {
-                return new Response(200, array(), $stream);
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use ($stream) {
+            return new Response(200, array(), $stream);
+        });
 
         $buffer = '';
 
@@ -1109,11 +1026,9 @@ class ServerTest extends TestCase
     {
         $stream = new ThroughStream();
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($stream) {
-                return new Response(200, array(), $stream);
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use ($stream) {
+            return new Response(200, array(), $stream);
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -1126,12 +1041,10 @@ class ServerTest extends TestCase
 
     public function testResponseContainsSameRequestProtocolVersionAndChunkedBodyForHttp11()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                $response = new Response(200, array(), 'bye');
-                return \React\Promise\resolve($response);
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            $response = new Response(200, array(), 'bye');
+            return \React\Promise\resolve($response);
+        });
 
         $buffer = '';
 
@@ -1158,12 +1071,10 @@ class ServerTest extends TestCase
 
     public function testResponseContainsSameRequestProtocolVersionAndRawBodyForHttp10()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                $response = new Response(200, array(), 'bye');
-                return \React\Promise\resolve($response);
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            $response = new Response(200, array(), 'bye');
+            return \React\Promise\resolve($response);
+        });
 
         $buffer = '';
 
@@ -1191,11 +1102,9 @@ class ServerTest extends TestCase
 
     public function testResponseContainsNoResponseBodyForHeadRequest()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                return new Response(200, array(), 'bye');
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            return new Response(200, array(), 'bye');
+        });
 
         $buffer = '';
         $this->connection
@@ -1221,11 +1130,9 @@ class ServerTest extends TestCase
 
     public function testResponseContainsNoResponseBodyAndNoContentLengthForNoContentStatus()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                return new Response(204, array(), 'bye');
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            return new Response(204, array(), 'bye');
+        });
 
         $buffer = '';
         $this->connection
@@ -1252,11 +1159,9 @@ class ServerTest extends TestCase
 
     public function testResponseContainsNoResponseBodyForNotModifiedStatus()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                return new Response(304, array(), 'bye');
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            return new Response(304, array(), 'bye');
+        });
 
         $buffer = '';
         $this->connection
@@ -1284,9 +1189,7 @@ class ServerTest extends TestCase
     public function testRequestInvalidHttpProtocolVersionWillEmitErrorAndSendErrorResponse()
     {
         $error = null;
-        $server = new Server(array(
-            new Callback($this->expectCallableNever())
-        ));
+        $server = new Server($this->expectCallableNever());
         $server->on('error', function ($message) use (&$error) {
             $error = $message;
         });
@@ -1320,9 +1223,7 @@ class ServerTest extends TestCase
     public function testRequestOverflowWillEmitErrorAndSendErrorResponse()
     {
         $error = null;
-        $server = new Server(array(
-            new Callback($this->expectCallableNever())
-        ));
+        $server = new Server($this->expectCallableNever());
         $server->on('error', function ($message) use (&$error) {
             $error = $message;
         });
@@ -1356,9 +1257,7 @@ class ServerTest extends TestCase
     public function testRequestInvalidWillEmitErrorAndSendErrorResponse()
     {
         $error = null;
-        $server = new Server(array(
-            new Callback($this->expectCallableNever())
-        ));
+        $server = new Server($this->expectCallableNever());
         $server->on('error', function ($message) use (&$error) {
             $error = $message;
         });
@@ -1395,16 +1294,14 @@ class ServerTest extends TestCase
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
-                $request->getBody()->on('data', $dataEvent);
-                $request->getBody()->on('end', $endEvent);
-                $request->getBody()->on('close', $closeEvent);
-                $request->getBody()->on('error', $errorEvent);
+        $server = new Server(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+            $request->getBody()->on('data', $dataEvent);
+            $request->getBody()->on('end', $endEvent);
+            $request->getBody()->on('close', $closeEvent);
+            $request->getBody()->on('error', $errorEvent);
 
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+            return \React\Promise\resolve(new Response());
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -1427,17 +1324,15 @@ class ServerTest extends TestCase
         $errorEvent = $this->expectCallableNever();
         $requestValidation = null;
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent, &$requestValidation) {
-                $request->getBody()->on('data', $dataEvent);
-                $request->getBody()->on('end', $endEvent);
-                $request->getBody()->on('close', $closeEvent);
-                $request->getBody()->on('error', $errorEvent);
-                $requestValidation = $request;
+        $server = new Server(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent, &$requestValidation) {
+            $request->getBody()->on('data', $dataEvent);
+            $request->getBody()->on('end', $endEvent);
+            $request->getBody()->on('close', $closeEvent);
+            $request->getBody()->on('error', $errorEvent);
+            $requestValidation = $request;
 
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+            return \React\Promise\resolve(new Response());
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -1462,16 +1357,14 @@ class ServerTest extends TestCase
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
-                $request->getBody()->on('data', $dataEvent);
-                $request->getBody()->on('end', $endEvent);
-                $request->getBody()->on('close', $closeEvent);
-                $request->getBody()->on('error', $errorEvent);
+        $server = new Server(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+            $request->getBody()->on('data', $dataEvent);
+            $request->getBody()->on('end', $endEvent);
+            $request->getBody()->on('close', $closeEvent);
+            $request->getBody()->on('error', $errorEvent);
 
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+            return \React\Promise\resolve(new Response());
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -1495,16 +1388,14 @@ class ServerTest extends TestCase
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
-                $request->getBody()->on('data', $dataEvent);
-                $request->getBody()->on('end', $endEvent);
-                $request->getBody()->on('close', $closeEvent);
-                $request->getBody()->on('error', $errorEvent);
+        $server = new Server(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+            $request->getBody()->on('data', $dataEvent);
+            $request->getBody()->on('end', $endEvent);
+            $request->getBody()->on('close', $closeEvent);
+            $request->getBody()->on('error', $errorEvent);
 
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+            return \React\Promise\resolve(new Response());
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -1526,16 +1417,14 @@ class ServerTest extends TestCase
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
-                $request->getBody()->on('data', $dataEvent);
-                $request->getBody()->on('end', $endEvent);
-                $request->getBody()->on('close', $closeEvent);
-                $request->getBody()->on('error', $errorEvent);
+        $server = new Server(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+            $request->getBody()->on('data', $dataEvent);
+            $request->getBody()->on('end', $endEvent);
+            $request->getBody()->on('close', $closeEvent);
+            $request->getBody()->on('error', $errorEvent);
 
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+            return \React\Promise\resolve(new Response());
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -1558,16 +1447,14 @@ class ServerTest extends TestCase
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
-                $request->getBody()->on('data', $dataEvent);
-                $request->getBody()->on('end', $endEvent);
-                $request->getBody()->on('close', $closeEvent);
-                $request->getBody()->on('error', $errorEvent);
+        $server = new Server(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+            $request->getBody()->on('data', $dataEvent);
+            $request->getBody()->on('end', $endEvent);
+            $request->getBody()->on('close', $closeEvent);
+            $request->getBody()->on('error', $errorEvent);
 
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+            return \React\Promise\resolve(new Response());
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -1585,9 +1472,7 @@ class ServerTest extends TestCase
     public function testRequestWithMalformedHostWillEmitErrorAndSendErrorResponse()
     {
         $error = null;
-        $server = new Server(array(
-            new Callback($this->expectCallableNever())
-        ));
+        $server = new Server($this->expectCallableNever());
         $server->on('error', function ($message) use (&$error) {
             $error = $message;
         });
@@ -1620,9 +1505,7 @@ class ServerTest extends TestCase
     public function testRequestWithInvalidHostUriComponentsWillEmitErrorAndSendErrorResponse()
     {
         $error = null;
-        $server = new Server(array(
-            new Callback($this->expectCallableNever())
-        ));
+        $server = new Server($this->expectCallableNever());
         $server->on('error', function ($message) use (&$error) {
             $error = $message;
         });
@@ -1659,16 +1542,14 @@ class ServerTest extends TestCase
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
-                $request->getBody()->on('data', $dataEvent);
-                $request->getBody()->on('end', $endEvent);
-                $request->getBody()->on('close', $closeEvent);
-                $request->getBody()->on('error', $errorEvent);
+        $server = new Server(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+            $request->getBody()->on('data', $dataEvent);
+            $request->getBody()->on('end', $endEvent);
+            $request->getBody()->on('close', $closeEvent);
+            $request->getBody()->on('error', $errorEvent);
 
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+            return \React\Promise\resolve(new Response());
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -1692,16 +1573,14 @@ class ServerTest extends TestCase
         $errorEvent = $this->expectCallableNever();
 
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
-                $request->getBody()->on('data', $dataEvent);
-                $request->getBody()->on('end', $endEvent);
-                $request->getBody()->on('close', $closeEvent);
-                $request->getBody()->on('error', $errorEvent);
+        $server = new Server(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+            $request->getBody()->on('data', $dataEvent);
+            $request->getBody()->on('end', $endEvent);
+            $request->getBody()->on('close', $closeEvent);
+            $request->getBody()->on('error', $errorEvent);
 
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+            return \React\Promise\resolve(new Response());
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -1728,16 +1607,14 @@ class ServerTest extends TestCase
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
-                $request->getBody()->on('data', $dataEvent);
-                $request->getBody()->on('end', $endEvent);
-                $request->getBody()->on('close', $closeEvent);
-                $request->getBody()->on('error', $errorEvent);
+        $server = new Server(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+            $request->getBody()->on('data', $dataEvent);
+            $request->getBody()->on('end', $endEvent);
+            $request->getBody()->on('close', $closeEvent);
+            $request->getBody()->on('error', $errorEvent);
 
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+            return \React\Promise\resolve(new Response());
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -1758,16 +1635,14 @@ class ServerTest extends TestCase
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
-                $request->getBody()->on('data', $dataEvent);
-                $request->getBody()->on('end', $endEvent);
-                $request->getBody()->on('close', $closeEvent);
-                $request->getBody()->on('error', $errorEvent);
+        $server = new Server(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+            $request->getBody()->on('data', $dataEvent);
+            $request->getBody()->on('end', $endEvent);
+            $request->getBody()->on('close', $closeEvent);
+            $request->getBody()->on('error', $errorEvent);
 
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+            return \React\Promise\resolve(new Response());
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -1789,16 +1664,14 @@ class ServerTest extends TestCase
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
-                $request->getBody()->on('data', $dataEvent);
-                $request->getBody()->on('end', $endEvent);
-                $request->getBody()->on('close', $closeEvent);
-                $request->getBody()->on('error', $errorEvent);
+        $server = new Server(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+            $request->getBody()->on('data', $dataEvent);
+            $request->getBody()->on('end', $endEvent);
+            $request->getBody()->on('close', $closeEvent);
+            $request->getBody()->on('error', $errorEvent);
 
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+            return \React\Promise\resolve(new Response());
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -1824,17 +1697,15 @@ class ServerTest extends TestCase
         $errorEvent = $this->expectCallableNever();
 
         $requestValidation = null;
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent, &$requestValidation) {
-                $request->getBody()->on('data', $dataEvent);
-                $request->getBody()->on('end', $endEvent);
-                $request->getBody()->on('close', $closeEvent);
-                $request->getBody()->on('error', $errorEvent);
-                $requestValidation = $request;
+        $server = new Server(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent, &$requestValidation) {
+            $request->getBody()->on('data', $dataEvent);
+            $request->getBody()->on('end', $endEvent);
+            $request->getBody()->on('close', $closeEvent);
+            $request->getBody()->on('error', $errorEvent);
+            $requestValidation = $request;
 
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+            return \React\Promise\resolve(new Response());
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -1865,17 +1736,15 @@ class ServerTest extends TestCase
         $errorEvent = $this->expectCallableNever();
 
         $requestValidation = null;
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent, &$requestValidation) {
-                $request->getBody()->on('data', $dataEvent);
-                $request->getBody()->on('end', $endEvent);
-                $request->getBody()->on('close', $closeEvent);
-                $request->getBody()->on('error', $errorEvent);
-                $requestValidation = $request;
+        $server = new Server(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent, &$requestValidation) {
+            $request->getBody()->on('data', $dataEvent);
+            $request->getBody()->on('end', $endEvent);
+            $request->getBody()->on('close', $closeEvent);
+            $request->getBody()->on('error', $errorEvent);
+            $requestValidation = $request;
 
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+            return \React\Promise\resolve(new Response());
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -1902,9 +1771,7 @@ class ServerTest extends TestCase
     public function testNonIntegerContentLengthValueWillLeadToError()
     {
         $error = null;
-        $server = new Server(array(
-            new Callback($this->expectCallableNever())
-        ));
+        $server = new Server($this->expectCallableNever());
         $server->on('error', function ($message) use (&$error) {
             $error = $message;
         });
@@ -1941,9 +1808,7 @@ class ServerTest extends TestCase
     public function testNonIntegerContentLengthValueWillLeadToErrorWithNoBodyForHeadRequest()
     {
         $error = null;
-        $server = new Server(array(
-            new Callback($this->expectCallableNever())
-        ));
+        $server = new Server($this->expectCallableNever());
         $server->on('error', function ($message) use (&$error) {
             $error = $message;
         });
@@ -1980,9 +1845,7 @@ class ServerTest extends TestCase
     public function testMultipleIntegerInContentLengthWillLeadToError()
     {
         $error = null;
-        $server = new Server(array(
-            new Callback($this->expectCallableNever())
-        ));
+        $server = new Server($this->expectCallableNever());
         $server->on('error', function ($message) use (&$error) {
             $error = $message;
         });
@@ -2019,12 +1882,10 @@ class ServerTest extends TestCase
     public function testInvalidChunkHeaderResultsInErrorOnRequestStream()
     {
         $errorEvent = $this->expectCallableOnceWith($this->isInstanceOf('Exception'));
-        $server = new Server(array(
-            new Callback(function ($request) use ($errorEvent){
-                $request->getBody()->on('error', $errorEvent);
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+        $server = new Server(function ($request) use ($errorEvent){
+            $request->getBody()->on('error', $errorEvent);
+            return \React\Promise\resolve(new Response());
+        });
 
         $this->connection->expects($this->never())->method('close');
         $this->connection->expects($this->once())->method('pause');
@@ -2045,12 +1906,10 @@ class ServerTest extends TestCase
     public function testTooLongChunkHeaderResultsInErrorOnRequestStream()
     {
         $errorEvent = $this->expectCallableOnceWith($this->isInstanceOf('Exception'));
-        $server = new Server(array(
-            new Callback(function ($request) use ($errorEvent){
-                $request->getBody()->on('error', $errorEvent);
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+        $server = new Server(function ($request) use ($errorEvent){
+            $request->getBody()->on('error', $errorEvent);
+            return \React\Promise\resolve(new Response());
+        });
 
         $this->connection->expects($this->never())->method('close');
         $this->connection->expects($this->once())->method('pause');
@@ -2073,12 +1932,10 @@ class ServerTest extends TestCase
     public function testTooLongChunkBodyResultsInErrorOnRequestStream()
     {
         $errorEvent = $this->expectCallableOnceWith($this->isInstanceOf('Exception'));
-        $server = new Server(array(
-            new Callback(function ($request) use ($errorEvent){
-                $request->getBody()->on('error', $errorEvent);
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+        $server = new Server(function ($request) use ($errorEvent){
+            $request->getBody()->on('error', $errorEvent);
+            return \React\Promise\resolve(new Response());
+        });
 
         $this->connection->expects($this->never())->method('close');
         $this->connection->expects($this->once())->method('pause');
@@ -2099,12 +1956,10 @@ class ServerTest extends TestCase
     public function testUnexpectedEndOfConnectionWillResultsInErrorOnRequestStream()
     {
         $errorEvent = $this->expectCallableOnceWith($this->isInstanceOf('Exception'));
-        $server = new Server(array(
-            new Callback(function ($request) use ($errorEvent){
-                $request->getBody()->on('error', $errorEvent);
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+        $server = new Server(function ($request) use ($errorEvent){
+            $request->getBody()->on('error', $errorEvent);
+            return \React\Promise\resolve(new Response());
+        });
 
         $this->connection->expects($this->never())->method('close');
         $this->connection->expects($this->once())->method('pause');
@@ -2125,11 +1980,9 @@ class ServerTest extends TestCase
 
     public function testErrorInChunkedDecoderNeverClosesConnection()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            return \React\Promise\resolve(new Response());
+        });
 
         $this->connection->expects($this->never())->method('close');
         $this->connection->expects($this->once())->method('pause');
@@ -2149,11 +2002,9 @@ class ServerTest extends TestCase
 
     public function testErrorInLengthLimitedStreamNeverClosesConnection()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            return \React\Promise\resolve(new Response());
+        });
 
         $this->connection->expects($this->never())->method('close');
         $this->connection->expects($this->once())->method('pause');
@@ -2174,12 +2025,10 @@ class ServerTest extends TestCase
 
     public function testCloseRequestWillPauseConnection()
     {
-        $server = new Server(array(
-            new Callback(function ($request) {
-                $request->getBody()->close();
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+        $server = new Server(function ($request) {
+            $request->getBody()->close();
+            return \React\Promise\resolve(new Response());
+        });
 
         $this->connection->expects($this->never())->method('close');
         $this->connection->expects($this->once())->method('pause');
@@ -2198,16 +2047,14 @@ class ServerTest extends TestCase
         $endEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server = new Server(array(
-            new Callback(function ($request) use ($dataEvent, $closeEvent, $endEvent, $errorEvent){
-                $request->getBody()->on('data', $dataEvent);
-                $request->getBody()->on('close', $closeEvent);
-                $request->getBody()->on('end', $endEvent);
-                $request->getBody()->on('error', $errorEvent);
+        $server = new Server(function ($request) use ($dataEvent, $closeEvent, $endEvent, $errorEvent){
+            $request->getBody()->on('data', $dataEvent);
+            $request->getBody()->on('close', $closeEvent);
+            $request->getBody()->on('end', $endEvent);
+            $request->getBody()->on('error', $errorEvent);
 
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+            return \React\Promise\resolve(new Response());
+        });
 
         $this->connection->expects($this->once())->method('pause');
         $this->connection->expects($this->never())->method('close');
@@ -2227,16 +2074,14 @@ class ServerTest extends TestCase
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
-                $request->getBody()->on('data', $dataEvent);
-                $request->getBody()->on('end', $endEvent);
-                $request->getBody()->on('close', $closeEvent);
-                $request->getBody()->on('error', $errorEvent);
+        $server = new Server(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+            $request->getBody()->on('data', $dataEvent);
+            $request->getBody()->on('end', $endEvent);
+            $request->getBody()->on('close', $closeEvent);
+            $request->getBody()->on('error', $errorEvent);
 
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+            return \React\Promise\resolve(new Response());
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -2250,12 +2095,10 @@ class ServerTest extends TestCase
     public function testResponseWillBeChunkDecodedByDefault()
     {
         $stream = new ThroughStream();
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($stream) {
-                $response = new Response(200, array(), $stream);
-                return \React\Promise\resolve($response);
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use ($stream) {
+            $response = new Response(200, array(), $stream);
+            return \React\Promise\resolve($response);
+        });
 
         $buffer = '';
         $this->connection
@@ -2283,20 +2126,18 @@ class ServerTest extends TestCase
 
     public function testContentLengthWillBeRemovedForResponseStream()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                $response = new Response(
-                    200,
-                    array(
-                        'Content-Length' => 5,
-                        'Transfer-Encoding' => 'chunked'
-                    ),
-                    'hello'
-                );
+        $server = new Server(function (ServerRequestInterface $request) {
+            $response = new Response(
+                200,
+                array(
+                    'Content-Length' => 5,
+                    'Transfer-Encoding' => 'chunked'
+                ),
+                'hello'
+            );
 
-                return \React\Promise\resolve($response);
-            })
-        ));
+            return \React\Promise\resolve($response);
+        });
 
         $buffer = '';
         $this->connection
@@ -2325,19 +2166,17 @@ class ServerTest extends TestCase
     public function testOnlyAllowChunkedEncoding()
     {
         $stream = new ThroughStream();
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($stream) {
-                $response = new Response(
-                    200,
-                    array(
-                        'Transfer-Encoding' => 'custom'
-                    ),
-                    $stream
-                );
+        $server = new Server(function (ServerRequestInterface $request) use ($stream) {
+            $response = new Response(
+                200,
+                array(
+                    'Transfer-Encoding' => 'custom'
+                ),
+                $stream
+            );
 
-                return \React\Promise\resolve($response);
-            })
-        ));
+            return \React\Promise\resolve($response);
+        });
 
         $buffer = '';
         $this->connection
@@ -2366,11 +2205,9 @@ class ServerTest extends TestCase
 
     public function testDateHeaderWillBeAddedWhenNoneIsGiven()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            return \React\Promise\resolve(new Response());
+        });
 
         $buffer = '';
             $this->connection
@@ -2398,12 +2235,10 @@ class ServerTest extends TestCase
 
     public function testAddCustomDateHeader()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                $response = new Response(200, array("Date" => "Tue, 15 Nov 1994 08:12:31 GMT"));
-                return \React\Promise\resolve($response);
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            $response = new Response(200, array("Date" => "Tue, 15 Nov 1994 08:12:31 GMT"));
+            return \React\Promise\resolve($response);
+        });
 
         $buffer = '';
         $this->connection
@@ -2431,12 +2266,10 @@ class ServerTest extends TestCase
 
     public function testRemoveDateHeader()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                $response = new Response(200, array('Date' => ''));
-                return \React\Promise\resolve($response);
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            $response = new Response(200, array('Date' => ''));
+            return \React\Promise\resolve($response);
+        });
 
         $buffer = '';
         $this->connection
@@ -2466,9 +2299,7 @@ class ServerTest extends TestCase
     {
         $error = null;
 
-        $server = new Server(array(
-            new Callback($this->expectCallableNever())
-        ));
+        $server = new Server($this->expectCallableNever());
         $server->on('error', function ($exception) use (&$error) {
             $error = $exception;
         });
@@ -2505,9 +2336,7 @@ class ServerTest extends TestCase
     {
         $error = null;
 
-        $server = new Server(array(
-            new Callback($this->expectCallableNever())
-        ));
+        $server = new Server($this->expectCallableNever());
         $server->on('error', function ($exception) use (&$error) {
             $error = $exception;
         });
@@ -2540,11 +2369,9 @@ class ServerTest extends TestCase
 
     public function test100ContinueRequestWillBeHandled()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            return \React\Promise\resolve(new Response());
+        });
 
         $buffer = '';
         $this->connection
@@ -2574,11 +2401,9 @@ class ServerTest extends TestCase
 
     public function testContinueWontBeSendForHttp10()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            return \React\Promise\resolve(new Response());
+        });
 
         $buffer = '';
         $this->connection
@@ -2606,11 +2431,9 @@ class ServerTest extends TestCase
 
     public function testContinueWithLaterResponse()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            return \React\Promise\resolve(new Response());
+        });
 
 
         $buffer = '';
@@ -2640,16 +2463,22 @@ class ServerTest extends TestCase
         $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
     }
 
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testInvalidCallbackFunctionLeadsToException()
+    {
+        $server = new Server('invalid');
+    }
+
     public function testHttpBodyStreamAsBodyWillStreamData()
     {
         $input = new ThroughStream();
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($input) {
-                $response = new Response(200, array(), $input);
-                return \React\Promise\resolve($response);
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use ($input) {
+            $response = new Response(200, array(), $input);
+            return \React\Promise\resolve($response);
+        });
 
         $buffer = '';
         $this->connection
@@ -2682,12 +2511,10 @@ class ServerTest extends TestCase
     {
         $input = new ThroughStream();
 
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use ($input) {
-                $response = new Response(200, array('Content-Length' => 5), $input);
-                return \React\Promise\resolve($response);
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use ($input) {
+            $response = new Response(200, array('Content-Length' => 5), $input);
+            return \React\Promise\resolve($response);
+        });
 
         $buffer = '';
         $this->connection
@@ -2719,11 +2546,9 @@ class ServerTest extends TestCase
 
     public function testCallbackFunctionReturnsPromise()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                return \React\Promise\resolve(new Response());
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            return \React\Promise\resolve(new Response());
+        });
 
         $buffer = '';
         $this->connection
@@ -2749,11 +2574,9 @@ class ServerTest extends TestCase
 
     public function testReturnInvalidTypeWillResultInError()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                return "invalid";
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            return "invalid";
+        });
 
         $exception = null;
         $server->on('error', function (\Exception $ex) use (&$exception) {
@@ -2787,11 +2610,9 @@ class ServerTest extends TestCase
 
     public function testResolveWrongTypeInPromiseWillResultInError()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                return \React\Promise\resolve("invalid");
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            return \React\Promise\resolve("invalid");
+        });
 
         $buffer = '';
         $this->connection
@@ -2819,13 +2640,11 @@ class ServerTest extends TestCase
 
     public function testRejectedPromiseWillResultInErrorMessage()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                return new Promise(function ($resolve, $reject) {
-                    $reject(new \Exception());
-                });
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            return new Promise(function ($resolve, $reject) {
+                $reject(new \Exception());
+            });
+        });
         $server->on('error', $this->expectCallableOnce());
 
         $buffer = '';
@@ -2854,13 +2673,11 @@ class ServerTest extends TestCase
 
     public function testExcpetionInCallbackWillResultInErrorMessage()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                return new Promise(function ($resolve, $reject) {
-                    throw new \Exception('Bad call');
-                });
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            return new Promise(function ($resolve, $reject) {
+                throw new \Exception('Bad call');
+            });
+        });
         $server->on('error', $this->expectCallableOnce());
 
         $buffer = '';
@@ -2889,11 +2706,9 @@ class ServerTest extends TestCase
 
     public function testHeaderWillAlwaysBeContentLengthForStringBody()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                return new Response(200, array('Transfer-Encoding' => 'chunked'), 'hello');
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            return new Response(200, array('Transfer-Encoding' => 'chunked'), 'hello');
+        });
 
         $buffer = '';
         $this->connection
@@ -2925,11 +2740,9 @@ class ServerTest extends TestCase
 
     public function testReturnRequestWillBeHandled()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                return new Response();
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            return new Response();
+        });
 
         $buffer = '';
         $this->connection
@@ -2957,11 +2770,9 @@ class ServerTest extends TestCase
 
     public function testExceptionThrowInCallBackFunctionWillResultInErrorMessage()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                throw new \Exception('hello');
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            throw new \Exception('hello');
+        });
 
         $exception = null;
         $server->on('error', function (\Exception $ex) use (&$exception) {
@@ -2999,11 +2810,9 @@ class ServerTest extends TestCase
      */
     public function testThrowableThrowInCallBackFunctionWillResultInErrorMessage()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                throw new \Error('hello');
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            throw new \Error('hello');
+        });
 
         $exception = null;
         $server->on('error', function (\Exception $ex) use (&$exception) {
@@ -3044,13 +2853,11 @@ class ServerTest extends TestCase
 
     public function testRejectOfNonExceptionWillResultInErrorMessage()
     {
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) {
-                return new Promise(function ($resolve, $reject) {
-                    $reject('Invalid type');
-                });
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) {
+            return new Promise(function ($resolve, $reject) {
+                $reject('Invalid type');
+            });
+        });
 
         $exception = null;
         $server->on('error', function (\Exception $ex) use (&$exception) {
@@ -3085,12 +2892,10 @@ class ServerTest extends TestCase
     public function testServerRequestParams()
     {
         $requestValidation = null;
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use (&$requestValidation) {
-                $requestValidation = $request;
-                return new Response();
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use (&$requestValidation) {
+            $requestValidation = $request;
+            return new Response();
+        });
 
         $this->connection
             ->expects($this->any())
@@ -3122,12 +2927,10 @@ class ServerTest extends TestCase
     public function testQueryParametersWillBeAddedToRequest()
     {
         $requestValidation = null;
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use (&$requestValidation) {
-                $requestValidation = $request;
-                return new Response();
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use (&$requestValidation) {
+            $requestValidation = $request;
+            return new Response();
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -3145,12 +2948,10 @@ class ServerTest extends TestCase
     public function testCookieWillBeAddedToServerRequest()
     {
         $requestValidation = null;
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use (&$requestValidation) {
-                $requestValidation = $request;
-                return new Response();
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use (&$requestValidation) {
+            $requestValidation = $request;
+            return new Response();
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -3169,12 +2970,10 @@ class ServerTest extends TestCase
     public function testMultipleCookiesWontBeAddedToServerRequest()
     {
         $requestValidation = null;
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use (&$requestValidation) {
-                $requestValidation = $request;
-                return new Response();
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use (&$requestValidation) {
+            $requestValidation = $request;
+            return new Response();
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -3193,12 +2992,10 @@ class ServerTest extends TestCase
     public function testCookieWithSeparatorWillBeAddedToServerRequest()
     {
         $requestValidation = null;
-        $server = new Server(array(
-            new Callback(function (ServerRequestInterface $request) use (&$requestValidation) {
-                $requestValidation = $request;
-                return new Response();
-            })
-        ));
+        $server = new Server(function (ServerRequestInterface $request) use (&$requestValidation) {
+            $requestValidation = $request;
+            return new Response();
+        });
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
