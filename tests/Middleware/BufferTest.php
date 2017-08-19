@@ -27,7 +27,7 @@ final class BufferTest extends TestCase
         $exposeRequest = new ExposeRequest();
 
         $response = new Response();
-        $stack = new MiddlewareStack($response, [$exposeRequest]);
+        $stack = new MiddlewareStack($response, array($exposeRequest));
 
         $buffer = new Buffer();
         $buffer->process($serverRequest, $stack);

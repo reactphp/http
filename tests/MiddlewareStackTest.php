@@ -15,7 +15,7 @@ final class MiddlewareStackTest extends TestCase
     {
         $request = new ServerRequest('GET', 'https://example.com/');
         $defaultResponse = new Response(404);
-        $middlewares = [];
+        $middlewares = array();
         $middlewareStack = new MiddlewareStack($defaultResponse, $middlewares);
 
         $result = Block\await($middlewareStack->process($request), Factory::create());
