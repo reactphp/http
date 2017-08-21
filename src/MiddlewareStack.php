@@ -42,14 +42,16 @@ final class MiddlewareStack implements MiddlewareStackInterface
         $middlewares = $this->middlewares;
         $middleware = array_shift($middlewares);
 
-        return Promise\resolve(
-            $middleware->process(
+        return new Promise\Promise(function ($resolve, $reject) use ($request, $middleware, $middlewares) {
+            $response = $middleware->process(
                 $request,
                 new self(
                     $this->defaultResponse,
                     $middlewares
                 )
-            )
-        );
+            );
+
+            $resolve($response);
+        });
     }
 }
