@@ -252,16 +252,12 @@ class Server extends EventEmitter
         }
 
         $middlewareStack = $this->middlewareStack;
-        $cancel = null;
-        $promise = new Promise\Promise(function ($resolve, $reject) use ($middlewareStack, $request, &$cancel) {
-            $cancel = $middlewareStack->process($request);
-            $resolve($cancel);
-        });
+        $promise = $middlewareStack->process($request);
 
         // cancel pending promise once connection closes
-        if ($cancel instanceof CancellablePromiseInterface) {
-            $conn->on('close', function () use ($cancel) {
-                $cancel->cancel();
+        if ($promise instanceof CancellablePromiseInterface) {
+            $conn->on('close', function () use ($promise) {
+                $promise->cancel();
             });
         }
 

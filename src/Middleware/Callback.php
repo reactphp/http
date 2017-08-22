@@ -21,13 +21,21 @@ final class Callback implements MiddlewareInterface
     {
         $callback = $this->callback;
 
-        return Promise\resolve($callback($request))->then(function ($response) use ($stack) {
-            if ($response instanceof ResponseInterface) {
-                return $response;
-            }
+        $cancel = null;
+        return new Promise\Promise(function ($resolve, $reject) use ($callback, $request, &$cancel, $stack) {
+            $cancel = Promise\resolve($callback($request));
+            $cancel->then(function ($response) use ($stack) {
+                if ($response instanceof ResponseInterface) {
+                    return $response;
+                }
 
-            // Assuming since $response isn't a response it is a request
-            return $stack->process($response);
+                // Assuming since $response isn't a response it is a request
+                return $stack->process($response);
+            })->done($resolve, $reject);
+        }, function () use (&$cancel) {
+            if ($cancel instanceof Promise\CancellablePromiseInterface) {
+                $cancel->cancel();
+            }
         });
     }
 }

@@ -42,16 +42,20 @@ final class MiddlewareStack implements MiddlewareStackInterface
         $middlewares = $this->middlewares;
         $middleware = array_shift($middlewares);
 
-        return new Promise\Promise(function ($resolve, $reject) use ($request, $middleware, $middlewares) {
-            $response = $middleware->process(
+        $cancel = null;
+        return new Promise\Promise(function ($resolve, $reject) use ($middleware, $request, $middlewares, &$cancel) {
+            $cancel = $middleware->process(
                 $request,
                 new self(
                     $this->defaultResponse,
                     $middlewares
                 )
             );
-
-            $resolve($response);
+            $cancel->done($resolve, $reject);
+        }, function () use (&$cancel) {
+            if ($cancel instanceof Promise\CancellablePromiseInterface) {
+                $cancel->cancel();
+            }
         });
     }
 }
