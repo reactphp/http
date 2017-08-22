@@ -46,7 +46,7 @@ final class MiddlewareStack implements MiddlewareStackInterface
         return new Promise\Promise(function ($resolve, $reject) use ($middleware, $request, $middlewares, &$cancel) {
             $cancel = $middleware->process(
                 $request,
-                new self(
+                new MiddlewareStack(
                     $this->defaultResponse,
                     $middlewares
                 )
