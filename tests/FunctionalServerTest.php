@@ -26,11 +26,9 @@ class FunctionalServerTest extends TestCase
         $loop = Factory::create();
         $connector = new Connector($loop);
 
-        $server = new Server(array(
-            new Callback(function (RequestInterface $request) {
-                return new Response(200, array(), (string)$request->getUri());
-            })
-        ));
+        $server = new Server(function (RequestInterface $request) {
+            return new Response(200, array(), (string)$request->getUri());
+        });
 
         $socket = new Socket(0, $loop);
         $server->listen($socket);
@@ -54,11 +52,9 @@ class FunctionalServerTest extends TestCase
         $loop = Factory::create();
         $connector = new Connector($loop);
 
-        $server = new Server(array(
-            new Callback(function (RequestInterface $request) {
-                return new Response(200, array(), (string)$request->getUri());
-            })
-        ));
+        $server = new Server(function (RequestInterface $request) {
+            return new Response(200, array(), (string)$request->getUri());
+        });
 
         $socket = new Socket(0, $loop);
         $server->listen($socket);
@@ -82,11 +78,9 @@ class FunctionalServerTest extends TestCase
         $loop = Factory::create();
         $connector = new Connector($loop);
 
-        $server = new Server(array(
-            new Callback(function (RequestInterface $request) {
-                return new Response(200, array(), (string)$request->getUri());
-            })
-        ));
+        $server = new Server(function (RequestInterface $request) {
+            return new Response(200, array(), (string)$request->getUri());
+        });
 
         $socket = new Socket(0, $loop);
         $server->listen($socket);
@@ -116,11 +110,9 @@ class FunctionalServerTest extends TestCase
             'tls' => array('verify_peer' => false)
         ));
 
-        $server = new Server(array(
-            new Callback(function (RequestInterface $request) {
-                return new Response(200, array(), (string)$request->getUri());
-            })
-        ));
+        $server = new Server(function (RequestInterface $request) {
+            return new Response(200, array(), (string)$request->getUri());
+        });
 
         $socket = new Socket(0, $loop);
         $socket = new SecureServer($socket, $loop, array(
@@ -153,11 +145,9 @@ class FunctionalServerTest extends TestCase
             'tls' => array('verify_peer' => false)
         ));
 
-        $server = new Server(array(
-            new Callback(function (RequestInterface $request) {
-                return new Response(200, array(), (string)$request->getUri());
-            })
-        ));
+        $server = new Server(function (RequestInterface $request) {
+            return new Response(200, array(), (string)$request->getUri());
+        });
 
         $socket = new Socket(0, $loop);
         $socket = new SecureServer($socket, $loop, array(
@@ -189,11 +179,9 @@ class FunctionalServerTest extends TestCase
         }
         $connector = new Connector($loop);
 
-        $server = new Server(array(
-            new Callback(function (RequestInterface $request) {
-                return new Response(200, array(), (string)$request->getUri());
-            })
-        ));
+        $server = new Server(function (RequestInterface $request) {
+            return new Response(200, array(), (string)$request->getUri());
+        });
 
         $server->listen($socket);
 
@@ -221,11 +209,9 @@ class FunctionalServerTest extends TestCase
         }
         $connector = new Connector($loop);
 
-        $server = new Server(array(
-            new Callback(function (RequestInterface $request) {
-                return new Response(200, array(), (string)$request->getUri());
-            })
-        ));
+        $server = new Server(function (RequestInterface $request) {
+            return new Response(200, array(), (string)$request->getUri());
+        });
 
         $server->listen($socket);
 
@@ -262,11 +248,9 @@ class FunctionalServerTest extends TestCase
             'tls' => array('verify_peer' => false)
         ));
 
-        $server = new Server(array(
-            new Callback(function (RequestInterface $request) {
-                return new Response(200, array(), (string)$request->getUri());
-            })
-        ));
+        $server = new Server(function (RequestInterface $request) {
+            return new Response(200, array(), (string)$request->getUri());
+        });
 
         $server->listen($socket);
 
@@ -303,11 +287,9 @@ class FunctionalServerTest extends TestCase
             'tls' => array('verify_peer' => false)
         ));
 
-        $server = new Server(array(
-            new Callback(function (RequestInterface $request) {
-                return new Response(200, array(), (string)$request->getUri());
-            })
-        ));
+        $server = new Server(function (RequestInterface $request) {
+            return new Response(200, array(), (string)$request->getUri());
+        });
 
         $server->listen($socket);
 
@@ -335,11 +317,9 @@ class FunctionalServerTest extends TestCase
         }
         $connector = new Connector($loop);
 
-        $server = new Server(array(
-            new Callback(function (RequestInterface $request) {
-                return new Response(200, array(), (string)$request->getUri());
-            })
-        ));
+        $server = new Server(function (RequestInterface $request) {
+            return new Response(200, array(), (string)$request->getUri());
+        });
 
         $server->listen($socket);
 
@@ -376,11 +356,9 @@ class FunctionalServerTest extends TestCase
             'tls' => array('verify_peer' => false)
         ));
 
-        $server = new Server(array(
-            new Callback(function (RequestInterface $request) {
-                return new Response(200, array(), (string)$request->getUri() . 'x' . $request->getHeaderLine('Host'));
-            })
-        ));
+        $server = new Server(function (RequestInterface $request) {
+            return new Response(200, array(), (string)$request->getUri() . 'x' . $request->getHeaderLine('Host'));
+        });
 
         $server->listen($socket);
 
@@ -406,11 +384,9 @@ class FunctionalServerTest extends TestCase
         $stream = new ThroughStream();
         $stream->close();
 
-        $server = new Server(array(
-            new Callback(function (RequestInterface $request) use ($stream) {
-                return new Response(200, array(), $stream);
-            })
-        ));
+        $server = new Server(function (RequestInterface $request) use ($stream) {
+            return new Response(200, array(), $stream);
+        });
 
         $socket = new Socket(0, $loop);
         $server->listen($socket);
@@ -437,11 +413,9 @@ class FunctionalServerTest extends TestCase
         $stream = new ThroughStream();
         $stream->on('close', $this->expectCallableOnce());
 
-        $server = new Server(array(
-            new Callback(function (RequestInterface $request) use ($stream) {
-                return new Response(200, array(), $stream);
-            }),
-        ));
+        $server = new Server(function (RequestInterface $request) use ($stream) {
+            return new Response(200, array(), $stream);
+        });
 
         $socket = new Socket(0, $loop);
         $server->listen($socket);
@@ -472,11 +446,9 @@ class FunctionalServerTest extends TestCase
         $stream = new ThroughStream();
         $stream->on('close', $this->expectCallableOnce());
 
-        $server = new Server(array(
-            new Callback(function (RequestInterface $request) use ($stream) {
-                return new Response(200, array(), $stream);
-            })
-        ));
+        $server = new Server(function (RequestInterface $request) use ($stream) {
+            return new Response(200, array(), $stream);
+        });
 
         $socket = new Socket(0, $loop);
         $server->listen($socket);
@@ -509,17 +481,15 @@ class FunctionalServerTest extends TestCase
         $loop = Factory::create();
         $connector = new Connector($loop);
 
-        $server = new Server(array(
-            new Callback(function (RequestInterface $request) use ($loop) {
-                $stream = new ThroughStream();
+        $server = new Server(function (RequestInterface $request) use ($loop) {
+            $stream = new ThroughStream();
 
-                $loop->addTimer(0.1, function () use ($stream) {
-                    $stream->end();
-                });
+            $loop->addTimer(0.1, function () use ($stream) {
+                $stream->end();
+            });
 
-                return new Response(101, array('Upgrade' => 'echo'), $stream);
-            })
-        ));
+            return new Response(101, array('Upgrade' => 'echo'), $stream);
+        });
 
         $socket = new Socket(0, $loop);
         $server->listen($socket);
@@ -548,17 +518,15 @@ class FunctionalServerTest extends TestCase
         $loop = Factory::create();
         $connector = new Connector($loop);
 
-        $server = new Server(array(
-            new Callback(function (RequestInterface $request) use ($loop) {
-                $stream = new ThroughStream();
+        $server = new Server(function (RequestInterface $request) use ($loop) {
+            $stream = new ThroughStream();
 
-                $loop->addTimer(0.1, function () use ($stream) {
-                    $stream->end();
-                });
+            $loop->addTimer(0.1, function () use ($stream) {
+                $stream->end();
+            });
 
-                return new Response(200, array(), $stream);
-            })
-        ));
+            return new Response(200, array(), $stream);
+        });
 
         $socket = new Socket(0, $loop);
         $server->listen($socket);
@@ -587,21 +555,19 @@ class FunctionalServerTest extends TestCase
         $loop = Factory::create();
         $connector = new Connector($loop);
 
-        $server = new Server(array(
-            new Callback(function (RequestInterface $request) use ($loop) {
-                $stream = new ThroughStream();
+        $server = new Server(function (RequestInterface $request) use ($loop) {
+            $stream = new ThroughStream();
 
-                $loop->addTimer(0.1, function () use ($stream) {
-                    $stream->end();
-                });
+            $loop->addTimer(0.1, function () use ($stream) {
+                $stream->end();
+            });
 
-                return new Promise(function ($resolve) use ($loop, $stream) {
-                    $loop->addTimer(0.001, function () use ($resolve, $stream) {
-                        $resolve(new Response(200, array(), $stream));
-                    });
+            return new Promise(function ($resolve) use ($loop, $stream) {
+                $loop->addTimer(0.001, function () use ($resolve, $stream) {
+                    $resolve(new Response(200, array(), $stream));
                 });
-            })
-        ));
+            });
+        });
 
         $socket = new Socket(0, $loop);
         $server->listen($socket);
@@ -630,14 +596,12 @@ class FunctionalServerTest extends TestCase
         $loop = Factory::create();
         $connector = new Connector($loop);
 
-        $server = new Server(array(
-            new Callback(function (RequestInterface $request) {
-                $stream = new ThroughStream();
-                $stream->close();
+        $server = new Server(function (RequestInterface $request) {
+            $stream = new ThroughStream();
+            $stream->close();
 
-                return new Response(200, array(), $stream);
-            })
-        ));
+            return new Response(200, array(), $stream);
+        });
 
         $socket = new Socket(0, $loop);
         $server->listen($socket);

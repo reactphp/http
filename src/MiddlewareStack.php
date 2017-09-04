@@ -7,7 +7,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use React\Promise;
 use React\Promise\PromiseInterface;
 
-final class MiddlewareStack implements MiddlewareStackInterface
+class MiddlewareStack
 {
     /**
      * @var ResponseInterface
@@ -15,13 +15,13 @@ final class MiddlewareStack implements MiddlewareStackInterface
     private $defaultResponse;
 
     /**
-     * @var MiddlewareInterface[]
+     * @var callable[]
      */
     private $middlewares = array();
 
     /**
      * @param ResponseInterface $response
-     * @param MiddlewareInterface[] $middlewares
+     * @param callable[] $middlewares
      */
     public function __construct(ResponseInterface $response, array $middlewares)
     {
@@ -33,7 +33,7 @@ final class MiddlewareStack implements MiddlewareStackInterface
      * @param ServerRequestInterface $request
      * @return PromiseInterface<ResponseInterface>
      */
-    public function process(ServerRequestInterface $request)
+    public function __invoke(ServerRequestInterface $request)
     {
         if (count($this->middlewares) === 0) {
             return Promise\resolve($this->defaultResponse);
@@ -45,7 +45,7 @@ final class MiddlewareStack implements MiddlewareStackInterface
         $that = $this;
         $cancel = null;
         return new Promise\Promise(function ($resolve, $reject) use ($middleware, $request, $middlewares, &$cancel, $that) {
-            $cancel = $middleware->process(
+            $cancel = $middleware(
                 $request,
                 new MiddlewareStack(
                     $that->defaultResponse,

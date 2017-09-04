@@ -30,7 +30,7 @@ final class BufferTest extends TestCase
         $stack = new MiddlewareStack($response, array($exposeRequest));
 
         $buffer = new Buffer();
-        $buffer->process($serverRequest, $stack);
+        $buffer($serverRequest, $stack);
 
         $exposedRequest = $exposeRequest->getRequest();
         $this->assertSame($body, $exposedRequest->getBody()->getContents());
@@ -49,15 +49,16 @@ final class BufferTest extends TestCase
         );
 
         $stack = $this
-            ->getMockBuilder('React\Http\MiddlewareStackInterface')
+            ->getMockBuilder('React\Http\MiddlewareStack')
+            ->disableOriginalConstructor()
             ->getMock();
         $stack
             ->expects($this->never())
-            ->method('process')
+            ->method('__invoke')
             ->with($serverRequest);
 
         $buffer = new Buffer();
-        $response = $buffer->process($serverRequest, $stack);
+        $response = $buffer($serverRequest, $stack);
 
         $this->assertInstanceOf('React\Http\Response', $response);
         $this->assertSame(413, $response->getStatusCode());

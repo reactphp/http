@@ -3,7 +3,6 @@
 namespace React\Http;
 
 use Evenement\EventEmitter;
-use React\Http\Middleware\Callback;
 use React\Socket\ServerInterface;
 use React\Socket\ConnectionInterface;
 use Psr\Http\Message\RequestInterface;
@@ -79,9 +78,9 @@ use React\Stream\WritableStreamInterface;
 class Server extends EventEmitter
 {
     /**
-     * @var MiddlewareStackInterface
+     * @var callable
      */
-    private $middlewareStack;
+    private $callable;
 
     /**
      * Creates an HTTP server that invokes the given middleware stack for each
@@ -94,31 +93,17 @@ class Server extends EventEmitter
      * connections in order to then parse incoming data as HTTP.
      * See also [listen()](#listen) for more details.
      *
-     * @param callable|MiddlewareInterface[]|MiddlewareStackInterface $middlewares
+     * @param callable $callable
      * @see self::listen()
      */
-    public function __construct($middlewares)
+    public function __construct($callable)
     {
-        if (is_callable($middlewares)) {
-            $middlewares = array(
-                new Callback($middlewares),
-            );
-        }
-
-        if (is_array($middlewares)) {
-            $this->middlewareStack = new MiddlewareStack(
-                new Response(404),
-                $middlewares
-            );
+        if (is_callable($callable)) {
+            $this->callable = $callable;
             return;
         }
 
-        if ($middlewares instanceof MiddlewareStackInterface) {
-            $this->middlewareStack = $middlewares;
-            return;
-        }
-
-        throw new \InvalidArgumentException('Only a callable, React\Http\MiddlewareInterface[], or a single React\Http\MiddlewareStackInterface implementation are supported');
+        throw new \InvalidArgumentException('Only a callables are supported');
     }
 
     /**
@@ -251,8 +236,21 @@ class Server extends EventEmitter
             $conn->write("HTTP/1.1 100 Continue\r\n\r\n");
         }
 
-        $middlewareStack = $this->middlewareStack;
-        $promise = $middlewareStack->process($request);
+        $cancel = null;
+        $promise = new Promise\Promise(function ($resolve, $reject) use ($request, &$cancel) {
+            $callable = $this->callable;
+            $cancel = $callable($request);
+            if ($cancel instanceof Promise\CancellablePromiseInterface) {
+                $cancel->done($resolve, $reject);
+                return;
+            }
+
+            $resolve($cancel);
+        }, function () use (&$cancel) {
+            if ($cancel instanceof Promise\CancellablePromiseInterface) {
+                $cancel->cancel();
+            }
+        });
 
         // cancel pending promise once connection closes
         if ($promise instanceof CancellablePromiseInterface) {

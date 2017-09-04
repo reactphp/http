@@ -18,7 +18,7 @@ final class MiddlewareStackTest extends TestCase
         $middlewares = array();
         $middlewareStack = new MiddlewareStack($defaultResponse, $middlewares);
 
-        $result = Block\await($middlewareStack->process($request), Factory::create());
+        $result = Block\await($middlewareStack($request), Factory::create());
         $this->assertSame($defaultResponse, $result);
     }
 
@@ -71,7 +71,7 @@ final class MiddlewareStackTest extends TestCase
         $defaultResponse = new Response(404);
         $middlewareStack = new MiddlewareStack($defaultResponse, $middlewares);
 
-        $result = Block\await($middlewareStack->process($request), Factory::create());
+        $result = Block\await($middlewareStack($request), Factory::create());
         $this->assertSame($defaultResponse, $result);
         foreach ($middlewares as $middleware) {
             $this->assertSame($expectedCallCount, $middleware->getCallCount());

@@ -7,7 +7,7 @@ use React\Http\MiddlewareInterface;
 use React\Http\MiddlewareStackInterface;
 use React\Promise\Deferred;
 
-final class LimitHandlers implements MiddlewareInterface
+final class LimitHandlers
 {
     private $limit = 10;
     private $pending = 0;
@@ -19,7 +19,7 @@ final class LimitHandlers implements MiddlewareInterface
         $this->queued = new \SplQueue();
     }
 
-    public function process(ServerRequestInterface $request, MiddlewareStackInterface $stack)
+    public function __invoke(ServerRequestInterface $request, callable $stack)
     {
         $deferred = new Deferred();
         $this->queued->enqueue($deferred);
@@ -28,7 +28,7 @@ final class LimitHandlers implements MiddlewareInterface
 
         return $deferred->promise()->then(function () use ($request, $stack) {
             $this->pending++;
-            return $stack->process($request);
+            return $stack($request);
         })->then(function ($response) {
             $this->pending--;
             $this->processQueue();

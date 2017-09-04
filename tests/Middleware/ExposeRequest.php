@@ -3,21 +3,19 @@
 namespace React\Tests\Http\Middleware;
 
 use Psr\Http\Message\ServerRequestInterface;
-use React\Http\MiddlewareInterface;
-use React\Http\MiddlewareStackInterface;
 use React\Promise;
 
-final class ExposeRequest implements MiddlewareInterface
+final class ExposeRequest
 {
     /**
      * @var ServerRequestInterface
      */
     private $request;
 
-    public function process(ServerRequestInterface $request, MiddlewareStackInterface $stack)
+    public function __invoke(ServerRequestInterface $request, callable $stack)
     {
         $this->request = $request;
-        return Promise\resolve($stack->process($request));
+        return Promise\resolve($stack($request));
     }
 
     /**

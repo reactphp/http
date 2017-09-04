@@ -3,14 +3,12 @@
 namespace React\Http\Middleware;
 
 use Psr\Http\Message\ServerRequestInterface;
-use React\Http\MiddlewareInterface;
-use React\Http\MiddlewareStackInterface;
 use React\Http\Response;
 use React\Promise\Stream;
 use React\Stream\ReadableStreamInterface;
 use RingCentral\Psr7\BufferStream;
 
-final class Buffer implements MiddlewareInterface
+final class Buffer
 {
     private $sizeLimit;
 
@@ -23,7 +21,7 @@ final class Buffer implements MiddlewareInterface
         $this->sizeLimit = $sizeLimit;
     }
 
-    public function process(ServerRequestInterface $request, MiddlewareStackInterface $stack)
+    public function __invoke(ServerRequestInterface $request, callable $stack)
     {
         $size = $request->getBody()->getSize();
 
@@ -37,7 +35,7 @@ final class Buffer implements MiddlewareInterface
 
         $body = $request->getBody();
         if (!$body instanceof ReadableStreamInterface) {
-            return $stack->process($request);
+            return $stack($request);
         }
 
         return Stream\buffer($body)->then(function ($buffer) use ($request, $stack) {
@@ -45,7 +43,7 @@ final class Buffer implements MiddlewareInterface
             $stream->write($buffer);
             $request = $request->withBody($stream);
 
-            return $stack->process($request);
+            return $stack($request);
         });
     }
 
