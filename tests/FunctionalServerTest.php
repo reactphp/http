@@ -2,8 +2,6 @@
 
 namespace React\Tests\Http;
 
-use React\Http\Middleware\Buffer;
-use React\Http\Middleware\Callback;
 use React\Socket\Server as Socket;
 use React\EventLoop\Factory;
 use React\Http\Server;
@@ -13,9 +11,7 @@ use React\Socket\ConnectionInterface;
 use Clue\React\Block;
 use React\Http\Response;
 use React\Socket\SecureServer;
-use React\Stream\ReadableStreamInterface;
 use React\Promise\Promise;
-use React\Promise\PromiseInterface;
 use React\Promise\Stream;
 use React\Stream\ThroughStream;
 

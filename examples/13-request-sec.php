@@ -2,10 +2,7 @@
 
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
-use React\Http\Middleware\Callback;
-use React\Http\MiddlewareInterface;
-use React\Http\MiddlewareStack;
-use React\Http\MiddlewareStackInterface;
+use React\Http\MiddlewareRunner;
 use React\Http\Response;
 use React\Http\Server;
 use React\Promise\Deferred;
@@ -17,14 +14,14 @@ $counts = array(
     'requests'  => 0,
     'responses' => 0,
 );
-final class Incre implements MiddlewareInterface
+final class Incre
 {
-    public function process(ServerRequestInterface $request, MiddlewareStackInterface $stack)
+    public function __invoke(ServerRequestInterface $request, callable $stack)
     {
         global $counts, $total;
         $total++;
         $counts['requests']++;
-        return $stack->process($request)->then(function ($response) {
+        return $stack($request)->then(function ($response) {
             global $counts;
             $counts['responses']++;
             return $response;
@@ -44,11 +41,11 @@ $loop->addPeriodicTimer(1, function () use (&$counts, &$total) {
         'responses' => 0,
     );
 });
-$server = new Server(new MiddlewareStack(
+$server = new Server(new MiddlewareRunner(
     new Response(500),
     array(
         new Incre($counts),
-        new Callback(function (ServerRequestInterface $request) use ($loop) {
+        function (ServerRequestInterface $request) use ($loop) {
             $deferred = new Deferred();
             $loop->addTimer(mt_rand(1, 10) / 10, function () use ($deferred) {
                 $deferred->resolve(new Response(
@@ -60,7 +57,7 @@ $server = new Server(new MiddlewareStack(
                 ));
             });
             return $deferred->promise();
-        })
+        }
     ))
 );
 

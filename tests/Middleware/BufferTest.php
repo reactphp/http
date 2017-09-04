@@ -3,7 +3,7 @@
 namespace React\Tests\Http\Middleware;
 
 use React\Http\Middleware\Buffer;
-use React\Http\MiddlewareStack;
+use React\Http\MiddlewareRunner;
 use React\Http\Response;
 use React\Http\ServerRequest;
 use React\Tests\Http\TestCase;
@@ -27,7 +27,7 @@ final class BufferTest extends TestCase
         $exposeRequest = new ExposeRequest();
 
         $response = new Response();
-        $stack = new MiddlewareStack($response, array($exposeRequest));
+        $stack = new MiddlewareRunner($response, array($exposeRequest));
 
         $buffer = new Buffer();
         $buffer($serverRequest, $stack);
@@ -49,7 +49,7 @@ final class BufferTest extends TestCase
         );
 
         $stack = $this
-            ->getMockBuilder('React\Http\MiddlewareStack')
+            ->getMockBuilder('React\Http\MiddlewareRunner')
             ->disableOriginalConstructor()
             ->getMock();
         $stack

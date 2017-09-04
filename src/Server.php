@@ -236,26 +236,17 @@ class Server extends EventEmitter
             $conn->write("HTTP/1.1 100 Continue\r\n\r\n");
         }
 
+        $callable = $this->callable;
         $cancel = null;
-        $promise = new Promise\Promise(function ($resolve, $reject) use ($request, &$cancel) {
-            $callable = $this->callable;
+        $promise = new Promise\Promise(function ($resolve, $reject) use ($callable, $request, &$cancel) {
             $cancel = $callable($request);
-            if ($cancel instanceof Promise\CancellablePromiseInterface) {
-                $cancel->done($resolve, $reject);
-                return;
-            }
-
             $resolve($cancel);
-        }, function () use (&$cancel) {
-            if ($cancel instanceof Promise\CancellablePromiseInterface) {
-                $cancel->cancel();
-            }
         });
 
         // cancel pending promise once connection closes
-        if ($promise instanceof CancellablePromiseInterface) {
-            $conn->on('close', function () use ($promise) {
-                $promise->cancel();
+        if ($cancel instanceof CancellablePromiseInterface) {
+            $conn->on('close', function () use ($cancel) {
+                $cancel->cancel();
             });
         }
 

@@ -7,7 +7,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use React\Promise;
 use React\Promise\PromiseInterface;
 
-class MiddlewareStack
+class MiddlewareRunner
 {
     /**
      * @var ResponseInterface
@@ -47,12 +47,12 @@ class MiddlewareStack
         return new Promise\Promise(function ($resolve, $reject) use ($middleware, $request, $middlewares, &$cancel, $that) {
             $cancel = $middleware(
                 $request,
-                new MiddlewareStack(
+                new MiddlewareRunner(
                     $that->defaultResponse,
                     $middlewares
                 )
             );
-            $cancel->done($resolve, $reject);
+            $cancel->then($resolve, $reject);
         }, function () use (&$cancel) {
             if ($cancel instanceof Promise\CancellablePromiseInterface) {
                 $cancel->cancel();
