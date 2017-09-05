@@ -17,20 +17,18 @@ use React\Stream\WritableStreamInterface;
  * The `Server` class is responsible for handling incoming connections and then
  * processing each incoming HTTP request.
  *
- * For each request, it executes the middleware stack passed to the
+ * For each request, it executes the callback function passed to the
  * constructor with the respective [request](#request) object and expects
  * a respective [response](#response) object in return.
  *
  * ```php
- * $server = new Server([
- *     new Callback(function (ServerRequestInterface $request) {
- *         return new Response(
- *             200,
- *             array('Content-Type' => 'text/plain'),
- *             "Hello World!\n"
- *         );
- *     })
- * ]);
+ * $server = new Server(function (ServerRequestInterface $request) {
+ *     return new Response(
+ *         200,
+ *         array('Content-Type' => 'text/plain'),
+ *         "Hello World!\n"
+ *     );
+ * });
  * ```
  *
  * In order to process any connections, the server needs to be attached to an
