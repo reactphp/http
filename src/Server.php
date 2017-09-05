@@ -7,7 +7,7 @@ use React\Socket\ServerInterface;
 use React\Socket\ConnectionInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use React\Promise\Promise;
+use React\Promise;
 use RingCentral\Psr7 as Psr7Implementation;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Promise\CancellablePromiseInterface;
@@ -75,7 +75,10 @@ use React\Stream\WritableStreamInterface;
  */
 class Server extends EventEmitter
 {
-    private $callback;
+    /**
+     * @var callable
+     */
+    private $callable;
 
     /**
      * Creates an HTTP server that invokes the given callback for each incoming HTTP request
@@ -85,16 +88,17 @@ class Server extends EventEmitter
      * connections in order to then parse incoming data as HTTP.
      * See also [listen()](#listen) for more details.
      *
-     * @param callable $callback
+     * @param callable $callable
      * @see self::listen()
      */
-    public function __construct($callback)
+    public function __construct($callable)
     {
-        if (!is_callable($callback)) {
-            throw new \InvalidArgumentException();
+        if (is_callable($callable)) {
+            $this->callable = $callable;
+            return;
         }
 
-        $this->callback = $callback;
+        throw new \InvalidArgumentException('Only a callables are supported');
     }
 
     /**
@@ -227,10 +231,10 @@ class Server extends EventEmitter
             $conn->write("HTTP/1.1 100 Continue\r\n\r\n");
         }
 
-        $callback = $this->callback;
+        $callable = $this->callable;
         $cancel = null;
-        $promise = new Promise(function ($resolve, $reject) use ($callback, $request, &$cancel) {
-            $cancel = $callback($request);
+        $promise = new Promise\Promise(function ($resolve, $reject) use ($callable, $request, &$cancel) {
+            $cancel = $callable($request);
             $resolve($cancel);
         });
 

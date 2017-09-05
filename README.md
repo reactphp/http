@@ -9,6 +9,7 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
 * [Quickstart example](#quickstart-example)
 * [Usage](#usage)
   * [Server](#server)
+  * [Middleware](#middleware)
   * [Request](#request)
   * [Response](#response)
 * [Install](#install)
@@ -135,6 +136,88 @@ $server->on('error', function (Exception $e) {
 
 Note that the request object can also emit an error.
 Check out [request](#request) for more details.
+
+### Middleware
+
+As of `0.8` request handling is done via middlewares either by passing
+a `callable` as before, an array with middlewares implementing 
+[`React\Http\MiddlewareInterface`](src/MiddlewareInterface.php),
+passing a concrete implementation of 
+[`React\Http\MiddlewareStackInterface`](src/MiddlewareStackInterface.php)
+directly.
+
+Middlewares implementing [`React\Http\MiddlewareInterface`](src/MiddlewareInterface.php) 
+are expected to return a promise resolving a 
+`Psr\Http\Message\ResponseInterface`.
+However what ever comes out of the middleware is run through 
+[`resolve()`](https://github.com/reactphp/promise#resolve)
+and turned into a promise regardless. When a middleware can't resolve the 
+request to a promise it is expected to delegate that task to the passed 
+[`React\Http\MiddlewareStackInterface`](src/MiddlewareStackInterface.php).
+This is process is inspired by the work in progress PSR-15 with the 
+difference that promises are returned instead of responses.
+
+See also [example #12](examples) and [example #13](examples).
+
+#### Callback
+
+A few build in middlewares are shipped with this package, one of them is
+the `Callback` middleware. This middlewares takes a `callable` and executes 
+it on each request. Identically to how this package worked before `0.8`.
+
+Usage:
+
+```php
+$middlewares = [
+    new Callback(function (ServerRequestInterface $request) {
+        return new Response(200);
+    }),
+];
+```
+
+#### Buffer
+
+Another build in middleware is `Buffer` which will buffer the incoming 
+request body until the reported size has been reached. Then it will 
+call the middleware stack with the new request instance containing the 
+full request body.
+
+Usage:
+
+```php
+$middlewares = [
+    new Buffer(),
+];
+```
+
+#### LimitHandlers
+
+The `LimitHandlers` middleware is all about concurrency control and will only allow the
+given number of requests to be handled concurrently.
+
+Usage:
+
+```php
+$middlewares = [
+    new LimitHandlers(10),
+];
+```
+
+#### Stacking middlewares
+
+All these middlewares can of course be combined into a stack. The following example limits 
+to 5 concurrent handlers, buffers the request body before handling and returns a empty 200 
+response.
+
+```php
+$middlewares = [
+    new LimitHandlers(5),
+    new Buffer(),
+    new Callback(function (ServerRequestInterface $request) {
+        return new Response(200);
+    }),
+];
+```
 
 ### Request
 

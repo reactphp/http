@@ -11,9 +11,7 @@ use React\Socket\ConnectionInterface;
 use Clue\React\Block;
 use React\Http\Response;
 use React\Socket\SecureServer;
-use React\Stream\ReadableStreamInterface;
 use React\Promise\Promise;
-use React\Promise\PromiseInterface;
 use React\Promise\Stream;
 use React\Stream\ThroughStream;
 
