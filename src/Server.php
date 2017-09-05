@@ -81,10 +81,7 @@ class Server extends EventEmitter
     private $callable;
 
     /**
-     * Creates an HTTP server that invokes the given middleware stack for each
-     * incoming HTTP request. The middleware stack is either a concrete class
-     * implementing `React\Http\MiddlewareStackInterface` or an array of
-     * `React\Http\MiddlewareInterface`s.
+     * Creates an HTTP server that invokes the given callback for each incoming HTTP request
      *
      * In order to process any connections, the server needs to be attached to an
      * instance of `React\Socket\ServerInterface` which emits underlying streaming
