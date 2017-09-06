@@ -677,6 +677,25 @@ $server = new Server(new MiddlewareRunner([
 ]));
 ```
 
+#### Buffer
+
+One of the build in middleware is `Buffer` which will buffer the incoming 
+request body until the reported size has been reached. Then it will 
+call the middleware stack with the new request instance containing the 
+full request body.
+
+Usage:
+
+```php
+$middlewares = new MiddlewareRunner([
+    new Buffer(),
+    function (ServerRequestInterface $request, callable $next) {
+        // The body from $request->getBody() is now fully available without the need to stream it 
+        return new Response(200);
+    },
+]);
+```
+
 ## Install
 
 The recommended way to install this library is [through Composer](http://getcomposer.org).
