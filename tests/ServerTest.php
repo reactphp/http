@@ -1290,6 +1290,40 @@ class ServerTest extends TestCase
         $this->assertContains("\r\n\r\nError 431: Request Header Fields Too Large", $buffer);
     }
 
+    public function testCustomRequestHeaderSizeIsPassedAndNoHeaderOverflowErrorWillAppear()
+    {
+      $maxSize = 1024 * 16;
+
+      $options = [];
+      $options['max_header_size'] = $maxSize;
+
+      $server = new Server(function (ServerRequestInterface $request) {
+        return new Response(200, array());
+      }, $options);
+
+      $buffer = '';
+
+      $this->connection
+        ->expects($this->any())
+        ->method('write')
+        ->will(
+          $this->returnCallback(
+            function ($data) use (&$buffer) {
+              $buffer .= $data;
+            }
+          )
+        );
+
+      $server->listen($this->socket);
+      $this->socket->emit('connection', array($this->connection));
+
+      $data = "GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\nX-DATA: ";
+      $data .= str_repeat('A', 4097 - strlen($data)) . "\r\n\r\n";
+      $this->connection->emit('data', array($data));
+
+      $this->assertStringStartsWith("HTTP/1.1 200 OK\r\n", $buffer);
+    }
+
     public function testRequestInvalidWillEmitErrorAndSendErrorResponse()
     {
         $error = null;
