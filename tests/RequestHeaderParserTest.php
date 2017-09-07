@@ -124,6 +124,52 @@ class RequestHeaderParserTest extends TestCase
         $this->assertEquals('example.com', $request->getHeaderLine('Host'));
     }
 
+    public function testBufferSizeParameterShouldFallbackOnWrongValue()
+    {
+        $error = null;
+        $passedParser = null;
+        $defaultValue = 4096;
+
+        $parser = new RequestHeaderParser(null, null, 'x-y-z');
+        $parser->on('headers', $this->expectCallableNever());
+        $parser->on('error', function ($message, $parser) use (&$error, &$passedParser) {
+            $error = $message;
+            $passedParser = $parser;
+        });
+
+        $this->assertSame(1, count($parser->listeners('headers')));
+        $this->assertSame(1, count($parser->listeners('error')));
+
+        $data = str_repeat('A', 4097);
+        $parser->feed($data);
+
+        $this->assertInstanceOf('OverflowException', $error);
+        $this->assertSame('Maximum header size of ' . $defaultValue . ' exceeded.', $error->getMessage());
+    }
+
+    public function testCustomBufferSizeOverflowShouldEmitError()
+    {
+      $error = null;
+      $passedParser = null;
+      $newCustomBufferSize = 1014 * 16;
+
+      $parser = new RequestHeaderParser(null, null, $newCustomBufferSize);
+      $parser->on('headers', $this->expectCallableNever());
+      $parser->on('error', function ($message, $parser) use (&$error, &$passedParser) {
+        $error = $message;
+        $passedParser = $parser;
+      });
+
+      $this->assertSame(1, count($parser->listeners('headers')));
+      $this->assertSame(1, count($parser->listeners('error')));
+
+      $data = str_repeat('A', $newCustomBufferSize + 1);
+      $parser->feed($data);
+
+      $this->assertInstanceOf('OverflowException', $error);
+      $this->assertSame('Maximum header size of ' . $newCustomBufferSize . ' exceeded.', $error->getMessage());
+    }
+
     public function testHeaderOverflowShouldEmitError()
     {
         $error = null;
