@@ -1294,7 +1294,7 @@ class ServerTest extends TestCase
     {
       $maxSize = 1024 * 16;
 
-      $options = [];
+      $options = array();
       $options['max_header_size'] = $maxSize;
 
       $server = new Server(function (ServerRequestInterface $request) {

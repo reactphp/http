@@ -91,7 +91,7 @@ class Server extends EventEmitter
      * @param array $options
      * @see self::listen()
      */
-    public function __construct($callback, array $options = [])
+    public function __construct($callback, array $options = array())
     {
         if (!is_callable($callback)) {
             throw new \InvalidArgumentException();
