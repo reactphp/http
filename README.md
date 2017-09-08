@@ -677,18 +677,26 @@ $server = new Server(new MiddlewareRunner([
 ]));
 ```
 
-#### Buffer
+#### RequestBodyBuffer
 
-One of the build in middleware is `Buffer` which will buffer the incoming 
-request body until the reported size has been reached. Then it will 
-call the middleware stack with the new request instance containing the 
-full request body.
+One of the build in middleware is `RequestBodyBuffer` which will buffer the incoming 
+request body until the reported size has been reached. Then it will call the next 
+middleware in line with the new request instance containing the full request body.
+The constructor accepts one argument, a maximum request body size. When one isn't
+provided it will use `post_max_size` from PHP's configuration. 
+(**Note that the value from the CLI configuration will be used.**)
+
+Before buffering the request body the `RequestBodyBuffer` will check if the request
+body has a size. When size is null a [HTTP 411](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/411)
+response will be send to the client. When size is bigger then supplied to the `RequestBodyBuffer` 
+constructor or taken from `post_max_size` a [HTTP 413](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/413)
+response will be dispatched. 
 
 Usage:
 
 ```php
 $middlewares = new MiddlewareRunner([
-    new Buffer(),
+    new RequestBodyBuffer(),
     function (ServerRequestInterface $request, callable $next) {
         // The body from $request->getBody() is now fully available without the need to stream it 
         return new Response(200);

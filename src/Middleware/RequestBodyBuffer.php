@@ -8,10 +8,16 @@ use React\Promise\Stream;
 use React\Stream\ReadableStreamInterface;
 use RingCentral\Psr7\BufferStream;
 
-final class Buffer
+final class RequestBodyBuffer
 {
     private $sizeLimit;
 
+    /**
+     * @param int|null $sizeLimit Either an int with the max request body size
+     *                            or null to use post_max_size from PHP's
+     *                            configuration. (Note that the value from
+     *                            the CLI configuration will be used.)
+     */
     public function __construct($sizeLimit = null)
     {
         if ($sizeLimit === null) {
@@ -47,6 +53,14 @@ final class Buffer
         });
     }
 
+    /**
+     * Gets post_max_size from PHP's configuration
+     * and turns it into bytes up to a maximum of GigaBytes.
+     * Anything other than configured as Bytes, KiloBytes, MegaBytes, or GigaBytes
+     * is considered out of range.
+     *
+     * @return int
+     */
     private function iniMaxPostSize()
     {
         $size = ini_get('post_max_size');
