@@ -9,8 +9,7 @@ class RequestHeaderParserTest extends TestCase
 
     public function testMaxSizeParameterShouldFailOnWrongType()
     {
-        $this->expectException('InvalidArgumentException');
-        $this->expectExceptionMessage('Invalid type for maxSize provided. Expected an integer value.');
+        $this->setExpectedException('InvalidArgumentException', 'Invalid type for maxSize provided. Expected an integer value.');
 
         new RequestHeaderParser(null, null, 'abc');
     }

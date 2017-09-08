@@ -1261,8 +1261,7 @@ class ServerTest extends TestCase
         $options = array();
         $options['max_header_size'] = 'abc';
 
-        $this->expectException('InvalidArgumentException');
-        $this->expectExceptionMessage('Parameter "max_header_size" expected to be an integer.');
+        $this->setExpectedException('InvalidArgumentException', 'Parameter "max_header_size" expected to be an integer.');
 
         new Server($this->expectCallableNever(), $options);
     }
@@ -1272,8 +1271,7 @@ class ServerTest extends TestCase
       $options = array();
       $options['max_header_size'] = -1024;
 
-      $this->expectException('InvalidArgumentException');
-      $this->expectExceptionMessage('Parameter "max_header_size" expected to be a positive value.');
+      $this->setExpectedException('InvalidArgumentException', 'Parameter "max_header_size" expected to be a positive value.');
 
       new Server($this->expectCallableNever(), $options);
     }
