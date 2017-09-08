@@ -64,6 +64,17 @@ $server = new Server(function (ServerRequestInterface $request) {
 });
 ```
 
+In some cases you may want to customize the server's behavior with your
+own [options](#options). The provided defaults should already fit
+the most use-cases.
+
+```php
+$options = array();
+$options['max_header_size'] = 1024 * 8;
+
+$server = new Server($callback, $options);
+```
+
 In order to process any connections, the server needs to be attached to an
 instance of `React\Socket\ServerInterface` which emits underlying streaming
 connections in order to then parse incoming data as HTTP.
@@ -666,8 +677,8 @@ instead of the `callable`. A middleware is expected to adhere the following rule
 * It returns a `ResponseInterface` (or any promise which can be consumed by [`Promise\resolve`](http://reactphp.org/promise/#resolve) resolving to a `ResponseInterface`)
 * It calls `$next($request)` to continue processing the next middleware function or returns explicitly to abort the chain
 
-The following example adds a middleware that adds the current time to the request as a 
-header (`Request-Time`) and middleware that always returns a 200 code without a body: 
+The following example adds a middleware that adds the current time to the request as a
+header (`Request-Time`) and middleware that always returns a 200 code without a body:
 
 ```php
 $server = new Server(new MiddlewareRunner([
@@ -719,7 +730,7 @@ Usage:
 $middlewares = new MiddlewareRunner([
     new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
     function (ServerRequestInterface $request, callable $next) {
-        // The body from $request->getBody() is now fully available without the need to stream it 
+        // The body from $request->getBody() is now fully available without the need to stream it
         return new Response(200);
     },
 ]);
@@ -727,7 +738,7 @@ $middlewares = new MiddlewareRunner([
 
 #### RequestBodyParserMiddleware
 
-The `RequestBodyParserMiddleware` takes a fully buffered request body (generally from [`RequestBodyBufferMiddleware`](#requestbodybuffermiddleware)), 
+The `RequestBodyParserMiddleware` takes a fully buffered request body (generally from [`RequestBodyBufferMiddleware`](#requestbodybuffermiddleware)),
 and parses the forms and uploaded files from the request body.
 
 Parsed submitted forms will be available from `$request->getParsedBody()` as
@@ -752,7 +763,7 @@ also supports `multipart/form-data`, thus supporting uploaded files available
 through `$request->getUploadedFiles()`.
 
 The `$request->getUploadedFiles(): array` will return an array with all
-uploaded files formatted like this: 
+uploaded files formatted like this:
 
 ```php
 $uploadedFiles = [
@@ -771,7 +782,7 @@ $middlewares = new MiddlewareRunner([
     new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
     new RequestBodyParserMiddleware(),
     function (ServerRequestInterface $request, callable $next) {
-        // If any, parsed form fields are now available from $request->getParsedBody() 
+        // If any, parsed form fields are now available from $request->getParsedBody()
         return new Response(200);
     },
 ]);
@@ -779,7 +790,7 @@ $middlewares = new MiddlewareRunner([
 
 #### Third-Party Middleware
 
-A non-exhaustive list of third-party middleware can be found at the [`Middleware`](https://github.com/reactphp/http/wiki/Middleware) wiki page. 
+A non-exhaustive list of third-party middleware can be found at the [`Middleware`](https://github.com/reactphp/http/wiki/Middleware) wiki page.
 
 ## Install
 
