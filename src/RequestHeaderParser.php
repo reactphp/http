@@ -15,16 +15,20 @@ use RingCentral\Psr7 as g7;
 class RequestHeaderParser extends EventEmitter
 {
     private $buffer = '';
-    private $bufferMaxSize;
+    private $maxSize;
 
     private $localSocketUri;
     private $remoteSocketUri;
 
-    public function __construct($localSocketUri = null, $remoteSocketUri = null, $bufferMaxSize = null)
+    public function __construct($localSocketUri = null, $remoteSocketUri = null, $maxSize = 4096)
     {
+        if (!is_integer($maxSize)) {
+          throw new \InvalidArgumentException('Invalid type for maxSize provided. Expected an integer value.');
+        }
+
         $this->localSocketUri = $localSocketUri;
         $this->remoteSocketUri = $remoteSocketUri;
-        $this->bufferMaxSize = is_integer($bufferMaxSize) ? $bufferMaxSize : 4096;
+        $this->maxSize = $maxSize;
     }
 
     public function feed($data)
@@ -39,8 +43,8 @@ class RequestHeaderParser extends EventEmitter
             $currentHeaderSize = strlen($this->buffer);
         }
 
-        if ($currentHeaderSize > $this->bufferMaxSize) {
-            $this->emit('error', array(new \OverflowException("Maximum header size of {$this->bufferMaxSize} exceeded.", 431), $this));
+        if ($currentHeaderSize > $this->maxSize) {
+            $this->emit('error', array(new \OverflowException("Maximum header size of {$this->maxSize} exceeded.", 431), $this));
             $this->removeAllListeners();
             return;
         }
