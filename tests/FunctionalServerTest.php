@@ -2,6 +2,7 @@
 
 namespace React\Tests\Http;
 
+use React\Http\MiddlewareRunner;
 use React\Socket\Server as Socket;
 use React\EventLoop\Factory;
 use React\Http\Server;
@@ -41,6 +42,59 @@ class FunctionalServerTest extends TestCase
 
         $this->assertContains("HTTP/1.0 200 OK", $response);
         $this->assertContains('http://' . noScheme($socket->getAddress()) . '/', $response);
+
+        $socket->close();
+    }
+
+    public function testPlainHttpOnRandomPortWithMiddlewareRunner()
+    {
+        $loop = Factory::create();
+        $connector = new Connector($loop);
+
+        $server = new Server(new MiddlewareRunner(array(function (RequestInterface $request) {
+            return new Response(200, array(), (string)$request->getUri());
+        })));
+
+        $socket = new Socket(0, $loop);
+        $server->listen($socket);
+
+        $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
+            $conn->write("GET / HTTP/1.0\r\nHost: " . noScheme($conn->getRemoteAddress()) . "\r\n\r\n");
+
+            return Stream\buffer($conn);
+        });
+
+        $response = Block\await($result, $loop, 1.0);
+
+        $this->assertContains("HTTP/1.0 200 OK", $response);
+        $this->assertContains('http://' . noScheme($socket->getAddress()) . '/', $response);
+
+        $socket->close();
+    }
+
+    public function testPlainHttpOnRandomPortWithEmptyMiddlewareRunner()
+    {
+        $loop = Factory::create();
+        $connector = new Connector($loop);
+
+        $server = new Server(new MiddlewareRunner(array(
+            function () {
+                return new Response(404);
+            },
+        )));
+
+        $socket = new Socket(0, $loop);
+        $server->listen($socket);
+
+        $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
+            $conn->write("GET / HTTP/1.0\r\nHost: " . noScheme($conn->getRemoteAddress()) . "\r\n\r\n");
+
+            return Stream\buffer($conn);
+        });
+
+        $response = Block\await($result, $loop, 1.0);
+
+        $this->assertContains("HTTP/1.0 404 Not Found", $response);
 
         $socket->close();
     }
