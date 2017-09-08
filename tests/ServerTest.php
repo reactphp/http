@@ -1256,8 +1256,31 @@ class ServerTest extends TestCase
         $this->assertContains("Error 505: HTTP Version not supported", $buffer);
     }
 
-    public function testRequestOverflowWillEmitErrorAndSendErrorResponse()
+    public function testMaxRequestHeaderOptionShouldFailOnInvalidType()
     {
+        $options = array();
+        $options['max_header_size'] = 'abc';
+
+        $this->expectException('InvalidArgumentException');
+        $this->expectExceptionMessage('Parameter "max_header_size" expected to be an integer.');
+
+        new Server($this->expectCallableNever(), $options);
+    }
+
+    public function testMaxRequestHeaderOptionShouldFailOnNegativeValue()
+    {
+      $options = array();
+      $options['max_header_size'] = -1024;
+
+      $this->expectException('InvalidArgumentException');
+      $this->expectExceptionMessage('Parameter "max_header_size" expected to be a positive value.');
+
+      new Server($this->expectCallableNever(), $options);
+    }
+
+    public function testRequestHeaderOverflowWithDefaultValueWillEmitErrorAndSendErrorResponse()
+    {
+        $defaultMaxHeaderSize = 4096;
         $error = null;
         $server = new Server($this->expectCallableNever());
         $server->on('error', function ($message) use (&$error) {
@@ -1281,7 +1304,7 @@ class ServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\nX-DATA: ";
-        $data .= str_repeat('A', 4097 - strlen($data)) . "\r\n\r\n";
+        $data .= str_repeat('A', $defaultMaxHeaderSize + 1 - strlen($data)) . "\r\n\r\n";
         $this->connection->emit('data', array($data));
 
         $this->assertInstanceOf('OverflowException', $error);
@@ -1290,12 +1313,12 @@ class ServerTest extends TestCase
         $this->assertContains("\r\n\r\nError 431: Request Header Fields Too Large", $buffer);
     }
 
-    public function testCustomRequestHeaderSizeIsPassedAndNoHeaderOverflowErrorWillAppear()
+    public function testRequestHeaderOverflowWithCustomValue()
     {
-      $maxSize = 1024 * 16;
+      $maxHeaderSize = 1024 * 16;
 
       $options = array();
-      $options['max_header_size'] = $maxSize;
+      $options['max_header_size'] = $maxHeaderSize;
 
       $server = new Server(function (ServerRequestInterface $request) {
         return new Response(200, array());
@@ -1318,10 +1341,49 @@ class ServerTest extends TestCase
       $this->socket->emit('connection', array($this->connection));
 
       $data = "GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\nX-DATA: ";
-      $data .= str_repeat('A', 4097 - strlen($data)) . "\r\n\r\n";
+      $data .= str_repeat('A', $maxHeaderSize - strlen($data)) . "\r\n\r\n";
       $this->connection->emit('data', array($data));
 
       $this->assertStringStartsWith("HTTP/1.1 200 OK\r\n", $buffer);
+    }
+
+    public function testRequestHeaderOverflowWithCustomValueWillEmitErrorAndSendErrorResponse()
+    {
+        $maxHeaderSize = 1024 * 16;
+
+        $options = array();
+        $options['max_header_size'] = $maxHeaderSize;
+
+        $error = null;
+        $server = new Server($this->expectCallableNever(), $options);
+        $server->on('error', function ($message) use (&$error) {
+          $error = $message;
+        });
+
+        $buffer = '';
+
+        $this->connection
+          ->expects($this->any())
+          ->method('write')
+          ->will(
+            $this->returnCallback(
+              function ($data) use (&$buffer) {
+                $buffer .= $data;
+              }
+            )
+          );
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\nX-DATA: ";
+        $data .= str_repeat('A', $maxHeaderSize + 1 - strlen($data)) . "\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('OverflowException', $error);
+
+        $this->assertContains("HTTP/1.1 431 Request Header Fields Too Large\r\n", $buffer);
+        $this->assertContains("\r\n\r\nError 431: Request Header Fields Too Large", $buffer);
     }
 
     public function testRequestInvalidWillEmitErrorAndSendErrorResponse()

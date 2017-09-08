@@ -97,6 +97,8 @@ class Server extends EventEmitter
             throw new \InvalidArgumentException();
         }
 
+        $this->validateOptions($options);
+
         $this->callback = $callback;
         $this->options = $options;
     }
@@ -481,5 +483,23 @@ class Server extends EventEmitter
         $meta = isset($conn->stream) ? stream_get_meta_data($conn->stream) : array();
 
         return (isset($meta['crypto']) && $meta['crypto']);
+    }
+
+    private function validateOptions(array $options)
+    {
+      if (isset($options['max_header_size'])) {
+        $maxHeaderSize = $options['max_header_size'];
+        if (!is_integer($maxHeaderSize)) {
+          throw new \InvalidArgumentException(
+            sprintf('Parameter "%s" expected to be an integer.', 'max_header_size')
+          );
+        }
+
+        if ($maxHeaderSize < 0) {
+          throw new \InvalidArgumentException(
+            sprintf('Parameter "%s" expected to be a positive value.', 'max_header_size')
+          );
+        }
+      }
     }
 }
