@@ -418,13 +418,13 @@ class Server extends EventEmitter
      */
     private function getRequestHeaderParser(ConnectionInterface $conn)
     {
-      $uriLocal = $this->getUriLocal($conn);
-      $uriRemote = $this->getUriRemote($conn);
+        $uriLocal = $this->getUriLocal($conn);
+        $uriRemote = $this->getUriRemote($conn);
 
-      if (isset($this->options['max_header_size']) && is_integer($this->options['max_header_size'])) {
-        return new RequestHeaderParser($uriLocal, $uriRemote, $this->options['max_header_size']);
-      }
-      return new RequestHeaderParser($uriLocal, $uriRemote);
+        if (isset($this->options['max_header_size']) && is_integer($this->options['max_header_size'])) {
+            return new RequestHeaderParser($uriLocal, $uriRemote, $this->options['max_header_size']);
+        }
+        return new RequestHeaderParser($uriLocal, $uriRemote);
     }
 
     /**
@@ -433,17 +433,17 @@ class Server extends EventEmitter
      */
     private function getUriLocal(ConnectionInterface $conn)
     {
-      $uriLocal = $conn->getLocalAddress();
-      if ($uriLocal !== null && strpos($uriLocal, '://') === false) {
-        // local URI known but does not contain a scheme. Should only happen for old Socket < 0.8
-        // try to detect transport encryption and assume default application scheme
-        $uriLocal = ($this->isConnectionEncrypted($conn) ? 'https://' : 'http://') . $uriLocal;
-      } elseif ($uriLocal !== null) {
-        // local URI known, so translate transport scheme to application scheme
-        $uriLocal = strtr($uriLocal, array('tcp://' => 'http://', 'tls://' => 'https://'));
-      }
+        $uriLocal = $conn->getLocalAddress();
+        if ($uriLocal !== null && strpos($uriLocal, '://') === false) {
+            // local URI known but does not contain a scheme. Should only happen for old Socket < 0.8
+            // try to detect transport encryption and assume default application scheme
+            $uriLocal = ($this->isConnectionEncrypted($conn) ? 'https://' : 'http://') . $uriLocal;
+        } elseif ($uriLocal !== null) {
+            // local URI known, so translate transport scheme to application scheme
+            $uriLocal = strtr($uriLocal, array('tcp://' => 'http://', 'tls://' => 'https://'));
+        }
 
-      return $uriLocal;
+        return $uriLocal;
     }
 
     /**
@@ -452,14 +452,14 @@ class Server extends EventEmitter
      */
     private function getUriRemote(ConnectionInterface $conn)
     {
-      $uriRemote = $conn->getRemoteAddress();
-      if ($uriRemote !== null && strpos($uriRemote, '://') === false) {
-        // local URI known but does not contain a scheme. Should only happen for old Socket < 0.8
-        // actual scheme is not evaluated but required for parsing URI
-        $uriRemote = 'unused://' . $uriRemote;
-      }
+        $uriRemote = $conn->getRemoteAddress();
+        if ($uriRemote !== null && strpos($uriRemote, '://') === false) {
+            // local URI known but does not contain a scheme. Should only happen for old Socket < 0.8
+            // actual scheme is not evaluated but required for parsing URI
+            $uriRemote = 'unused://' . $uriRemote;
+        }
 
-      return $uriRemote;
+        return $uriRemote;
     }
 
     /**
@@ -487,19 +487,19 @@ class Server extends EventEmitter
 
     private function validateOptions(array $options)
     {
-      if (isset($options['max_header_size'])) {
-        $maxHeaderSize = $options['max_header_size'];
-        if (!is_integer($maxHeaderSize)) {
-          throw new \InvalidArgumentException(
-            sprintf('Parameter "%s" expected to be an integer.', 'max_header_size')
-          );
-        }
+        if (isset($options['max_header_size'])) {
+            $maxHeaderSize = $options['max_header_size'];
+            if (!is_integer($maxHeaderSize)) {
+                throw new \InvalidArgumentException(
+                    sprintf('Parameter "%s" expected to be an integer.', 'max_header_size')
+                );
+            }
 
-        if ($maxHeaderSize < 0) {
-          throw new \InvalidArgumentException(
-            sprintf('Parameter "%s" expected to be a positive value.', 'max_header_size')
-          );
+            if ($maxHeaderSize < 0) {
+                throw new \InvalidArgumentException(
+                    sprintf('Parameter "%s" expected to be a positive value.', 'max_header_size')
+                );
+            }
         }
-      }
     }
 }

@@ -1268,12 +1268,12 @@ class ServerTest extends TestCase
 
     public function testMaxRequestHeaderOptionShouldFailOnNegativeValue()
     {
-      $options = array();
-      $options['max_header_size'] = -1024;
+        $options = array();
+        $options['max_header_size'] = -1024;
 
-      $this->setExpectedException('InvalidArgumentException', 'Parameter "max_header_size" expected to be a positive value.');
+        $this->setExpectedException('InvalidArgumentException', 'Parameter "max_header_size" expected to be a positive value.');
 
-      new Server($this->expectCallableNever(), $options);
+        new Server($this->expectCallableNever(), $options);
     }
 
     public function testRequestHeaderOverflowWithDefaultValueWillEmitErrorAndSendErrorResponse()
@@ -1313,36 +1313,36 @@ class ServerTest extends TestCase
 
     public function testRequestHeaderOverflowWithCustomValue()
     {
-      $maxHeaderSize = 1024 * 16;
+        $maxHeaderSize = 1024 * 16;
 
-      $options = array();
-      $options['max_header_size'] = $maxHeaderSize;
+        $options = array();
+        $options['max_header_size'] = $maxHeaderSize;
 
-      $server = new Server(function (ServerRequestInterface $request) {
-        return new Response(200, array());
-      }, $options);
+        $server = new Server(function (ServerRequestInterface $request) {
+            return new Response(200, array());
+        }, $options);
 
-      $buffer = '';
+        $buffer = '';
 
-      $this->connection
-        ->expects($this->any())
-        ->method('write')
-        ->will(
-          $this->returnCallback(
-            function ($data) use (&$buffer) {
-              $buffer .= $data;
-            }
-          )
-        );
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
 
-      $server->listen($this->socket);
-      $this->socket->emit('connection', array($this->connection));
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
 
-      $data = "GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\nX-DATA: ";
-      $data .= str_repeat('A', $maxHeaderSize - strlen($data)) . "\r\n\r\n";
-      $this->connection->emit('data', array($data));
+        $data = "GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\nX-DATA: ";
+        $data .= str_repeat('A', $maxHeaderSize - strlen($data)) . "\r\n\r\n";
+        $this->connection->emit('data', array($data));
 
-      $this->assertStringStartsWith("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertStringStartsWith("HTTP/1.1 200 OK\r\n", $buffer);
     }
 
     public function testRequestHeaderOverflowWithCustomValueWillEmitErrorAndSendErrorResponse()
@@ -1355,21 +1355,21 @@ class ServerTest extends TestCase
         $error = null;
         $server = new Server($this->expectCallableNever(), $options);
         $server->on('error', function ($message) use (&$error) {
-          $error = $message;
+            $error = $message;
         });
 
         $buffer = '';
 
         $this->connection
-          ->expects($this->any())
-          ->method('write')
-          ->will(
-            $this->returnCallback(
-              function ($data) use (&$buffer) {
-                $buffer .= $data;
-              }
-            )
-          );
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
