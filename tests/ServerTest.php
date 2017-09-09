@@ -2,6 +2,7 @@
 
 namespace React\Tests\Http;
 
+use React\Http\MiddlewareRunner;
 use React\Http\Server;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Response;
@@ -74,6 +75,41 @@ class ServerTest extends TestCase
 
             return \React\Promise\resolve(new Response());
         });
+
+        $this->connection
+            ->expects($this->any())
+            ->method('getRemoteAddress')
+            ->willReturn('127.0.0.1:8080');
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+        $this->connection->emit('data', array($data));
+
+        $serverParams = $requestAssertion->getServerParams();
+
+        $this->assertSame(1, $i);
+        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertSame('GET', $requestAssertion->getMethod());
+        $this->assertSame('/', $requestAssertion->getRequestTarget());
+        $this->assertSame('/', $requestAssertion->getUri()->getPath());
+        $this->assertSame(array(), $requestAssertion->getQueryParams());
+        $this->assertSame('http://example.com/', (string)$requestAssertion->getUri());
+        $this->assertSame('example.com', $requestAssertion->getHeaderLine('Host'));
+        $this->assertSame('127.0.0.1', $serverParams['REMOTE_ADDR']);
+    }
+
+    public function testRequestEventWithMiddlewareRunner()
+    {
+        $i = 0;
+        $requestAssertion = null;
+        $server = new Server(new MiddlewareRunner(array(function (ServerRequestInterface $request) use (&$i, &$requestAssertion) {
+            $i++;
+            $requestAssertion = $request;
+
+            return \React\Promise\resolve(new Response());
+        })));
 
         $this->connection
             ->expects($this->any())

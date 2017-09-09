@@ -11,6 +11,7 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
   * [Server](#server)
   * [Request](#request)
   * [Response](#response)
+  * [Middleware](#middleware)
 * [Install](#install)
 * [Tests](#tests)
 * [License](#license)
@@ -650,6 +651,31 @@ not supported.
 As such, HTTP/1.1 response messages will automatically include a
 `Connection: close` header, irrespective of what header values are
 passed explicitly.
+
+### Middleware
+
+Middleware can be added to the server using [`MiddlewareRunner`](src/MiddlewareRunner.php)
+instead of the `callable`. A middleware is expected to adhere the following rules:
+
+* It is a `callable`.
+* It accepts `ServerRequestInterface` as first argument and optional `callable` as second argument.
+* It returns a `ResponseInterface` (or any promise which can be consumed by [`Promise\resolve`](http://reactphp.org/promise/#resolve) resolving to a `ResponseInterface`)
+* It calls `$next($request)` to continue processing the next middleware function or returns explicitly to abort the chain
+
+The following example adds a middleware that adds the current time to the request as a 
+header (`Request-Time`) and middleware that always returns a 200 code without a body: 
+
+```php
+$server = new Server(new MiddlewareRunner([
+    function (ServerRequestInterface $request, callable $next) {
+        $request = $request->withHeader('Request-Time', time());
+        return $next($request);
+    },
+    function (ServerRequestInterface $request, callable $next) {
+        return new Response(200);
+    },
+]));
+```
 
 ## Install
 
