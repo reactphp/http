@@ -13,6 +13,7 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
   * [Response](#response)
   * [Middleware](#middleware)
     * [RequestBodyBufferMiddleware](#requestbodybuffermiddleware)
+    * [RequestBodyParserMiddleware](#requestbodyparsermiddleware)
 * [Install](#install)
 * [Tests](#tests)
 * [License](#license)
@@ -720,6 +721,39 @@ $middlewares = new MiddlewareRunner([
     new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
     function (ServerRequestInterface $request, callable $next) {
         // The body from $request->getBody() is now fully available without the need to stream it 
+        return new Response(200);
+    },
+]);
+```
+
+#### RequestBodyParserMiddleware
+
+The `RequestBodyParserMiddleware` takes a fully buffered request body (generally from [`RequestBodyBufferMiddleware`](#requestbodybuffermiddleware)), 
+and parses the forms and uploaded files from the request body.
+
+Parsed submitted forms will be available from `$request->getParsedBody()` as array. For example the following submitted body:
+
+`bar[]=beer&bar[]=wine`
+
+Results in the following parsed body:
+
+```php
+$parsedBody = [
+    'bar' => [
+        'beer',
+        'wine',
+    ],
+];
+```
+
+Usage:
+
+```php
+$middlewares = new MiddlewareRunner([
+    new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
+    new RequestBodyParserMiddleware(),
+    function (ServerRequestInterface $request, callable $next) {
+        // If any, parsed form fields are now available from $request->getParsedBody() 
         return new Response(200);
     },
 ]);
