@@ -40,7 +40,7 @@ final class LimitHandlersMiddleware
 
         $that = $this;
         $pending = &$this->pending;
-        return $deferred->promise()->then(function () use ($request, $next, $that, &$pending) {
+        return $deferred->promise()->then(function () use ($request, $next, &$pending) {
             $pending++;
             $body = $request->getBody();
             if ($body instanceof ReadableStreamInterface) {
