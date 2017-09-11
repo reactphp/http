@@ -8,7 +8,7 @@ use React\Promise\Stream;
 use React\Stream\ReadableStreamInterface;
 use RingCentral\Psr7\BufferStream;
 
-final class RequestBodyBuffer
+final class RequestBodyBufferMiddleware
 {
     private $sizeLimit;
 

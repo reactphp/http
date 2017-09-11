@@ -8,7 +8,7 @@ use React\Http\ServerRequest;
 use React\Tests\Http\TestCase;
 use RingCentral\Psr7\BufferStream;
 
-final class RequestBodyBufferTest extends TestCase
+final class RequestBodyBufferMiddlewareTest extends TestCase
 {
     public function testBuffer()
     {
