@@ -15,6 +15,12 @@ final class LimitHandlersMiddleware
     private $pending = 0;
     private $queued;
 
+    /**
+     * @param int $limit Maximum amount of concurrent requests handled.
+     *
+     * For example when $limit is set to 10, 10 requests will flow to $next
+     * while more incoming requests have to wait until one is done.
+     */
     public function __construct($limit = self::DEFAULT_LIMIT)
     {
         $this->limit = $limit;
