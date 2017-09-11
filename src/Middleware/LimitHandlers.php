@@ -32,25 +32,30 @@ final class LimitHandlers
 
         $this->processQueue();
 
-        return $deferred->promise()->then(function () use ($request, $next) {
-            $this->pending++;
+        $that = $this;
+        $pending = &$this->pending;
+        return $deferred->promise()->then(function () use ($request, $next, $that, &$pending) {
+            $pending++;
             $body = $request->getBody();
             if ($body instanceof ReadableStreamInterface) {
                 $body->resume();
             }
             return $next($request);
-        })->then(function ($response) {
-            $this->pending--;
-            $this->processQueue();
+        })->then(function ($response) use ($that, &$pending) {
+            $pending--;
+            $that->processQueue();
             return $response;
-        }, function ($error) {
-            $this->pending--;
-            $this->processQueue();
+        }, function ($error) use ($that, &$pending) {
+            $pending--;
+            $that->processQueue();
             return $error;
         });
     }
 
-    private function processQueue()
+    /**
+     * @internal
+     */
+    public function processQueue()
     {
         if ($this->pending >= $this->limit) {
             return;

@@ -95,6 +95,6 @@ final class LimitHandlersTest extends TestCase
         $body->expects($this->once())->method('pause');
         $body->expects($this->once())->method('resume');
         $limitHandlers = new LimitHandlers(1);
-        $limitHandlers(new ServerRequest('GET', 'https://example.com/', [], $body), function () {});
+        $limitHandlers(new ServerRequest('GET', 'https://example.com/', array(), $body), function () {});
     }
 }
