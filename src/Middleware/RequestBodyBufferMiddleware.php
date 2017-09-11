@@ -54,12 +54,11 @@ final class RequestBodyBufferMiddleware
     }
 
     /**
-     * Gets post_max_size from PHP's configuration
-     * and turns it into bytes up to a maximum of GigaBytes.
-     * Anything other than configured as Bytes, KiloBytes, MegaBytes, or GigaBytes
-     * is considered out of range.
+     * Gets post_max_size from PHP's configuration expressed in bytes
      *
      * @return int
+     * @link http://php.net/manual/en/ini.core.php#ini.post-max-size
+     * @codeCoverageIgnore
      */
     private function iniMaxPostSize()
     {

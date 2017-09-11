@@ -3,14 +3,42 @@
 namespace React\Tests\Http\Middleware;
 
 use Psr\Http\Message\ServerRequestInterface;
-use React\Http\Middleware\RequestBodyBuffer;
+use React\Http\Middleware\RequestBodyBufferMiddleware;
 use React\Http\ServerRequest;
 use React\Tests\Http\TestCase;
 use RingCentral\Psr7\BufferStream;
+use React\Stream\ThroughStream;
+use React\Http\HttpBodyStream;
 
 final class RequestBodyBufferMiddlewareTest extends TestCase
 {
-    public function testBuffer()
+    public function testBufferingResolvesWhenStreamEnds()
+    {
+        $stream = new ThroughStream();
+        $serverRequest = new ServerRequest(
+            'GET',
+            'https://example.com/',
+            array(),
+            new HttpBodyStream($stream, 11)
+        );
+
+        $exposedRequest = null;
+        $buffer = new RequestBodyBufferMiddleware(20);
+        $buffer(
+            $serverRequest,
+            function (ServerRequestInterface $request) use (&$exposedRequest) {
+                $exposedRequest = $request;
+            }
+        );
+
+        $stream->write('hello');
+        $stream->write('world');
+        $stream->end('!');
+
+        $this->assertSame('helloworld!', $exposedRequest->getBody()->getContents());
+    }
+
+    public function testAlreadyBufferedResolvesImmediately()
     {
         $size = 1024;
         $body = str_repeat('x', $size);
@@ -24,7 +52,7 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
         );
 
         $exposedRequest = null;
-        $buffer = new RequestBodyBuffer();
+        $buffer = new RequestBodyBufferMiddleware();
         $buffer(
             $serverRequest,
             function (ServerRequestInterface $request) use (&$exposedRequest) {
@@ -35,7 +63,7 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
         $this->assertSame($body, $exposedRequest->getBody()->getContents());
     }
 
-    public function test411Error()
+    public function testUnknownSizeReturnsError411()
     {
         $body = $this->getMockBuilder('Psr\Http\Message\StreamInterface')->getMock();
         $body->expects($this->once())->method('getSize')->willReturn(null);
@@ -47,7 +75,7 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
             $body
         );
 
-        $buffer = new RequestBodyBuffer();
+        $buffer = new RequestBodyBufferMiddleware();
         $response = $buffer(
             $serverRequest,
             function () {}
@@ -56,7 +84,7 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
         $this->assertSame(411, $response->getStatusCode());
     }
 
-    public function test413Error()
+    public function testExcessiveSizeReturnsError413()
     {
         $stream = new BufferStream(2);
         $stream->write('aa');
@@ -68,7 +96,7 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
             $stream
         );
 
-        $buffer = new RequestBodyBuffer(1);
+        $buffer = new RequestBodyBufferMiddleware(1);
         $response = $buffer(
             $serverRequest,
             function () {}
