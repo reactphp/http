@@ -7,7 +7,7 @@ use React\Promise\Deferred;
 use React\Stream\ReadableStreamInterface;
 use SplQueue;
 
-final class LimitHandlers
+final class LimitHandlersMiddleware
 {
     const DEFAULT_LIMIT = 10;
 

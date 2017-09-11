@@ -2,12 +2,12 @@
 
 namespace React\Tests\Http\Middleware;
 
-use React\Http\Middleware\LimitHandlers;
+use React\Http\Middleware\LimitHandlersMiddleware;
 use React\Http\ServerRequest;
 use React\Promise\Deferred;
 use React\Tests\Http\TestCase;
 
-final class LimitHandlersTest extends TestCase
+final class LimitHandlersMiddlewareTest extends TestCase
 {
     public function testLimitOneRequestConcurrently()
     {
@@ -46,7 +46,7 @@ final class LimitHandlersTest extends TestCase
          * The handler
          *
          */
-        $limitHandlers = new LimitHandlers(1);
+        $limitHandlers = new LimitHandlersMiddleware(1);
 
         $this->assertFalse($calledA);
         $this->assertFalse($calledB);
@@ -94,7 +94,7 @@ final class LimitHandlersTest extends TestCase
         $body = $this->getMockBuilder('React\Http\HttpBodyStream')->disableOriginalConstructor()->getMock();
         $body->expects($this->once())->method('pause');
         $body->expects($this->once())->method('resume');
-        $limitHandlers = new LimitHandlers(1);
+        $limitHandlers = new LimitHandlersMiddleware(1);
         $limitHandlers(new ServerRequest('GET', 'https://example.com/', array(), $body), function () {});
     }
 }
