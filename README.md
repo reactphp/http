@@ -12,6 +12,7 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
   * [Request](#request)
   * [Response](#response)
   * [Middleware](#middleware)
+    * [RequestBodyBufferMiddleware](#requestbodybuffermiddleware)
 * [Install](#install)
 * [Tests](#tests)
 * [License](#license)
@@ -237,8 +238,9 @@ and
   `Server`, but you can add these parameters by yourself using the given methods.
   The next versions of this project will cover these features.
 
-Note that the request object will be processed once the request headers have
-been received.
+Note that by default, the request object will be processed once the request headers have
+been received (see also [`RequestBodyBufferMiddleware`](#requestbodybuffermiddleware)
+for an alternative).
 This means that this happens irrespective of (i.e. *before*) receiving the
 (potentially much larger) request body.
 While this may be uncommon in the PHP ecosystem, this is actually a very powerful
@@ -253,7 +255,7 @@ approach that gives you several advantages not otherwise possible:
   such as accepting a huge file upload or possibly unlimited request body stream.
 
 The `getBody()` method can be used to access the request body stream.
-This method returns a stream instance that implements both the
+In the default streaming mode, this method returns a stream instance that implements both the
 [PSR-7 StreamInterface](http://www.php-fig.org/psr/psr-7/#psrhttpmessagestreaminterface)
 and the [ReactPHP ReadableStreamInterface](https://github.com/reactphp/stream#readablestreaminterface).
 However, most of the `PSR-7 StreamInterface` methods have been
@@ -261,8 +263,10 @@ designed under the assumption of being in control of the request body.
 Given that this does not apply to this server, the following
 `PSR-7 StreamInterface` methods are not used and SHOULD NOT be called:
 `tell()`, `eof()`, `seek()`, `rewind()`, `write()` and `read()`.
-Instead, you should use the `ReactPHP ReadableStreamInterface` which
-gives you access to the incoming request body as the individual chunks arrive:
+If this is an issue for your use case, it's highly recommended to use the
+[`RequestBodyBufferMiddleware`](#requestbodybuffermiddleware) instead.
+The `ReactPHP ReadableStreamInterface` gives you access to the incoming
+request body as the individual chunks arrive:
 
 ```php
 $server = new Server(function (ServerRequestInterface $request) {
@@ -297,7 +301,7 @@ $server = new Server(function (ServerRequestInterface $request) {
 The above example simply counts the number of bytes received in the request body.
 This can be used as a skeleton for buffering or processing the request body.
 
-See also [example #4](examples) for more details.
+See also [example #9](examples) for more details.
 
 The `data` event will be emitted whenever new data is available on the request
 body stream.
@@ -414,7 +418,7 @@ non-alphanumeric characters.
 This encoding is also used internally when decoding the name and value of cookies
 (which is in line with other implementations, such as PHP's cookie functions).
 
-See also [example #6](examples) for more details.
+See also [example #5](examples) for more details.
 
 ### Response
 
@@ -675,6 +679,50 @@ $server = new Server(new MiddlewareRunner([
         return new Response(200);
     },
 ]));
+```
+
+#### RequestBodyBufferMiddleware
+
+One of the built-in middleware is the `RequestBodyBufferMiddleware` which
+can be used to buffer the whole incoming request body in memory.
+This can be useful if full PSR-7 compatibility is needed for the request handler
+and the default streaming request body handling is not needed.
+The constructor accepts one optional argument, the maximum request body size.
+When one isn't provided it will use `post_max_size` (default 8 MiB) from PHP's
+configuration.
+(Note that the value from your matching SAPI will be used, which is the CLI
+configuration in most cases.)
+
+Any incoming request that has a request body that exceeds this limit will be
+rejected with a `413` (Request Entity Too Large) error message without calling
+the next middleware handlers.
+
+Any incoming request that does not have its size defined and uses the (rare)
+`Transfer-Encoding: chunked` will be rejected with a `411` (Length Required)
+error message without calling the next middleware handlers.
+Note that this only affects incoming requests, the much more common chunked
+transfer encoding for outgoing responses is not affected.
+It is recommended to define a `Content-Length` header instead.
+Note that this does not affect normal requests without a request body
+(such as a simple `GET` request).
+
+All other requests will be buffered in memory until the request body end has
+been reached and then call the next middleware handler with the complete,
+buffered request.
+Similarly, this will immediately invoke the next middleware handler for requests
+that have an empty request body (such as a simple `GET` request) and requests
+that are already buffered (such as due to another middleware).
+
+Usage:
+
+```php
+$middlewares = new MiddlewareRunner([
+    new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
+    function (ServerRequestInterface $request, callable $next) {
+        // The body from $request->getBody() is now fully available without the need to stream it 
+        return new Response(200);
+    },
+]);
 ```
 
 ## Install
