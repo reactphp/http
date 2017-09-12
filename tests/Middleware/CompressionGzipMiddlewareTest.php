@@ -2,13 +2,13 @@
 
 namespace React\Tests\Http\Middleware;
 
-use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Middleware\CompressionGzipMiddleware;
 use React\Http\Response;
 use React\Http\ServerRequest;
 use React\Promise\FulfilledPromise;
 use React\Promise\Promise;
+use React\Tests\Http\TestCase;
 
 class CompressionGzipMiddlewareTest extends TestCase
 {
