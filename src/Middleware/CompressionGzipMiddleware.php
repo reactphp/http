@@ -4,7 +4,6 @@ namespace React\Http\Middleware;
 
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Response;
-use function RingCentral\Psr7\stream_for;
 
 final class CompressionGzipMiddleware
 {
@@ -36,7 +35,7 @@ final class CompressionGzipMiddleware
           return $response
               ->withHeader('Content-Encoding', 'gzip')
               ->withHeader('Content-Length', mb_strlen($compressed))
-              ->withBody(stream_for($compressed));
+              ->withBody(\RingCentral\Psr7\stream_for($compressed));
         });
     }
 
