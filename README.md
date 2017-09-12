@@ -12,6 +12,7 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
   * [Request](#request)
   * [Response](#response)
   * [Middleware](#middleware)
+    * [CompressionGzipMiddleware](#compressiongzipmiddleware)
     * [RequestBodyBufferMiddleware](#requestbodybuffermiddleware)
 * [Install](#install)
 * [Tests](#tests)
@@ -679,6 +680,25 @@ $server = new Server(new MiddlewareRunner([
         return new Response(200);
     },
 ]));
+```
+
+#### CompressionGzipMiddleware
+
+One of the built-in middleware is the `RequestBodyBufferMiddleware` which
+can be used to automatically compress the response when it is allowed
+by the incoming [request](#request) (`Accept-Encoding: gzip`). This will result in
+a [response](#response) with an `Content-Encoding: gzip` header in combination with
+the new calculated `Content-Length` header.
+
+Usage:
+
+```php
+$middlewares = new MiddlewareRunner([
+    new \React\Http\Middleware\CompressionGzipMiddleware(),
+    function (ServerRequestInterface $request, callable $next) {
+        return new Response(200);
+    },
+]);
 ```
 
 #### RequestBodyBufferMiddleware
