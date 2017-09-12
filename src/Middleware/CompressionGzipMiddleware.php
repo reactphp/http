@@ -9,39 +9,39 @@ use function RingCentral\Psr7\stream_for;
 final class CompressionGzipMiddleware
 {
 
-  private $compressionLevel = -1;
+    private $compressionLevel = -1;
 
-  public function __construct($level = -1)
-  {
-      $this->compressionLevel = $level;
-  }
+    public function __construct($level = -1)
+    {
+        $this->compressionLevel = $level;
+    }
 
-  public function __invoke(ServerRequestInterface $request, $next)
-  {
-      if (!$request->hasHeader('Accept-Encoding')) {
-          return $next($request);
-      }
-
-      if (stristr($request->getHeaderLine('Accept-Encoding'), 'gzip') === false) {
-          return $next($request);
-      }
-
-    return $next($request)->then(function (Response $response) use ($request, $next) {
-        if ($response->hasHeader('Content-Encoding')) {
-            return $response;
+    public function __invoke(ServerRequestInterface $request, $next)
+    {
+        if (!$request->hasHeader('Accept-Encoding')) {
+            return $next($request);
         }
 
-        $compressed = $this->compress($response->getBody()->getContents());
+        if (stristr($request->getHeaderLine('Accept-Encoding'), 'gzip') === false) {
+            return $next($request);
+        }
 
-        return $response
-            ->withHeader('Content-Encoding', 'gzip')
-            ->withHeader('Content-Length', mb_strlen($compressed))
-            ->withBody(stream_for($compressed));
-    });
-  }
+        return $next($request)->then(function (Response $response) use ($request, $next) {
+          if ($response->hasHeader('Content-Encoding')) {
+              return $response;
+          }
 
-  protected function compress($content)
-  {
-      return gzencode($content, $this->compressionLevel);
-  }
+          $compressed = $this->compress($response->getBody()->getContents());
+
+          return $response
+              ->withHeader('Content-Encoding', 'gzip')
+              ->withHeader('Content-Length', mb_strlen($compressed))
+              ->withBody(stream_for($compressed));
+        });
+    }
+
+    protected function compress($content)
+    {
+        return gzencode($content, $this->compressionLevel);
+    }
 }
