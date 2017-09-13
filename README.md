@@ -693,8 +693,8 @@ the new calculated `Content-Length` header.
 Usage:
 
 ```php
-$middlewares = new MiddlewareRunner([
-    new \React\Http\Middleware\CompressionGzipMiddleware(),
+$middleware = new MiddlewareRunner([
+    new CompressionGzipMiddleware(),
     function (ServerRequestInterface $request, callable $next) {
         return new Response(200);
     },
