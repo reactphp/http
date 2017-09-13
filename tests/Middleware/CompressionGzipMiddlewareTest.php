@@ -10,12 +10,6 @@ use React\Promise\Promise;
 use React\Promise\PromiseInterface;
 use React\Tests\Http\TestCase;
 
-if (!function_exists('gzdecode')) {
-    function gzdecode($data, $length = 0) {
-        return gzinflate(substr($data,10,-8), $length);
-    }
-}
-
 class CompressionGzipMiddlewareTest extends TestCase
 {
 
