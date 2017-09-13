@@ -109,11 +109,11 @@ class CompressionGzipMiddlewareTest extends TestCase
 
     public function gzdecode($data, $length = 0)
     {
-      // php5.3 support for gzdecode (because it was added in php5.4)
-      if (!function_exists('gzdecode')) {
-        return gzinflate(substr($data,10,-8), $length);
-      }
-      return gzdecode($data, $length);
+        // php5.3 support for gzdecode (because it was added in php5.4)
+        if (!function_exists('gzdecode')) {
+            return gzinflate(substr($data,10,-8), $length);
+        }
+        return gzdecode($data, $length);
     }
 
 }
