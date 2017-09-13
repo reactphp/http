@@ -684,7 +684,7 @@ $server = new Server(new MiddlewareRunner([
 
 #### CompressionGzipMiddleware
 
-One of the built-in middleware is the `RequestBodyBufferMiddleware` which
+One of the built-in middleware is the `CompressionGzipMiddleware` which
 can be used to automatically compress the response when it is allowed
 by the incoming [request](#request) (`Accept-Encoding: gzip`). This will result in
 a [response](#response) with an `Content-Encoding: gzip` header in combination with
