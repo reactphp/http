@@ -6,8 +6,8 @@ use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Middleware\CompressionGzipMiddleware;
 use React\Http\Response;
 use React\Http\ServerRequest;
-use React\Promise\FulfilledPromise;
 use React\Promise\Promise;
+use React\Promise\PromiseInterface;
 use React\Tests\Http\TestCase;
 
 class CompressionGzipMiddlewareTest extends TestCase
@@ -22,9 +22,9 @@ class CompressionGzipMiddlewareTest extends TestCase
         $next = $this->getNextCallback($request, $response);
         $middleware = new CompressionGzipMiddleware();
 
-        /** @var FulfilledPromise $result */
+        /** @var PromiseInterface $result */
         $result = $middleware($request, $next);
-        $result->done(function ($value) use (&$response) {
+        $result->then(function ($value) use (&$response) {
             $response = $value;
         });
 
@@ -43,9 +43,9 @@ class CompressionGzipMiddlewareTest extends TestCase
         $next = $this->getNextCallback($request, $response);
         $middleware = new CompressionGzipMiddleware();
 
-        /** @var FulfilledPromise $result */
+        /** @var PromiseInterface $result */
         $result = $middleware($request, $next);
-        $result->done(function ($value) use (&$response) {
+        $result->then(function ($value) use (&$response) {
             $response = $value;
         });
 
@@ -66,9 +66,9 @@ class CompressionGzipMiddlewareTest extends TestCase
         $next = $this->getNextCallback($request, $response);
         $middleware = new CompressionGzipMiddleware();
 
-        /** @var FulfilledPromise $result */
+        /** @var PromiseInterface $result */
         $result = $middleware($request, $next);
-        $result->done(function ($value) use (&$response) {
+        $result->then(function ($value) use (&$response) {
             $response = $value;
         });
 
@@ -87,9 +87,9 @@ class CompressionGzipMiddlewareTest extends TestCase
         $next = $this->getNextCallback($request, $response);
         $middleware = new CompressionGzipMiddleware();
 
-        /** @var FulfilledPromise $result */
+        /** @var PromiseInterface $result */
         $result = $middleware($request, $next);
-        $result->done(function ($value) use (&$response) {
+        $result->then(function ($value) use (&$response) {
             $response = $value;
         });
 
