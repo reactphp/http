@@ -695,7 +695,7 @@ Usage:
 ```php
 $middleware = new MiddlewareRunner([
     new CompressionGzipMiddleware(),
-    function (ServerRequestInterface $request, callable $next) {
+    function (ServerRequestInterface $request, $next) {
         return new Response(200);
     },
 ]);

@@ -10,6 +10,12 @@ use React\Promise\Promise;
 use React\Promise\PromiseInterface;
 use React\Tests\Http\TestCase;
 
+if (!function_exists('gzdecode')) {
+    function gzdecode($data, $length = 0) {
+        return gzinflate(substr($data,10,-8), $length);
+    }
+}
+
 class CompressionGzipMiddlewareTest extends TestCase
 {
 
@@ -54,7 +60,7 @@ class CompressionGzipMiddlewareTest extends TestCase
         $this->assertTrue($response->hasHeader('Content-Encoding'));
         $this->assertTrue($response->hasHeader('Content-Length'));
         $this->assertSame('gzip', $response->getHeaderLine('Content-Encoding'));
-        $this->assertSame($content, gzinflate($response->getBody()->getContents(), $response->getHeaderLine('Content-Length')));
+        $this->assertSame($content, $this->gzdecode($response->getBody()->getContents(), $response->getHeaderLine('Content-Length')));
     }
 
     public function testMiddlewareSkipWhenGzipIsNotSupportedByClient()
@@ -105,6 +111,15 @@ class CompressionGzipMiddlewareTest extends TestCase
                 return $resolve($response);
             });
         };
+    }
+
+    public function gzdecode($data, $length = 0)
+    {
+      // php5.3 support for gzdecode (because it was added in php5.4)
+      if (!function_exists('gzdecode')) {
+        return gzinflate(substr($data,10,-8), $length);
+      }
+      return gzdecode($data, $length);
     }
 
 }

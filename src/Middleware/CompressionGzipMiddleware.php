@@ -32,7 +32,7 @@ final class CompressionGzipMiddleware
           }
 
           $content = $response->getBody()->getContents();
-          $content = \gzdeflate($content, $level);
+          $content = gzencode($content, $level, FORCE_GZIP);
 
           return $response
               ->withHeader('Content-Encoding', 'gzip')
