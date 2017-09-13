@@ -54,7 +54,7 @@ class CompressionGzipMiddlewareTest extends TestCase
         $this->assertTrue($response->hasHeader('Content-Encoding'));
         $this->assertTrue($response->hasHeader('Content-Length'));
         $this->assertSame('gzip', $response->getHeaderLine('Content-Encoding'));
-        $this->assertSame($content, gzdecode($response->getBody()->getContents(), $response->getHeaderLine('Content-Length')));
+        $this->assertSame($content, gzinflate($response->getBody()->getContents(), $response->getHeaderLine('Content-Length')));
     }
 
     public function testMiddlewareSkipWhenGzipIsNotSupportedByClient()

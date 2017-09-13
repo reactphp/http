@@ -25,22 +25,19 @@ final class CompressionGzipMiddleware
             return $next($request);
         }
 
-        return $next($request)->then(function (Response $response) use ($request, $next) {
+        $level = $this->compressionLevel;
+        return $next($request)->then(function (Response $response) use ($request, $next, $level) {
           if ($response->hasHeader('Content-Encoding')) {
               return $response;
           }
 
-          $compressed = $this->compress($response->getBody()->getContents());
+          $content = $response->getBody()->getContents();
+          $content = \gzdeflate($content, $level);
 
           return $response
               ->withHeader('Content-Encoding', 'gzip')
-              ->withHeader('Content-Length', mb_strlen($compressed))
-              ->withBody(\RingCentral\Psr7\stream_for($compressed));
+              ->withHeader('Content-Length', mb_strlen($content))
+              ->withBody(\RingCentral\Psr7\stream_for($content));
         });
-    }
-
-    protected function compress($content)
-    {
-        return gzencode($content, $this->compressionLevel);
     }
 }
