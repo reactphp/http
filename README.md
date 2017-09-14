@@ -236,10 +236,6 @@ For more details about the request object, check out the documentation of
 and
 [PSR-7 RequestInterface](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#32-psrhttpmessagerequestinterface).
 
-> Currently the uploaded files are not added by the
-  `Server`, but you can add these parameters by yourself using the given methods.
-  The next versions of this project will cover these features.
-
 Note that by default, the request object will be processed once the request headers have
 been received (see also [`RequestBodyBufferMiddleware`](#requestbodybuffermiddleware)
 for an alternative).
@@ -265,7 +261,8 @@ designed under the assumption of being in control of the request body.
 Given that this does not apply to this server, the following
 `PSR-7 StreamInterface` methods are not used and SHOULD NOT be called:
 `tell()`, `eof()`, `seek()`, `rewind()`, `write()` and `read()`.
-If this is an issue for your use case, it's highly recommended to use the
+If this is an issue for your use case and/or you want to access uploaded files,
+it's highly recommended to use the
 [`RequestBodyBufferMiddleware`](#requestbodybuffermiddleware) instead.
 The `ReactPHP ReadableStreamInterface` gives you access to the incoming
 request body as the individual chunks arrive:
@@ -732,7 +729,9 @@ $middlewares = new MiddlewareRunner([
 The `RequestBodyParserMiddleware` takes a fully buffered request body (generally from [`RequestBodyBufferMiddleware`](#requestbodybuffermiddleware)), 
 and parses the forms and uploaded files from the request body.
 
-Parsed submitted forms will be available from `$request->getParsedBody()` as array. For example the following submitted body:
+Parsed submitted forms will be available from `$request->getParsedBody()` as
+array.
+For example the following submitted body (`application/x-www-form-urlencoded`):
 
 `bar[]=beer&bar[]=wine`
 
@@ -743,6 +742,23 @@ $parsedBody = [
     'bar' => [
         'beer',
         'wine',
+    ],
+];
+```
+
+Aside from `application/x-www-form-urlencoded`, this middleware handler
+also supports `multipart/form-data`, thus supporting uploaded files available
+through `$request->getUploadedFiles()`.
+
+The `$request->getUploadedFiles(): array` will return an array with all
+uploaded files formatted like this: 
+
+```php
+$uploadedFiles = [
+    'avatar' => new UploadedFile(/**...**/),
+    'screenshots' => [
+        new UploadedFile(/**...**/),
+        new UploadedFile(/**...**/),
     ],
 ];
 ```
