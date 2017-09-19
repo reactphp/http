@@ -13,33 +13,6 @@ use React\Http\HttpBodyStream;
 
 final class RequestBodyParserMiddlewareTest extends TestCase
 {
-    public function testParse()
-    {
-        $middleware = new RequestBodyParserMiddleware();
-        $middleware->addType('react/http', function (ServerRequestInterface $request) {
-            return $request->withParsedBody('parsed');
-        });
-
-        $request = new ServerRequest(
-            200,
-            'https://example.com/',
-            array(
-                'Content-Type' => 'react/http',
-            ),
-            'not yet parsed'
-        );
-
-        /** @var ServerRequestInterface $parsedRequest */
-        $parsedRequest = $middleware(
-            $request,
-            function (ServerRequestInterface $request) {
-                return $request;
-            }
-        );
-
-        $this->assertSame('parsed', $parsedRequest->getParsedBody());
-        $this->assertSame('not yet parsed', (string)$parsedRequest->getBody());
-    }
     public function testFormUrlencodedParsing()
     {
         $middleware = new RequestBodyParserMiddleware();
@@ -82,5 +55,32 @@ final class RequestBodyParserMiddlewareTest extends TestCase
             $parsedRequest->getParsedBody()
         );
         $this->assertSame('foo=bar&baz[]=cheese&bar[]=beer&bar[]=wine&market[fish]=salmon&market[meat][]=beef&market[meat][]=chicken&market[]=bazaar', (string)$parsedRequest->getBody());
+    }
+
+    public function testDoesNotParseJsonByDefault()
+    {
+        $middleware = new RequestBodyParserMiddleware();
+        $request = new ServerRequest(
+            'POST',
+            'https://example.com/',
+            array(
+                'Content-Type' => 'application/json',
+            ),
+            '{"hello":"world"}'
+        );
+
+        /** @var ServerRequestInterface $parsedRequest */
+        $parsedRequest = $middleware(
+            $request,
+            function (ServerRequestInterface $request) {
+                return $request;
+            }
+        );
+
+        $this->assertSame(
+            null,
+            $parsedRequest->getParsedBody()
+        );
+        $this->assertSame('{"hello":"world"}', (string)$parsedRequest->getBody());
     }
 }
