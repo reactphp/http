@@ -443,7 +443,7 @@ class FunctionalServerTest extends TestCase
         $socket = new Socket(0, $loop);
         $server->listen($socket);
 
-        $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) use ($loop) {
+        $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\n\r\n");
 
             return Stream\buffer($conn);

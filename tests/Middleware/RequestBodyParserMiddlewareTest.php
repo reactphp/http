@@ -127,10 +127,7 @@ final class RequestBodyParserMiddlewareTest extends TestCase
             }
         );
 
-        $this->assertSame(
-            null,
-            $parsedRequest->getParsedBody()
-        );
+        $this->assertNull($parsedRequest->getParsedBody());
         $this->assertSame('{"hello":"world"}', (string)$parsedRequest->getBody());
     }
 }

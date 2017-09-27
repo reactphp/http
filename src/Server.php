@@ -168,7 +168,7 @@ class Server extends EventEmitter
         $parser = new RequestHeaderParser($uriLocal, $uriRemote);
 
         $listener = array($parser, 'feed');
-        $parser->on('headers', function (RequestInterface $request, $bodyBuffer) use ($conn, $listener, $parser, $that) {
+        $parser->on('headers', function (RequestInterface $request, $bodyBuffer) use ($conn, $listener, $that) {
             // parsing request completed => stop feeding parser
             $conn->removeListener('data', $listener);
 

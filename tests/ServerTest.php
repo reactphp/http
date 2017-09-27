@@ -2634,8 +2634,6 @@ class ServerTest extends TestCase
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
 
-        $data = "GET / HTTP/1.0\r\n\r\n";
-
         $data = $this->createGetRequest();
 
         $this->connection->emit('data', array($data));
@@ -2664,8 +2662,6 @@ class ServerTest extends TestCase
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
-
-        $data = "GET / HTTP/1.0\r\n\r\n";
 
         $data = $this->createGetRequest();
 
@@ -2698,8 +2694,6 @@ class ServerTest extends TestCase
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
 
-        $data = "GET / HTTP/1.0\r\n\r\n";
-
         $data = $this->createGetRequest();
 
         $this->connection->emit('data', array($data));
@@ -2731,8 +2725,6 @@ class ServerTest extends TestCase
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
 
-        $data = "GET / HTTP/1.0\r\n\r\n";
-
         $data = $this->createGetRequest();
 
         $this->connection->emit('data', array($data));
@@ -2760,8 +2752,6 @@ class ServerTest extends TestCase
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
-
-        $data = "GET / HTTP/1.0\r\n\r\n";
 
         $data = $this->createGetRequest();
 
@@ -2795,8 +2785,6 @@ class ServerTest extends TestCase
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
 
-        $data = "GET / HTTP/1.0\r\n\r\n";
-
         $data = $this->createGetRequest();
 
         $this->connection->emit('data', array($data));
@@ -2829,8 +2817,6 @@ class ServerTest extends TestCase
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
-
-        $data = "GET / HTTP/1.0\r\n\r\n";
 
         $data = $this->createGetRequest();
 
@@ -2914,8 +2900,6 @@ class ServerTest extends TestCase
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
-
-        $data = "GET / HTTP/1.0\r\n\r\n";
 
         $data = $this->createGetRequest();
 

@@ -53,7 +53,7 @@ $server = new Server(function (ServerRequestInterface $request) use ($loop, $cha
 
     // send anything that is received to the whole channel
     $in->on('data', function ($data) use ($username, $chat) {
-        $data = trim(preg_replace('/[^\w\d \.\,\-\!\?]/u', '', $data));
+        $data = trim(preg_replace('/[^\w \.\,\-\!\?]/u', '', $data));
 
         $chat->write($username . ': ' . $data . PHP_EOL);
     });
