@@ -157,7 +157,7 @@ class RequestHeaderParser extends EventEmitter
         // ensure absolute-form request-target contains a valid URI
         $requestTarget = $request->getRequestTarget();
         if (strpos($requestTarget, '://') !== false && substr($requestTarget, 0, 1) !== '/') {
-            $parts = parse_url($request->getRequestTarget());
+            $parts = parse_url($requestTarget);
 
             // make sure value contains valid host component (IP or hostname), but no fragment
             if (!isset($parts['scheme'], $parts['host']) || $parts['scheme'] !== 'http' || isset($parts['fragment'])) {
