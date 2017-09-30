@@ -30,3 +30,4 @@ install:
   
 script:
   - ./vendor/bin/phpunit --coverage-text
+  - if [ "$DEPENDENCIES" = "lowest" ]; then php -n tests/benchmark-middleware-runner.php; fi
