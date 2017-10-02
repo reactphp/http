@@ -15,6 +15,7 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
   * [Middleware](#middleware)
     * [RequestBodyBufferMiddleware](#requestbodybuffermiddleware)
     * [RequestBodyParserMiddleware](#requestbodyparsermiddleware)
+    * [Third-Party Middleware](#third-party-middleware)
 * [Install](#install)
 * [Tests](#tests)
 * [License](#license)
@@ -775,6 +776,10 @@ $middlewares = new MiddlewareRunner([
     },
 ]);
 ```
+
+#### Third-Party Middleware
+
+A non-exhaustive list of third-party middleware can be found at the [`Middleware`](https://github.com/reactphp/http/wiki/Middleware) wiki page. 
 
 ## Install
 
