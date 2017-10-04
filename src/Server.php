@@ -186,7 +186,7 @@ class Server extends EventEmitter
 
             $that->writeError(
                 $conn,
-                $e->getCode() ?: 500
+                $e->getCode() !== 0 ? $e->getCode() : 500
             );
         });
     }
