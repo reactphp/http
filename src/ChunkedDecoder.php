@@ -95,7 +95,7 @@ class ChunkedDecoder extends EventEmitter implements ReadableStreamInterface
                 if ($positionCrlf === false) {
                     // Header shouldn't be bigger than 1024 bytes
                     if (isset($this->buffer[static::MAX_CHUNK_HEADER_SIZE])) {
-                        $this->handleError(new \Exception('Chunk header size inclusive extension bigger than' . static::MAX_CHUNK_HEADER_SIZE. ' bytes'));
+                        $this->handleError(new \Exception('Chunk header size inclusive extension bigger than' . static::MAX_CHUNK_HEADER_SIZE. ' bytes', 400));
                     }
                     return;
                 }
@@ -117,7 +117,7 @@ class ChunkedDecoder extends EventEmitter implements ReadableStreamInterface
 
                 $this->chunkSize = hexdec($hexValue);
                 if (dechex($this->chunkSize) !== $hexValue) {
-                    $this->handleError(new \Exception($hexValue . ' is not a valid hexadecimal number'));
+                    $this->handleError(new \Exception($hexValue . ' is not a valid hexadecimal number', 400));
                     return;
                 }
 
@@ -152,7 +152,7 @@ class ChunkedDecoder extends EventEmitter implements ReadableStreamInterface
 
             if ($positionCrlf !== 0 && $this->chunkSize === $this->transferredSize && strlen($this->buffer) > 2) {
                 // the first 2 characters are not CLRF, send error event
-                $this->handleError(new \Exception('Chunk does not end with a CLRF'));
+                $this->handleError(new \Exception('Chunk does not end with a CLRF', 400));
                 return;
             }
 
