@@ -66,7 +66,7 @@ class RequestHeaderParser extends EventEmitter
         // additional, stricter safe-guard for request line
         // because request parser doesn't properly cope with invalid ones
         if (!preg_match('#^[^ ]+ [^ ]+ HTTP/\d\.\d#m', $headers)) {
-            throw new \InvalidArgumentException('Unable to parse invalid request-line');
+            throw new \InvalidArgumentException('Unable to parse invalid request-line', 400);
         }
 
         $lines = explode("\r\n", $headers);
@@ -87,7 +87,7 @@ class RequestHeaderParser extends EventEmitter
                 $parts[1] = 'http://' . $parts[1] . '/';
                 $headers = implode(' ', $parts);
             } else {
-                throw new \InvalidArgumentException('CONNECT method MUST use authority-form request target');
+                throw new \InvalidArgumentException('CONNECT method MUST use authority-form request target', 400);
             }
         }
 
@@ -159,7 +159,7 @@ class RequestHeaderParser extends EventEmitter
 
             // make sure value contains valid host component (IP or hostname), but no fragment
             if (!isset($parts['scheme'], $parts['host']) || $parts['scheme'] !== 'http' || isset($parts['fragment'])) {
-                throw new \InvalidArgumentException('Invalid absolute-form request-target');
+                throw new \InvalidArgumentException('Invalid absolute-form request-target', 400);
             }
         }
 
@@ -175,7 +175,7 @@ class RequestHeaderParser extends EventEmitter
             // make sure value does not contain any other URI component
             unset($parts['scheme'], $parts['host'], $parts['port']);
             if ($parts === false || $parts) {
-                throw new \InvalidArgumentException('Invalid Host header value');
+                throw new \InvalidArgumentException('Invalid Host header value', 400);
             }
         }
 

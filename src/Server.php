@@ -186,7 +186,7 @@ class Server extends EventEmitter
 
             $that->writeError(
                 $conn,
-                $e->getCode() !== 0 ? $e->getCode() : 400
+                $e->getCode() !== 0 ? $e->getCode() : 500
             );
         });
     }
@@ -198,7 +198,7 @@ class Server extends EventEmitter
         $stream = new CloseProtectionStream($conn);
         if ($request->hasHeader('Transfer-Encoding')) {
             if (strtolower($request->getHeaderLine('Transfer-Encoding')) !== 'chunked') {
-                $this->emit('error', array(new \InvalidArgumentException('Only chunked-encoding is allowed for Transfer-Encoding')));
+                $this->emit('error', array(new \InvalidArgumentException('Only chunked-encoding is allowed for Transfer-Encoding', 400)));
                 return $this->writeError($conn, 501, $request);
             }
 
@@ -214,7 +214,7 @@ class Server extends EventEmitter
             $contentLength = (int)$string;
             if ((string)$contentLength !== (string)$string) {
                 // Content-Length value is not an integer or not a single integer
-                $this->emit('error', array(new \InvalidArgumentException('The value of `Content-Length` is not valid')));
+                $this->emit('error', array(new \InvalidArgumentException('The value of `Content-Length` is not valid', 400)));
                 return $this->writeError($conn, 400, $request);
             }
 
