@@ -447,6 +447,18 @@ class RequestHeaderParserTest extends TestCase
         $this->assertEquals('this', $queryParams['test']);
     }
 
+    public function testUnixRemoteSocketWithoutPort()
+    {
+        // reactphp/socket Connect->parseAddress returns "tcp://NUL" for UDS
+        $parser = new RequestHeaderParser(null, 'tcp://' . "\0" . '' . "\0" . '' . "\0" . '' . "\0" . '' . "\0" . '' . "\0" . '' . "\0" . '' . "\0" . '' . "\0" . '' . "\0" . '' . "\0" . '' . "\0" . '' . "\0" . '' . "\0" . '' . "\0" . '');
+
+        $parser->on('error', $this->expectCallableNever());
+
+        $data = $this->createGetRequest();
+        $parser->feed($data);
+
+    }
+
     private function createGetRequest()
     {
         $data = "GET / HTTP/1.1\r\n";

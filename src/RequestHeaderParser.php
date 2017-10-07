@@ -103,8 +103,12 @@ class RequestHeaderParser extends EventEmitter
 
         if ($this->remoteSocketUri !== null) {
             $remoteAddress = parse_url($this->remoteSocketUri);
-            $serverParams['REMOTE_ADDR'] = $remoteAddress['host'];
-            $serverParams['REMOTE_PORT'] = $remoteAddress['port'];
+
+            // port won't be set for unix domain sockets
+            if (isset($remoteAddress['port'])) {
+                $serverParams['REMOTE_ADDR'] = $remoteAddress['host'];
+                $serverParams['REMOTE_PORT'] = $remoteAddress['port'];
+            }
         }
 
         if ($this->localSocketUri !== null) {
