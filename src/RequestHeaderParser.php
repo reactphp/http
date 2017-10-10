@@ -149,13 +149,15 @@ class RequestHeaderParser extends EventEmitter
         }
 
         // only support HTTP/1.1 and HTTP/1.0 requests
-        if ($request->getProtocolVersion() !== '1.1' && $request->getProtocolVersion() !== '1.0') {
+        $protocolVersion = $request->getProtocolVersion();
+        if ($protocolVersion !== '1.1' && $protocolVersion !== '1.0') {
             throw new \InvalidArgumentException('Received request with invalid protocol version', 505);
         }
 
         // ensure absolute-form request-target contains a valid URI
-        if (strpos($request->getRequestTarget(), '://') !== false && substr($request->getRequestTarget(), 0, 1) !== '/') {
-            $parts = parse_url($request->getRequestTarget());
+        $requestTarget = $request->getRequestTarget();
+        if (strpos($requestTarget, '://') !== false && substr($requestTarget, 0, 1) !== '/') {
+            $parts = parse_url($requestTarget);
 
             // make sure value contains valid host component (IP or hostname), but no fragment
             if (!isset($parts['scheme'], $parts['host']) || $parts['scheme'] !== 'http' || isset($parts['fragment'])) {
