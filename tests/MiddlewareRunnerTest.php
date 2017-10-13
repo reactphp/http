@@ -3,6 +3,7 @@
 namespace React\Tests\Http;
 
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\MiddlewareRunner;
 use React\Http\ServerRequest;
@@ -87,5 +88,50 @@ final class MiddlewareRunnerTest extends TestCase
 
             $this->assertSame($expectedCallCount, $middleware->getCallCount());
         }
+    }
+
+    public function testMultipleRunsInvokeAllMiddlewareInCorrectOrder()
+    {
+        $requests = array(
+            new ServerRequest('GET', 'https://example.com/1'),
+            new ServerRequest('GET', 'https://example.com/2'),
+            new ServerRequest('GET', 'https://example.com/3')
+        );
+
+        $receivedRequests = array();
+
+        $middlewareRunner = new MiddlewareRunner(array(
+            function (ServerRequestInterface $request, $next) use (&$receivedRequests) {
+                $receivedRequests[] = 'middleware1: ' . $request->getUri();
+                return $next($request);
+            },
+            function (ServerRequestInterface $request, $next) use (&$receivedRequests) {
+                $receivedRequests[] = 'middleware2: ' . $request->getUri();
+                return $next($request);
+            },
+            function (ServerRequestInterface $request, $next) use (&$receivedRequests) {
+                $receivedRequests[] = 'middleware3: ' . $request->getUri();
+                return $next($request);
+            }
+        ));
+
+        foreach ($requests as $request) {
+            $middlewareRunner($request);
+        }
+
+        $this->assertEquals(
+            array(
+                'middleware1: https://example.com/1',
+                'middleware2: https://example.com/1',
+                'middleware3: https://example.com/1',
+                'middleware1: https://example.com/2',
+                'middleware2: https://example.com/2',
+                'middleware3: https://example.com/2',
+                'middleware1: https://example.com/3',
+                'middleware2: https://example.com/3',
+                'middleware3: https://example.com/3'
+            ),
+            $receivedRequests
+        );
     }
 }
