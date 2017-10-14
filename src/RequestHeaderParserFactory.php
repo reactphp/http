@@ -32,7 +32,7 @@ class RequestHeaderParserFactory implements RequestHeaderParserFactoryInterface
             $uriLocal = ($this->isConnectionEncrypted($conn) ? 'https://' : 'http://') . $uriLocal;
         } elseif ($uriLocal !== null) {
             // local URI known, so translate transport scheme to application scheme
-            $uriLocal = strtr($uriLocal, ['tcp://' => 'http://', 'tls://' => 'https://']);
+            $uriLocal = strtr($uriLocal, array('tcp://' => 'http://', 'tls://' => 'https://'));
         }
 
         return $uriLocal;
