@@ -64,17 +64,6 @@ $server = new Server(function (ServerRequestInterface $request) {
 });
 ```
 
-In some cases you may want to customize the server's behavior with your
-own [options](#options). The provided defaults should already fit
-the most use-cases.
-
-```php
-$options = array();
-$options['max_header_size'] = 1024 * 8;
-
-$server = new Server($callback, $options);
-```
-
 In order to process any connections, the server needs to be attached to an
 instance of `React\Socket\ServerInterface` which emits underlying streaming
 connections in order to then parse incoming data as HTTP.
