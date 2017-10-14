@@ -9,7 +9,7 @@ interface RequestHeaderParserFactoryInterface
 
     /**
      * @param ConnectionInterface $conn
-     * @return mixed
+     * @return RequestHeaderParserInterface
      */
     public function create(ConnectionInterface $conn);
 }
