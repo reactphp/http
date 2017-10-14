@@ -12,7 +12,7 @@ use RingCentral\Psr7 as g7;
  *
  * @internal
  */
-class RequestHeaderParser extends EventEmitter
+class RequestHeaderParser extends EventEmitter implements RequestHeaderParserInterface
 {
     private $buffer = '';
     private $maxSize;

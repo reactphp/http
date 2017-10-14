@@ -77,7 +77,10 @@ class Server extends EventEmitter
 {
     private $callback;
 
-    private $options;
+    /**
+     * @var RequestHeaderParserFactoryInterface
+     */
+    private $factory;
 
     /**
      * Creates an HTTP server that invokes the given callback for each incoming HTTP request
@@ -88,19 +91,29 @@ class Server extends EventEmitter
      * See also [listen()](#listen) for more details.
      *
      * @param callable $callback
-     * @param array $options
      * @see self::listen()
      */
-    public function __construct($callback, array $options = array())
+    public function __construct($callback)
     {
         if (!is_callable($callback)) {
             throw new \InvalidArgumentException();
         }
 
-        $this->validateOptions($options);
-
         $this->callback = $callback;
-        $this->options = $options;
+        $this->factory = new RequestHeaderParserFactory();
+    }
+
+    /**
+     * Adds the ability to overwrite the default RequestHeaderParser
+     *
+     * @param RequestHeaderParserFactoryInterface $factory
+     * @return $this
+     */
+    public function setRequestHeaderParserFactory(RequestHeaderParserFactoryInterface $factory)
+    {
+        $this->factory = $factory;
+
+        return $this;
     }
 
     /**
@@ -154,7 +167,7 @@ class Server extends EventEmitter
     public function handleConnection(ConnectionInterface $conn)
     {
         $that = $this;
-        $parser = $this->getRequestHeaderParser($conn);
+        $parser = $this->factory->create($conn);
 
         $listener = array($parser, 'feed');
         $parser->on('headers', function (RequestInterface $request, $bodyBuffer) use ($conn, $listener, $that) {
@@ -409,97 +422,6 @@ class Server extends EventEmitter
             }
 
             $connection->end();
-        }
-    }
-
-    /**
-     * @param ConnectionInterface $conn
-     * @return RequestHeaderParser
-     */
-    private function getRequestHeaderParser(ConnectionInterface $conn)
-    {
-        $uriLocal = $this->getUriLocal($conn);
-        $uriRemote = $this->getUriRemote($conn);
-
-        if (isset($this->options['max_header_size']) && is_integer($this->options['max_header_size'])) {
-            return new RequestHeaderParser($uriLocal, $uriRemote, $this->options['max_header_size']);
-        }
-        return new RequestHeaderParser($uriLocal, $uriRemote);
-    }
-
-    /**
-     * @param ConnectionInterface $conn
-     * @return string
-     */
-    private function getUriLocal(ConnectionInterface $conn)
-    {
-        $uriLocal = $conn->getLocalAddress();
-        if ($uriLocal !== null && strpos($uriLocal, '://') === false) {
-            // local URI known but does not contain a scheme. Should only happen for old Socket < 0.8
-            // try to detect transport encryption and assume default application scheme
-            $uriLocal = ($this->isConnectionEncrypted($conn) ? 'https://' : 'http://') . $uriLocal;
-        } elseif ($uriLocal !== null) {
-            // local URI known, so translate transport scheme to application scheme
-            $uriLocal = strtr($uriLocal, array('tcp://' => 'http://', 'tls://' => 'https://'));
-        }
-
-        return $uriLocal;
-    }
-
-    /**
-     * @param ConnectionInterface $conn
-     * @return string
-     */
-    private function getUriRemote(ConnectionInterface $conn)
-    {
-        $uriRemote = $conn->getRemoteAddress();
-        if ($uriRemote !== null && strpos($uriRemote, '://') === false) {
-            // local URI known but does not contain a scheme. Should only happen for old Socket < 0.8
-            // actual scheme is not evaluated but required for parsing URI
-            $uriRemote = 'unused://' . $uriRemote;
-        }
-
-        return $uriRemote;
-    }
-
-    /**
-     * @param ConnectionInterface $conn
-     * @return bool
-     * @codeCoverageIgnore
-     */
-    private function isConnectionEncrypted(ConnectionInterface $conn)
-    {
-        // Legacy PHP < 7 does not offer any direct access to check crypto parameters
-        // We work around by accessing the context options and assume that only
-        // secure connections *SHOULD* set the "ssl" context options by default.
-        if (PHP_VERSION_ID < 70000) {
-            $context = isset($conn->stream) ? stream_context_get_options($conn->stream) : array();
-
-            return (isset($context['ssl']) && $context['ssl']);
-        }
-
-        // Modern PHP 7+ offers more reliable access to check crypto parameters
-        // by checking stream crypto meta data that is only then made available.
-        $meta = isset($conn->stream) ? stream_get_meta_data($conn->stream) : array();
-
-        return (isset($meta['crypto']) && $meta['crypto']);
-    }
-
-    private function validateOptions(array $options)
-    {
-        if (isset($options['max_header_size'])) {
-            $maxHeaderSize = $options['max_header_size'];
-            if (!is_integer($maxHeaderSize)) {
-                throw new \InvalidArgumentException(
-                    sprintf('Parameter "%s" expected to be an integer.', 'max_header_size')
-                );
-            }
-
-            if ($maxHeaderSize < 0) {
-                throw new \InvalidArgumentException(
-                    sprintf('Parameter "%s" expected to be a positive value.', 'max_header_size')
-                );
-            }
         }
     }
 }
