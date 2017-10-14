@@ -23,7 +23,7 @@ class RequestHeaderParserFactory implements RequestHeaderParserFactoryInterface
      * @param ConnectionInterface $conn
      * @return string
      */
-    private function getUriLocal(ConnectionInterface $conn)
+    protected function getUriLocal(ConnectionInterface $conn)
     {
         $uriLocal = $conn->getLocalAddress();
         if ($uriLocal !== null && strpos($uriLocal, '://') === false) {
@@ -42,7 +42,7 @@ class RequestHeaderParserFactory implements RequestHeaderParserFactoryInterface
      * @param ConnectionInterface $conn
      * @return string
      */
-    private function getUriRemote(ConnectionInterface $conn)
+    protected function getUriRemote(ConnectionInterface $conn)
     {
         $uriRemote = $conn->getRemoteAddress();
         if ($uriRemote !== null && strpos($uriRemote, '://') === false) {
