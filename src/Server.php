@@ -91,29 +91,17 @@ class Server extends EventEmitter
      * See also [listen()](#listen) for more details.
      *
      * @param callable $callback
+     * @param RequestHeaderParserFactoryInterface $factory
      * @see self::listen()
      */
-    public function __construct($callback)
+    public function __construct($callback, RequestHeaderParserFactoryInterface $factory = null)
     {
         if (!is_callable($callback)) {
             throw new \InvalidArgumentException();
         }
 
         $this->callback = $callback;
-        $this->factory = new RequestHeaderParserFactory();
-    }
-
-    /**
-     * Adds the ability to overwrite the default RequestHeaderParser
-     *
-     * @param RequestHeaderParserFactoryInterface $factory
-     * @return $this
-     */
-    public function setRequestHeaderParserFactory(RequestHeaderParserFactoryInterface $factory)
-    {
-        $this->factory = $factory;
-
-        return $this;
+        $this->factory = $factory ? $factory : new RequestHeaderParserFactory();
     }
 
     /**
