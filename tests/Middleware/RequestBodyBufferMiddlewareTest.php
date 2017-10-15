@@ -3,12 +3,14 @@
 namespace React\Tests\Http\Middleware;
 
 use Psr\Http\Message\ServerRequestInterface;
+use React\EventLoop\Factory;
 use React\Http\Io\HttpBodyStream;
 use React\Http\Io\ServerRequest;
 use React\Http\Middleware\RequestBodyBufferMiddleware;
 use React\Stream\ThroughStream;
 use React\Tests\Http\TestCase;
 use RingCentral\Psr7\BufferStream;
+use Clue\React\Block;
 
 final class RequestBodyBufferMiddlewareTest extends TestCase
 {
@@ -63,45 +65,62 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
         $this->assertSame($body, $exposedRequest->getBody()->getContents());
     }
 
-    public function testUnknownSizeReturnsError411()
+    public function testExcessiveSizeImmediatelyReturnsError413ForKnownSize()
     {
-        $body = $this->getMockBuilder('Psr\Http\Message\StreamInterface')->getMock();
-        $body->expects($this->once())->method('getSize')->willReturn(null);
-
+        $loop = Factory::create();
+        
+        $stream = new ThroughStream();
+        $stream->end('aa');
         $serverRequest = new ServerRequest(
             'GET',
             'https://example.com/',
             array(),
-            $body
-        );
-
-        $buffer = new RequestBodyBufferMiddleware();
-        $response = $buffer(
-            $serverRequest,
-            function () {}
-        );
-
-        $this->assertSame(411, $response->getStatusCode());
-    }
-
-    public function testExcessiveSizeReturnsError413()
-    {
-        $stream = new BufferStream(2);
-        $stream->write('aa');
-
-        $serverRequest = new ServerRequest(
-            'GET',
-            'https://example.com/',
-            array(),
-            $stream
+            new HttpBodyStream($stream, 2)
         );
 
         $buffer = new RequestBodyBufferMiddleware(1);
         $response = $buffer(
             $serverRequest,
-            function () {}
+            function (ServerRequestInterface $request) {
+                return $request;
+            }
         );
 
         $this->assertSame(413, $response->getStatusCode());
+    }
+
+    public function testExcessiveSizeReturnsError413()
+    {
+        $loop = Factory::create();
+
+        $stream = new ThroughStream();
+        $serverRequest = new ServerRequest(
+            'GET',
+            'https://example.com/',
+            array(),
+            new HttpBodyStream($stream, null)
+        );
+
+        $buffer = new RequestBodyBufferMiddleware(1);
+        $promise = $buffer(
+            $serverRequest,
+            function (ServerRequestInterface $request) {
+                return $request;
+            }
+        );
+
+        $stream->end('aa');
+
+        $exposedResponse = null;
+        $promise->then(
+            function($response) use (&$exposedResponse) {
+                $exposedResponse = $response;
+            },
+            $this->expectCallableNever()
+        );
+
+        $this->assertSame(413, $exposedResponse->getStatusCode());
+
+        Block\await($promise, $loop);
     }
 }
