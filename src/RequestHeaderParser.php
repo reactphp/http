@@ -69,8 +69,6 @@ class RequestHeaderParser extends EventEmitter
             throw new \InvalidArgumentException('Unable to parse invalid request-line');
         }
 
-        $lines = explode("\r\n", $headers);
-
         // parser does not support asterisk-form and authority-form
         // remember original target and temporarily replace and re-apply below
         $originalTarget = null;
