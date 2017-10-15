@@ -4,7 +4,7 @@ namespace React\Http;
 
 use Evenement\EventEmitter;
 use Exception;
-use RingCentral\Psr7 as g7;
+use RingCentral\Psr7;
 
 /**
  * @event headers
@@ -92,7 +92,7 @@ class RequestHeaderParser extends EventEmitter
         }
 
         // parse request headers into obj implementing RequestInterface
-        $request = g7\parse_request($headers);
+        $request = Psr7\parse_request($headers);
 
         // create new obj implementing ServerRequestInterface by preserving all
         // previous properties and restoring original request-target
