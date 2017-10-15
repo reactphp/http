@@ -23,7 +23,7 @@ class RequestHeaderParser extends EventEmitter
     public function __construct($localSocketUri = null, $remoteSocketUri = null, $maxSize = 4096)
     {
         if (!is_integer($maxSize)) {
-          throw new \InvalidArgumentException('Invalid type for maxSize provided. Expected an integer value.');
+            throw new \InvalidArgumentException('Invalid type for maxSize provided. Expected an integer value.');
         }
 
         $this->localSocketUri = $localSocketUri;
