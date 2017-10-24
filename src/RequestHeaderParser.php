@@ -12,18 +12,23 @@ use RingCentral\Psr7 as g7;
  *
  * @internal
  */
-class RequestHeaderParser extends EventEmitter
+class RequestHeaderParser extends EventEmitter implements RequestHeaderParserInterface
 {
     private $buffer = '';
-    private $maxSize = 4096;
+    private $maxSize;
 
     private $localSocketUri;
     private $remoteSocketUri;
 
-    public function __construct($localSocketUri = null, $remoteSocketUri = null)
+    public function __construct($localSocketUri = null, $remoteSocketUri = null, $maxSize = 4096)
     {
+        if (!is_integer($maxSize)) {
+            throw new \InvalidArgumentException('Invalid type for maxSize provided. Expected an integer value.');
+        }
+
         $this->localSocketUri = $localSocketUri;
         $this->remoteSocketUri = $remoteSocketUri;
+        $this->maxSize = $maxSize;
     }
 
     public function feed($data)

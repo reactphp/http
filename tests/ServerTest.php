@@ -1256,8 +1256,9 @@ class ServerTest extends TestCase
         $this->assertContains("Error 505: HTTP Version not supported", $buffer);
     }
 
-    public function testRequestOverflowWillEmitErrorAndSendErrorResponse()
+    public function testRequestHeaderOverflowWithDefaultValueWillEmitErrorAndSendErrorResponse()
     {
+        $defaultMaxHeaderSize = 4096;
         $error = null;
         $server = new Server($this->expectCallableNever());
         $server->on('error', function ($message) use (&$error) {
@@ -1281,7 +1282,7 @@ class ServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\nX-DATA: ";
-        $data .= str_repeat('A', 4097 - strlen($data)) . "\r\n\r\n";
+        $data .= str_repeat('A', $defaultMaxHeaderSize + 1 - strlen($data)) . "\r\n\r\n";
         $this->connection->emit('data', array($data));
 
         $this->assertInstanceOf('OverflowException', $error);
