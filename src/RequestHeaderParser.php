@@ -96,7 +96,12 @@ class RequestHeaderParser extends EventEmitter
         // previous properties and restoring original request-target
         $serverParams = array(
             'REQUEST_TIME' => time(),
-            'REQUEST_TIME_FLOAT' => microtime(true)
+            'REQUEST_TIME_FLOAT' => microtime(true),
+            'REQUEST_METHOD' => $request->getMethod(),
+            'CONTENT_LENGTH' => strlen($data),
+            'QUERY_STRING' => (string)parse_url($request->getUri(), PHP_URL_QUERY),
+            'SERVER_SOFTWARE' => 'reactphp/http',
+            'SERVER_PROTOCOL' => $request->getProtocolVersion(),
         );
 
         if ($this->remoteSocketUri !== null) {
