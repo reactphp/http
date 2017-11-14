@@ -12,9 +12,7 @@ use React\Socket\ConnectionInterface;
 use Clue\React\Block;
 use React\Http\Response;
 use React\Socket\SecureServer;
-use React\Stream\ReadableStreamInterface;
 use React\Promise\Promise;
-use React\Promise\PromiseInterface;
 use React\Promise\Stream;
 use React\Stream\ThroughStream;
 
@@ -172,7 +170,7 @@ class FunctionalServerTest extends TestCase
         ));
         $server->listen($socket);
 
-        $result = $connector->connect('tls://' . noScheme($socket->getAddress()))->then(function (ConnectionInterface $conn) {
+        $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\nHost: " . noScheme($conn->getRemoteAddress()) . "\r\n\r\n");
 
             return Stream\buffer($conn);
@@ -182,6 +180,47 @@ class FunctionalServerTest extends TestCase
 
         $this->assertContains("HTTP/1.0 200 OK", $response);
         $this->assertContains('https://' . noScheme($socket->getAddress()) . '/', $response);
+
+        $socket->close();
+    }
+
+    public function testSecureHttpsReturnsData()
+    {
+        if (!function_exists('stream_socket_enable_crypto')) {
+            $this->markTestSkipped('Not supported on your platform (outdated HHVM?)');
+        }
+
+        $loop = Factory::create();
+
+        $server = new Server(function (RequestInterface $request) {
+            return new Response(
+                200,
+                array(),
+                str_repeat('.', 33000)
+            );
+        });
+
+        $socket = new Socket(0, $loop);
+        $socket = new SecureServer($socket, $loop, array(
+            'local_cert' => __DIR__ . '/../examples/localhost.pem'
+        ));
+        $server->listen($socket);
+
+        $connector = new Connector($loop, array(
+            'tls' => array('verify_peer' => false)
+        ));
+
+        $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
+            $conn->write("GET / HTTP/1.0\r\nHost: " . noScheme($conn->getRemoteAddress()) . "\r\n\r\n");
+
+            return Stream\buffer($conn);
+        });
+
+        $response = Block\await($result, $loop, 1.0);
+
+        $this->assertContains("HTTP/1.0 200 OK", $response);
+        $this->assertContains("\r\nContent-Length: 33000\r\n", $response);
+        $this->assertStringEndsWith("\r\n". str_repeat('.', 33000), $response);
 
         $socket->close();
     }
@@ -207,7 +246,7 @@ class FunctionalServerTest extends TestCase
         ));
         $server->listen($socket);
 
-        $result = $connector->connect('tls://' . noScheme($socket->getAddress()))->then(function (ConnectionInterface $conn) {
+        $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\n\r\n");
 
             return Stream\buffer($conn);
@@ -306,7 +345,7 @@ class FunctionalServerTest extends TestCase
 
         $server->listen($socket);
 
-        $result = $connector->connect('tls://' . noScheme($socket->getAddress()))->then(function (ConnectionInterface $conn) {
+        $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n");
 
             return Stream\buffer($conn);
@@ -345,7 +384,7 @@ class FunctionalServerTest extends TestCase
 
         $server->listen($socket);
 
-        $result = $connector->connect('tls://' . noScheme($socket->getAddress()))->then(function (ConnectionInterface $conn) {
+        $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\n\r\n");
 
             return Stream\buffer($conn);
@@ -414,7 +453,7 @@ class FunctionalServerTest extends TestCase
 
         $server->listen($socket);
 
-        $result = $connector->connect('tls://' . noScheme($socket->getAddress()))->then(function (ConnectionInterface $conn) {
+        $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\nHost: " . noScheme($conn->getRemoteAddress()) . "\r\n\r\n");
 
             return Stream\buffer($conn);
