@@ -123,4 +123,32 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
 
         Block\await($promise, $loop);
     }
+
+    /**
+     * @expectedException RuntimeException
+     */
+    public function testBufferingErrorThrows()
+    {
+        $loop = Factory::create();
+        
+        $stream = new ThroughStream();
+        $serverRequest = new ServerRequest(
+            'GET',
+            'https://example.com/',
+            array(),
+            new HttpBodyStream($stream, null)
+        );
+
+        $buffer = new RequestBodyBufferMiddleware(1);
+        $promise = $buffer(
+            $serverRequest,
+            function (ServerRequestInterface $request) {
+                return $request;
+            }
+        );
+
+        $stream->emit('error', array(new \RuntimeException()));
+
+        Block\await($promise, $loop);
+    }
 }

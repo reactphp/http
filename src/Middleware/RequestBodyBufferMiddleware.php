@@ -53,7 +53,7 @@ final class RequestBodyBufferMiddleware
                 return new Response(413, array('Content-Type' => 'text/plain'), 'Request body exceeds allowed limit');
             }
 
-            return $error;
+            throw $error;
         });
     }
 
