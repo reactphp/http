@@ -13,9 +13,12 @@ use Clue\React\Block;
 
 final class MiddlewareRunnerTest extends TestCase
 {
+    /**
+     * @expectedException RuntimeException
+     * @expectedExceptionMessage No middleware to run
+     */
     public function testDefaultResponse()
     {
-        $this->setExpectedException('\RuntimeException');
         $request = new ServerRequest('GET', 'https://example.com/');
         $middlewares = array();
         $middlewareStack = new MiddlewareRunner($middlewares);
