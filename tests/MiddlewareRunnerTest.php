@@ -93,6 +93,42 @@ final class MiddlewareRunnerTest extends TestCase
         }
     }
 
+    public function testNextCanBeRunMoreThanOnceWithoutCorruptingTheMiddlewareStack()
+    {
+        $exception = new \RuntimeException('exception');
+        $retryCalled = 0;
+        $error = null;
+        $retry = function ($request, $next) use (&$error, &$retryCalled) {
+            return $next($request)->then(null, function ($et) use (&$error, $request, $next, &$retryCalled) {
+                $retryCalled++;
+                $error = $et;
+                // the $next failed. discard $error and retry once again:
+                return $next($request);
+            });
+        };
+
+        $response = new Response();
+        $called = 0;
+        $runner = new MiddlewareRunner(array(
+        $retry,
+        function () use (&$called, $response, $exception) {
+            $called++;
+            if ($called === 1) {
+                throw $exception;
+            }
+
+            return $response;
+        }
+        ));
+
+        $request = new ServerRequest('GET', 'https://example.com/');
+
+        $this->assertSame($response, Block\await($runner($request), Factory::create()));
+        $this->assertSame(1, $retryCalled);
+        $this->assertSame(2, $called);
+        $this->assertSame($exception, $error);
+    }
+
     public function testMultipleRunsInvokeAllMiddlewareInCorrectOrder()
     {
         $requests = array(
