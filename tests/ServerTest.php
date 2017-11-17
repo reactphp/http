@@ -54,9 +54,7 @@ class ServerTest extends TestCase
 
     public function testRequestEventIsEmitted()
     {
-        $server = new Server(function (ServerRequestInterface $request) {
-            return \React\Promise\resolve(new Response());
-        });
+        $server = new Server($this->expectCallableOnce());
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -72,8 +70,6 @@ class ServerTest extends TestCase
         $server = new Server(function (ServerRequestInterface $request) use (&$i, &$requestAssertion) {
             $i++;
             $requestAssertion = $request;
-
-            return \React\Promise\resolve(new Response());
         });
 
         $this->connection
@@ -107,8 +103,6 @@ class ServerTest extends TestCase
         $server = new Server(new MiddlewareRunner(array(function (ServerRequestInterface $request) use (&$i, &$requestAssertion) {
             $i++;
             $requestAssertion = $request;
-
-            return \React\Promise\resolve(new Response());
         })));
 
         $this->connection
@@ -140,7 +134,6 @@ class ServerTest extends TestCase
         $requestAssertion = null;
         $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
-            return new Response();
         });
 
         $server->listen($this->socket);
@@ -163,7 +156,6 @@ class ServerTest extends TestCase
         $requestAssertion = null;
         $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
-            return new Response();
         });
 
         $server->listen($this->socket);
@@ -186,7 +178,6 @@ class ServerTest extends TestCase
         $requestAssertion = null;
         $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
-            return new Response();
         });
 
         $server->listen($this->socket);
@@ -209,7 +200,6 @@ class ServerTest extends TestCase
         $requestAssertion = null;
         $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
-            return new Response();
         });
 
         $server->listen($this->socket);
@@ -243,7 +233,6 @@ class ServerTest extends TestCase
         $requestAssertion = null;
         $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
-            return new Response();
         });
 
         $server->listen($this->socket);
@@ -266,7 +255,6 @@ class ServerTest extends TestCase
         $requestAssertion = null;
         $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
-            return new Response();
         });
 
         $server->listen($this->socket);
@@ -289,7 +277,6 @@ class ServerTest extends TestCase
         $requestAssertion = null;
         $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
-            return new Response();
         });
 
         $server->listen($this->socket);
@@ -312,7 +299,6 @@ class ServerTest extends TestCase
         $requestAssertion = null;
         $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
-            return new Response();
         });
 
         $server->listen($this->socket);
@@ -360,7 +346,6 @@ class ServerTest extends TestCase
 
         $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
-            return new Response();
         });
 
         $this->connection
@@ -387,7 +372,6 @@ class ServerTest extends TestCase
 
         $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
-            return new Response();
         });
 
         $server->listen($this->socket);
@@ -410,9 +394,7 @@ class ServerTest extends TestCase
 
         $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
-            return new Response();
         });
-        $server->on('error', 'printf');
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -434,7 +416,6 @@ class ServerTest extends TestCase
 
         $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
-            return new Response();
         });
 
         $server->listen($this->socket);
@@ -457,7 +438,6 @@ class ServerTest extends TestCase
 
         $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
-            return new Response();
         });
 
         $server->listen($this->socket);
@@ -480,7 +460,6 @@ class ServerTest extends TestCase
 
         $server = new Server(function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
-            return new Response();
         });
 
         $server->listen($this->socket);
@@ -501,7 +480,6 @@ class ServerTest extends TestCase
     {
         $server = new Server(function (ServerRequestInterface $request) {
             $request->getBody()->pause();
-            return new Response();
         });
 
         $this->connection->expects($this->once())->method('pause');
@@ -522,7 +500,6 @@ class ServerTest extends TestCase
     {
         $server = new Server(function (ServerRequestInterface $request) {
             $request->getBody()->resume();
-            return new Response();
         });
 
         $this->connection->expects($this->once())->method('resume');
@@ -538,7 +515,6 @@ class ServerTest extends TestCase
     {
         $server = new Server(function (ServerRequestInterface $request) {
             $request->getBody()->close();
-            return new Response();
         });
 
         $this->connection->expects($this->once())->method('pause');
@@ -554,9 +530,7 @@ class ServerTest extends TestCase
     {
         $server = new Server(function (ServerRequestInterface $request) {
             $request->getBody()->close();
-            $request->getBody()->pause();#
-
-            return new Response();
+            $request->getBody()->pause();
         });
 
         $this->connection->expects($this->once())->method('pause');
@@ -573,8 +547,6 @@ class ServerTest extends TestCase
         $server = new Server(function (ServerRequestInterface $request) {
             $request->getBody()->close();
             $request->getBody()->resume();
-
-            return new Response();
         });
 
         $this->connection->expects($this->once())->method('pause');
@@ -593,8 +565,6 @@ class ServerTest extends TestCase
 
         $server = new Server(function (ServerRequestInterface $request) use ($never) {
             $request->getBody()->on('data', $never);
-
-            return new Response();
         });
 
         $server->listen($this->socket);
@@ -610,8 +580,6 @@ class ServerTest extends TestCase
 
         $server = new Server(function (ServerRequestInterface $request) use ($once) {
             $request->getBody()->on('data', $once);
-
-            return new Response();
         });
 
         $server->listen($this->socket);
@@ -632,8 +600,6 @@ class ServerTest extends TestCase
 
         $server = new Server(function (ServerRequestInterface $request) use ($once) {
             $request->getBody()->on('data', $once);
-
-            return new Response();
         });
 
         $server->listen($this->socket);
@@ -679,7 +645,7 @@ class ServerTest extends TestCase
         $this->assertContains("\r\nX-Powered-By: React/alpha\r\n", $buffer);
     }
 
-    public function testPendingPromiseWillNotSendAnything()
+    public function testResponsePendingPromiseWillNotSendAnything()
     {
         $never = $this->expectCallableNever();
 
@@ -709,7 +675,7 @@ class ServerTest extends TestCase
         $this->assertEquals('', $buffer);
     }
 
-    public function testPendingPromiseWillBeCancelledIfConnectionCloses()
+    public function testResponsePendingPromiseWillBeCancelledIfConnectionCloses()
     {
         $once = $this->expectCallableOnce();
 
@@ -740,13 +706,17 @@ class ServerTest extends TestCase
         $this->assertEquals('', $buffer);
     }
 
-    public function testStreamAlreadyClosedWillSendEmptyBodyChunkedEncoded()
+    public function testRespomseBodyStreamAlreadyClosedWillSendEmptyBodyChunkedEncoded()
     {
         $stream = new ThroughStream();
         $stream->close();
 
         $server = new Server(function (ServerRequestInterface $request) use ($stream) {
-            return new Response(200, array(), $stream);
+            return new Response(
+                200,
+                array(),
+                $stream
+            );
         });
 
         $buffer = '';
@@ -772,12 +742,16 @@ class ServerTest extends TestCase
         $this->assertStringEndsWith("\r\n\r\n0\r\n\r\n", $buffer);
     }
 
-    public function testResponseStreamEndingWillSendEmptyBodyChunkedEncoded()
+    public function testResponseBodyStreamEndingWillSendEmptyBodyChunkedEncoded()
     {
         $stream = new ThroughStream();
 
         $server = new Server(function (ServerRequestInterface $request) use ($stream) {
-            return new Response(200, array(), $stream);
+            return new Response(
+                200,
+                array(),
+                $stream
+            );
         });
 
         $buffer = '';
@@ -805,13 +779,17 @@ class ServerTest extends TestCase
         $this->assertStringEndsWith("\r\n\r\n0\r\n\r\n", $buffer);
     }
 
-    public function testResponseStreamAlreadyClosedWillSendEmptyBodyPlainHttp10()
+    public function testResponseBodyStreamAlreadyClosedWillSendEmptyBodyPlainHttp10()
     {
         $stream = new ThroughStream();
         $stream->close();
 
         $server = new Server(function (ServerRequestInterface $request) use ($stream) {
-            return new Response(200, array(), $stream);
+            return new Response(
+                200,
+                array(),
+                $stream
+            );
         });
 
         $buffer = '';
@@ -843,7 +821,11 @@ class ServerTest extends TestCase
         $stream->on('close', $this->expectCallableOnce());
 
         $server = new Server(function (ServerRequestInterface $request) use ($stream) {
-            return new Response(200, array(), $stream);
+            return new Response(
+                200,
+                array(),
+                $stream
+            );
         });
 
         $buffer = '';
@@ -888,13 +870,17 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
-    public function testResponseStreamWillBeClosedIfConnectionEmitsCloseEvent()
+    public function testResponseBodyStreamWillBeClosedIfConnectionEmitsCloseEvent()
     {
         $stream = new ThroughStream();
         $stream->on('close', $this->expectCallableOnce());
 
         $server = new Server(function (ServerRequestInterface $request) use ($stream) {
-            return new Response(200, array(), $stream);
+            return new Response(
+                200,
+                array(),
+                $stream
+            );
         });
 
         $server->listen($this->socket);
@@ -905,10 +891,18 @@ class ServerTest extends TestCase
         $this->connection->emit('close');
     }
 
-    public function testUpgradeInResponseCanBeUsedToAdvertisePossibleUpgrade()
+    public function testResponseUpgradeInResponseCanBeUsedToAdvertisePossibleUpgrade()
     {
         $server = new Server(function (ServerRequestInterface $request) {
-            return new Response(200, array('date' => '', 'x-powered-by' => '', 'Upgrade' => 'demo'), 'foo');
+            return new Response(
+                200,
+                array(
+                    'date' => '',
+                    'x-powered-by' => '',
+                    'Upgrade' => 'demo'
+                ),
+                'foo'
+            );
         });
 
         $buffer = '';
@@ -933,10 +927,17 @@ class ServerTest extends TestCase
         $this->assertEquals("HTTP/1.1 200 OK\r\nUpgrade: demo\r\nContent-Length: 3\r\nConnection: close\r\n\r\nfoo", $buffer);
     }
 
-    public function testUpgradeWishInRequestCanBeIgnoredByReturningNormalResponse()
+    public function testResponseUpgradeWishInRequestCanBeIgnoredByReturningNormalResponse()
     {
         $server = new Server(function (ServerRequestInterface $request) {
-            return new Response(200, array('date' => '', 'x-powered-by' => ''), 'foo');
+            return new Response(
+                200,
+                array(
+                    'date' => '',
+                    'x-powered-by' => ''
+                ),
+                'foo'
+            );
         });
 
         $buffer = '';
@@ -961,10 +962,18 @@ class ServerTest extends TestCase
         $this->assertEquals("HTTP/1.1 200 OK\r\nContent-Length: 3\r\nConnection: close\r\n\r\nfoo", $buffer);
     }
 
-    public function testUpgradeSwitchingProtocolIncludesConnectionUpgradeHeaderWithoutContentLength()
+    public function testResponseUpgradeSwitchingProtocolIncludesConnectionUpgradeHeaderWithoutContentLength()
     {
         $server = new Server(function (ServerRequestInterface $request) {
-            return new Response(101, array('date' => '', 'x-powered-by' => '', 'Upgrade' => 'demo'), 'foo');
+            return new Response(
+                101,
+                array(
+                    'date' => '',
+                    'x-powered-by' => '',
+                    'Upgrade' => 'demo'
+                ),
+                'foo'
+            );
         });
 
         $server->on('error', 'printf');
@@ -991,12 +1000,20 @@ class ServerTest extends TestCase
         $this->assertEquals("HTTP/1.1 101 Switching Protocols\r\nUpgrade: demo\r\nConnection: upgrade\r\n\r\nfoo", $buffer);
     }
 
-    public function testUpgradeSwitchingProtocolWithStreamWillPipeDataToConnection()
+    public function testResponseUpgradeSwitchingProtocolWithStreamWillPipeDataToConnection()
     {
         $stream = new ThroughStream();
 
         $server = new Server(function (ServerRequestInterface $request) use ($stream) {
-            return new Response(101, array('date' => '', 'x-powered-by' => '', 'Upgrade' => 'demo'), $stream);
+            return new Response(
+                101,
+                array(
+                    'date' => '',
+                    'x-powered-by' => '',
+                    'Upgrade' => 'demo'
+                ),
+                $stream
+            );
         });
 
         $buffer = '';
@@ -1024,12 +1041,16 @@ class ServerTest extends TestCase
         $this->assertEquals("HTTP/1.1 101 Switching Protocols\r\nUpgrade: demo\r\nConnection: upgrade\r\n\r\nhelloworld", $buffer);
     }
 
-    public function testConnectResponseStreamWillPipeDataToConnection()
+    public function testResponseConnectMethodStreamWillPipeDataToConnection()
     {
         $stream = new ThroughStream();
 
         $server = new Server(function (ServerRequestInterface $request) use ($stream) {
-            return new Response(200, array(), $stream);
+            return new Response(
+                200,
+                array(),
+                $stream
+            );
         });
 
         $buffer = '';
@@ -1058,12 +1079,16 @@ class ServerTest extends TestCase
     }
 
 
-    public function testConnectResponseStreamWillPipeDataFromConnection()
+    public function testResponseConnectMethodStreamWillPipeDataFromConnection()
     {
         $stream = new ThroughStream();
 
         $server = new Server(function (ServerRequestInterface $request) use ($stream) {
-            return new Response(200, array(), $stream);
+            return new Response(
+                200,
+                array(),
+                $stream
+            );
         });
 
         $server->listen($this->socket);
@@ -1078,8 +1103,11 @@ class ServerTest extends TestCase
     public function testResponseContainsSameRequestProtocolVersionAndChunkedBodyForHttp11()
     {
         $server = new Server(function (ServerRequestInterface $request) {
-            $response = new Response(200, array(), 'bye');
-            return \React\Promise\resolve($response);
+            return new Response(
+                200,
+                array(),
+                'bye'
+            );
         });
 
         $buffer = '';
@@ -1108,8 +1136,11 @@ class ServerTest extends TestCase
     public function testResponseContainsSameRequestProtocolVersionAndRawBodyForHttp10()
     {
         $server = new Server(function (ServerRequestInterface $request) {
-            $response = new Response(200, array(), 'bye');
-            return \React\Promise\resolve($response);
+            return new Response(
+                200,
+                array(),
+                'bye'
+            );
         });
 
         $buffer = '';
@@ -1139,7 +1170,11 @@ class ServerTest extends TestCase
     public function testResponseContainsNoResponseBodyForHeadRequest()
     {
         $server = new Server(function (ServerRequestInterface $request) {
-            return new Response(200, array(), 'bye');
+            return new Response(
+                200,
+                array(),
+                'bye'
+            );
         });
 
         $buffer = '';
@@ -1167,7 +1202,11 @@ class ServerTest extends TestCase
     public function testResponseContainsNoResponseBodyAndNoContentLengthForNoContentStatus()
     {
         $server = new Server(function (ServerRequestInterface $request) {
-            return new Response(204, array(), 'bye');
+            return new Response(
+                204,
+                array(),
+                'bye'
+            );
         });
 
         $buffer = '';
@@ -1196,7 +1235,11 @@ class ServerTest extends TestCase
     public function testResponseContainsNoResponseBodyForNotModifiedStatus()
     {
         $server = new Server(function (ServerRequestInterface $request) {
-            return new Response(304, array(), 'bye');
+            return new Response(
+                304,
+                array(),
+                'bye'
+            );
         });
 
         $buffer = '';
@@ -1323,7 +1366,7 @@ class ServerTest extends TestCase
         $this->assertContains("\r\n\r\nError 400: Bad Request", $buffer);
     }
 
-    public function testBodyDataWillBeSendViaRequestEvent()
+    public function testRequestContentLengthBodyDataWillEmitDataEventOnRequestStream()
     {
         $dataEvent = $this->expectCallableOnceWith('hello');
         $endEvent = $this->expectCallableOnce();
@@ -1335,8 +1378,6 @@ class ServerTest extends TestCase
             $request->getBody()->on('end', $endEvent);
             $request->getBody()->on('close', $closeEvent);
             $request->getBody()->on('error', $errorEvent);
-
-            return \React\Promise\resolve(new Response());
         });
 
         $server->listen($this->socket);
@@ -1352,7 +1393,7 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
-    public function testChunkedEncodedRequestWillBeParsedForRequestEvent()
+    public function testRequestChunkedTransferEncodingRequestWillEmitDecodedDataEventOnRequestStream()
     {
         $dataEvent = $this->expectCallableOnceWith('hello');
         $endEvent = $this->expectCallableOnce();
@@ -1366,8 +1407,6 @@ class ServerTest extends TestCase
             $request->getBody()->on('close', $closeEvent);
             $request->getBody()->on('error', $errorEvent);
             $requestValidation = $request;
-
-            return \React\Promise\resolve(new Response());
         });
 
         $server->listen($this->socket);
@@ -1386,7 +1425,7 @@ class ServerTest extends TestCase
         $this->assertFalse($requestValidation->hasHeader('Transfer-Encoding'));
     }
 
-    public function testChunkedEncodedRequestAdditionalDataWontBeEmitted()
+    public function testRequestChunkedTransferEncodingWithAdditionalDataWontBeEmitted()
     {
         $dataEvent = $this->expectCallableOnceWith('hello');
         $endEvent = $this->expectCallableOnce();
@@ -1398,8 +1437,6 @@ class ServerTest extends TestCase
             $request->getBody()->on('end', $endEvent);
             $request->getBody()->on('close', $closeEvent);
             $request->getBody()->on('error', $errorEvent);
-
-            return \React\Promise\resolve(new Response());
         });
 
         $server->listen($this->socket);
@@ -1417,7 +1454,7 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
-    public function testEmptyChunkedEncodedRequest()
+    public function testRequestChunkedTransferEncodingEmpty()
     {
         $dataEvent = $this->expectCallableNever();
         $endEvent = $this->expectCallableOnce();
@@ -1429,8 +1466,6 @@ class ServerTest extends TestCase
             $request->getBody()->on('end', $endEvent);
             $request->getBody()->on('close', $closeEvent);
             $request->getBody()->on('error', $errorEvent);
-
-            return \React\Promise\resolve(new Response());
         });
 
         $server->listen($this->socket);
@@ -1446,7 +1481,7 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
-    public function testChunkedIsUpperCase()
+    public function testRequestChunkedTransferEncodingHeaderCanBeUpperCase()
     {
         $dataEvent = $this->expectCallableOnceWith('hello');
         $endEvent = $this->expectCallableOnce();
@@ -1458,8 +1493,6 @@ class ServerTest extends TestCase
             $request->getBody()->on('end', $endEvent);
             $request->getBody()->on('close', $closeEvent);
             $request->getBody()->on('error', $errorEvent);
-
-            return \React\Promise\resolve(new Response());
         });
 
         $server->listen($this->socket);
@@ -1476,7 +1509,7 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
-    public function testChunkedIsMixedUpperAndLowerCase()
+    public function testRequestChunkedTransferEncodingCanBeMixedUpperAndLowerCase()
     {
         $dataEvent = $this->expectCallableOnceWith('hello');
         $endEvent = $this->expectCallableOnce();
@@ -1488,8 +1521,6 @@ class ServerTest extends TestCase
             $request->getBody()->on('end', $endEvent);
             $request->getBody()->on('close', $closeEvent);
             $request->getBody()->on('error', $errorEvent);
-
-            return \React\Promise\resolve(new Response());
         });
 
         $server->listen($this->socket);
@@ -1571,7 +1602,7 @@ class ServerTest extends TestCase
         $this->assertContains("\r\n\r\nError 400: Bad Request", $buffer);
     }
 
-    public function testWontEmitFurtherDataWhenContentLengthIsReached()
+    public function testRequestContentLengthWillEmitDataEventAndEndEventAndAdditionalDataWillBeIgnored()
     {
         $dataEvent = $this->expectCallableOnceWith('hello');
         $endEvent = $this->expectCallableOnce();
@@ -1601,7 +1632,7 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
-    public function testWontEmitFurtherDataWhenContentLengthIsReachedSplitted()
+    public function testRequestContentLengthWillEmitDataEventAndEndEventAndAdditionalDataWillBeIgnoredSplitted()
     {
         $dataEvent = $this->expectCallableOnceWith('hello');
         $endEvent = $this->expectCallableOnce();
@@ -1614,8 +1645,6 @@ class ServerTest extends TestCase
             $request->getBody()->on('end', $endEvent);
             $request->getBody()->on('close', $closeEvent);
             $request->getBody()->on('error', $errorEvent);
-
-            return \React\Promise\resolve(new Response());
         });
 
         $server->listen($this->socket);
@@ -1635,7 +1664,7 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
-    public function testContentLengthContainsZeroWillEmitEndEvent()
+    public function testRequestZeroContentLengthWillEmitEndEvent()
     {
 
         $dataEvent = $this->expectCallableNever();
@@ -1648,8 +1677,6 @@ class ServerTest extends TestCase
             $request->getBody()->on('end', $endEvent);
             $request->getBody()->on('close', $closeEvent);
             $request->getBody()->on('error', $errorEvent);
-
-            return \React\Promise\resolve(new Response());
         });
 
         $server->listen($this->socket);
@@ -1664,7 +1691,7 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
-    public function testContentLengthContainsZeroWillEmitEndEventAdditionalDataWillBeIgnored()
+    public function testRequestZeroContentLengthWillEmitEndAndAdditionalDataWillBeIgnored()
     {
         $dataEvent = $this->expectCallableNever();
         $endEvent = $this->expectCallableOnce();
@@ -1676,8 +1703,6 @@ class ServerTest extends TestCase
             $request->getBody()->on('end', $endEvent);
             $request->getBody()->on('close', $closeEvent);
             $request->getBody()->on('error', $errorEvent);
-
-            return \React\Promise\resolve(new Response());
         });
 
         $server->listen($this->socket);
@@ -1693,7 +1718,7 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
-    public function testContentLengthContainsZeroWillEmitEndEventAdditionalDataWillBeIgnoredSplitted()
+    public function testRequestZeroContentLengthWillEmitEndAndAdditionalDataWillBeIgnoredSplitted()
     {
         $dataEvent = $this->expectCallableNever();
         $endEvent = $this->expectCallableOnce();
@@ -1705,8 +1730,6 @@ class ServerTest extends TestCase
             $request->getBody()->on('end', $endEvent);
             $request->getBody()->on('close', $closeEvent);
             $request->getBody()->on('error', $errorEvent);
-
-            return \React\Promise\resolve(new Response());
         });
 
         $server->listen($this->socket);
@@ -1725,7 +1748,7 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
-    public function testContentLengthWillBeIgnoredIfTransferEncodingIsSet()
+    public function testRequestContentLengthWillBeIgnoredIfTransferEncodingIsSet()
     {
         $dataEvent = $this->expectCallableOnceWith('hello');
         $endEvent = $this->expectCallableOnce();
@@ -1739,8 +1762,6 @@ class ServerTest extends TestCase
             $request->getBody()->on('close', $closeEvent);
             $request->getBody()->on('error', $errorEvent);
             $requestValidation = $request;
-
-            return \React\Promise\resolve(new Response());
         });
 
         $server->listen($this->socket);
@@ -1764,7 +1785,7 @@ class ServerTest extends TestCase
         $this->assertFalse($requestValidation->hasHeader('Transfer-Encoding'));
     }
 
-    public function testInvalidContentLengthWillBeIgnoreddIfTransferEncodingIsSet()
+    public function testRequestInvalidContentLengthWillBeIgnoreddIfTransferEncodingIsSet()
     {
         $dataEvent = $this->expectCallableOnceWith('hello');
         $endEvent = $this->expectCallableOnce();
@@ -1778,8 +1799,6 @@ class ServerTest extends TestCase
             $request->getBody()->on('close', $closeEvent);
             $request->getBody()->on('error', $errorEvent);
             $requestValidation = $request;
-
-            return \React\Promise\resolve(new Response());
         });
 
         $server->listen($this->socket);
@@ -1804,7 +1823,7 @@ class ServerTest extends TestCase
         $this->assertFalse($requestValidation->hasHeader('Transfer-Encoding'));
     }
 
-    public function testNonIntegerContentLengthValueWillLeadToError()
+    public function testRequestInvalidNonIntegerContentLengthWillEmitServerErrorAndSendResponse()
     {
         $error = null;
         $server = new Server($this->expectCallableNever());
@@ -1841,7 +1860,7 @@ class ServerTest extends TestCase
         $this->assertInstanceOf('InvalidArgumentException', $error);
     }
 
-    public function testNonIntegerContentLengthValueWillLeadToErrorWithNoBodyForHeadRequest()
+    public function testRequestInvalidHeadRequestWithInvalidNonIntegerContentLengthWillEmitServerErrorAndSendResponseWithoutBody()
     {
         $error = null;
         $server = new Server($this->expectCallableNever());
@@ -1878,7 +1897,7 @@ class ServerTest extends TestCase
         $this->assertInstanceOf('InvalidArgumentException', $error);
     }
 
-    public function testMultipleIntegerInContentLengthWillLeadToError()
+    public function testRequestInvalidMultipleContentLengthWillEmitErrorOnServer()
     {
         $error = null;
         $server = new Server($this->expectCallableNever());
@@ -1915,31 +1934,7 @@ class ServerTest extends TestCase
         $this->assertInstanceOf('InvalidArgumentException', $error);
     }
 
-    public function testInvalidChunkHeaderResultsInErrorOnRequestStream()
-    {
-        $errorEvent = $this->expectCallableOnceWith($this->isInstanceOf('Exception'));
-        $server = new Server(function ($request) use ($errorEvent){
-            $request->getBody()->on('error', $errorEvent);
-            return \React\Promise\resolve(new Response());
-        });
-
-        $this->connection->expects($this->never())->method('close');
-        $this->connection->expects($this->once())->method('pause');
-
-        $server->listen($this->socket);
-        $this->socket->emit('connection', array($this->connection));
-
-        $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
-        $data .= "Connection: close\r\n";
-        $data .= "Transfer-Encoding: chunked\r\n";
-        $data .= "\r\n";
-        $data .= "hello\r\hello\r\n";
-
-        $this->connection->emit('data', array($data));
-    }
-
-    public function testTooLongChunkHeaderResultsInErrorOnRequestStream()
+    public function testRequestInvalidChunkHeaderTooLongWillEmitErrorOnRequestStream()
     {
         $errorEvent = $this->expectCallableOnceWith($this->isInstanceOf('Exception'));
         $server = new Server(function ($request) use ($errorEvent){
@@ -1965,12 +1960,11 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
-    public function testTooLongChunkBodyResultsInErrorOnRequestStream()
+    public function testRequestInvalidChunkBodyTooLongWillEmitErrorOnRequestStream()
     {
         $errorEvent = $this->expectCallableOnceWith($this->isInstanceOf('Exception'));
         $server = new Server(function ($request) use ($errorEvent){
             $request->getBody()->on('error', $errorEvent);
-            return \React\Promise\resolve(new Response());
         });
 
         $this->connection->expects($this->never())->method('close');
@@ -1989,12 +1983,11 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
-    public function testUnexpectedEndOfConnectionWillResultsInErrorOnRequestStream()
+    public function testRequestUnexpectedEndOfRequestWithChunkedTransferConnectionWillEmitErrorOnRequestStream()
     {
         $errorEvent = $this->expectCallableOnceWith($this->isInstanceOf('Exception'));
         $server = new Server(function ($request) use ($errorEvent){
             $request->getBody()->on('error', $errorEvent);
-            return \React\Promise\resolve(new Response());
         });
 
         $this->connection->expects($this->never())->method('close');
@@ -2014,10 +2007,11 @@ class ServerTest extends TestCase
         $this->connection->emit('end');
     }
 
-    public function testErrorInChunkedDecoderNeverClosesConnection()
+    public function testRequestInvalidChunkHeaderWillEmitErrorOnRequestStream()
     {
-        $server = new Server(function (ServerRequestInterface $request) {
-            return \React\Promise\resolve(new Response());
+        $errorEvent = $this->expectCallableOnceWith($this->isInstanceOf('Exception'));
+        $server = new Server(function ($request) use ($errorEvent){
+            $request->getBody()->on('error', $errorEvent);
         });
 
         $this->connection->expects($this->never())->method('close');
@@ -2036,10 +2030,11 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
-    public function testErrorInLengthLimitedStreamNeverClosesConnection()
+    public function testRequestUnexpectedEndOfRequestWithContentLengthWillEmitErrorOnRequestStream()
     {
-        $server = new Server(function (ServerRequestInterface $request) {
-            return \React\Promise\resolve(new Response());
+        $errorEvent = $this->expectCallableOnceWith($this->isInstanceOf('Exception'));
+        $server = new Server(function ($request) use ($errorEvent){
+            $request->getBody()->on('error', $errorEvent);
         });
 
         $this->connection->expects($this->never())->method('close');
@@ -2051,32 +2046,15 @@ class ServerTest extends TestCase
         $data = "GET / HTTP/1.1\r\n";
         $data .= "Host: example.com:80\r\n";
         $data .= "Connection: close\r\n";
-        $data .= "Content-Length: 5\r\n";
+        $data .= "Content-Length: 500\r\n";
         $data .= "\r\n";
-        $data .= "hello";
+        $data .= "incomplete";
 
         $this->connection->emit('data', array($data));
         $this->connection->emit('end');
     }
 
-    public function testCloseRequestWillPauseConnection()
-    {
-        $server = new Server(function ($request) {
-            $request->getBody()->close();
-            return \React\Promise\resolve(new Response());
-        });
-
-        $this->connection->expects($this->never())->method('close');
-        $this->connection->expects($this->once())->method('pause');
-
-        $server->listen($this->socket);
-        $this->socket->emit('connection', array($this->connection));
-
-        $data = $this->createGetRequest();
-        $this->connection->emit('data', array($data));
-    }
-
-    public function testEndEventWillBeEmittedOnSimpleRequest()
+    public function testRequestWithoutBodyWillEmitEndOnRequestStream()
     {
         $dataEvent = $this->expectCallableNever();
         $closeEvent = $this->expectCallableOnce();
@@ -2088,8 +2066,6 @@ class ServerTest extends TestCase
             $request->getBody()->on('close', $closeEvent);
             $request->getBody()->on('end', $endEvent);
             $request->getBody()->on('error', $errorEvent);
-
-            return \React\Promise\resolve(new Response());
         });
 
         $this->connection->expects($this->once())->method('pause');
@@ -2115,8 +2091,6 @@ class ServerTest extends TestCase
             $request->getBody()->on('end', $endEvent);
             $request->getBody()->on('close', $closeEvent);
             $request->getBody()->on('error', $errorEvent);
-
-            return \React\Promise\resolve(new Response());
         });
 
         $server->listen($this->socket);
@@ -2128,12 +2102,15 @@ class ServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
-    public function testResponseWillBeChunkDecodedByDefault()
+    public function testResponseWithBodyStreamWillUseChunkedTransferEncodingByDefault()
     {
         $stream = new ThroughStream();
         $server = new Server(function (ServerRequestInterface $request) use ($stream) {
-            $response = new Response(200, array(), $stream);
-            return \React\Promise\resolve($response);
+            return new Response(
+                200,
+                array(),
+                $stream
+            );
         });
 
         $buffer = '';
@@ -2160,19 +2137,17 @@ class ServerTest extends TestCase
         $this->assertContains("hello", $buffer);
     }
 
-    public function testContentLengthWillBeRemovedForResponseStream()
+    public function testResponseWithBodyStringWillOverwriteExplicitContentLengthAndTransferEncoding()
     {
         $server = new Server(function (ServerRequestInterface $request) {
-            $response = new Response(
+            return new Response(
                 200,
                 array(
-                    'Content-Length' => 5,
+                    'Content-Length' => 1000,
                     'Transfer-Encoding' => 'chunked'
                 ),
                 'hello'
             );
-
-            return \React\Promise\resolve($response);
         });
 
         $buffer = '';
@@ -2199,19 +2174,17 @@ class ServerTest extends TestCase
         $this->assertContains("hello", $buffer);
     }
 
-    public function testOnlyAllowChunkedEncoding()
+    public function testResponseWithCustomTransferEncodingWillBeIgnoredAndUseChunkedTransferEncodingInstead()
     {
         $stream = new ThroughStream();
         $server = new Server(function (ServerRequestInterface $request) use ($stream) {
-            $response = new Response(
+            return new Response(
                 200,
                 array(
                     'Transfer-Encoding' => 'custom'
                 ),
                 $stream
             );
-
-            return \React\Promise\resolve($response);
         });
 
         $buffer = '';
@@ -2239,10 +2212,10 @@ class ServerTest extends TestCase
         $this->assertContains("5\r\nhello\r\n", $buffer);
     }
 
-    public function testDateHeaderWillBeAddedWhenNoneIsGiven()
+    public function testResponseWithoutExplicitDateHeaderWillAddCurrentDate()
     {
         $server = new Server(function (ServerRequestInterface $request) {
-            return \React\Promise\resolve(new Response());
+            return new Response();
         });
 
         $buffer = '';
@@ -2269,11 +2242,13 @@ class ServerTest extends TestCase
         $this->assertContains("\r\n\r\n", $buffer);
     }
 
-    public function testAddCustomDateHeader()
+    public function testResponseWIthCustomDateHeaderOverwritesDefault()
     {
         $server = new Server(function (ServerRequestInterface $request) {
-            $response = new Response(200, array("Date" => "Tue, 15 Nov 1994 08:12:31 GMT"));
-            return \React\Promise\resolve($response);
+            return new Response(
+                200,
+                array("Date" => "Tue, 15 Nov 1994 08:12:31 GMT")
+            );
         });
 
         $buffer = '';
@@ -2300,11 +2275,13 @@ class ServerTest extends TestCase
         $this->assertContains("\r\n\r\n", $buffer);
     }
 
-    public function testRemoveDateHeader()
+    public function testResponseWithEmptyDateHeaderRemovesDateHeader()
     {
         $server = new Server(function (ServerRequestInterface $request) {
-            $response = new Response(200, array('Date' => ''));
-            return \React\Promise\resolve($response);
+            return new Response(
+                200,
+                array('Date' => '')
+            );
         });
 
         $buffer = '';
@@ -2331,7 +2308,7 @@ class ServerTest extends TestCase
         $this->assertContains("\r\n\r\n", $buffer);
     }
 
-    public function testAddMultipleCookieHeaders()
+    public function testResponseCanContainMultipleCookieHeaders()
     {
         $server = new Server(function (ServerRequestInterface $request) {
             return new Response(
@@ -2369,7 +2346,7 @@ class ServerTest extends TestCase
         $this->assertEquals("HTTP/1.1 200 OK\r\nSet-Cookie: name=test\r\nSet-Cookie: session=abc\r\nContent-Length: 0\r\nConnection: close\r\n\r\n", $buffer);
     }
 
-    public function testOnlyChunkedEncodingIsAllowedForTransferEncoding()
+    public function testRequestOnlyChunkedEncodingIsAllowedForTransferEncoding()
     {
         $error = null;
 
@@ -2406,7 +2383,7 @@ class ServerTest extends TestCase
         $this->assertInstanceOf('InvalidArgumentException', $error);
     }
 
-    public function testOnlyChunkedEncodingIsAllowedForTransferEncodingWithHttp10()
+    public function testRequestOnlyChunkedEncodingIsAllowedForTransferEncodingWithHttp10()
     {
         $error = null;
 
@@ -2441,10 +2418,10 @@ class ServerTest extends TestCase
         $this->assertInstanceOf('InvalidArgumentException', $error);
     }
 
-    public function test100ContinueRequestWillBeHandled()
+    public function testReponseWithExpectContinueRequestContainsContinueWithLaterResponse()
     {
         $server = new Server(function (ServerRequestInterface $request) {
-            return \React\Promise\resolve(new Response());
+            return new Response();
         });
 
         $buffer = '';
@@ -2473,10 +2450,10 @@ class ServerTest extends TestCase
         $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
     }
 
-    public function testContinueWontBeSendForHttp10()
+    public function testResponseWithExpectContinueRequestWontSendContinueForHttp10()
     {
         $server = new Server(function (ServerRequestInterface $request) {
-            return \React\Promise\resolve(new Response());
+            return new Response();
         });
 
         $buffer = '';
@@ -2503,40 +2480,6 @@ class ServerTest extends TestCase
         $this->assertNotContains("HTTP/1.1 100 Continue\r\n\r\n", $buffer);
     }
 
-    public function testContinueWithLaterResponse()
-    {
-        $server = new Server(function (ServerRequestInterface $request) {
-            return \React\Promise\resolve(new Response());
-        });
-
-
-        $buffer = '';
-        $this->connection
-            ->expects($this->any())
-            ->method('write')
-            ->will(
-                $this->returnCallback(
-                    function ($data) use (&$buffer) {
-                        $buffer .= $data;
-                    }
-                )
-            );
-
-        $server->listen($this->socket);
-        $this->socket->emit('connection', array($this->connection));
-
-        $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
-        $data .= "Connection: close\r\n";
-        $data .= "Expect: 100-continue\r\n";
-        $data .= "\r\n";
-
-        $this->connection->emit('data', array($data));
-
-        $this->assertContains("HTTP/1.1 100 Continue\r\n\r\n", $buffer);
-        $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
-    }
-
     /**
      * @expectedException InvalidArgumentException
      */
@@ -2545,13 +2488,16 @@ class ServerTest extends TestCase
         $server = new Server('invalid');
     }
 
-    public function testHttpBodyStreamAsBodyWillStreamData()
+    public function testResponseBodyStreamWillStreamDataWithChunkedTransferEncoding()
     {
         $input = new ThroughStream();
 
         $server = new Server(function (ServerRequestInterface $request) use ($input) {
-            $response = new Response(200, array(), $input);
-            return \React\Promise\resolve($response);
+            return new Response(
+                200,
+                array(),
+                $input
+            );
         });
 
         $buffer = '';
@@ -2581,13 +2527,16 @@ class ServerTest extends TestCase
         $this->assertContains("2\r\n23\r\n", $buffer);
     }
 
-    public function testHttpBodyStreamWithContentLengthWillStreamTillLength()
+    public function testResponseBodyStreamWithContentLengthWillStreamTillLengthWithoutTransferEncoding()
     {
         $input = new ThroughStream();
 
         $server = new Server(function (ServerRequestInterface $request) use ($input) {
-            $response = new Response(200, array('Content-Length' => 5), $input);
-            return \React\Promise\resolve($response);
+            return new Response(
+                200,
+                array('Content-Length' => 5),
+                $input
+            );
         });
 
         $buffer = '';
@@ -2618,7 +2567,7 @@ class ServerTest extends TestCase
         $this->assertContains("hello", $buffer);
     }
 
-    public function testCallbackFunctionReturnsPromise()
+    public function testResponseWithResponsePromise()
     {
         $server = new Server(function (ServerRequestInterface $request) {
             return \React\Promise\resolve(new Response());
@@ -2646,7 +2595,7 @@ class ServerTest extends TestCase
         $this->assertContains("\r\n\r\n", $buffer);
     }
 
-    public function testReturnInvalidTypeWillResultInError()
+    public function testResponseReturnInvalidTypeWillResultInError()
     {
         $server = new Server(function (ServerRequestInterface $request) {
             return "invalid";
@@ -2680,7 +2629,7 @@ class ServerTest extends TestCase
         $this->assertInstanceOf('RuntimeException', $exception);
     }
 
-    public function testResolveWrongTypeInPromiseWillResultInError()
+    public function testResponseResolveWrongTypeInPromiseWillResultInError()
     {
         $server = new Server(function (ServerRequestInterface $request) {
             return \React\Promise\resolve("invalid");
@@ -2708,7 +2657,7 @@ class ServerTest extends TestCase
         $this->assertContains("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
     }
 
-    public function testRejectedPromiseWillResultInErrorMessage()
+    public function testResponseRejectedPromiseWillResultInErrorMessage()
     {
         $server = new Server(function (ServerRequestInterface $request) {
             return new Promise(function ($resolve, $reject) {
@@ -2739,7 +2688,7 @@ class ServerTest extends TestCase
         $this->assertContains("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
     }
 
-    public function testExcpetionInCallbackWillResultInErrorMessage()
+    public function testResponseExceptionInCallbackWillResultInErrorMessage()
     {
         $server = new Server(function (ServerRequestInterface $request) {
             return new Promise(function ($resolve, $reject) {
@@ -2770,10 +2719,14 @@ class ServerTest extends TestCase
         $this->assertContains("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
     }
 
-    public function testHeaderWillAlwaysBeContentLengthForStringBody()
+    public function testResponseWithContentLengthHeaderForStringBodyOverwritesTransferEncoding()
     {
         $server = new Server(function (ServerRequestInterface $request) {
-            return new Response(200, array('Transfer-Encoding' => 'chunked'), 'hello');
+            return new Response(
+                200,
+                array('Transfer-Encoding' => 'chunked'),
+                'hello'
+            );
         });
 
         $buffer = '';
@@ -2802,7 +2755,7 @@ class ServerTest extends TestCase
         $this->assertNotContains("Transfer-Encoding", $buffer);
     }
 
-    public function testReturnRequestWillBeHandled()
+    public function testResponseWillBeHandled()
     {
         $server = new Server(function (ServerRequestInterface $request) {
             return new Response();
@@ -2830,7 +2783,7 @@ class ServerTest extends TestCase
         $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
     }
 
-    public function testExceptionThrowInCallBackFunctionWillResultInErrorMessage()
+    public function testResponseExceptionThrowInCallBackFunctionWillResultInErrorMessage()
     {
         $server = new Server(function (ServerRequestInterface $request) {
             throw new \Exception('hello');
@@ -2868,7 +2821,7 @@ class ServerTest extends TestCase
     /**
      * @requires PHP 7
      */
-    public function testThrowableThrowInCallBackFunctionWillResultInErrorMessage()
+    public function testResponseThrowableThrowInCallBackFunctionWillResultInErrorMessage()
     {
         $server = new Server(function (ServerRequestInterface $request) {
             throw new \Error('hello');
@@ -2911,7 +2864,7 @@ class ServerTest extends TestCase
         $this->assertEquals('hello', $exception->getPrevious()->getMessage());
     }
 
-    public function testRejectOfNonExceptionWillResultInErrorMessage()
+    public function testResponseRejectOfNonExceptionWillResultInErrorMessage()
     {
         $server = new Server(function (ServerRequestInterface $request) {
             return new Promise(function ($resolve, $reject) {
@@ -2947,12 +2900,11 @@ class ServerTest extends TestCase
         $this->assertInstanceOf('RuntimeException', $exception);
     }
 
-    public function testServerRequestParams()
+    public function testRequestServerRequestParams()
     {
         $requestValidation = null;
         $server = new Server(function (ServerRequestInterface $request) use (&$requestValidation) {
             $requestValidation = $request;
-            return new Response();
         });
 
         $this->connection
@@ -2982,12 +2934,11 @@ class ServerTest extends TestCase
         $this->assertNotNull($serverParams['REQUEST_TIME_FLOAT']);
     }
 
-    public function testQueryParametersWillBeAddedToRequest()
+    public function testRequestQueryParametersWillBeAddedToRequest()
     {
         $requestValidation = null;
         $server = new Server(function (ServerRequestInterface $request) use (&$requestValidation) {
             $requestValidation = $request;
-            return new Response();
         });
 
         $server->listen($this->socket);
@@ -3003,12 +2954,11 @@ class ServerTest extends TestCase
         $this->assertEquals('bar', $queryParams['test']);
     }
 
-    public function testCookieWillBeAddedToServerRequest()
+    public function testRequestCookieWillBeAddedToServerRequest()
     {
         $requestValidation = null;
         $server = new Server(function (ServerRequestInterface $request) use (&$requestValidation) {
             $requestValidation = $request;
-            return new Response();
         });
 
         $server->listen($this->socket);
@@ -3025,12 +2975,11 @@ class ServerTest extends TestCase
         $this->assertEquals(array('hello' => 'world'), $requestValidation->getCookieParams());
     }
 
-    public function testMultipleCookiesWontBeAddedToServerRequest()
+    public function testRequestInvalidMultipleCookiesWontBeAddedToServerRequest()
     {
         $requestValidation = null;
         $server = new Server(function (ServerRequestInterface $request) use (&$requestValidation) {
             $requestValidation = $request;
-            return new Response();
         });
 
         $server->listen($this->socket);
@@ -3047,12 +2996,11 @@ class ServerTest extends TestCase
         $this->assertEquals(array(), $requestValidation->getCookieParams());
     }
 
-    public function testCookieWithSeparatorWillBeAddedToServerRequest()
+    public function testRequestCookieWithSeparatorWillBeAddedToServerRequest()
     {
         $requestValidation = null;
         $server = new Server(function (ServerRequestInterface $request) use (&$requestValidation) {
             $requestValidation = $request;
-            return new Response();
         });
 
         $server->listen($this->socket);
