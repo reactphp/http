@@ -34,10 +34,9 @@ class HttpBodyStreamTest extends TestCase
     public function testResumeStream()
     {
         $input = $this->getMockBuilder('React\Stream\ReadableStreamInterface')->getMock();
-        $input->expects($this->once())->method('pause');
+        $input->expects($this->once())->method('resume');
 
         $bodyStream = new HttpBodyStream($input, null);
-        $bodyStream->pause();
         $bodyStream->resume();
     }
 
@@ -152,16 +151,6 @@ class HttpBodyStreamTest extends TestCase
     public function testIsReadable()
     {
         $this->assertTrue($this->bodyStream->isReadable());
-    }
-
-    public function testPause()
-    {
-        $this->bodyStream->pause();
-    }
-
-    public function testResume()
-    {
-        $this->bodyStream->resume();
     }
 
     /**
