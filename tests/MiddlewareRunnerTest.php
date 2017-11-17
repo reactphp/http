@@ -193,4 +193,144 @@ final class MiddlewareRunnerTest extends TestCase
             $receivedRequests
         );
     }
+
+    public function provideUncommonMiddlewareArrayFormats()
+    {
+        return array(
+            array(
+                function () {
+                    $sequence = '';
+
+                    // Numeric index gap
+                    return array(
+                        0 => function (ServerRequestInterface $request, $next) use (&$sequence) {
+                            $sequence .= 'A';
+
+                            return $next($request);
+                        },
+                        2 => function (ServerRequestInterface $request, $next) use (&$sequence) {
+                            $sequence .= 'B';
+
+                            return $next($request);
+                        },
+                        3 => function () use (&$sequence) {
+                            return new Response(200, array(), $sequence . 'C');
+                        },
+                    );
+                },
+                'ABC',
+            ),
+            array(
+                function () {
+                    $sequence = '';
+
+                    // Reversed numeric indexes
+                    return array(
+                        2 => function (ServerRequestInterface $request, $next) use (&$sequence) {
+                            $sequence .= 'A';
+
+                            return $next($request);
+                        },
+                        1 => function (ServerRequestInterface $request, $next) use (&$sequence) {
+                            $sequence .= 'B';
+
+                            return $next($request);
+                        },
+                        0 => function () use (&$sequence) {
+                            return new Response(200, array(), $sequence . 'C');
+                        },
+                    );
+                },
+                'ABC',
+            ),
+            array(
+                function () {
+                    $sequence = '';
+
+                    // Associative array
+                    return array(
+                        'middleware1' => function (ServerRequestInterface $request, $next) use (&$sequence) {
+                            $sequence .= 'A';
+
+                            return $next($request);
+                        },
+                        'middleware2' => function (ServerRequestInterface $request, $next) use (&$sequence) {
+                            $sequence .= 'B';
+
+                            return $next($request);
+                        },
+                        'middleware3' => function () use (&$sequence) {
+                            return new Response(200, array(), $sequence . 'C');
+                        },
+                    );
+                },
+                'ABC',
+            ),
+            array(
+                function () {
+                    $sequence = '';
+
+                    // Associative array with empty or trimmable string keys
+                    return array(
+                        '' => function (ServerRequestInterface $request, $next) use (&$sequence) {
+                            $sequence .= 'A';
+
+                            return $next($request);
+                        },
+                        ' ' => function (ServerRequestInterface $request, $next) use (&$sequence) {
+                            $sequence .= 'B';
+
+                            return $next($request);
+                        },
+                        '  ' => function () use (&$sequence) {
+                            return new Response(200, array(), $sequence . 'C');
+                        },
+                    );
+                },
+                'ABC',
+            ),
+            array(
+                function () {
+                    $sequence = '';
+
+                    // Mixed array keys
+                    return array(
+                        '' => function (ServerRequestInterface $request, $next) use (&$sequence) {
+                            $sequence .= 'A';
+
+                            return $next($request);
+                        },
+                        0 => function (ServerRequestInterface $request, $next) use (&$sequence) {
+                            $sequence .= 'B';
+
+                            return $next($request);
+                        },
+                        'foo' => function (ServerRequestInterface $request, $next) use (&$sequence) {
+                            $sequence .= 'C';
+
+                            return $next($request);
+                        },
+                        2 => function () use (&$sequence) {
+                            return new Response(200, array(), $sequence . 'D');
+                        },
+                    );
+                },
+                'ABCD',
+            ),
+        );
+    }
+
+    /**
+     * @dataProvider provideUncommonMiddlewareArrayFormats
+     */
+    public function testUncommonMiddlewareArrayFormats($middlewareFactory, $expectedSequence)
+    {
+        $request = new ServerRequest('GET', 'https://example.com/');
+        $middlewareStack = new MiddlewareRunner($middlewareFactory());
+
+        /** @var ResponseInterface $response */
+        $response = Block\await($middlewareStack($request), Factory::create());
+
+        $this->assertSame($expectedSequence, (string) $response->getBody());
+    }
 }
