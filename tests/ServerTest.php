@@ -2331,6 +2331,44 @@ class ServerTest extends TestCase
         $this->assertContains("\r\n\r\n", $buffer);
     }
 
+    public function testAddMultipleCookieHeaders()
+    {
+        $server = new Server(function (ServerRequestInterface $request) {
+            return new Response(
+                200,
+                array(
+                    'Set-Cookie' => array(
+                        'name=test',
+                        'session=abc'
+                    ),
+                    'Date' => '',
+                    'X-Powered-By' => ''
+                )
+            );
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+
+        $this->connection->emit('data', array($data));
+
+        $this->assertEquals("HTTP/1.1 200 OK\r\nSet-Cookie: name=test\r\nSet-Cookie: session=abc\r\nContent-Length: 0\r\nConnection: close\r\n\r\n", $buffer);
+    }
+
     public function testOnlyChunkedEncodingIsAllowedForTransferEncoding()
     {
         $error = null;

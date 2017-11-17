@@ -3,15 +3,16 @@
 namespace React\Http;
 
 use Evenement\EventEmitter;
-use React\Socket\ServerInterface;
-use React\Socket\ConnectionInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use React\Promise\Promise;
-use RingCentral\Psr7 as Psr7Implementation;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Promise\CancellablePromiseInterface;
+use React\Promise\Promise;
+use React\Socket\ConnectionInterface;
+use React\Socket\ServerInterface;
+use React\Stream\ReadableStreamInterface;
 use React\Stream\WritableStreamInterface;
+use RingCentral\Psr7 as Psr7Implementation;
 
 /**
  * The `Server` class is responsible for handling incoming connections and then
@@ -378,19 +379,26 @@ class Server extends EventEmitter
 
     private function handleResponseBody(ResponseInterface $response, ConnectionInterface $connection)
     {
-        if (!$response->getBody() instanceof HttpBodyStream) {
-            $connection->write(Psr7Implementation\str($response));
-            return $connection->end();
+        $headers = "HTTP/" . $response->getProtocolVersion() . " " . $response->getStatusCode() . " " . $response->getReasonPhrase() . "\r\n";
+        foreach ($response->getHeaders() as $name => $values) {
+            foreach ($values as $value) {
+                $headers .= $name . ": " . $value . "\r\n";
+            }
         }
 
         $stream = $response->getBody();
+
+        if (!$stream instanceof ReadableStreamInterface) {
+            $connection->write($headers . "\r\n" . $stream);
+            return $connection->end();
+        }
 
         // close response stream if connection is already closed
         if (!$connection->isWritable()) {
             return $stream->close();
         }
 
-        $connection->write(Psr7Implementation\str($response));
+        $connection->write($headers . "\r\n");
 
         if ($stream->isReadable()) {
             if ($response->getHeaderLine('Transfer-Encoding') === 'chunked') {
