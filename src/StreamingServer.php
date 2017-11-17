@@ -14,8 +14,9 @@ use React\Http\Io\LengthLimitedStream;
 use React\Http\Io\MiddlewareRunner;
 use React\Http\Io\RequestHeaderParser;
 use React\Http\Io\ServerRequest;
+use React\Promise;
 use React\Promise\CancellablePromiseInterface;
-use React\Promise\Promise;
+use React\Promise\PromiseInterface;
 use React\Socket\ConnectionInterface;
 use React\Socket\ServerInterface;
 use React\Stream\ReadableStreamInterface;
@@ -229,22 +230,43 @@ final class StreamingServer extends EventEmitter
             $conn->write("HTTP/1.1 100 Continue\r\n\r\n");
         }
 
+        // execute request handler callback
         $callback = $this->callback;
-        $cancel = null;
-        $promise = new Promise(function ($resolve, $reject) use ($callback, $request, &$cancel) {
-            $cancel = $callback($request);
-            $resolve($cancel);
-        });
+        try {
+            $response = $callback($request);
+        } catch (\Exception $error) {
+            // request handler callback throws an Exception
+            $response = Promise\reject($error);
+        } catch (\Throwable $error) { // @codeCoverageIgnoreStart
+            // request handler callback throws a PHP7+ Error
+            $response = Promise\reject($error); // @codeCoverageIgnoreEnd
+        }
 
         // cancel pending promise once connection closes
-        if ($cancel instanceof CancellablePromiseInterface) {
-            $conn->on('close', function () use ($cancel) {
-                $cancel->cancel();
+        if ($response instanceof CancellablePromiseInterface) {
+            $conn->on('close', function () use ($response) {
+                $response->cancel();
             });
         }
 
+        // happy path: request body is known to be empty => immediately end stream
+        if ($contentLength === 0) {
+            $stream->emit('end');
+            $stream->close();
+        }
+
+        // happy path: response returned, handle and return immediately
+        if ($response instanceof ResponseInterface) {
+            return $this->handleResponse($conn, $request, $response);
+        }
+
+        // did not return a promise? this is an error, convert into one for rejection below.
+        if (!$response instanceof PromiseInterface) {
+            $response = Promise\resolve($response);
+        }
+
         $that = $this;
-        $promise->then(
+        $response->then(
             function ($response) use ($that, $conn, $request) {
                 if (!$response instanceof ResponseInterface) {
                     $message = 'The response callback is expected to resolve with an object implementing Psr\Http\Message\ResponseInterface, but resolved with "%s" instead.';
@@ -272,13 +294,6 @@ final class StreamingServer extends EventEmitter
                 return $that->writeError($conn, 500, $request);
             }
         );
-
-        if ($contentLength === 0) {
-            // If Body is empty or Content-Length is 0 and won't emit further data,
-            // 'data' events from other streams won't be called anymore
-            $stream->emit('end');
-            $stream->close();
-        }
     }
 
     /** @internal */
