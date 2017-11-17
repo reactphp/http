@@ -7,6 +7,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\MiddlewareRunner;
 use React\Http\ServerRequest;
+use React\Promise;
 use React\Tests\Http\Middleware\ProcessStack;
 use RingCentral\Psr7\Response;
 use Clue\React\Block;
@@ -93,7 +94,26 @@ final class MiddlewareRunnerTest extends TestCase
         }
     }
 
-    public function testNextCanBeRunMoreThanOnceWithoutCorruptingTheMiddlewareStack()
+    public function provideErrorHandler()
+    {
+        return array(
+            array(
+                function (\Exception $e) {
+                    throw $e;
+                }
+            ),
+            array(
+                function (\Exception $e) {
+                    return Promise\reject($e);
+                }
+            )
+        );
+    }
+
+    /**
+     * @dataProvider provideErrorHandler
+     */
+    public function testNextCanBeRunMoreThanOnceWithoutCorruptingTheMiddlewareStack($errorHandler)
     {
         $exception = new \RuntimeException('exception');
         $retryCalled = 0;
@@ -110,15 +130,15 @@ final class MiddlewareRunnerTest extends TestCase
         $response = new Response();
         $called = 0;
         $runner = new MiddlewareRunner(array(
-        $retry,
-        function () use (&$called, $response, $exception) {
-            $called++;
-            if ($called === 1) {
-                throw $exception;
-            }
+            $retry,
+            function () use ($errorHandler, &$called, $response, $exception) {
+                $called++;
+                if ($called === 1) {
+                    return $errorHandler($exception);
+                }
 
-            return $response;
-        }
+                return $response;
+            }
         ));
 
         $request = new ServerRequest('GET', 'https://example.com/');
