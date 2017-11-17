@@ -8,8 +8,12 @@ use React\Stream\Util;
 use React\Stream\WritableStreamInterface;
 
 /**
+ * [Internal] Protects a given stream from actually closing and only pauses it instead.
+ *
+ * This is used internally to prevent the underlying connection from closing, so
+ * that we can still send back a response over the same stream.
+ *
  * @internal
- * This stream is used to protect the passed stream against closing.
  * */
 class CloseProtectionStream extends EventEmitter implements ReadableStreamInterface
 {

@@ -8,7 +8,13 @@ use React\Stream\Util;
 use React\Stream\WritableStreamInterface;
 use Exception;
 
-/** @internal */
+/**
+ * [Internal] Decodes "Transfer-Encoding: chunked" from given stream and returns only payload data.
+ *
+ * This is used internally to decode incoming requests with this encoding.
+ *
+ * @internal
+ */
 class ChunkedDecoder extends EventEmitter implements ReadableStreamInterface
 {
     const CRLF = "\r\n";

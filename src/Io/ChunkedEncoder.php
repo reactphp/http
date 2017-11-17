@@ -7,7 +7,13 @@ use React\Stream\ReadableStreamInterface;
 use React\Stream\Util;
 use React\Stream\WritableStreamInterface;
 
-/** @internal */
+/**
+ * [Internal] Encodes given payload stream with "Transfer-Encoding: chunked" and emits encoded data
+ *
+ * This is used internally to encode outgoing requests with this encoding.
+ *
+ * @internal
+ */
 class ChunkedEncoder extends EventEmitter implements ReadableStreamInterface
 {
     private $input;

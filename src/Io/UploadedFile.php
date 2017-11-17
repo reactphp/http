@@ -8,6 +8,14 @@ use InvalidArgumentException;
 use RuntimeException;
 
 /**
+ * [Internal] Implementation of the PSR-7 `UploadedFileInterface`
+ *
+ * This is used internally to represent each incoming file upload.
+ *
+ * Note that this is an internal class only and nothing you should usually care
+ * about. See the `UploadedFileInterface` for more details.
+ *
+ * @see UploadedFileInterface
  * @internal
  */
 final class UploadedFile implements UploadedFileInterface
