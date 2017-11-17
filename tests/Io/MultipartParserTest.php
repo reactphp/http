@@ -1,9 +1,9 @@
 <?php
 
-namespace React\Tests\Http\Middleware;
+namespace React\Tests\Http\Io\Middleware;
 
-use React\Http\Middleware\MultipartParser;
-use React\Http\ServerRequest;
+use React\Http\Io\MultipartParser;
+use React\Http\Io\ServerRequest;
 use React\Tests\Http\TestCase;
 
 final class MultipartParserTest extends TestCase

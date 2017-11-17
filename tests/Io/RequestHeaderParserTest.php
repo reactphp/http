@@ -1,8 +1,9 @@
 <?php
 
-namespace React\Tests\Http;
+namespace React\Tests\Http\Io;
 
-use React\Http\RequestHeaderParser;
+use React\Http\Io\RequestHeaderParser;
+use React\Tests\Http\TestCase;
 
 class RequestHeaderParserTest extends TestCase
 {

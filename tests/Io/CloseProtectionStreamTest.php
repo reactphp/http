@@ -1,9 +1,10 @@
 <?php
 
-namespace React\Tests\Http;
+namespace React\Tests\Http\Io;
 
-use React\Http\CloseProtectionStream;
+use React\Http\Io\CloseProtectionStream;
 use React\Stream\ThroughStream;
+use React\Tests\Http\TestCase;
 
 class CloseProtectionStreamTest extends TestCase
 {

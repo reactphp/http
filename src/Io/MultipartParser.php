@@ -1,10 +1,8 @@
 <?php
 
-namespace React\Http\Middleware;
+namespace React\Http\Io;
 
 use Psr\Http\Message\ServerRequestInterface;
-use React\Http\HttpBodyStream;
-use React\Http\UploadedFile;
 use RingCentral\Psr7;
 
 /**

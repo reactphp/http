@@ -1,10 +1,10 @@
 <?php
 
-namespace React\Http;
+namespace React\Http\Io;
 
 use Evenement\EventEmitter;
-use Exception;
 use RingCentral\Psr7 as g7;
+use Exception;
 
 /**
  * @event headers

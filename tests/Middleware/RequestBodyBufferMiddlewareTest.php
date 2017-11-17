@@ -3,12 +3,12 @@
 namespace React\Tests\Http\Middleware;
 
 use Psr\Http\Message\ServerRequestInterface;
+use React\Http\Io\HttpBodyStream;
+use React\Http\Io\ServerRequest;
 use React\Http\Middleware\RequestBodyBufferMiddleware;
-use React\Http\ServerRequest;
+use React\Stream\ThroughStream;
 use React\Tests\Http\TestCase;
 use RingCentral\Psr7\BufferStream;
-use React\Stream\ThroughStream;
-use React\Http\HttpBodyStream;
 
 final class RequestBodyBufferMiddlewareTest extends TestCase
 {

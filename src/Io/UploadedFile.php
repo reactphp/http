@@ -1,10 +1,10 @@
 <?php
 
-namespace React\Http;
+namespace React\Http\Io;
 
-use InvalidArgumentException;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UploadedFileInterface;
+use InvalidArgumentException;
 use RuntimeException;
 
 /**

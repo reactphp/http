@@ -1,6 +1,6 @@
 <?php
 
-namespace React\Http;
+namespace React\Http\Io;
 
 use Psr\Http\Message\ServerRequestInterface;
 use RingCentral\Psr7\Request;

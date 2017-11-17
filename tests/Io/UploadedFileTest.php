@@ -1,10 +1,9 @@
 <?php
 
-namespace React\Tests\Http;
+namespace React\Tests\Http\Io;
 
-use React\Http\Response;
-use React\Http\UploadedFile;
-use React\Stream\ThroughStream;
+use React\Http\Io\UploadedFile;
+Use React\Tests\Http\TestCase;
 use RingCentral\Psr7\BufferStream;
 
 class UploadedFileTest extends TestCase

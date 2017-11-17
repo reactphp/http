@@ -1,11 +1,12 @@
 <?php
-namespace React\Http;
 
+namespace React\Http\Io;
+
+use Evenement\EventEmitter;
 use Psr\Http\Message\StreamInterface;
 use React\Stream\ReadableStreamInterface;
-use React\Stream\WritableStreamInterface;
-use Evenement\EventEmitter;
 use React\Stream\Util;
+use React\Stream\WritableStreamInterface;
 
 /**
  * @internal

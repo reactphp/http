@@ -10,7 +10,7 @@ class ResponseTest extends TestCase
     public function testResponseBodyWillBeHttpBodyStream()
     {
         $response = new Response(200, array(), new ThroughStream());
-        $this->assertInstanceOf('React\Http\HttpBodyStream', $response->getBody());
+        $this->assertInstanceOf('React\Http\Io\HttpBodyStream', $response->getBody());
     }
 
     public function testStringBodyWillBePsr7Stream()
