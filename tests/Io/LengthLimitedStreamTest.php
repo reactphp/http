@@ -1,9 +1,10 @@
 <?php
 
-namespace React\Tests\Http;
+namespace React\Tests\Http\Io;
 
-use React\Http\LengthLimitedStream;
+use React\Http\Io\LengthLimitedStream;
 use React\Stream\ThroughStream;
+use React\Tests\Http\TestCase;
 
 class LengthLimitedStreamTest extends TestCase
 {

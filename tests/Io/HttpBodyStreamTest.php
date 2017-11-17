@@ -1,9 +1,10 @@
 <?php
 
-namespace React\Tests\Http;
+namespace React\Tests\Http\Io;
 
-use React\Http\HttpBodyStream;
+use React\Http\Io\HttpBodyStream;
 use React\Stream\ThroughStream;
+use React\Tests\Http\TestCase;
 
 class HttpBodyStreamTest extends TestCase
 {

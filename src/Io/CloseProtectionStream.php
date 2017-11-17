@@ -1,14 +1,19 @@
 <?php
 
-namespace React\Http;
+namespace React\Http\Io;
 
 use Evenement\EventEmitter;
 use React\Stream\ReadableStreamInterface;
-use React\Stream\WritableStreamInterface;
 use React\Stream\Util;
+use React\Stream\WritableStreamInterface;
 
-/** @internal
- * This stream is used to protect the passed stream against closing.
+/**
+ * [Internal] Protects a given stream from actually closing and only pauses it instead.
+ *
+ * This is used internally to prevent the underlying connection from closing, so
+ * that we can still send back a response over the same stream.
+ *
+ * @internal
  * */
 class CloseProtectionStream extends EventEmitter implements ReadableStreamInterface
 {

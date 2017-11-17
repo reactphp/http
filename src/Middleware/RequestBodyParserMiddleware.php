@@ -3,6 +3,7 @@
 namespace React\Http\Middleware;
 
 use Psr\Http\Message\ServerRequestInterface;
+use React\Http\Io\MultipartParser;
 
 final class RequestBodyParserMiddleware
 {

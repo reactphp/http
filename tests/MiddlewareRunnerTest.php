@@ -2,15 +2,15 @@
 
 namespace React\Tests\Http;
 
+use Clue\React\Block;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
+use React\Http\Io\ServerRequest;
 use React\Http\MiddlewareRunner;
-use React\Http\ServerRequest;
 use React\Promise;
 use React\Tests\Http\Middleware\ProcessStack;
 use RingCentral\Psr7\Response;
-use Clue\React\Block;
 
 final class MiddlewareRunnerTest extends TestCase
 {

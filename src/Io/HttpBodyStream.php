@@ -1,19 +1,28 @@
 <?php
-namespace React\Http;
 
+namespace React\Http\Io;
+
+use Evenement\EventEmitter;
 use Psr\Http\Message\StreamInterface;
 use React\Stream\ReadableStreamInterface;
-use React\Stream\WritableStreamInterface;
-use Evenement\EventEmitter;
 use React\Stream\Util;
+use React\Stream\WritableStreamInterface;
 
 /**
+ * [Internal] Bridge between StreamInterface from PSR-7 and ReadableStreamInterface from ReactPHP
+ *
+ * This class is used in the server to stream the body of an incoming response
+ * from the client. This allows us to stream big amounts of data without having
+ * to buffer this data. Similarly, this used to stream the body of an outgoing
+ * request body to the client. The data will be sent directly to the client.
+ *
+ * Note that this is an internal class only and nothing you should usually care
+ * about. See the `StreamInterface` and `ReadableStreamInterface` for more
+ * details.
+ *
+ * @see StreamInterface
+ * @see ReadableStreamInterface
  * @internal
- * Uses a StreamInterface from PSR-7 and a ReadableStreamInterface from ReactPHP
- * to use PSR-7 objects and use ReactPHP streams
- * This is class is used in `HttpServer` to stream the body of a response
- * to the client. Because of this you can stream big amount of data without
- * necessity of buffering this data. The data will be send directly to the client.
  */
 class HttpBodyStream extends EventEmitter implements StreamInterface, ReadableStreamInterface
 {
@@ -22,8 +31,8 @@ class HttpBodyStream extends EventEmitter implements StreamInterface, ReadableSt
     private $size;
 
     /**
-     * @param ReadableStreamInterface $input - Stream data from $stream as a body of a PSR-7 object4
-     * @param int|null $size - size of the data body
+     * @param ReadableStreamInterface $input Stream data from $stream as a body of a PSR-7 object4
+     * @param int|null $size size of the data body
      */
     public function __construct(ReadableStreamInterface $input, $size)
     {

@@ -1,9 +1,10 @@
 <?php
 
-namespace React\Tests\Http;
+namespace React\Tests\Http\Io;
 
+use React\Http\Io\ChunkedDecoder;
 use React\Stream\ThroughStream;
-use React\Http\ChunkedDecoder;
+use React\Tests\Http\TestCase;
 
 class ChunkedDecoderTest extends TestCase
 {

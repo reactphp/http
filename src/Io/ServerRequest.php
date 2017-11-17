@@ -1,11 +1,24 @@
 <?php
 
-namespace React\Http;
+namespace React\Http\Io;
 
 use Psr\Http\Message\ServerRequestInterface;
 use RingCentral\Psr7\Request;
 
-/** @internal */
+/**
+ * [Internal] Implementation of the PSR-7 `ServerRequestInterface`
+ *
+ * This is used internally to represent each incoming request message.
+ *
+ * This implementation builds on top of an existing outgoing request message and
+ * only adds required server methods.
+ *
+ * Note that this is an internal class only and nothing you should usually care
+ * about. See the `ServerRequestInterface` for more details.
+ *
+ * @see ServerRequestInterface
+ * @internal
+ */
 class ServerRequest extends Request implements ServerRequestInterface
 {
     private $attributes = array();

@@ -1,13 +1,16 @@
 <?php
 
-namespace React\Http\Middleware;
+namespace React\Http\Io;
 
 use Psr\Http\Message\ServerRequestInterface;
-use React\Http\HttpBodyStream;
-use React\Http\UploadedFile;
 use RingCentral\Psr7;
 
 /**
+ * [Internal] Parses a string body with "Content-Type: multipart/form-data" into structured data
+ *
+ * This is use internally to parse incoming request bodies into structured data
+ * that resembles PHP's `$_POST` and `$_FILES` superglobals.
+ *
  * @internal
  */
 final class MultipartParser

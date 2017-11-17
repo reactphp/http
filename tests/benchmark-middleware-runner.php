@@ -1,9 +1,9 @@
 <?php
 
 use Psr\Http\Message\ServerRequestInterface;
+use React\Http\Io\ServerRequest;
 use React\Http\MiddlewareRunner;
 use React\Http\Response;
-use React\Http\ServerRequest;
 
 const ITERATIONS = 5000;
 const MIDDLEWARE_COUNT = 512;

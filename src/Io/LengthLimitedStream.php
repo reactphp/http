@@ -1,13 +1,20 @@
 <?php
 
-namespace React\Http;
+namespace React\Http\Io;
 
 use Evenement\EventEmitter;
 use React\Stream\ReadableStreamInterface;
-use React\Stream\WritableStreamInterface;
 use React\Stream\Util;
+use React\Stream\WritableStreamInterface;
 
-/** @internal */
+/**
+ * [Internal] Limits the amount of data the given stream can emit
+ *
+ * This is used internally to limit the size of the underlying connection stream
+ * to the size defined by the "Content-Length" header of the incoming request.
+ *
+ * @internal
+ */
 class LengthLimitedStream extends EventEmitter implements ReadableStreamInterface
 {
     private $stream;
