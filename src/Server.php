@@ -8,7 +8,7 @@ use React\Socket\ConnectionInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use React\Promise\Promise;
-use RingCentral\Psr7 as Psr7Implementation;
+use RingCentral\Psr7;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Promise\CancellablePromiseInterface;
 use React\Stream\WritableStreamInterface;
@@ -344,7 +344,7 @@ class Server extends EventEmitter
         // response to HEAD and 1xx, 204 and 304 responses MUST NOT include a body
         // exclude status 101 (Switching Protocols) here for Upgrade request handling below
         if ($request->getMethod() === 'HEAD' || $code === 100 || ($code > 101 && $code < 200) || $code === 204 || $code === 304) {
-            $response = $response->withBody(Psr7Implementation\stream_for(''));
+            $response = $response->withBody(Psr7\stream_for(''));
         }
 
         // 101 (Switching Protocols) response uses Connection: upgrade header
@@ -379,7 +379,7 @@ class Server extends EventEmitter
     private function handleResponseBody(ResponseInterface $response, ConnectionInterface $connection)
     {
         if (!$response->getBody() instanceof HttpBodyStream) {
-            $connection->write(Psr7Implementation\str($response));
+            $connection->write(Psr7\str($response));
             return $connection->end();
         }
 
@@ -390,7 +390,7 @@ class Server extends EventEmitter
             return $stream->close();
         }
 
-        $connection->write(Psr7Implementation\str($response));
+        $connection->write(Psr7\str($response));
 
         if ($stream->isReadable()) {
             if ($response->getHeaderLine('Transfer-Encoding') === 'chunked') {
