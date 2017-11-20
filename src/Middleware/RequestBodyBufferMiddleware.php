@@ -7,6 +7,7 @@ use React\Http\Response;
 use React\Promise\Stream;
 use React\Stream\ReadableStreamInterface;
 use RingCentral\Psr7\BufferStream;
+use OverflowException;
 
 final class RequestBodyBufferMiddleware
 {
@@ -29,27 +30,30 @@ final class RequestBodyBufferMiddleware
 
     public function __invoke(ServerRequestInterface $request, $stack)
     {
-        $size = $request->getBody()->getSize();
+        $body = $request->getBody();
 
-        if ($size === null) {
-            return new Response(411, array('Content-Type' => 'text/plain'), 'No Content-Length header given');
-        }
-
-        if ($size > $this->sizeLimit) {
+        // request body of known size exceeding limit
+        if ($body->getSize() > $this->sizeLimit) {
             return new Response(413, array('Content-Type' => 'text/plain'), 'Request body exceeds allowed limit');
         }
 
-        $body = $request->getBody();
         if (!$body instanceof ReadableStreamInterface) {
             return $stack($request);
         }
 
-        return Stream\buffer($body)->then(function ($buffer) use ($request, $stack) {
+        return Stream\buffer($body, $this->sizeLimit)->then(function ($buffer) use ($request, $stack) {
             $stream = new BufferStream(strlen($buffer));
             $stream->write($buffer);
             $request = $request->withBody($stream);
 
             return $stack($request);
+        }, function($error) {
+            // request body of unknown size exceeding limit during buffering
+            if ($error instanceof OverflowException) {
+                return new Response(413, array('Content-Type' => 'text/plain'), 'Request body exceeds allowed limit');
+            }
+
+            throw $error;
         });
     }
 

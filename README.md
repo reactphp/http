@@ -697,16 +697,11 @@ Any incoming request that has a request body that exceeds this limit will be
 rejected with a `413` (Request Entity Too Large) error message without calling
 the next middleware handlers.
 
-Any incoming request that does not have its size defined and uses the (rare)
-`Transfer-Encoding: chunked` will be rejected with a `411` (Length Required)
-error message without calling the next middleware handlers.
-Note that this only affects incoming requests, the much more common chunked
-transfer encoding for outgoing responses is not affected.
-It is recommended to define a `Content-Length` header instead.
-Note that this does not affect normal requests without a request body
-(such as a simple `GET` request).
+The `RequestBodyBufferMiddleware` will buffer requests with bodies of known size 
+(i.e. with `Content-Length` header specified) as well as requests with bodies of 
+unknown size (i.e. with `Transfer-Encoding: chunked` header).
 
-All other requests will be buffered in memory until the request body end has
+All requests will be buffered in memory until the request body end has
 been reached and then call the next middleware handler with the complete,
 buffered request.
 Similarly, this will immediately invoke the next middleware handler for requests
