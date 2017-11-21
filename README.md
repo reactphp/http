@@ -722,55 +722,70 @@ $middlewares = new MiddlewareRunner([
 
 #### RequestBodyParserMiddleware
 
-The `RequestBodyParserMiddleware` takes a fully buffered request body (generally from [`RequestBodyBufferMiddleware`](#requestbodybuffermiddleware)), 
-and parses the forms and uploaded files from the request body.
+The `RequestBodyParserMiddleware` takes a fully buffered request body
+(generally from [`RequestBodyBufferMiddleware`](#requestbodybuffermiddleware)), 
+and parses the form values and file uploads from the incoming HTTP request body.
 
-Parsed submitted forms will be available from `$request->getParsedBody()` as
-array.
-For example the following submitted body (`application/x-www-form-urlencoded`):
+This middleware handler takes care of applying values from HTTP
+requests that use `Content-Type: application/x-www-form-urlencoded` or
+`Content-Type: multipart/form-data` to resemble PHP's default superglobals
+`$_POST` and `$_FILES`.
+Instead of relying on these superglobals, you can use the
+`$request->getParsedBody()` and `$request->getUploadedFiles()` methods
+as defined by PSR-7.
 
-`bar[]=beer&bar[]=wine`
-
-Results in the following parsed body:
-
-```php
-$parsedBody = [
-    'bar' => [
-        'beer',
-        'wine',
-    ],
-];
-```
-
-Aside from `application/x-www-form-urlencoded`, this middleware handler
-also supports `multipart/form-data`, thus supporting uploaded files available
-through `$request->getUploadedFiles()`.
-
-The `$request->getUploadedFiles(): array` will return an array with all
-uploaded files formatted like this: 
+Accordingly, each file upload will be represented as instance implementing [`UploadedFileInterface`](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#36-psrhttpmessageuploadedfileinterface).
+Due to its blocking nature, the `moveTo()` method is not available and throws
+a `RuntimeException` instead.
+You can use `$contents = (string)$file->getStream();` to access the file
+contents and persist this to your favorite data store.
 
 ```php
-$uploadedFiles = [
-    'avatar' => new UploadedFile(/**...**/),
-    'screenshots' => [
-        new UploadedFile(/**...**/),
-        new UploadedFile(/**...**/),
-    ],
-];
-```
+$handler = function (ServerRequestInterface $request) {
+    // If any, parsed form fields are now available from $request->getParsedBody()
+    $body = $request->getParsedBody();
+    $name = isset($body['name']) ? $body['name'] : 'unnamed';
 
-Usage:
+    $files = $request->getUploadedFiles();
+    $avatar = isset($files['avatar']) ? $files['avatar'] : null;
+    if ($avatar instanceof UploadedFileInterface) {
+        if ($avatar->getError() === UPLOAD_ERR_OK) {
+            $uploaded = $avatar->getSize() . ' bytes';
+        } else {
+            $uploaded = 'with error';
+        }
+    } else {
+        $uploaded = 'nothing';
+    }
 
-```php
-$middlewares = new MiddlewareRunner([
+    return new Response(
+        200,
+        array(
+            'Content-Type' => 'text/plain'
+        ),
+        $name . ' uploaded ' . $uploaded
+    );
+};
+
+$server = new Server(new MiddlewareRunner([
     new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
     new RequestBodyParserMiddleware(),
-    function (ServerRequestInterface $request, callable $next) {
-        // If any, parsed form fields are now available from $request->getParsedBody() 
-        return new Response(200);
-    },
-]);
+    $handler
+]));
 ```
+
+See also [example #12](examples) for more details.
+
+> Note that this middleware handler simply parses everything that is already
+  buffered in the request body.
+  It is imperative that the request body is buffered by a prior middleware
+  handler as given in the example above.
+  This previous middleware handler is also responsible for rejecting incoming
+  requests that exceed allowed message sizes (such as big file uploads).
+  If you use this middleware without buffering first, it will try to parse an
+  empty (streaming) body and may thus assume an empty data structure.
+  See also [`RequestBodyBufferMiddleware`](#requestbodybuffermiddleware) for
+  more details.
 
 #### Third-Party Middleware
 
