@@ -786,6 +786,8 @@ See also [example #12](examples) for more details.
   empty (streaming) body and may thus assume an empty data structure.
   See also [`RequestBodyBufferMiddleware`](#requestbodybuffermiddleware) for
   more details.
+  
+> PHP's `MAX_FILE_SIZE` hidden field is respected by this middleware.
 
 #### Third-Party Middleware
 
