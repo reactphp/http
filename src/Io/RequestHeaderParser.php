@@ -20,7 +20,7 @@ use Exception;
 class RequestHeaderParser extends EventEmitter
 {
     private $buffer = '';
-    private $maxSize = 4096;
+    private $maxSize = 8192;
 
     private $localSocketUri;
     private $remoteSocketUri;
@@ -34,16 +34,9 @@ class RequestHeaderParser extends EventEmitter
     public function feed($data)
     {
         $this->buffer .= $data;
-
         $endOfHeader = strpos($this->buffer, "\r\n\r\n");
 
-        if (false !== $endOfHeader) {
-            $currentHeaderSize = $endOfHeader;
-        } else {
-            $currentHeaderSize = strlen($this->buffer);
-        }
-
-        if ($currentHeaderSize > $this->maxSize) {
+        if ($endOfHeader > $this->maxSize || ($endOfHeader === false && isset($this->buffer[$this->maxSize]))) {
             $this->emit('error', array(new \OverflowException("Maximum header size of {$this->maxSize} exceeded.", 431), $this));
             $this->removeAllListeners();
             return;

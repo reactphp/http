@@ -140,11 +140,11 @@ class RequestHeaderParserTest extends TestCase
         $this->assertSame(1, count($parser->listeners('headers')));
         $this->assertSame(1, count($parser->listeners('error')));
 
-        $data = str_repeat('A', 4097);
+        $data = str_repeat('A', 8193);
         $parser->feed($data);
 
         $this->assertInstanceOf('OverflowException', $error);
-        $this->assertSame('Maximum header size of 4096 exceeded.', $error->getMessage());
+        $this->assertSame('Maximum header size of 8192 exceeded.', $error->getMessage());
         $this->assertSame($parser, $passedParser);
         $this->assertSame(0, count($parser->listeners('headers')));
         $this->assertSame(0, count($parser->listeners('error')));
@@ -162,7 +162,7 @@ class RequestHeaderParserTest extends TestCase
         });
 
         $data = $this->createAdvancedPostRequest();
-        $body = str_repeat('A', 4097 - strlen($data));
+        $body = str_repeat('A', 8193 - strlen($data));
         $data .= $body;
 
         $parser->feed($data);
