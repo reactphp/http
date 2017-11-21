@@ -9,6 +9,7 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
 
 * [Quickstart example](#quickstart-example)
 * [Usage](#usage)
+  * [StreamingServer](#streamingserver)
   * [Server](#server)
   * [Request](#request)
   * [Response](#response)
@@ -45,7 +46,7 @@ See also the [examples](examples).
 
 ## Usage
 
-### Server
+### StreamingServer
 
 The `Server` class is responsible for handling incoming connections and then
 processing each incoming HTTP request.
@@ -55,7 +56,7 @@ constructor with the respective [request](#request) object and expects
 a respective [response](#response) object in return.
 
 ```php
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new StreamingServer(function (ServerRequestInterface $request) {
     return new Response(
         200,
         array('Content-Type' => 'text/plain'),
@@ -73,7 +74,7 @@ You can attach this to a
 in order to start a plaintext HTTP server like this:
 
 ```php
-$server = new Server($handler);
+$server = new StreamingServer($handler);
 
 $socket = new React\Socket\Server(8080, $loop);
 $server->listen($socket);
@@ -86,7 +87,7 @@ Similarly, you can also attach this to a
 in order to start a secure HTTPS server like this:
 
 ```php
-$server = new Server($handler);
+$server = new StreamingServer($handler);
 
 $socket = new React\Socket\Server(8080, $loop);
 $socket = new React\Socket\SecureServer($socket, $loop, array(
@@ -141,9 +142,28 @@ $server->on('error', function (Exception $e) {
 Note that the request object can also emit an error.
 Check out [request](#request) for more details.
 
+### Server
+
+A facade around `StreamingServer` with the [`RequestBodyBufferMiddleware`](#requestbodybuffermiddleware) and 
+[`RequestBodyParserMiddleware`](#requestbodyparsermiddleware) middleware is provided as `Server`. The facade's 
+goal is to provide a PSR-7 compatible server where requests are as if you're running traditional PHP server setup. 
+This means that all requests coming in have been parsed and have a all POST fields and/or uploaded files available.
+
+In short the following examples gives you a fully PSR-7 compatible server: 
+
+```php
+$server = new Server(function (ServerRequestInterface $request) {
+    return new Response(
+        200,
+        array('Content-Type' => 'text/plain'),
+        "Hello World!\n"
+    );
+});
+```
+
 ### Request
 
-An seen above, the `Server` class is responsible for handling incoming
+An seen above, the `StreamingServer` class is responsible for handling incoming
 connections and then processing each incoming HTTP request.
 
 The request object will be processed once the request headers have
@@ -155,7 +175,7 @@ which in turn extends the
 and will be passed to the callback function like this.
 
  ```php 
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new StreamingServer(function (ServerRequestInterface $request) {
     $body = "The method of the request is: " . $request->getMethod();
     $body .= "The requested path is: " . $request->getUri()->getPath();
 
@@ -189,7 +209,7 @@ The following parameters are currently available:
   Set to 'on' if the request used HTTPS, otherwise it won't be set
 
 ```php 
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new StreamingServer(function (ServerRequestInterface $request) {
     $body = "Your IP is: " . $request->getServerParams()['REMOTE_ADDR'];
 
     return new Response(
@@ -206,7 +226,7 @@ The `getQueryParams(): array` method can be used to get the query parameters
 similiar to the `$_GET` variable.
 
 ```php
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new StreamingServer(function (ServerRequestInterface $request) {
     $queryParams = $request->getQueryParams();
 
     $body = 'The query parameter "foo" is not set. Click the following link ';
@@ -269,7 +289,7 @@ The `ReactPHP ReadableStreamInterface` gives you access to the incoming
 request body as the individual chunks arrive:
 
 ```php
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new StreamingServer(function (ServerRequestInterface $request) {
     return new Promise(function ($resolve, $reject) use ($request) {
         $contentLength = 0;
         $request->getBody()->on('data', function ($data) use (&$contentLength) {
@@ -333,7 +353,7 @@ Note that this value may be `null` if the request body size is unknown in
 advance because the request message uses chunked transfer encoding.
 
 ```php 
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new StreamingServer(function (ServerRequestInterface $request) {
     $size = $request->getBody()->getSize();
     if ($size === null) {
         $body = 'The request does not contain an explicit length.';
@@ -387,7 +407,7 @@ The `getCookieParams(): string[]` method can be used to
 get all cookies sent with the current request.
 
 ```php 
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new StreamingServer(function (ServerRequestInterface $request) {
     $key = 'react\php';
 
     if (isset($request->getCookieParams()[$key])) {
@@ -438,7 +458,7 @@ but feel free to use any implemantation of the
 `PSR-7 ResponseInterface` you prefer.
 
 ```php 
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new StreamingServer(function (ServerRequestInterface $request) {
     return new Response(
         200,
         array('Content-Type' => 'text/plain'),
@@ -490,7 +510,7 @@ Note that other implementations of the `PSR-7 ResponseInterface` likely
 only support strings.
 
 ```php
-$server = new Server(function (ServerRequestInterface $request) use ($loop) {
+$server = new StreamingServer(function (ServerRequestInterface $request) use ($loop) {
     $stream = new ThroughStream();
 
     $timer = $loop->addPeriodicTimer(0.5, function () use ($stream) {
@@ -533,7 +553,7 @@ If you know the length of your stream body, you MAY specify it like this instead
 
 ```php
 $stream = new ThroughStream()
-$server = new Server(function (ServerRequestInterface $request) use ($stream) {
+$server = new StreamingServer(function (ServerRequestInterface $request) use ($stream) {
     return new Response(
         200,
         array(
@@ -618,7 +638,7 @@ A `Date` header will be automatically added with the system date and time if non
 You can add a custom `Date` header yourself like this:
 
 ```php
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new StreamingServer(function (ServerRequestInterface $request) {
     return new Response(200, array('Date' => date('D, d M Y H:i:s T')));
 });
 ```
@@ -627,7 +647,7 @@ If you don't have a appropriate clock to rely on, you should
 unset this header with an empty string:
 
 ```php
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new StreamingServer(function (ServerRequestInterface $request) {
     return new Response(200, array('Date' => ''));
 });
 ```
@@ -636,7 +656,7 @@ Note that it will automatically assume a `X-Powered-By: react/alpha` header
 unless your specify a custom `X-Powered-By` header yourself:
 
 ```php
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new StreamingServer(function (ServerRequestInterface $request) {
     return new Response(200, array('X-Powered-By' => 'PHP 3'));
 });
 ```
@@ -645,7 +665,7 @@ If you do not want to send this header at all, you can use an empty string as
 value like this:
 
 ```php
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new StreamingServer(function (ServerRequestInterface $request) {
     return new Response(200, array('X-Powered-By' => ''));
 });
 ```
@@ -670,7 +690,7 @@ The following example adds a middleware that adds the current time to the reques
 header (`Request-Time`) and middleware that always returns a 200 code without a body: 
 
 ```php
-$server = new Server(new MiddlewareRunner([
+$server = new StreamingServer(new MiddlewareRunner([
     function (ServerRequestInterface $request, callable $next) {
         $request = $request->withHeader('Request-Time', time());
         return $next($request);
@@ -767,7 +787,7 @@ $handler = function (ServerRequestInterface $request) {
     );
 };
 
-$server = new Server(new MiddlewareRunner([
+$server = new StreamingServer(new MiddlewareRunner([
     new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
     new RequestBodyParserMiddleware(),
     $handler
