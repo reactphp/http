@@ -694,8 +694,7 @@ configuration.
 configuration in most cases.)
 
 Any incoming request that has a request body that exceeds this limit will be
-rejected with a `413` (Request Entity Too Large) error message without calling
-the next middleware handlers.
+accepted but their request body will not be added to the request.
 
 The `RequestBodyBufferMiddleware` will buffer requests with bodies of known size 
 (i.e. with `Content-Length` header specified) as well as requests with bodies of 

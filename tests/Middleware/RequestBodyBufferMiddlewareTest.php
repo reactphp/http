@@ -2,15 +2,16 @@
 
 namespace React\Tests\Http\Middleware;
 
+use Clue\React\Block;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Io\HttpBodyStream;
 use React\Http\Io\ServerRequest;
 use React\Http\Middleware\RequestBodyBufferMiddleware;
+use React\Http\Response;
 use React\Stream\ThroughStream;
 use React\Tests\Http\TestCase;
 use RingCentral\Psr7\BufferStream;
-use Clue\React\Block;
 
 final class RequestBodyBufferMiddlewareTest extends TestCase
 {
@@ -65,7 +66,7 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
         $this->assertSame($body, $exposedRequest->getBody()->getContents());
     }
 
-    public function testExcessiveSizeImmediatelyReturnsError413ForKnownSize()
+    public function testKnownExcessiveSizedBodyIsDisgardedTheRequestIsPassedDownToTheNextMiddleware()
     {
         $loop = Factory::create();
         
@@ -79,17 +80,18 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
         );
 
         $buffer = new RequestBodyBufferMiddleware(1);
-        $response = $buffer(
+        $response = Block\await($buffer(
             $serverRequest,
             function (ServerRequestInterface $request) {
-                return $request;
+                return new Response(200, array(), $request->getBody()->getContents());
             }
-        );
+        ), $loop);
 
-        $this->assertSame(413, $response->getStatusCode());
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('', $response->getBody()->getContents());
     }
 
-    public function testExcessiveSizeReturnsError413()
+    public function testExcessiveSizeBodyIsDiscardedAndTheRequestIsPassedDownToTheNextMiddleware()
     {
         $loop = Factory::create();
 
@@ -105,23 +107,19 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
         $promise = $buffer(
             $serverRequest,
             function (ServerRequestInterface $request) {
-                return $request;
+                return new Response(200, array(), $request->getBody()->getContents());
             }
         );
 
         $stream->end('aa');
 
-        $exposedResponse = null;
-        $promise->then(
-            function($response) use (&$exposedResponse) {
-                $exposedResponse = $response;
-            },
+        $exposedResponse = Block\await($promise->then(
+            null,
             $this->expectCallableNever()
-        );
+        ), $loop);
 
-        $this->assertSame(413, $exposedResponse->getStatusCode());
-
-        Block\await($promise, $loop);
+        $this->assertSame(200, $exposedResponse->getStatusCode());
+        $this->assertSame('', $exposedResponse->getBody()->getContents());
     }
 
     /**
@@ -150,5 +148,31 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
         $stream->emit('error', array(new \RuntimeException()));
 
         Block\await($promise, $loop);
+    }
+
+    public function testFullBodyStreamedBeforeCallingNextMiddleware()
+    {
+        $promiseResolved = false;
+        $middleware = new RequestBodyBufferMiddleware(3);
+        $stream = new ThroughStream();
+        $serverRequest = new ServerRequest(
+            'GET',
+            'https://example.com/',
+            array(),
+            new HttpBodyStream($stream, null)
+        );
+
+        $middleware($serverRequest, function () {
+            return new Response();
+        })->then(function () use (&$promiseResolved) {
+            $promiseResolved = true;
+        });
+
+        $stream->write('aaa');
+        $this->assertFalse($promiseResolved);
+        $stream->write('aaa');
+        $this->assertFalse($promiseResolved);
+        $stream->end('aaa');
+        $this->assertTrue($promiseResolved);
     }
 }
