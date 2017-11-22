@@ -145,13 +145,27 @@ final class MultipartParser
 
     private function parseUploadedFile($headers, $body)
     {
+        $filename = $this->getFieldFromHeader($headers['content-disposition'], 'filename');
         $bodyLength = strlen($body);
+
+        // no file selected (zero size and empty filename)
+        if ($bodyLength === 0 && $filename === '') {
+            return new UploadedFile(
+                Psr7\stream_for(''),
+                $bodyLength,
+                UPLOAD_ERR_NO_FILE,
+                $filename,
+                $headers['content-type'][0]
+            );
+        }
+
+        // file exceeds MAX_FILE_SIZE value
         if ($this->maxFileSize !== null && $bodyLength > $this->maxFileSize) {
             return new UploadedFile(
                 Psr7\stream_for(''),
                 $bodyLength,
                 UPLOAD_ERR_FORM_SIZE,
-                $this->getFieldFromHeader($headers['content-disposition'], 'filename'),
+                $filename,
                 $headers['content-type'][0]
             );
         }
@@ -160,7 +174,7 @@ final class MultipartParser
             Psr7\stream_for($body),
             $bodyLength,
             UPLOAD_ERR_OK,
-            $this->getFieldFromHeader($headers['content-disposition'], 'filename'),
+            $filename,
             $headers['content-type'][0]
         );
     }
