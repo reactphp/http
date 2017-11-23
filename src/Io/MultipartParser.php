@@ -40,6 +40,11 @@ final class MultipartParser
      */
     protected $onDataCallable;
 
+    /**
+     * @var int|null
+     */
+    protected $maxFileSize;
+
     public static function parseRequest(ServerRequestInterface $request)
     {
         $parser = new self($request);
@@ -134,14 +139,30 @@ final class MultipartParser
         $this->request = $this->request->withUploadedFiles($this->extractPost(
             $this->request->getUploadedFiles(),
             $this->getFieldFromHeader($headers['content-disposition'], 'name'),
-            new UploadedFile(
-                Psr7\stream_for($body),
-                strlen($body),
-                UPLOAD_ERR_OK,
+            $this->parseUploadedFile($headers, $body)
+        ));
+    }
+
+    private function parseUploadedFile($headers, $body)
+    {
+        $bodyLength = strlen($body);
+        if ($this->maxFileSize !== null && $bodyLength > $this->maxFileSize) {
+            return new UploadedFile(
+                Psr7\stream_for(''),
+                $bodyLength,
+                UPLOAD_ERR_FORM_SIZE,
                 $this->getFieldFromHeader($headers['content-disposition'], 'filename'),
                 $headers['content-type'][0]
-            )
-        ));
+            );
+        }
+
+        return new UploadedFile(
+            Psr7\stream_for($body),
+            $bodyLength,
+            UPLOAD_ERR_OK,
+            $this->getFieldFromHeader($headers['content-disposition'], 'filename'),
+            $headers['content-type'][0]
+        );
     }
 
     private function parsePost($headers, $body)
@@ -154,6 +175,14 @@ final class MultipartParser
                     $matches[1],
                     $body
                 ));
+
+                if (strtoupper($matches[1]) === 'MAX_FILE_SIZE') {
+                    $this->maxFileSize = (int)$body;
+
+                    if ($this->maxFileSize === 0) {
+                        $this->maxFileSize = null;
+                    }
+                }
             }
         }
     }

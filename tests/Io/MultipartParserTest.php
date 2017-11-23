@@ -48,6 +48,10 @@ final class MultipartParserTest extends TestCase
         $file = base64_decode("R0lGODlhAQABAIAAAP///wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==");
 
         $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"MAX_FILE_SIZE\"\r\n";
+        $data .= "\r\n";
+        $data .= "12000\r\n";
+        $data .= "--$boundary\r\n";
         $data .= "Content-Disposition: form-data; name=\"users[one]\"\r\n";
         $data .= "\r\n";
         $data .= "single\r\n";
@@ -106,6 +110,7 @@ final class MultipartParserTest extends TestCase
 
         $this->assertSame(
             array(
+                'MAX_FILE_SIZE' => '12000',
                 'users' => array(
                     'one' => 'single',
                     'two' => 'second',
@@ -138,5 +143,93 @@ final class MultipartParserTest extends TestCase
         $this->assertSame('Owner.php', $files['files'][2]->getClientFilename());
         $this->assertSame('text/php', $files['files'][2]->getClientMediaType());
         $this->assertSame("<?php echo 'Owner';\r\n\r\n", (string)$files['files'][2]->getStream());
+    }
+
+    public function testPostMaxFileSize()
+    {
+        $boundary = "---------------------------12758086162038677464950549563";
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"MAX_FILE_SIZE\"\r\n";
+        $data .= "\r\n";
+        $data .= "12\r\n";
+        $data .= "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"file\"; filename=\"User.php\"\r\n";
+        $data .= "Content-type: text/php\r\n";
+        $data .= "\r\n";
+        $data .= "<?php echo 'User';\r\n";
+        $data .= "\r\n";
+        $data .= "--$boundary--\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/form-data',
+        ), $data, 1.1);
+
+        $parsedRequest = MultipartParser::parseRequest($request);
+
+        $files = $parsedRequest->getUploadedFiles();
+
+        $this->assertTrue(isset($files['file']));
+        $this->assertSame(UPLOAD_ERR_FORM_SIZE, $files['file']->getError());
+    }
+
+    public function testPostMaxFileSizeIgnoredByFilesComingBeforeIt()
+    {
+        $boundary = "---------------------------12758086162038677464950549563";
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"file\"; filename=\"User-one.php\"\r\n";
+        $data .= "Content-type: text/php\r\n";
+        $data .= "\r\n";
+        $data .= "<?php echo 'User';\r\n";
+        $data .= "\r\n";
+        $data .= "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"MAX_FILE_SIZE\"\r\n";
+        $data .= "\r\n";
+        $data .= "100\r\n";
+        $data .= "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"file2\"; filename=\"User-two.php\"\r\n";
+        $data .= "Content-type: text/php\r\n";
+        $data .= "\r\n";
+        $data .= "<?php echo 'User';\r\n";
+        $data .= "\r\n";
+        $data .= "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"MAX_FILE_SIZE\"\r\n";
+        $data .= "\r\n";
+        $data .= "12\r\n";
+        $data .= "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"file3\"; filename=\"User-third.php\"\r\n";
+        $data .= "Content-type: text/php\r\n";
+        $data .= "\r\n";
+        $data .= "<?php echo 'User';\r\n";
+        $data .= "\r\n";
+        $data .= "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"MAX_FILE_SIZE\"\r\n";
+        $data .= "\r\n";
+        $data .= "0\r\n";
+        $data .= "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"file4\"; filename=\"User-forth.php\"\r\n";
+        $data .= "Content-type: text/php\r\n";
+        $data .= "\r\n";
+        $data .= "<?php echo 'User';\r\n";
+        $data .= "\r\n";
+        $data .= "--$boundary--\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/form-data',
+        ), $data, 1.1);
+
+        $parsedRequest = MultipartParser::parseRequest($request);
+
+        $files = $parsedRequest->getUploadedFiles();
+
+        $this->assertTrue(isset($files['file']));
+        $this->assertSame(UPLOAD_ERR_OK, $files['file']->getError());
+        $this->assertTrue(isset($files['file2']));
+        $this->assertSame(UPLOAD_ERR_OK, $files['file2']->getError());
+        $this->assertTrue(isset($files['file3']));
+        $this->assertSame(UPLOAD_ERR_FORM_SIZE, $files['file3']->getError());
+        $this->assertTrue(isset($files['file4']));
+        $this->assertSame(UPLOAD_ERR_OK, $files['file4']->getError());
     }
 }
