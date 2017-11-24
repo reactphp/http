@@ -197,11 +197,49 @@ final class MultipartParserTest extends TestCase
         $this->assertSame("<?php echo 'Owner';\r\n\r\n", (string)$files['files'][2]->getStream());
     }
 
+    public function testInvalidContentDispositionMissingWillBeIgnored()
+    {
+        $boundary = "---------------------------5844729766471062541057622570";
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Type: text/plain\r\n";
+        $data .= "\r\n";
+        $data .= "hello";
+        $data .= "--$boundary--\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+        ), $data, 1.1);
+
+        $parsedRequest = MultipartParser::parseRequest($request);
+
+        $this->assertEmpty($parsedRequest->getUploadedFiles());
+        $this->assertEmpty($parsedRequest->getParsedBody());
+    }
+
+    public function testInvalidContentDispositionWithoutNameWillBeIgnored()
+    {
+        $boundary = "---------------------------5844729766471062541057622570";
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; something=\"key\"\r\n";
+        $data .= "\r\n";
+        $data .= "value";
+        $data .= "--$boundary--\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+        ), $data, 1.1);
+
+        $parsedRequest = MultipartParser::parseRequest($request);
+
+        $this->assertEmpty($parsedRequest->getUploadedFiles());
+        $this->assertEmpty($parsedRequest->getParsedBody());
+    }
+
     public function testUploadEmptyFile()
     {
         $boundary = "---------------------------12758086162038677464950549563";
-
-        $file = base64_decode("R0lGODlhAQABAIAAAP///wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==");
 
         $data  = "--$boundary\r\n";
         $data .= "Content-Disposition: form-data; name=\"file\"; filename=\"empty\"\r\n";
@@ -235,8 +273,6 @@ final class MultipartParserTest extends TestCase
     public function testUploadNoFile()
     {
         $boundary = "---------------------------12758086162038677464950549563";
-
-        $file = base64_decode("R0lGODlhAQABAIAAAP///wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==");
 
         $data  = "--$boundary\r\n";
         $data .= "Content-Disposition: form-data; name=\"file\"; filename=\"\"\r\n";
