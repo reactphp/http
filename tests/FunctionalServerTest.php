@@ -3,6 +3,7 @@
 namespace React\Tests\Http;
 
 use React\Http\MiddlewareRunner;
+use React\Http\StreamingServer;
 use React\Socket\Server as Socket;
 use React\EventLoop\Factory;
 use React\Http\Server;
@@ -504,7 +505,7 @@ class FunctionalServerTest extends TestCase
         $stream = new ThroughStream();
         $stream->on('close', $this->expectCallableOnce());
 
-        $server = new Server(function (RequestInterface $request) use ($stream) {
+        $server = new StreamingServer(function (RequestInterface $request) use ($stream) {
             return new Response(200, array(), $stream);
         });
 

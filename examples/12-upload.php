@@ -10,9 +10,6 @@
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\UploadedFileInterface;
 use React\EventLoop\Factory;
-use React\Http\MiddlewareRunner;
-use React\Http\Middleware\RequestBodyBufferMiddleware;
-use React\Http\Middleware\RequestBodyParserMiddleware;
 use React\Http\Response;
 use React\Http\Server;
 
@@ -118,11 +115,7 @@ HTML;
 };
 
 // buffer and parse HTTP request body before running our request handler
-$server = new Server(new MiddlewareRunner(array(
-    new RequestBodyBufferMiddleware(100000), // 100 KB max
-    new RequestBodyParserMiddleware(),
-    $handler
-)));
+$server = new Server($handler);
 
 $socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
 $server->listen($socket);
