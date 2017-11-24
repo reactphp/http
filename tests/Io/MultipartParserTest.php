@@ -41,6 +41,58 @@ final class MultipartParserTest extends TestCase
         );
     }
 
+    public function testEmptyPostValue()
+    {
+        $boundary = "---------------------------5844729766471062541057622570";
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"key\"\r\n";
+        $data .= "\r\n";
+        $data .= "\r\n";
+        $data .= "--$boundary--\r\n";
+
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+        ), $data, 1.1);
+
+        $parsedRequest = MultipartParser::parseRequest($request);
+
+        $this->assertEmpty($parsedRequest->getUploadedFiles());
+        $this->assertSame(
+            array(
+                'key' => ''
+            ),
+            $parsedRequest->getParsedBody()
+        );
+    }
+
+    public function testEmptyPostKey()
+    {
+        $boundary = "---------------------------5844729766471062541057622570";
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"\"\r\n";
+        $data .= "\r\n";
+        $data .= "value\r\n";
+        $data .= "--$boundary--\r\n";
+
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+        ), $data, 1.1);
+
+        $parsedRequest = MultipartParser::parseRequest($request);
+
+        $this->assertEmpty($parsedRequest->getUploadedFiles());
+        $this->assertSame(
+            array(
+                '' => 'value'
+            ),
+            $parsedRequest->getParsedBody()
+        );
+    }
+
     public function testFileUpload()
     {
         $boundary = "---------------------------12758086162038677464950549563";
@@ -143,6 +195,75 @@ final class MultipartParserTest extends TestCase
         $this->assertSame('Owner.php', $files['files'][2]->getClientFilename());
         $this->assertSame('text/php', $files['files'][2]->getClientMediaType());
         $this->assertSame("<?php echo 'Owner';\r\n\r\n", (string)$files['files'][2]->getStream());
+    }
+
+    public function testUploadEmptyFile()
+    {
+        $boundary = "---------------------------12758086162038677464950549563";
+
+        $file = base64_decode("R0lGODlhAQABAIAAAP///wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==");
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"file\"; filename=\"empty\"\r\n";
+        $data .= "Content-type: text/plain\r\n";
+        $data .= "\r\n";
+        $data .= "\r\n";
+        $data .= "--$boundary--\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/form-data',
+        ), $data, 1.1);
+
+        $parsedRequest = MultipartParser::parseRequest($request);
+
+        $files = $parsedRequest->getUploadedFiles();
+
+        $this->assertCount(1, $files);
+        $this->assertTrue(isset($files['file']));
+        $this->assertInstanceOf('Psr\Http\Message\UploadedFileInterface', $files['file']);
+
+        /* @var $file \Psr\Http\Message\UploadedFileInterface */
+        $file = $files['file'];
+
+        $this->assertSame('empty', $file->getClientFilename());
+        $this->assertSame('text/plain', $file->getClientMediaType());
+        $this->assertSame(0, $file->getSize());
+        $this->assertSame(UPLOAD_ERR_OK, $file->getError());
+        $this->assertSame('', (string)$file->getStream());
+    }
+
+    public function testUploadNoFile()
+    {
+        $boundary = "---------------------------12758086162038677464950549563";
+
+        $file = base64_decode("R0lGODlhAQABAIAAAP///wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==");
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"file\"; filename=\"\"\r\n";
+        $data .= "Content-type: application/octet-stream\r\n";
+        $data .= "\r\n";
+        $data .= "\r\n";
+        $data .= "--$boundary--\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/form-data',
+        ), $data, 1.1);
+
+        $parsedRequest = MultipartParser::parseRequest($request);
+
+        $files = $parsedRequest->getUploadedFiles();
+
+        $this->assertCount(1, $files);
+        $this->assertTrue(isset($files['file']));
+        $this->assertInstanceOf('Psr\Http\Message\UploadedFileInterface', $files['file']);
+
+        /* @var $file \Psr\Http\Message\UploadedFileInterface */
+        $file = $files['file'];
+
+        $this->assertSame('', $file->getClientFilename());
+        $this->assertSame('application/octet-stream', $file->getClientMediaType());
+        $this->assertSame(0, $file->getSize());
+        $this->assertSame(UPLOAD_ERR_NO_FILE, $file->getError());
     }
 
     public function testPostMaxFileSize()
