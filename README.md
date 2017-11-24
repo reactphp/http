@@ -789,6 +789,12 @@ See also [example #12](examples) for more details.
   
 > PHP's `MAX_FILE_SIZE` hidden field is respected by this middleware.
 
+> This middleware respects the
+  [`max_input_vars`](http://php.net/manual/en/info.configuration.php#ini.max-input-vars)
+  (default `1000`) and
+  [`max_input_nesting_level`](http://php.net/manual/en/info.configuration.php#ini.max-input-nesting-level)
+  (default `64`) ini settings.
+
 #### Third-Party Middleware
 
 A non-exhaustive list of third-party middleware can be found at the [`Middleware`](https://github.com/reactphp/http/wiki/Middleware) wiki page. 

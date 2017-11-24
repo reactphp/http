@@ -25,8 +25,10 @@ final class RequestBodyParserMiddleware
 
     private function parseFormUrlencoded(ServerRequestInterface $request)
     {
+        // parse string into array structure
+        // ignore warnings due to excessive data structures (max_input_vars and max_input_nesting_level)
         $ret = array();
-        parse_str((string)$request->getBody(), $ret);
+        @parse_str((string)$request->getBody(), $ret);
 
         return $request->withParsedBody($ret);
     }

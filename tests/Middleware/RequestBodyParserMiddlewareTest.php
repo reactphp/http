@@ -107,6 +107,76 @@ final class RequestBodyParserMiddlewareTest extends TestCase
         $this->assertSame('foo=bar&baz[]=cheese&bar[]=beer&bar[]=wine&market[fish]=salmon&market[meat][]=beef&market[meat][]=chicken&market[]=bazaar', (string)$parsedRequest->getBody());
     }
 
+    public function testFormUrlencodedIgnoresBodyWithExcessiveNesting()
+    {
+        // supported in all Zend PHP versions and HHVM
+        // ini setting does exist everywhere but HHVM: https://3v4l.org/hXLiK
+        // HHVM limits to 64 and returns an empty array structure: https://3v4l.org/j3DK2
+        if (defined('HHVM_VERSION')) {
+            $this->markTestSkipped('Not supported on HHVM (limited to depth 64, but keeps empty array structure)');
+        }
+
+        $allowed = (int)ini_get('max_input_nesting_level');
+
+        $middleware = new RequestBodyParserMiddleware();
+        $request = new ServerRequest(
+            'POST',
+            'https://example.com/',
+            array(
+                'Content-Type' => 'application/x-www-form-urlencoded',
+            ),
+            'hello' . str_repeat('[]', $allowed + 1) . '=world'
+        );
+
+        /** @var ServerRequestInterface $parsedRequest */
+        $parsedRequest = $middleware(
+            $request,
+            function (ServerRequestInterface $request) {
+                return $request;
+            }
+        );
+
+        $this->assertSame(
+            array(),
+            $parsedRequest->getParsedBody()
+        );
+    }
+
+    public function testFormUrlencodedTruncatesBodyWithExcessiveLength()
+    {
+        // supported as of PHP 5.3.11, no HHVM support: https://3v4l.org/PiqnQ
+        // ini setting already exists in PHP 5.3.9: https://3v4l.org/VF6oV
+        if (defined('HHVM_VERSION') || PHP_VERSION_ID < 50311) {
+            $this->markTestSkipped('Not supported on HHVM and PHP < 5.3.11 (unlimited length)');
+        }
+
+        $allowed = (int)ini_get('max_input_vars');
+
+        $middleware = new RequestBodyParserMiddleware();
+        $request = new ServerRequest(
+            'POST',
+            'https://example.com/',
+            array(
+                'Content-Type' => 'application/x-www-form-urlencoded',
+            ),
+            str_repeat('a[]=b&', $allowed + 1)
+        );
+
+        /** @var ServerRequestInterface $parsedRequest */
+        $parsedRequest = $middleware(
+            $request,
+            function (ServerRequestInterface $request) {
+                return $request;
+            }
+        );
+
+        $body = $parsedRequest->getParsedBody();
+
+        $this->assertCount(1, $body);
+        $this->assertTrue(isset($body['a']));
+        $this->assertCount($allowed, $body['a']);
+    }
+
     public function testDoesNotParseJsonByDefault()
     {
         $middleware = new RequestBodyParserMiddleware();
