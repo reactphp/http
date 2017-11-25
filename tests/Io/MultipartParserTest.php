@@ -22,7 +22,6 @@ final class MultipartParserTest extends TestCase
         $data .= "second\r\n";
         $data .= "--$boundary--\r\n";
 
-
         $request = new ServerRequest('POST', 'http://example.com/', array(
             'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
         ), $data, 1.1);
@@ -35,6 +34,133 @@ final class MultipartParserTest extends TestCase
                 'users' => array(
                     'one' => 'single',
                     'two' => 'second',
+                ),
+            ),
+            $parsedRequest->getParsedBody()
+        );
+    }
+
+    public function testPostStringOverwritesMap()
+    {
+        $boundary = "---------------------------5844729766471062541057622570";
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"users[one]\"\r\n";
+        $data .= "\r\n";
+        $data .= "ignored\r\n";
+        $data .= "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"users\"\r\n";
+        $data .= "\r\n";
+        $data .= "2\r\n";
+        $data .= "--$boundary--\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+        ), $data, 1.1);
+
+        $parsedRequest = MultipartParser::parseRequest($request);
+
+        $this->assertEmpty($parsedRequest->getUploadedFiles());
+        $this->assertSame(
+            array(
+                'users' => '2'
+            ),
+            $parsedRequest->getParsedBody()
+        );
+    }
+
+    public function testPostMapOverwritesString()
+    {
+        $boundary = "---------------------------5844729766471062541057622570";
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"users\"\r\n";
+        $data .= "\r\n";
+        $data .= "ignored\r\n";
+        $data .= "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"users[two]\"\r\n";
+        $data .= "\r\n";
+        $data .= "2\r\n";
+        $data .= "--$boundary--\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+        ), $data, 1.1);
+
+        $parsedRequest = MultipartParser::parseRequest($request);
+
+        $this->assertEmpty($parsedRequest->getUploadedFiles());
+        $this->assertSame(
+            array(
+                'users' => array(
+                    'two' => '2',
+                ),
+            ),
+            $parsedRequest->getParsedBody()
+        );
+    }
+
+    public function testPostVectorOverwritesString()
+    {
+        $boundary = "---------------------------5844729766471062541057622570";
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"users\"\r\n";
+        $data .= "\r\n";
+        $data .= "ignored\r\n";
+        $data .= "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"users[]\"\r\n";
+        $data .= "\r\n";
+        $data .= "2\r\n";
+        $data .= "--$boundary--\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+        ), $data, 1.1);
+
+        $parsedRequest = MultipartParser::parseRequest($request);
+
+        $this->assertEmpty($parsedRequest->getUploadedFiles());
+        $this->assertSame(
+            array(
+                'users' => array(
+                    '2',
+                ),
+            ),
+            $parsedRequest->getParsedBody()
+        );
+    }
+
+    public function testPostDeeplyNestedArray()
+    {
+        $boundary = "---------------------------5844729766471062541057622570";
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"users[][]\"\r\n";
+        $data .= "\r\n";
+        $data .= "1\r\n";
+        $data .= "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"users[][]\"\r\n";
+        $data .= "\r\n";
+        $data .= "2\r\n";
+        $data .= "--$boundary--\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+        ), $data, 1.1);
+
+        $parsedRequest = MultipartParser::parseRequest($request);
+
+        $this->assertEmpty($parsedRequest->getUploadedFiles());
+        $this->assertSame(
+            array(
+                'users' => array(
+                    array(
+                        '1'
+                    ),
+                    array(
+                        '2'
+                    )
                 ),
             ),
             $parsedRequest->getParsedBody()
