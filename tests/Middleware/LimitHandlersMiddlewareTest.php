@@ -2,9 +2,13 @@
 
 namespace React\Tests\Http\Middleware;
 
-use React\Http\Middleware\LimitHandlersMiddleware;
+use Psr\Http\Message\ServerRequestInterface;
+use React\Http\Io\HttpBodyStream;
 use React\Http\Io\ServerRequest;
+use React\Http\Middleware\LimitHandlersMiddleware;
 use React\Promise\Deferred;
+use React\Promise\Promise;
+use React\Stream\ThroughStream;
 use React\Tests\Http\TestCase;
 
 final class LimitHandlersMiddlewareTest extends TestCase
@@ -96,5 +100,170 @@ final class LimitHandlersMiddlewareTest extends TestCase
         $body->expects($this->once())->method('resume');
         $limitHandlers = new LimitHandlersMiddleware(1);
         $limitHandlers(new ServerRequest('GET', 'https://example.com/', array(), $body), function () {});
+    }
+
+    public function testReceivesBufferedRequestSameInstance()
+    {
+        $request = new ServerRequest(
+            'POST',
+            'http://example.com/',
+            array(),
+            'hello'
+        );
+
+        $req = null;
+        $middleware = new LimitHandlersMiddleware(1);
+        $middleware($request, function (ServerRequestInterface $request) use (&$req) {
+            $req = $request;
+        });
+
+        $this->assertSame($request, $req);
+    }
+
+    public function testReceivesStreamingBodyChangesInstanceWithCustomBodyButSameData()
+    {
+        $stream = new ThroughStream();
+        $request = new ServerRequest(
+            'POST',
+            'http://example.com/',
+            array(),
+            new HttpBodyStream($stream, 5)
+        );
+
+        $req = null;
+        $middleware = new LimitHandlersMiddleware(1);
+        $middleware($request, function (ServerRequestInterface $request) use (&$req) {
+            $req = $request;
+        });
+
+        $this->assertNotSame($request, $req);
+        $this->assertInstanceOf('Psr\Http\Message\ServerRequestInterface', $req);
+
+        $body = $req->getBody();
+        $this->assertInstanceOf('React\Stream\ReadableStreamInterface', $body);
+        /* @var $body \React\Stream\ReadableStreamInterface */
+
+        $this->assertEquals(5, $body->getSize());
+
+        $body->on('data', $this->expectCallableOnce('hello'));
+        $stream->write('hello');
+    }
+
+    public function testReceivesRequestsSequentially()
+    {
+        $request = new ServerRequest(
+            'POST',
+            'http://example.com/',
+            array(),
+            'hello'
+        );
+
+        $middleware = new LimitHandlersMiddleware(1);
+        $middleware($request, $this->expectCallableOnceWith($request));
+        $middleware($request, $this->expectCallableOnceWith($request));
+        $middleware($request, $this->expectCallableOnceWith($request));
+    }
+
+    public function testDoesNotReceiveNextRequestIfHandlerIsPending()
+    {
+        $request = new ServerRequest(
+            'POST',
+            'http://example.com/',
+            array(),
+            'hello'
+        );
+
+        $middleware = new LimitHandlersMiddleware(1);
+        $middleware($request, function () {
+            return new Promise(function () {
+                // NO-OP: pending promise
+            });
+        });
+
+        $middleware($request, $this->expectCallableNever());
+    }
+
+    public function testReceivesNextRequestAfterPreviousHandlerIsSettled()
+    {
+        $request = new ServerRequest(
+            'POST',
+            'http://example.com/',
+            array(),
+            'hello'
+        );
+
+        $deferred = new Deferred();
+        $middleware = new LimitHandlersMiddleware(1);
+        $middleware($request, function () use ($deferred) {
+            return $deferred->promise();
+        });
+
+        $deferred->reject(new \RuntimeException());
+
+        $middleware($request, $this->expectCallableOnceWith($request));
+    }
+
+    public function testReceivesNextStreamingBodyWithSameDataAfterPreviousHandlerIsSettled()
+    {
+        $stream = new ThroughStream();
+        $request = new ServerRequest(
+            'POST',
+            'http://example.com/',
+            array(),
+            new HttpBodyStream($stream, 5)
+        );
+
+        $deferred = new Deferred();
+        $middleware = new LimitHandlersMiddleware(1);
+        $middleware($request, function () use ($deferred) {
+            return $deferred->promise();
+        });
+
+        $deferred->reject(new \RuntimeException());
+
+        $req = null;
+        $middleware($request, function (ServerRequestInterface $request) use (&$req) {
+            $req = $request;
+        });
+
+        $this->assertNotSame($request, $req);
+        $this->assertInstanceOf('Psr\Http\Message\ServerRequestInterface', $req);
+
+        $body = $req->getBody();
+        $this->assertInstanceOf('React\Stream\ReadableStreamInterface', $body);
+        /* @var $body \React\Stream\ReadableStreamInterface */
+
+        $this->assertEquals(5, $body->getSize());
+
+        $body->on('data', $this->expectCallableOnce('hello'));
+        $stream->write('hello');
+    }
+
+    public function testReceivesNextStreamingBodyWithBufferedDataAfterPreviousHandlerIsSettled()
+    {
+        $deferred = new Deferred();
+        $middleware = new LimitHandlersMiddleware(1);
+        $middleware(new ServerRequest('GET', 'http://example.com/'), function () use ($deferred) {
+            return $deferred->promise();
+        });
+
+        $stream = new ThroughStream();
+        $request = new ServerRequest(
+            'POST',
+            'http://example.com/',
+            array(),
+            new HttpBodyStream($stream, 10)
+        );
+
+        $req = null;
+        $once = $this->expectCallableOnceWith('helloworld');
+        $middleware($request, function (ServerRequestInterface $request) use ($once) {
+            $request->getBody()->on('data', $once);
+        });
+
+        $stream->write('hello');
+        $stream->write('world');
+
+        $deferred->reject(new \RuntimeException());
     }
 }

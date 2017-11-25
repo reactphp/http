@@ -2,6 +2,9 @@
 
 namespace React\Tests\Http;
 
+use Psr\Http\Message\ServerRequestInterface;
+use React\Http\Middleware\LimitHandlersMiddleware;
+use React\Http\Middleware\RequestBodyBufferMiddleware;
 use React\Http\MiddlewareRunner;
 use React\Socket\Server as Socket;
 use React\EventLoop\Factory;
@@ -12,7 +15,7 @@ use React\Socket\ConnectionInterface;
 use Clue\React\Block;
 use React\Http\Response;
 use React\Socket\SecureServer;
-use React\Promise\Promise;
+use React\Promise;
 use React\Promise\Stream;
 use React\Stream\ThroughStream;
 
@@ -653,7 +656,7 @@ class FunctionalServerTest extends TestCase
                 $stream->end();
             });
 
-            return new Promise(function ($resolve) use ($loop, $stream) {
+            return new Promise\Promise(function ($resolve) use ($loop, $stream) {
                 $loop->addTimer(0.001, function () use ($resolve, $stream) {
                     $resolve(new Response(200, array(), $stream));
                 });
@@ -715,6 +718,53 @@ class FunctionalServerTest extends TestCase
 
         $socket->close();
     }
+
+    public function testLimitHandlersMiddlewareRequestStreamPausing()
+    {
+        $loop = Factory::create();
+        $connector = new Connector($loop);
+
+        $server = new StreamingServer(new MiddlewareRunner(array(
+            new LimitHandlersMiddleware(5),
+            new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
+            function (ServerRequestInterface $request, $next) use ($loop) {
+                return new Promise\Promise(function ($resolve) use ($request, $loop, $next) {
+                    $loop->addTimer(0.1, function () use ($request, $resolve, $next) {
+                        $resolve($next($request));
+                    });
+                });
+            },
+            function (ServerRequestInterface $request) {
+                return new Response(200, array(), (string)strlen((string)$request->getBody()));
+            }
+        )));
+
+        $socket = new Socket(0, $loop);
+        $server->listen($socket);
+
+        $result = array();
+        for ($i = 0; $i < 6; $i++) {
+            $result[] = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
+                $conn->write(
+                    "GET / HTTP/1.0\r\nContent-Length: 1024\r\nHost: " . noScheme($conn->getRemoteAddress()) . "\r\n\r\n" .
+                    str_repeat('a', 1024) .
+                    "\r\n\r\n"
+                );
+
+                return Stream\buffer($conn);
+            });
+        }
+
+        $responses = Block\await(Promise\all($result), $loop, 1.0);
+
+        foreach ($responses as $response) {
+            $this->assertContains("HTTP/1.0 200 OK", $response, $response);
+            $this->assertTrue(substr($response, -4) == 1024, $response);
+        }
+
+        $socket->close();
+    }
+
 }
 
 function noScheme($uri)
