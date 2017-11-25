@@ -22,7 +22,7 @@ Hint: try this with multiple connections :)
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Response;
-use React\Http\Server;
+use React\Http\StreamingServer;
 use React\Stream\CompositeStream;
 use React\Stream\ThroughStream;
 
@@ -35,7 +35,7 @@ $loop = Factory::create();
 // this means that any Upgraded data will simply be sent back to the client
 $chat = new ThroughStream();
 
-$server = new Server(function (ServerRequestInterface $request) use ($loop, $chat) {
+$server = new StreamingServer(function (ServerRequestInterface $request) use ($loop, $chat) {
     if ($request->getHeaderLine('Upgrade') !== 'chat' || $request->getProtocolVersion() === '1.0') {
         return new Response(426, array('Upgrade' => 'chat'), '"Upgrade: chat" required');
     }

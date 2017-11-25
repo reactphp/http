@@ -3,14 +3,14 @@
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Response;
-use React\Http\Server;
+use React\Http\StreamingServer;
 use React\Promise\Promise;
 
 require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
 
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new StreamingServer(function (ServerRequestInterface $request) {
     return new Promise(function ($resolve, $reject) use ($request) {
         $contentLength = 0;
         $request->getBody()->on('data', function ($data) use (&$contentLength) {

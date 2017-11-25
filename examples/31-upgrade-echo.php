@@ -20,14 +20,14 @@ $ telnet localhost 1080
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Response;
-use React\Http\Server;
+use React\Http\StreamingServer;
 use React\Stream\ThroughStream;
 
 require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
 
-$server = new Server(function (ServerRequestInterface $request) use ($loop) {
+$server = new StreamingServer(function (ServerRequestInterface $request) use ($loop) {
     if ($request->getHeaderLine('Upgrade') !== 'echo' || $request->getProtocolVersion() === '1.0') {
         return new Response(426, array('Upgrade' => 'echo'), '"Upgrade: echo" required');
     }

@@ -10,7 +10,7 @@ use Evenement\EventEmitter;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Response;
-use React\Http\Server;
+use React\Http\StreamingServer;
 use React\Stream\ReadableStreamInterface;
 use React\Stream\WritableStreamInterface;
 
@@ -86,7 +86,7 @@ class ChunkRepeater extends EventEmitter implements ReadableStreamInterface
     }
 }
 
-$server = new Server(function (ServerRequestInterface $request) use ($loop) {
+$server = new StreamingServer(function (ServerRequestInterface $request) use ($loop) {
     switch ($request->getUri()->getPath()) {
         case '/':
             return new Response(
