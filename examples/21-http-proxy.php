@@ -3,14 +3,14 @@
 use Psr\Http\Message\RequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Response;
-use React\Http\Server;
+use React\Http\StreamingServer;
 use RingCentral\Psr7;
 
 require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
 
-$server = new Server(function (RequestInterface $request) {
+$server = new StreamingServer(function (RequestInterface $request) {
     if (strpos($request->getRequestTarget(), '://') === false) {
         return new Response(
             400,

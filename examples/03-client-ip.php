@@ -3,13 +3,13 @@
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Response;
-use React\Http\Server;
+use React\Http\StreamingServer;
 
 require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
 
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new StreamingServer(function (ServerRequestInterface $request) {
     $body = "Your IP is: " . $request->getServerParams()['REMOTE_ADDR'];
 
     return new Response(

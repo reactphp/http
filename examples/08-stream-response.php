@@ -3,14 +3,14 @@
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Response;
-use React\Http\Server;
+use React\Http\StreamingServer;
 use React\Stream\ThroughStream;
 
 require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
 
-$server = new Server($loop,function (ServerRequestInterface $request) use ($loop) {
+$server = new StreamingServer($loop,function (ServerRequestInterface $request) use ($loop) {
     if ($request->getMethod() !== 'GET' || $request->getUri()->getPath() !== '/') {
         return new Response(404);
     }

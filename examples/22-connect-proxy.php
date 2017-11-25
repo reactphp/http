@@ -3,7 +3,7 @@
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Response;
-use React\Http\Server;
+use React\Http\StreamingServer;
 use React\Socket\Connector;
 use React\Socket\ConnectionInterface;
 
@@ -12,7 +12,7 @@ require __DIR__ . '/../vendor/autoload.php';
 $loop = Factory::create();
 $connector = new Connector($loop);
 
-$server = new Server(function (ServerRequestInterface $request) use ($connector) {
+$server = new StreamingServer(function (ServerRequestInterface $request) use ($connector) {
     if ($request->getMethod() !== 'CONNECT') {
         return new Response(
             405,

@@ -14,7 +14,7 @@ use React\Http\MiddlewareRunner;
 use React\Http\Middleware\RequestBodyBufferMiddleware;
 use React\Http\Middleware\RequestBodyParserMiddleware;
 use React\Http\Response;
-use React\Http\Server;
+use React\Http\StreamingServer;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -118,7 +118,7 @@ HTML;
 };
 
 // buffer and parse HTTP request body before running our request handler
-$server = new Server(new MiddlewareRunner(array(
+$server = new StreamingServer(new MiddlewareRunner(array(
     new RequestBodyBufferMiddleware(100000), // 100 KB max
     new RequestBodyParserMiddleware(),
     $handler

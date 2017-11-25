@@ -30,7 +30,7 @@ use RingCentral\Psr7 as Psr7Implementation;
  * a respective [response](#response) object in return.
  *
  * ```php
- * $server = new Server(function (ServerRequestInterface $request) {
+ * $server = new StreamingServer(function (ServerRequestInterface $request) {
  *     return new Response(
  *         200,
  *         array('Content-Type' => 'text/plain'),
@@ -81,7 +81,7 @@ use RingCentral\Psr7 as Psr7Implementation;
  * @see Response
  * @see self::listen()
  */
-class Server extends EventEmitter
+class StreamingServer extends EventEmitter
 {
     private $callback;
 
@@ -120,7 +120,7 @@ class Server extends EventEmitter
      * in order to start a plaintext HTTP server like this:
      *
      * ```php
-     * $server = new Server($handler);
+     * $server = new StreamingServer($handler);
      *
      * $socket = new React\Socket\Server(8080, $loop);
      * $server->listen($socket);
@@ -133,7 +133,7 @@ class Server extends EventEmitter
      * in order to start a secure HTTPS server like this:
      *
      * ```php
-     * $server = new Server($handler);
+     * $server = new StreamingServer($handler);
      *
      * $socket = new React\Socket\Server(8080, $loop);
      * $socket = new React\Socket\SecureServer($socket, $loop, array(

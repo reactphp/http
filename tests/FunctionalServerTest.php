@@ -5,7 +5,7 @@ namespace React\Tests\Http;
 use React\Http\MiddlewareRunner;
 use React\Socket\Server as Socket;
 use React\EventLoop\Factory;
-use React\Http\Server;
+use React\Http\StreamingServer;
 use Psr\Http\Message\RequestInterface;
 use React\Socket\Connector;
 use React\Socket\ConnectionInterface;
@@ -23,7 +23,7 @@ class FunctionalServerTest extends TestCase
         $loop = Factory::create();
         $connector = new Connector($loop);
 
-        $server = new Server(function (RequestInterface $request) {
+        $server = new StreamingServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
@@ -49,7 +49,7 @@ class FunctionalServerTest extends TestCase
         $loop = Factory::create();
         $connector = new Connector($loop);
 
-        $server = new Server(new MiddlewareRunner(array(function (RequestInterface $request) {
+        $server = new StreamingServer(new MiddlewareRunner(array(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         })));
 
@@ -75,7 +75,7 @@ class FunctionalServerTest extends TestCase
         $loop = Factory::create();
         $connector = new Connector($loop);
 
-        $server = new Server(new MiddlewareRunner(array(
+        $server = new StreamingServer(new MiddlewareRunner(array(
             function () {
                 return new Response(404);
             },
@@ -102,7 +102,7 @@ class FunctionalServerTest extends TestCase
         $loop = Factory::create();
         $connector = new Connector($loop);
 
-        $server = new Server(function (RequestInterface $request) {
+        $server = new StreamingServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
@@ -128,7 +128,7 @@ class FunctionalServerTest extends TestCase
         $loop = Factory::create();
         $connector = new Connector($loop);
 
-        $server = new Server(function (RequestInterface $request) {
+        $server = new StreamingServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
@@ -160,7 +160,7 @@ class FunctionalServerTest extends TestCase
             'tls' => array('verify_peer' => false)
         ));
 
-        $server = new Server(function (RequestInterface $request) {
+        $server = new StreamingServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
@@ -192,7 +192,7 @@ class FunctionalServerTest extends TestCase
 
         $loop = Factory::create();
 
-        $server = new Server(function (RequestInterface $request) {
+        $server = new StreamingServer(function (RequestInterface $request) {
             return new Response(
                 200,
                 array(),
@@ -236,7 +236,7 @@ class FunctionalServerTest extends TestCase
             'tls' => array('verify_peer' => false)
         ));
 
-        $server = new Server(function (RequestInterface $request) {
+        $server = new StreamingServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
@@ -270,7 +270,7 @@ class FunctionalServerTest extends TestCase
         }
         $connector = new Connector($loop);
 
-        $server = new Server(function (RequestInterface $request) {
+        $server = new StreamingServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
@@ -300,7 +300,7 @@ class FunctionalServerTest extends TestCase
         }
         $connector = new Connector($loop);
 
-        $server = new Server(function (RequestInterface $request) {
+        $server = new StreamingServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
@@ -339,7 +339,7 @@ class FunctionalServerTest extends TestCase
             'tls' => array('verify_peer' => false)
         ));
 
-        $server = new Server(function (RequestInterface $request) {
+        $server = new StreamingServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
@@ -378,7 +378,7 @@ class FunctionalServerTest extends TestCase
             'tls' => array('verify_peer' => false)
         ));
 
-        $server = new Server(function (RequestInterface $request) {
+        $server = new StreamingServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
@@ -408,7 +408,7 @@ class FunctionalServerTest extends TestCase
         }
         $connector = new Connector($loop);
 
-        $server = new Server(function (RequestInterface $request) {
+        $server = new StreamingServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
@@ -447,7 +447,7 @@ class FunctionalServerTest extends TestCase
             'tls' => array('verify_peer' => false)
         ));
 
-        $server = new Server(function (RequestInterface $request) {
+        $server = new StreamingServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri() . 'x' . $request->getHeaderLine('Host'));
         });
 
@@ -475,7 +475,7 @@ class FunctionalServerTest extends TestCase
         $stream = new ThroughStream();
         $stream->close();
 
-        $server = new Server(function (RequestInterface $request) use ($stream) {
+        $server = new StreamingServer(function (RequestInterface $request) use ($stream) {
             return new Response(200, array(), $stream);
         });
 
@@ -504,7 +504,7 @@ class FunctionalServerTest extends TestCase
         $stream = new ThroughStream();
         $stream->on('close', $this->expectCallableOnce());
 
-        $server = new Server(function (RequestInterface $request) use ($stream) {
+        $server = new StreamingServer(function (RequestInterface $request) use ($stream) {
             return new Response(200, array(), $stream);
         });
 
@@ -537,7 +537,7 @@ class FunctionalServerTest extends TestCase
         $stream = new ThroughStream();
         $stream->on('close', $this->expectCallableOnce());
 
-        $server = new Server(function (RequestInterface $request) use ($stream) {
+        $server = new StreamingServer(function (RequestInterface $request) use ($stream) {
             return new Response(200, array(), $stream);
         });
 
@@ -572,7 +572,7 @@ class FunctionalServerTest extends TestCase
         $loop = Factory::create();
         $connector = new Connector($loop);
 
-        $server = new Server(function (RequestInterface $request) use ($loop) {
+        $server = new StreamingServer(function (RequestInterface $request) use ($loop) {
             $stream = new ThroughStream();
 
             $loop->addTimer(0.1, function () use ($stream) {
@@ -609,7 +609,7 @@ class FunctionalServerTest extends TestCase
         $loop = Factory::create();
         $connector = new Connector($loop);
 
-        $server = new Server(function (RequestInterface $request) use ($loop) {
+        $server = new StreamingServer(function (RequestInterface $request) use ($loop) {
             $stream = new ThroughStream();
 
             $loop->addTimer(0.1, function () use ($stream) {
@@ -646,7 +646,7 @@ class FunctionalServerTest extends TestCase
         $loop = Factory::create();
         $connector = new Connector($loop);
 
-        $server = new Server(function (RequestInterface $request) use ($loop) {
+        $server = new StreamingServer(function (RequestInterface $request) use ($loop) {
             $stream = new ThroughStream();
 
             $loop->addTimer(0.1, function () use ($stream) {
@@ -687,7 +687,7 @@ class FunctionalServerTest extends TestCase
         $loop = Factory::create();
         $connector = new Connector($loop);
 
-        $server = new Server(function (RequestInterface $request) {
+        $server = new StreamingServer(function (RequestInterface $request) {
             $stream = new ThroughStream();
             $stream->close();
 
