@@ -116,36 +116,29 @@ final class MultipartParser
             return;
         }
 
-        if ($this->headerStartsWith($headers['content-disposition'], 'filename')) {
-            $this->parseFile($headers, $body);
+        if (!$this->headerContainsParameter($headers['content-disposition'], 'name')) {
             return;
         }
 
-        if ($this->headerStartsWith($headers['content-disposition'], 'name')) {
+        if ($this->headerContainsParameter($headers['content-disposition'], 'filename')) {
+            $this->parseFile($headers, $body);
+        } else {
             $this->parsePost($headers, $body);
-            return;
         }
     }
 
     private function parseFile($headers, $body)
     {
-        if (
-            !$this->headerContains($headers['content-disposition'], 'name=') ||
-            !$this->headerContains($headers['content-disposition'], 'filename=')
-        ) {
-            return;
-        }
-
         $this->request = $this->request->withUploadedFiles($this->extractPost(
             $this->request->getUploadedFiles(),
-            $this->getFieldFromHeader($headers['content-disposition'], 'name'),
+            $this->getParameterFromHeader($headers['content-disposition'], 'name'),
             $this->parseUploadedFile($headers, $body)
         ));
     }
 
     private function parseUploadedFile($headers, $body)
     {
-        $filename = $this->getFieldFromHeader($headers['content-disposition'], 'filename');
+        $filename = $this->getParameterFromHeader($headers['content-disposition'], 'filename');
         $bodyLength = strlen($body);
 
         // no file selected (zero size and empty filename)
@@ -217,10 +210,10 @@ final class MultipartParser
         return $headers;
     }
 
-    private function headerStartsWith(array $header, $needle)
+    private function headerContainsParameter(array $header, $parameter)
     {
         foreach ($header as $part) {
-            if (strpos($part, $needle) === 0) {
+            if (strpos($part, $parameter . '=') === 0) {
                 return true;
             }
         }
@@ -228,22 +221,11 @@ final class MultipartParser
         return false;
     }
 
-    private function headerContains(array $header, $needle)
+    private function getParameterFromHeader(array $header, $parameter)
     {
         foreach ($header as $part) {
-            if (strpos($part, $needle) !== false) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function getFieldFromHeader(array $header, $field)
-    {
-        foreach ($header as $part) {
-            if (strpos($part, $field) === 0) {
-                preg_match('/' . $field . '="?(.*)"$/', $part, $matches);
+            if (strpos($part, $parameter) === 0) {
+                preg_match('/' . $parameter . '="?(.*)"$/', $part, $matches);
                 return $matches[1];
             }
         }
@@ -268,30 +250,29 @@ final class MultipartParser
             return $postFields;
         }
 
-        $chunkKey = $chunks[0];
-        if (!isset($postFields[$chunkKey])) {
-            $postFields[$chunkKey] = array();
+        $chunkKey = rtrim($chunks[0], ']');
+        $parent = &$postFields;
+        for ($i = 1; isset($chunks[$i]); $i++) {
+            $previousChunkKey = $chunkKey;
+
+            if ($previousChunkKey === '') {
+                $parent[] = array();
+                end($parent);
+                $parent = &$parent[key($parent)];
+            } else {
+                if (!isset($parent[$previousChunkKey]) || !is_array($parent[$previousChunkKey])) {
+                    $parent[$previousChunkKey] = array();
+                }
+                $parent = &$parent[$previousChunkKey];
+            }
+
+            $chunkKey = rtrim($chunks[$i], ']');
         }
 
-        $parent = &$postFields;
-        for ($i = 1; $i < count($chunks); $i++) {
-            $previousChunkKey = $chunkKey;
-            if (!isset($parent[$previousChunkKey])) {
-                $parent[$previousChunkKey] = array();
-            }
-            $parent = &$parent[$previousChunkKey];
-            $chunkKey = $chunks[$i];
-
-            if ($chunkKey == ']') {
-                $parent[] = $value;
-                return $postFields;
-            }
-
-            $chunkKey = rtrim($chunkKey, ']');
-            if ($i == count($chunks) - 1) {
-                $parent[$chunkKey] = $value;
-                return $postFields;
-            }
+        if ($chunkKey === '') {
+            $parent[] = $value;
+        } else {
+            $parent[$chunkKey] = $value;
         }
 
         return $postFields;
