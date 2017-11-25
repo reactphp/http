@@ -250,29 +250,27 @@ final class MultipartParser
             return $postFields;
         }
 
-        $chunkKey = $chunks[0];
-        if (!isset($postFields[$chunkKey])) {
-            $postFields[$chunkKey] = array();
-        }
-
+        $chunkKey = rtrim($chunks[0], ']');
         $parent = &$postFields;
         for ($i = 1; $i < count($chunks); $i++) {
             $previousChunkKey = $chunkKey;
-            if (!isset($parent[$previousChunkKey])) {
+            if ($previousChunkKey !== '' && !isset($parent[$previousChunkKey])) {
                 $parent[$previousChunkKey] = array();
             }
-            $parent = &$parent[$previousChunkKey];
-            $chunkKey = $chunks[$i];
 
-            if ($chunkKey == ']') {
-                $parent[] = $value;
-                return $postFields;
+            if ($previousChunkKey === '') {
+                $parent = &$parent[0];
+            } else {
+                $parent = &$parent[$previousChunkKey];
             }
 
-            $chunkKey = rtrim($chunkKey, ']');
+            $chunkKey = rtrim($chunks[$i], ']');
             if ($i == count($chunks) - 1) {
-                $parent[$chunkKey] = $value;
-                return $postFields;
+                if ($chunkKey === '') {
+                    $parent[] = $value;
+                } else {
+                    $parent[$chunkKey] = $value;
+                }
             }
         }
 

@@ -51,7 +51,6 @@ final class MultipartParserTest extends TestCase
         $data .= "\r\n";
         $data .= "--$boundary--\r\n";
 
-
         $request = new ServerRequest('POST', 'http://example.com/', array(
             'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
         ), $data, 1.1);
@@ -77,7 +76,6 @@ final class MultipartParserTest extends TestCase
         $data .= "value\r\n";
         $data .= "--$boundary--\r\n";
 
-
         $request = new ServerRequest('POST', 'http://example.com/', array(
             'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
         ), $data, 1.1);
@@ -88,6 +86,64 @@ final class MultipartParserTest extends TestCase
         $this->assertSame(
             array(
                 '' => 'value'
+            ),
+            $parsedRequest->getParsedBody()
+        );
+    }
+
+    public function testNestedPostKeyAssoc()
+    {
+        $boundary = "---------------------------5844729766471062541057622570";
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"a[b][c]\"\r\n";
+        $data .= "\r\n";
+        $data .= "value\r\n";
+        $data .= "--$boundary--\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+        ), $data, 1.1);
+
+        $parsedRequest = MultipartParser::parseRequest($request);
+
+        $this->assertEmpty($parsedRequest->getUploadedFiles());
+        $this->assertSame(
+            array(
+                'a' => array(
+                    'b' => array(
+                        'c' => 'value'
+                    )
+                )
+            ),
+            $parsedRequest->getParsedBody()
+        );
+    }
+
+    public function testNestedPostKeyVector()
+    {
+        $boundary = "---------------------------5844729766471062541057622570";
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"a[][]\"\r\n";
+        $data .= "\r\n";
+        $data .= "value\r\n";
+        $data .= "--$boundary--\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+        ), $data, 1.1);
+
+        $parsedRequest = MultipartParser::parseRequest($request);
+
+        $this->assertEmpty($parsedRequest->getUploadedFiles());
+        $this->assertSame(
+            array(
+                'a' => array(
+                    array(
+                        'value'
+                    )
+                )
             ),
             $parsedRequest->getParsedBody()
         );
