@@ -140,6 +140,7 @@ final class MultipartParser
     {
         $filename = $this->getParameterFromHeader($headers['content-disposition'], 'filename');
         $bodyLength = strlen($body);
+        $contentType = isset($headers['content-type'][0]) ? $headers['content-type'][0] : null;
 
         // no file selected (zero size and empty filename)
         if ($bodyLength === 0 && $filename === '') {
@@ -148,7 +149,7 @@ final class MultipartParser
                 $bodyLength,
                 UPLOAD_ERR_NO_FILE,
                 $filename,
-                $headers['content-type'][0]
+                $contentType
             );
         }
 
@@ -159,7 +160,7 @@ final class MultipartParser
                 $bodyLength,
                 UPLOAD_ERR_FORM_SIZE,
                 $filename,
-                $headers['content-type'][0]
+                $contentType
             );
         }
 
@@ -168,7 +169,7 @@ final class MultipartParser
             $bodyLength,
             UPLOAD_ERR_OK,
             $filename,
-            $headers['content-type'][0]
+            $contentType
         );
     }
 

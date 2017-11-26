@@ -419,6 +419,72 @@ final class MultipartParserTest extends TestCase
         $this->assertEmpty($parsedRequest->getParsedBody());
     }
 
+    public function testInvalidUploadFileWithoutContentTypeUsesNullValue()
+    {
+        $boundary = "---------------------------12758086162038677464950549563";
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"file\"; filename=\"hello.txt\"\r\n";
+        $data .= "\r\n";
+        $data .= "world\r\n";
+        $data .= "--$boundary--\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+        ), $data, 1.1);
+
+        $parsedRequest = MultipartParser::parseRequest($request);
+
+        $files = $parsedRequest->getUploadedFiles();
+
+        $this->assertCount(1, $files);
+        $this->assertTrue(isset($files['file']));
+        $this->assertInstanceOf('Psr\Http\Message\UploadedFileInterface', $files['file']);
+
+        /* @var $file \Psr\Http\Message\UploadedFileInterface */
+        $file = $files['file'];
+
+        $this->assertSame('hello.txt', $file->getClientFilename());
+        $this->assertSame(null, $file->getClientMediaType());
+        $this->assertSame(5, $file->getSize());
+        $this->assertSame(UPLOAD_ERR_OK, $file->getError());
+        $this->assertSame('world', (string)$file->getStream());
+    }
+
+    public function testInvalidUploadFileWithoutMultipleContentTypeUsesLastValue()
+    {
+        $boundary = "---------------------------12758086162038677464950549563";
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"file\"; filename=\"hello.txt\"\r\n";
+        $data .= "Content-Type: text/ignored\r\n";
+        $data .= "Content-Type: text/plain\r\n";
+        $data .= "\r\n";
+        $data .= "world\r\n";
+        $data .= "--$boundary--\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+        ), $data, 1.1);
+
+        $parsedRequest = MultipartParser::parseRequest($request);
+
+        $files = $parsedRequest->getUploadedFiles();
+
+        $this->assertCount(1, $files);
+        $this->assertTrue(isset($files['file']));
+        $this->assertInstanceOf('Psr\Http\Message\UploadedFileInterface', $files['file']);
+
+        /* @var $file \Psr\Http\Message\UploadedFileInterface */
+        $file = $files['file'];
+
+        $this->assertSame('hello.txt', $file->getClientFilename());
+        $this->assertSame('text/plain', $file->getClientMediaType());
+        $this->assertSame(5, $file->getSize());
+        $this->assertSame(UPLOAD_ERR_OK, $file->getError());
+        $this->assertSame('world', (string)$file->getStream());
+    }
+
     public function testUploadEmptyFile()
     {
         $boundary = "---------------------------12758086162038677464950549563";
