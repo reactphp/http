@@ -379,6 +379,93 @@ final class MultipartParserTest extends TestCase
         $this->assertSame("<?php echo 'Owner';\r\n\r\n", (string)$files['files'][2]->getStream());
     }
 
+    public function testInvalidDoubleContentDispositionUsesLast()
+    {
+        $boundary = "---------------------------5844729766471062541057622570";
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"ignored\"\r\n";
+        $data .= "Content-Disposition: form-data; name=\"key\"\r\n";
+        $data .= "\r\n";
+        $data .= "value\r\n";
+        $data .= "--$boundary--\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
+        ), $data, 1.1);
+
+        $parsedRequest = MultipartParser::parseRequest($request);
+
+        $this->assertEmpty($parsedRequest->getUploadedFiles());
+        $this->assertSame(
+            array(
+                'key' => 'value'
+            ),
+            $parsedRequest->getParsedBody()
+        );
+    }
+
+    public function testInvalidMissingNewlineAfterValueDoesNotMatter()
+    {
+        $boundary = "---------------------------5844729766471062541057622570";
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"key\"\r\n";
+        $data .= "\r\n";
+        $data .= "value";
+        $data .= "--$boundary--\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
+        ), $data, 1.1);
+
+        $parsedRequest = MultipartParser::parseRequest($request);
+
+        $this->assertEmpty($parsedRequest->getUploadedFiles());
+        $this->assertSame(
+            array(
+                'key' => 'value'
+            ),
+            $parsedRequest->getParsedBody()
+        );
+    }
+
+    public function testInvalidMissingValueWillBeIgnored()
+    {
+        $boundary = "---------------------------5844729766471062541057622570";
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"key\"\r\n";
+        $data .= "\r\n";
+        $data .= "--$boundary--\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
+        ), $data, 1.1);
+
+        $parsedRequest = MultipartParser::parseRequest($request);
+
+        $this->assertEmpty($parsedRequest->getUploadedFiles());
+        $this->assertEmpty($parsedRequest->getParsedBody());
+    }
+
+    public function testInvalidMissingValueAndEndBoundaryWillBeIgnored()
+    {
+        $boundary = "---------------------------5844729766471062541057622570";
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"key\"\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
+        ), $data, 1.1);
+
+        $parsedRequest = MultipartParser::parseRequest($request);
+
+        $this->assertEmpty($parsedRequest->getUploadedFiles());
+        $this->assertEmpty($parsedRequest->getParsedBody());
+    }
+
     public function testInvalidContentDispositionMissingWillBeIgnored()
     {
         $boundary = "---------------------------5844729766471062541057622570";
@@ -417,6 +504,28 @@ final class MultipartParserTest extends TestCase
 
         $this->assertEmpty($parsedRequest->getUploadedFiles());
         $this->assertEmpty($parsedRequest->getParsedBody());
+    }
+
+    public function testInvalidMissingEndBoundaryWillBeIgnored()
+    {
+        $boundary = "---------------------------5844729766471062541057622570";
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"key\"\r\n";
+        $data .= "\r\n";
+        $data .= "value\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+        ), $data, 1.1);
+
+        $parsedRequest = MultipartParser::parseRequest($request);
+
+        $this->assertEmpty($parsedRequest->getUploadedFiles());
+        $this->assertSame(
+            null,
+            $parsedRequest->getParsedBody()
+        );
     }
 
     public function testInvalidUploadFileWithoutContentTypeUsesNullValue()

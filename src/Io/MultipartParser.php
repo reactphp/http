@@ -105,12 +105,13 @@ final class MultipartParser
 
     private function parseChunk($chunk)
     {
-        if ($chunk === '') {
+        $pos = strpos($chunk, "\r\n\r\n");
+        if ($pos === false) {
             return;
         }
 
-        list ($header, $body) = explode("\r\n\r\n", $chunk, 2);
-        $headers = $this->parseHeaders($header);
+        $headers = $this->parseHeaders((string)substr($chunk, 0, $pos));
+        $body = (string)substr($chunk, $pos + 4);
 
         if (!isset($headers['content-disposition'])) {
             return;
