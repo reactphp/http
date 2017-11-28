@@ -95,37 +95,42 @@ final class MultipartParser
             return;
         }
 
-        if (!$this->headerContainsParameter($headers['content-disposition'], 'name')) {
+        $name = $this->getParameterFromHeader($headers['content-disposition'], 'name');
+        if ($name === null) {
             return;
         }
 
-        if ($this->headerContainsParameter($headers['content-disposition'], 'filename')) {
-            $this->parseFile($headers, $body);
+        $filename = $this->getParameterFromHeader($headers['content-disposition'], 'filename');
+        if ($filename !== null) {
+            $this->parseFile(
+                $name,
+                $filename,
+                isset($headers['content-type'][0]) ? $headers['content-type'][0] : null,
+                $body
+            );
         } else {
-            $this->parsePost($headers, $body);
+            $this->parsePost($name, $body);
         }
     }
 
-    private function parseFile($headers, $body)
+    private function parseFile($name, $filename, $contentType, $contents)
     {
         $this->request = $this->request->withUploadedFiles($this->extractPost(
             $this->request->getUploadedFiles(),
-            $this->getParameterFromHeader($headers['content-disposition'], 'name'),
-            $this->parseUploadedFile($headers, $body)
+            $name,
+            $this->parseUploadedFile($filename, $contentType, $contents)
         ));
     }
 
-    private function parseUploadedFile($headers, $body)
+    private function parseUploadedFile($filename, $contentType, $contents)
     {
-        $filename = $this->getParameterFromHeader($headers['content-disposition'], 'filename');
-        $bodyLength = strlen($body);
-        $contentType = isset($headers['content-type'][0]) ? $headers['content-type'][0] : null;
+        $size = strlen($contents);
 
         // no file selected (zero size and empty filename)
-        if ($bodyLength === 0 && $filename === '') {
+        if ($size === 0 && $filename === '') {
             return new UploadedFile(
                 Psr7\stream_for(''),
-                $bodyLength,
+                $size,
                 UPLOAD_ERR_NO_FILE,
                 $filename,
                 $contentType
@@ -133,10 +138,10 @@ final class MultipartParser
         }
 
         // file exceeds MAX_FILE_SIZE value
-        if ($this->maxFileSize !== null && $bodyLength > $this->maxFileSize) {
+        if ($this->maxFileSize !== null && $size > $this->maxFileSize) {
             return new UploadedFile(
                 Psr7\stream_for(''),
-                $bodyLength,
+                $size,
                 UPLOAD_ERR_FORM_SIZE,
                 $filename,
                 $contentType
@@ -144,32 +149,27 @@ final class MultipartParser
         }
 
         return new UploadedFile(
-            Psr7\stream_for($body),
-            $bodyLength,
+            Psr7\stream_for($contents),
+            $size,
             UPLOAD_ERR_OK,
             $filename,
             $contentType
         );
     }
 
-    private function parsePost($headers, $body)
+    private function parsePost($name, $value)
     {
-        foreach ($headers['content-disposition'] as $part) {
-            if (strpos($part, 'name') === 0) {
-                preg_match('/name="?(.*)"$/', $part, $matches);
-                $this->request = $this->request->withParsedBody($this->extractPost(
-                    $this->request->getParsedBody(),
-                    $matches[1],
-                    $body
-                ));
+        $this->request = $this->request->withParsedBody($this->extractPost(
+            $this->request->getParsedBody(),
+            $name,
+            $value
+        ));
 
-                if (strtoupper($matches[1]) === 'MAX_FILE_SIZE') {
-                    $this->maxFileSize = (int)$body;
+        if (strtoupper($name) === 'MAX_FILE_SIZE') {
+            $this->maxFileSize = (int)$value;
 
-                    if ($this->maxFileSize === 0) {
-                        $this->maxFileSize = null;
-                    }
-                }
+            if ($this->maxFileSize === 0) {
+                $this->maxFileSize = null;
             }
         }
     }
@@ -190,27 +190,15 @@ final class MultipartParser
         return $headers;
     }
 
-    private function headerContainsParameter(array $header, $parameter)
-    {
-        foreach ($header as $part) {
-            if (strpos($part, $parameter . '=') === 0) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     private function getParameterFromHeader(array $header, $parameter)
     {
         foreach ($header as $part) {
-            if (strpos($part, $parameter) === 0) {
-                preg_match('/' . $parameter . '="?(.*)"$/', $part, $matches);
+            if (preg_match('/' . $parameter . '="?(.*)"$/', $part, $matches)) {
                 return $matches[1];
             }
         }
 
-        return '';
+        return null;
     }
 
     private function stripTrailingEOL($chunk)
