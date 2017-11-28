@@ -429,7 +429,7 @@ final class MultipartParserTest extends TestCase
         );
     }
 
-    public function testInvalidMissingNewlineAfterValueDoesNotMatter()
+    public function testInvalidMissingNewlineAfterValueWillBeIgnored()
     {
         $boundary = "---------------------------5844729766471062541057622570";
 
@@ -446,12 +446,7 @@ final class MultipartParserTest extends TestCase
         $parsedRequest = MultipartParser::parseRequest($request);
 
         $this->assertEmpty($parsedRequest->getUploadedFiles());
-        $this->assertSame(
-            array(
-                'key' => 'value'
-            ),
-            $parsedRequest->getParsedBody()
-        );
+        $this->assertEmpty($parsedRequest->getParsedBody());
     }
 
     public function testInvalidMissingValueWillBeIgnored()
@@ -497,7 +492,27 @@ final class MultipartParserTest extends TestCase
         $data  = "--$boundary\r\n";
         $data .= "Content-Type: text/plain\r\n";
         $data .= "\r\n";
-        $data .= "hello";
+        $data .= "hello\r\n";
+        $data .= "--$boundary--\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
+        ), $data, 1.1);
+
+        $parsedRequest = MultipartParser::parseRequest($request);
+
+        $this->assertEmpty($parsedRequest->getUploadedFiles());
+        $this->assertEmpty($parsedRequest->getParsedBody());
+    }
+
+    public function testInvalidContentDispositionMissingValueWillBeIgnored()
+    {
+        $boundary = "---------------------------5844729766471062541057622570";
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition\r\n";
+        $data .= "\r\n";
+        $data .= "value\r\n";
         $data .= "--$boundary--\r\n";
 
         $request = new ServerRequest('POST', 'http://example.com/', array(
@@ -517,7 +532,7 @@ final class MultipartParserTest extends TestCase
         $data  = "--$boundary\r\n";
         $data .= "Content-Disposition: form-data; something=\"key\"\r\n";
         $data .= "\r\n";
-        $data .= "value";
+        $data .= "value\r\n";
         $data .= "--$boundary--\r\n";
 
         $request = new ServerRequest('POST', 'http://example.com/', array(

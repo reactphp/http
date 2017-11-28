@@ -12,6 +12,8 @@ use RingCentral\Psr7;
  * that resembles PHP's `$_POST` and `$_FILES` superglobals.
  *
  * @internal
+ * @link https://tools.ietf.org/html/rfc7578
+ * @link https://tools.ietf.org/html/rfc2046#section-5.1.1
  */
 final class MultipartParser
 {
@@ -43,23 +45,34 @@ final class MultipartParser
             return $this->request;
         }
 
-        $this->parseBuffer($matches[1], (string)$this->request->getBody());
+        $this->parseBody('--' . $matches[1], (string)$this->request->getBody());
 
         return $this->request;
     }
 
-    private function parseBuffer($boundary, $buffer)
+    private function parseBody($boundary, $buffer)
     {
-        $chunks = explode('--' . $boundary, $buffer);
-        array_pop($chunks);
+        $len = strlen($boundary);
 
-        foreach ($chunks as $chunk) {
-            $chunk = $this->stripTrailingEOL($chunk);
-            $this->parseChunk($chunk);
+        // ignore everything before initial boundary (SHOULD be empty)
+        $start = strpos($buffer, $boundary . "\r\n");
+
+        while ($start !== false) {
+            // search following boundary (preceded by newline)
+            // ignore last if not followed by boundary (SHOULD end with "--")
+            $start += $len + 2;
+            $end = strpos($buffer, "\r\n" . $boundary, $start);
+            if ($end === false) {
+                break;
+            }
+
+            // parse one part and continue searching for next
+            $this->parsePart(substr($buffer, $start, $end - $start));
+            $start = $end;
         }
     }
 
-    private function parseChunk($chunk)
+    private function parsePart($chunk)
     {
         $pos = strpos($chunk, "\r\n\r\n");
         if ($pos === false) {
@@ -157,10 +170,13 @@ final class MultipartParser
         $headers = array();
 
         foreach (explode("\r\n", trim($header)) as $line) {
-            list($key, $values) = explode(':', $line, 2);
-            $key = trim($key);
-            $key = strtolower($key);
-            $values = explode(';', $values);
+            $parts = explode(':', $line, 2);
+            if (!isset($parts[1])) {
+                continue;
+            }
+
+            $key = strtolower(trim($parts[0]));
+            $values = explode(';', $parts[1]);
             $values = array_map('trim', $values);
             $headers[$key] = $values;
         }
@@ -177,15 +193,6 @@ final class MultipartParser
         }
 
         return null;
-    }
-
-    private function stripTrailingEOL($chunk)
-    {
-        if (substr($chunk, -2) === "\r\n") {
-            return substr($chunk, 0, -2);
-        }
-
-        return $chunk;
     }
 
     private function extractPost($postFields, $key, $value)
