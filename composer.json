@@ -10,7 +10,7 @@
         "react/stream": "^1.0 || ^0.7.1",
         "react/promise": "^2.3 || ^1.2.1",
         "evenement/evenement": "^3.0 || ^2.0 || ^1.0",
-        "react/promise-stream": "^1.0 || ^0.1.2"
+        "react/promise-stream": "^1.1"
     },
     "autoload": {
         "psr-4": {

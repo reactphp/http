@@ -4,7 +4,6 @@ namespace React\Http\Middleware;
 
 use OverflowException;
 use Psr\Http\Message\ServerRequestInterface;
-use React\Promise\Promise;
 use React\Promise\Stream;
 use React\Stream\ReadableStreamInterface;
 use RingCentral\Psr7\BufferStream;
@@ -53,13 +52,8 @@ final class RequestBodyBufferMiddleware
             // but ignore the contents and wait for the close event
             // before passing the request on to the next middleware.
             if ($error instanceof OverflowException) {
-                return new Promise(function ($resolve, $reject) use ($stack, $request, $body) {
-                    $body->on('error', function ($error) use ($reject) {
-                        $reject($error);
-                    });
-                    $body->on('close', function () use ($stack, $request, $resolve) {
-                        $resolve($stack($request));
-                    });
+                return Stream\first($body, 'close')->then(function () use ($stack, $request) {
+                    return $stack($request);
                 });
             }
 
