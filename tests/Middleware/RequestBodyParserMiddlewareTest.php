@@ -149,7 +149,7 @@ final class RequestBodyParserMiddlewareTest extends TestCase
 
 
         $request = new ServerRequest('POST', 'http://example.com/', array(
-            'Content-Type' => 'multipart/form-data',
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
         /** @var ServerRequestInterface $parsedRequest */

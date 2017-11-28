@@ -12,33 +12,15 @@ use RingCentral\Psr7;
  * that resembles PHP's `$_POST` and `$_FILES` superglobals.
  *
  * @internal
+ * @link https://tools.ietf.org/html/rfc7578
+ * @link https://tools.ietf.org/html/rfc2046#section-5.1.1
  */
 final class MultipartParser
 {
     /**
-     * @var string
-     */
-    protected $buffer = '';
-
-    /**
-     * @var string
-     */
-    protected $boundary;
-
-    /**
      * @var ServerRequestInterface
      */
     protected $request;
-
-    /**
-     * @var HttpBodyStream
-     */
-    protected $body;
-
-    /**
-     * @var callable
-     */
-    protected $onDataCallable;
 
     /**
      * @var int|null
@@ -58,138 +40,127 @@ final class MultipartParser
 
     private function parse()
     {
-        $this->buffer = (string)$this->request->getBody();
+        $contentType = $this->request->getHeaderLine('content-type');
+        if(!preg_match('/boundary="?(.*)"?$/', $contentType, $matches)) {
+            return $this->request;
+        }
 
-        $this->determineStartMethod();
+        $this->parseBody('--' . $matches[1], (string)$this->request->getBody());
 
         return $this->request;
     }
 
-    private function determineStartMethod()
+    private function parseBody($boundary, $buffer)
     {
-        if (!$this->request->hasHeader('content-type')) {
-            $this->findBoundary();
-            return;
-        }
+        $len = strlen($boundary);
 
-        $contentType = $this->request->getHeaderLine('content-type');
-        preg_match('/boundary="?(.*)"?$/', $contentType, $matches);
-        if (isset($matches[1])) {
-            $this->boundary = $matches[1];
-            $this->parseBuffer();
-            return;
-        }
+        // ignore everything before initial boundary (SHOULD be empty)
+        $start = strpos($buffer, $boundary . "\r\n");
 
-        $this->findBoundary();
-    }
+        while ($start !== false) {
+            // search following boundary (preceded by newline)
+            // ignore last if not followed by boundary (SHOULD end with "--")
+            $start += $len + 2;
+            $end = strpos($buffer, "\r\n" . $boundary, $start);
+            if ($end === false) {
+                break;
+            }
 
-    private function findBoundary()
-    {
-        if (substr($this->buffer, 0, 3) === '---' && strpos($this->buffer, "\r\n") !== false) {
-            $boundary = substr($this->buffer, 2, strpos($this->buffer, "\r\n"));
-            $boundary = substr($boundary, 0, -2);
-            $this->boundary = $boundary;
-            $this->parseBuffer();
+            // parse one part and continue searching for next
+            $this->parsePart(substr($buffer, $start, $end - $start));
+            $start = $end;
         }
     }
 
-    private function parseBuffer()
+    private function parsePart($chunk)
     {
-        $chunks = explode('--' . $this->boundary, $this->buffer);
-        $this->buffer = array_pop($chunks);
-        foreach ($chunks as $chunk) {
-            $chunk = $this->stripTrailingEOL($chunk);
-            $this->parseChunk($chunk);
-        }
-    }
-
-    private function parseChunk($chunk)
-    {
-        if ($chunk === '') {
+        $pos = strpos($chunk, "\r\n\r\n");
+        if ($pos === false) {
             return;
         }
 
-        list ($header, $body) = explode("\r\n\r\n", $chunk, 2);
-        $headers = $this->parseHeaders($header);
+        $headers = $this->parseHeaders((string)substr($chunk, 0, $pos));
+        $body = (string)substr($chunk, $pos + 4);
 
         if (!isset($headers['content-disposition'])) {
             return;
         }
 
-        if (!$this->headerContainsParameter($headers['content-disposition'], 'name')) {
+        $name = $this->getParameterFromHeader($headers['content-disposition'], 'name');
+        if ($name === null) {
             return;
         }
 
-        if ($this->headerContainsParameter($headers['content-disposition'], 'filename')) {
-            $this->parseFile($headers, $body);
+        $filename = $this->getParameterFromHeader($headers['content-disposition'], 'filename');
+        if ($filename !== null) {
+            $this->parseFile(
+                $name,
+                $filename,
+                isset($headers['content-type'][0]) ? $headers['content-type'][0] : null,
+                $body
+            );
         } else {
-            $this->parsePost($headers, $body);
+            $this->parsePost($name, $body);
         }
     }
 
-    private function parseFile($headers, $body)
+    private function parseFile($name, $filename, $contentType, $contents)
     {
         $this->request = $this->request->withUploadedFiles($this->extractPost(
             $this->request->getUploadedFiles(),
-            $this->getParameterFromHeader($headers['content-disposition'], 'name'),
-            $this->parseUploadedFile($headers, $body)
+            $name,
+            $this->parseUploadedFile($filename, $contentType, $contents)
         ));
     }
 
-    private function parseUploadedFile($headers, $body)
+    private function parseUploadedFile($filename, $contentType, $contents)
     {
-        $filename = $this->getParameterFromHeader($headers['content-disposition'], 'filename');
-        $bodyLength = strlen($body);
+        $size = strlen($contents);
 
         // no file selected (zero size and empty filename)
-        if ($bodyLength === 0 && $filename === '') {
+        if ($size === 0 && $filename === '') {
             return new UploadedFile(
                 Psr7\stream_for(''),
-                $bodyLength,
+                $size,
                 UPLOAD_ERR_NO_FILE,
                 $filename,
-                $headers['content-type'][0]
+                $contentType
             );
         }
 
         // file exceeds MAX_FILE_SIZE value
-        if ($this->maxFileSize !== null && $bodyLength > $this->maxFileSize) {
+        if ($this->maxFileSize !== null && $size > $this->maxFileSize) {
             return new UploadedFile(
                 Psr7\stream_for(''),
-                $bodyLength,
+                $size,
                 UPLOAD_ERR_FORM_SIZE,
                 $filename,
-                $headers['content-type'][0]
+                $contentType
             );
         }
 
         return new UploadedFile(
-            Psr7\stream_for($body),
-            $bodyLength,
+            Psr7\stream_for($contents),
+            $size,
             UPLOAD_ERR_OK,
             $filename,
-            $headers['content-type'][0]
+            $contentType
         );
     }
 
-    private function parsePost($headers, $body)
+    private function parsePost($name, $value)
     {
-        foreach ($headers['content-disposition'] as $part) {
-            if (strpos($part, 'name') === 0) {
-                preg_match('/name="?(.*)"$/', $part, $matches);
-                $this->request = $this->request->withParsedBody($this->extractPost(
-                    $this->request->getParsedBody(),
-                    $matches[1],
-                    $body
-                ));
+        $this->request = $this->request->withParsedBody($this->extractPost(
+            $this->request->getParsedBody(),
+            $name,
+            $value
+        ));
 
-                if (strtoupper($matches[1]) === 'MAX_FILE_SIZE') {
-                    $this->maxFileSize = (int)$body;
+        if (strtoupper($name) === 'MAX_FILE_SIZE') {
+            $this->maxFileSize = (int)$value;
 
-                    if ($this->maxFileSize === 0) {
-                        $this->maxFileSize = null;
-                    }
-                }
+            if ($this->maxFileSize === 0) {
+                $this->maxFileSize = null;
             }
         }
     }
@@ -199,10 +170,13 @@ final class MultipartParser
         $headers = array();
 
         foreach (explode("\r\n", trim($header)) as $line) {
-            list($key, $values) = explode(':', $line, 2);
-            $key = trim($key);
-            $key = strtolower($key);
-            $values = explode(';', $values);
+            $parts = explode(':', $line, 2);
+            if (!isset($parts[1])) {
+                continue;
+            }
+
+            $key = strtolower(trim($parts[0]));
+            $values = explode(';', $parts[1]);
             $values = array_map('trim', $values);
             $headers[$key] = $values;
         }
@@ -210,36 +184,15 @@ final class MultipartParser
         return $headers;
     }
 
-    private function headerContainsParameter(array $header, $parameter)
-    {
-        foreach ($header as $part) {
-            if (strpos($part, $parameter . '=') === 0) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     private function getParameterFromHeader(array $header, $parameter)
     {
         foreach ($header as $part) {
-            if (strpos($part, $parameter) === 0) {
-                preg_match('/' . $parameter . '="?(.*)"$/', $part, $matches);
+            if (preg_match('/' . $parameter . '="?(.*)"$/', $part, $matches)) {
                 return $matches[1];
             }
         }
 
-        return '';
-    }
-
-    private function stripTrailingEOL($chunk)
-    {
-        if (substr($chunk, -2) === "\r\n") {
-            return substr($chunk, 0, -2);
-        }
-
-        return $chunk;
+        return null;
     }
 
     private function extractPost($postFields, $key, $value)
