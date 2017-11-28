@@ -8,6 +8,30 @@ use React\Tests\Http\TestCase;
 
 final class MultipartParserTest extends TestCase
 {
+    public function testDoesNotParseWithoutMultipartFormDataContentType()
+    {
+        $boundary = "---------------------------5844729766471062541057622570";
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"single\"\r\n";
+        $data .= "\r\n";
+        $data .= "single\r\n";
+        $data .= "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"second\"\r\n";
+        $data .= "\r\n";
+        $data .= "second\r\n";
+        $data .= "--$boundary--\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/form-data',
+        ), $data, 1.1);
+
+        $parsedRequest = MultipartParser::parseRequest($request);
+
+        $this->assertEmpty($parsedRequest->getUploadedFiles());
+        $this->assertEmpty($parsedRequest->getParsedBody());
+    }
+
     public function testPostKey()
     {
         $boundary = "---------------------------5844729766471062541057622570";
@@ -23,7 +47,7 @@ final class MultipartParserTest extends TestCase
         $data .= "--$boundary--\r\n";
 
         $request = new ServerRequest('POST', 'http://example.com/', array(
-            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
         $parsedRequest = MultipartParser::parseRequest($request);
@@ -55,7 +79,7 @@ final class MultipartParserTest extends TestCase
         $data .= "--$boundary--\r\n";
 
         $request = new ServerRequest('POST', 'http://example.com/', array(
-            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
         $parsedRequest = MultipartParser::parseRequest($request);
@@ -84,7 +108,7 @@ final class MultipartParserTest extends TestCase
         $data .= "--$boundary--\r\n";
 
         $request = new ServerRequest('POST', 'http://example.com/', array(
-            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
         $parsedRequest = MultipartParser::parseRequest($request);
@@ -115,7 +139,7 @@ final class MultipartParserTest extends TestCase
         $data .= "--$boundary--\r\n";
 
         $request = new ServerRequest('POST', 'http://example.com/', array(
-            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
         $parsedRequest = MultipartParser::parseRequest($request);
@@ -146,7 +170,7 @@ final class MultipartParserTest extends TestCase
         $data .= "--$boundary--\r\n";
 
         $request = new ServerRequest('POST', 'http://example.com/', array(
-            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
         $parsedRequest = MultipartParser::parseRequest($request);
@@ -178,7 +202,7 @@ final class MultipartParserTest extends TestCase
         $data .= "--$boundary--\r\n";
 
         $request = new ServerRequest('POST', 'http://example.com/', array(
-            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
         $parsedRequest = MultipartParser::parseRequest($request);
@@ -203,7 +227,7 @@ final class MultipartParserTest extends TestCase
         $data .= "--$boundary--\r\n";
 
         $request = new ServerRequest('POST', 'http://example.com/', array(
-            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
         $parsedRequest = MultipartParser::parseRequest($request);
@@ -228,7 +252,7 @@ final class MultipartParserTest extends TestCase
         $data .= "--$boundary--\r\n";
 
         $request = new ServerRequest('POST', 'http://example.com/', array(
-            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
         $parsedRequest = MultipartParser::parseRequest($request);
@@ -257,7 +281,7 @@ final class MultipartParserTest extends TestCase
         $data .= "--$boundary--\r\n";
 
         $request = new ServerRequest('POST', 'http://example.com/', array(
-            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
         $parsedRequest = MultipartParser::parseRequest($request);
@@ -337,7 +361,7 @@ final class MultipartParserTest extends TestCase
         $data .= "--$boundary--\r\n";
 
         $request = new ServerRequest('POST', 'http://example.com/', array(
-            'Content-Type' => 'multipart/form-data',
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
         $parsedRequest = MultipartParser::parseRequest($request);
@@ -477,7 +501,7 @@ final class MultipartParserTest extends TestCase
         $data .= "--$boundary--\r\n";
 
         $request = new ServerRequest('POST', 'http://example.com/', array(
-            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
         $parsedRequest = MultipartParser::parseRequest($request);
@@ -497,7 +521,7 @@ final class MultipartParserTest extends TestCase
         $data .= "--$boundary--\r\n";
 
         $request = new ServerRequest('POST', 'http://example.com/', array(
-            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
         $parsedRequest = MultipartParser::parseRequest($request);
@@ -516,7 +540,7 @@ final class MultipartParserTest extends TestCase
         $data .= "value\r\n";
 
         $request = new ServerRequest('POST', 'http://example.com/', array(
-            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
         $parsedRequest = MultipartParser::parseRequest($request);
@@ -539,7 +563,7 @@ final class MultipartParserTest extends TestCase
         $data .= "--$boundary--\r\n";
 
         $request = new ServerRequest('POST', 'http://example.com/', array(
-            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
         $parsedRequest = MultipartParser::parseRequest($request);
@@ -573,7 +597,7 @@ final class MultipartParserTest extends TestCase
         $data .= "--$boundary--\r\n";
 
         $request = new ServerRequest('POST', 'http://example.com/', array(
-            'Content-Type' => 'multipart/mixed; boundary=' . $boundary,
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
         $parsedRequest = MultipartParser::parseRequest($request);
@@ -606,7 +630,7 @@ final class MultipartParserTest extends TestCase
         $data .= "--$boundary--\r\n";
 
         $request = new ServerRequest('POST', 'http://example.com/', array(
-            'Content-Type' => 'multipart/form-data',
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
         $parsedRequest = MultipartParser::parseRequest($request);
@@ -639,7 +663,7 @@ final class MultipartParserTest extends TestCase
         $data .= "--$boundary--\r\n";
 
         $request = new ServerRequest('POST', 'http://example.com/', array(
-            'Content-Type' => 'multipart/form-data',
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
         $parsedRequest = MultipartParser::parseRequest($request);
@@ -676,7 +700,7 @@ final class MultipartParserTest extends TestCase
         $data .= "--$boundary--\r\n";
 
         $request = new ServerRequest('POST', 'http://example.com/', array(
-            'Content-Type' => 'multipart/form-data',
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
         $parsedRequest = MultipartParser::parseRequest($request);
@@ -730,7 +754,7 @@ final class MultipartParserTest extends TestCase
         $data .= "--$boundary--\r\n";
 
         $request = new ServerRequest('POST', 'http://example.com/', array(
-            'Content-Type' => 'multipart/form-data',
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
         $parsedRequest = MultipartParser::parseRequest($request);

@@ -60,37 +60,15 @@ final class MultipartParser
     {
         $this->buffer = (string)$this->request->getBody();
 
-        $this->determineStartMethod();
+        $contentType = $this->request->getHeaderLine('content-type');
+        if(!preg_match('/boundary="?(.*)"?$/', $contentType, $matches)) {
+            return $this->request;
+        }
+
+        $this->boundary = $matches[1];
+        $this->parseBuffer();
 
         return $this->request;
-    }
-
-    private function determineStartMethod()
-    {
-        if (!$this->request->hasHeader('content-type')) {
-            $this->findBoundary();
-            return;
-        }
-
-        $contentType = $this->request->getHeaderLine('content-type');
-        preg_match('/boundary="?(.*)"?$/', $contentType, $matches);
-        if (isset($matches[1])) {
-            $this->boundary = $matches[1];
-            $this->parseBuffer();
-            return;
-        }
-
-        $this->findBoundary();
-    }
-
-    private function findBoundary()
-    {
-        if (substr($this->buffer, 0, 3) === '---' && strpos($this->buffer, "\r\n") !== false) {
-            $boundary = substr($this->buffer, 2, strpos($this->buffer, "\r\n"));
-            $boundary = substr($boundary, 0, -2);
-            $this->boundary = $boundary;
-            $this->parseBuffer();
-        }
     }
 
     private function parseBuffer()
