@@ -16,29 +16,9 @@ use RingCentral\Psr7;
 final class MultipartParser
 {
     /**
-     * @var string
-     */
-    protected $buffer = '';
-
-    /**
-     * @var string
-     */
-    protected $boundary;
-
-    /**
      * @var ServerRequestInterface
      */
     protected $request;
-
-    /**
-     * @var HttpBodyStream
-     */
-    protected $body;
-
-    /**
-     * @var callable
-     */
-    protected $onDataCallable;
 
     /**
      * @var int|null
@@ -58,23 +38,21 @@ final class MultipartParser
 
     private function parse()
     {
-        $this->buffer = (string)$this->request->getBody();
-
         $contentType = $this->request->getHeaderLine('content-type');
         if(!preg_match('/boundary="?(.*)"?$/', $contentType, $matches)) {
             return $this->request;
         }
 
-        $this->boundary = $matches[1];
-        $this->parseBuffer();
+        $this->parseBuffer($matches[1], (string)$this->request->getBody());
 
         return $this->request;
     }
 
-    private function parseBuffer()
+    private function parseBuffer($boundary, $buffer)
     {
-        $chunks = explode('--' . $this->boundary, $this->buffer);
-        $this->buffer = array_pop($chunks);
+        $chunks = explode('--' . $boundary, $buffer);
+        array_pop($chunks);
+
         foreach ($chunks as $chunk) {
             $chunk = $this->stripTrailingEOL($chunk);
             $this->parseChunk($chunk);
