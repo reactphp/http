@@ -215,8 +215,7 @@ final class RequestBodyParserMiddlewareTest extends TestCase
         $data .= "Content-Disposition: form-data; name=\"users[two]\"\r\n";
         $data .= "\r\n";
         $data .= "second\r\n";
-        $data .= "--$boundary\r\n";
-
+        $data .= "--$boundary--\r\n";
 
         $request = new ServerRequest('POST', 'http://example.com/', array(
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
@@ -240,5 +239,81 @@ final class RequestBodyParserMiddlewareTest extends TestCase
             $parsedRequest->getParsedBody()
         );
         $this->assertSame($data, (string)$parsedRequest->getBody());
+    }
+
+    public function testMultipartFormDataIgnoresFieldWithExcessiveNesting()
+    {
+        // supported in all Zend PHP versions and HHVM
+        // ini setting does exist everywhere but HHVM: https://3v4l.org/hXLiK
+        // HHVM limits to 64 and otherwise returns an empty array structure
+        $allowed = (int)ini_get('max_input_nesting_level');
+        if ($allowed === 0) {
+            $allowed = 64;
+        }
+
+        $middleware = new RequestBodyParserMiddleware();
+
+        $boundary = "---------------------------12758086162038677464950549563";
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"hello" . str_repeat("[]", $allowed + 1) . "\"\r\n";
+        $data .= "\r\n";
+        $data .= "world\r\n";
+        $data .= "--$boundary--\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
+        ), $data, 1.1);
+
+        /** @var ServerRequestInterface $parsedRequest */
+        $parsedRequest = $middleware(
+            $request,
+            function (ServerRequestInterface $request) {
+                return $request;
+            }
+        );
+
+        $this->assertEmpty($parsedRequest->getParsedBody());
+    }
+
+    public function testMultipartFormDataTruncatesBodyWithExcessiveLength()
+    {
+        // ini setting exists in PHP 5.3.9, not in HHVM: https://3v4l.org/VF6oV
+        // otherwise default to 1000 as implemented within
+        $allowed = (int)ini_get('max_input_vars');
+        if ($allowed === 0) {
+            $allowed = 1000;
+        }
+
+        $middleware = new RequestBodyParserMiddleware();
+
+        $boundary = "---------------------------12758086162038677464950549563";
+
+        $data  = "";
+        for ($i = 0; $i < $allowed + 1; ++$i) {
+            $data .= "--$boundary\r\n";
+            $data .= "Content-Disposition: form-data; name=\"a[]\"\r\n";
+            $data .= "\r\n";
+            $data .= "b\r\n";
+        }
+        $data .= "--$boundary--\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
+        ), $data, 1.1);
+
+        /** @var ServerRequestInterface $parsedRequest */
+        $parsedRequest = $middleware(
+            $request,
+            function (ServerRequestInterface $request) {
+                return $request;
+            }
+        );
+
+        $body = $parsedRequest->getParsedBody();
+
+        $this->assertCount(1, $body);
+        $this->assertTrue(isset($body['a']));
+        $this->assertCount($allowed, $body['a']);
     }
 }

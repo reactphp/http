@@ -27,6 +27,28 @@ final class MultipartParser
      */
     protected $maxFileSize;
 
+    /**
+     * ini setting "max_input_vars"
+     *
+     * Does not exist in PHP < 5.3.9 or HHVM, so assume PHP's default 1000 here.
+     *
+     * @var int
+     * @link http://php.net/manual/en/info.configuration.php#ini.max-input-vars
+     */
+    private $maxInputVars = 1000;
+
+    /**
+     * ini setting "max_input_nesting_level"
+     *
+     * Does not exist in HHVM, but assumes hard coded to 64 (PHP's default).
+     *
+     * @var int
+     * @link http://php.net/manual/en/info.configuration.php#ini.max-input-nesting-level
+     */
+    private $maxInputNestingLevel = 64;
+
+    private $postCount = 0;
+
     public static function parseRequest(ServerRequestInterface $request)
     {
         $parser = new self($request);
@@ -36,6 +58,15 @@ final class MultipartParser
     private function __construct(ServerRequestInterface $request)
     {
         $this->request = $request;
+
+        $var = ini_get('max_input_vars');
+        if ($var !== false) {
+            $this->maxInputVars = (int)$var;
+        }
+        $var = ini_get('max_input_nesting_level');
+        if ($var !== false) {
+            $this->maxInputNestingLevel = (int)$var;
+        }
     }
 
     private function parse()
@@ -150,6 +181,11 @@ final class MultipartParser
 
     private function parsePost($name, $value)
     {
+        // ignore excessive number of post fields
+        if (++$this->postCount > $this->maxInputVars) {
+            return;
+        }
+
         $this->request = $this->request->withParsedBody($this->extractPost(
             $this->request->getParsedBody(),
             $name,
@@ -200,6 +236,11 @@ final class MultipartParser
         $chunks = explode('[', $key);
         if (count($chunks) == 1) {
             $postFields[$key] = $value;
+            return $postFields;
+        }
+
+        // ignore this key if maximum nesting level is exceeded
+        if (isset($chunks[$this->maxInputNestingLevel])) {
             return $postFields;
         }
 
