@@ -49,16 +49,8 @@ final class MultipartParser
 
     private $postCount = 0;
 
-    public static function parseRequest(ServerRequestInterface $request)
+    public function __construct()
     {
-        $parser = new self($request);
-        return $parser->parse();
-    }
-
-    private function __construct(ServerRequestInterface $request)
-    {
-        $this->request = $request;
-
         $var = ini_get('max_input_vars');
         if ($var !== false) {
             $this->maxInputVars = (int)$var;
@@ -69,16 +61,22 @@ final class MultipartParser
         }
     }
 
-    private function parse()
+    public function parse(ServerRequestInterface $request)
     {
-        $contentType = $this->request->getHeaderLine('content-type');
+        $contentType = $request->getHeaderLine('content-type');
         if(!preg_match('/boundary="?(.*)"?$/', $contentType, $matches)) {
-            return $this->request;
+            return $request;
         }
 
-        $this->parseBody('--' . $matches[1], (string)$this->request->getBody());
+        $this->request = $request;
+        $this->parseBody('--' . $matches[1], (string)$request->getBody());
 
-        return $this->request;
+        $request = $this->request;
+        $this->request = null;
+        $this->postCount = 0;
+        $this->maxFileSize = null;
+
+        return $request;
     }
 
     private function parseBody($boundary, $buffer)

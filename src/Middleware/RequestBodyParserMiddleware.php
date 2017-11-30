@@ -7,6 +7,13 @@ use React\Http\Io\MultipartParser;
 
 final class RequestBodyParserMiddleware
 {
+    private $multipart;
+
+    public function __construct()
+    {
+        $this->multipart = new MultipartParser();
+    }
+
     public function __invoke(ServerRequestInterface $request, $next)
     {
         $type = strtolower($request->getHeaderLine('Content-Type'));
@@ -17,7 +24,7 @@ final class RequestBodyParserMiddleware
         }
 
         if ($type === 'multipart/form-data') {
-            return $next(MultipartParser::parseRequest($request));
+            return $next($this->multipart->parse($request));
         }
 
         return $next($request);

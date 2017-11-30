@@ -26,7 +26,8 @@ final class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data',
         ), $data, 1.1);
 
-        $parsedRequest = MultipartParser::parseRequest($request);
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
 
         $this->assertEmpty($parsedRequest->getUploadedFiles());
         $this->assertEmpty($parsedRequest->getParsedBody());
@@ -50,7 +51,8 @@ final class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
-        $parsedRequest = MultipartParser::parseRequest($request);
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
 
         $this->assertEmpty($parsedRequest->getUploadedFiles());
         $this->assertSame(
@@ -82,7 +84,8 @@ final class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
-        $parsedRequest = MultipartParser::parseRequest($request);
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
 
         $this->assertEmpty($parsedRequest->getUploadedFiles());
         $this->assertSame(
@@ -111,7 +114,8 @@ final class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
-        $parsedRequest = MultipartParser::parseRequest($request);
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
 
         $this->assertEmpty($parsedRequest->getUploadedFiles());
         $this->assertSame(
@@ -142,7 +146,8 @@ final class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
-        $parsedRequest = MultipartParser::parseRequest($request);
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
 
         $this->assertEmpty($parsedRequest->getUploadedFiles());
         $this->assertSame(
@@ -173,7 +178,8 @@ final class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
-        $parsedRequest = MultipartParser::parseRequest($request);
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
 
         $this->assertEmpty($parsedRequest->getUploadedFiles());
         $this->assertSame(
@@ -205,7 +211,8 @@ final class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
-        $parsedRequest = MultipartParser::parseRequest($request);
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
 
         $this->assertEmpty($parsedRequest->getUploadedFiles());
         $this->assertSame(
@@ -230,7 +237,8 @@ final class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
-        $parsedRequest = MultipartParser::parseRequest($request);
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
 
         $this->assertEmpty($parsedRequest->getUploadedFiles());
         $this->assertSame(
@@ -255,7 +263,8 @@ final class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
-        $parsedRequest = MultipartParser::parseRequest($request);
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
 
         $this->assertEmpty($parsedRequest->getUploadedFiles());
         $this->assertSame(
@@ -284,7 +293,8 @@ final class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
-        $parsedRequest = MultipartParser::parseRequest($request);
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
 
         $this->assertEmpty($parsedRequest->getUploadedFiles());
         $this->assertSame(
@@ -364,7 +374,8 @@ final class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
-        $parsedRequest = MultipartParser::parseRequest($request);
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
 
         $this->assertSame(
             array(
@@ -418,7 +429,8 @@ final class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
-        $parsedRequest = MultipartParser::parseRequest($request);
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
 
         $this->assertEmpty($parsedRequest->getUploadedFiles());
         $this->assertSame(
@@ -443,7 +455,8 @@ final class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
-        $parsedRequest = MultipartParser::parseRequest($request);
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
 
         $this->assertEmpty($parsedRequest->getUploadedFiles());
         $this->assertEmpty($parsedRequest->getParsedBody());
@@ -462,7 +475,8 @@ final class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
-        $parsedRequest = MultipartParser::parseRequest($request);
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
 
         $this->assertEmpty($parsedRequest->getUploadedFiles());
         $this->assertEmpty($parsedRequest->getParsedBody());
@@ -479,7 +493,8 @@ final class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
-        $parsedRequest = MultipartParser::parseRequest($request);
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
 
         $this->assertEmpty($parsedRequest->getUploadedFiles());
         $this->assertEmpty($parsedRequest->getParsedBody());
@@ -499,7 +514,8 @@ final class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
-        $parsedRequest = MultipartParser::parseRequest($request);
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
 
         $this->assertEmpty($parsedRequest->getUploadedFiles());
         $this->assertEmpty($parsedRequest->getParsedBody());
@@ -519,7 +535,8 @@ final class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
-        $parsedRequest = MultipartParser::parseRequest($request);
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
 
         $this->assertEmpty($parsedRequest->getUploadedFiles());
         $this->assertEmpty($parsedRequest->getParsedBody());
@@ -539,7 +556,8 @@ final class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
-        $parsedRequest = MultipartParser::parseRequest($request);
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
 
         $this->assertEmpty($parsedRequest->getUploadedFiles());
         $this->assertEmpty($parsedRequest->getParsedBody());
@@ -558,7 +576,8 @@ final class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
-        $parsedRequest = MultipartParser::parseRequest($request);
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
 
         $this->assertEmpty($parsedRequest->getUploadedFiles());
         $this->assertSame(
@@ -581,7 +600,8 @@ final class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
-        $parsedRequest = MultipartParser::parseRequest($request);
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
 
         $files = $parsedRequest->getUploadedFiles();
 
@@ -615,7 +635,8 @@ final class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
-        $parsedRequest = MultipartParser::parseRequest($request);
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
 
         $files = $parsedRequest->getUploadedFiles();
 
@@ -648,7 +669,8 @@ final class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
-        $parsedRequest = MultipartParser::parseRequest($request);
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
 
         $files = $parsedRequest->getUploadedFiles();
 
@@ -681,7 +703,8 @@ final class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
-        $parsedRequest = MultipartParser::parseRequest($request);
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
 
         $files = $parsedRequest->getUploadedFiles();
 
@@ -718,7 +741,8 @@ final class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
-        $parsedRequest = MultipartParser::parseRequest($request);
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
 
         $files = $parsedRequest->getUploadedFiles();
 
@@ -772,7 +796,8 @@ final class MultipartParserTest extends TestCase
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         ), $data, 1.1);
 
-        $parsedRequest = MultipartParser::parseRequest($request);
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
 
         $files = $parsedRequest->getUploadedFiles();
 
