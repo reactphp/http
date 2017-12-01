@@ -88,12 +88,12 @@ class HttpBodyStreamTest extends TestCase
 
     public function testDetach()
     {
-        $this->assertEquals(null, $this->bodyStream->detach());
+        $this->assertNull($this->bodyStream->detach());
     }
 
     public function testGetSizeDefault()
     {
-        $this->assertEquals(null, $this->bodyStream->getSize());
+        $this->assertNull($this->bodyStream->getSize());
     }
 
     public function testGetSizeCustom()
@@ -146,7 +146,7 @@ class HttpBodyStreamTest extends TestCase
 
     public function testGetMetaData()
     {
-        $this->assertEquals(null, $this->bodyStream->getMetadata());
+        $this->assertNull($this->bodyStream->getMetadata());
     }
 
     public function testIsReadable()

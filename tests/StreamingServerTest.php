@@ -191,7 +191,7 @@ class StreamingServerTest extends TestCase
         $this->assertSame('/', $requestAssertion->getRequestTarget());
         $this->assertSame('/', $requestAssertion->getUri()->getPath());
         $this->assertSame('http://example.com/', (string)$requestAssertion->getUri());
-        $this->assertSame(null, $requestAssertion->getUri()->getPort());
+        $this->assertNull($requestAssertion->getUri()->getPort());
         $this->assertSame('example.com', $requestAssertion->getHeaderLine('Host'));
     }
 
@@ -290,7 +290,7 @@ class StreamingServerTest extends TestCase
         $this->assertSame('example.com:80', $requestAssertion->getRequestTarget());
         $this->assertSame('', $requestAssertion->getUri()->getPath());
         $this->assertSame('http://example.com', (string)$requestAssertion->getUri());
-        $this->assertSame(null, $requestAssertion->getUri()->getPort());
+        $this->assertNull($requestAssertion->getUri()->getPort());
         $this->assertSame('example.com', $requestAssertion->getHeaderLine('Host'));
     }
 
@@ -312,7 +312,7 @@ class StreamingServerTest extends TestCase
         $this->assertSame('example.com:80', $requestAssertion->getRequestTarget());
         $this->assertSame('', $requestAssertion->getUri()->getPath());
         $this->assertSame('http://example.com', (string)$requestAssertion->getUri());
-        $this->assertSame(null, $requestAssertion->getUri()->getPort());
+        $this->assertNull($requestAssertion->getUri()->getPort());
         $this->assertSame('example.com', $requestAssertion->getHeaderLine('Host'));
     }
 
