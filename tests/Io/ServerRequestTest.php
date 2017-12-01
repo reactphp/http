@@ -40,7 +40,7 @@ class ServerRequestTest extends TestCase
         $request = $this->request->withAttribute('hello', 'world');
 
         $this->assertNotSame($request, $this->request);
-        $this->assertEquals(null, $request->getAttribute('hi', null));
+        $this->assertNull($request->getAttribute('hi', null));
     }
 
     public function testWithoutAttribute()

@@ -593,7 +593,7 @@ final class MultipartParserTest extends TestCase
         $file = $files['file'];
 
         $this->assertSame('hello.txt', $file->getClientFilename());
-        $this->assertSame(null, $file->getClientMediaType());
+        $this->assertNull($file->getClientMediaType());
         $this->assertSame(5, $file->getSize());
         $this->assertSame(UPLOAD_ERR_OK, $file->getError());
         $this->assertSame('world', (string)$file->getStream());
