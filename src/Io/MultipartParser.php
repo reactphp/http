@@ -47,6 +47,13 @@ final class MultipartParser
      */
     private $maxInputNestingLevel = 64;
 
+    /**
+     * ini setting "upload_max_filesize"
+     *
+     * @var int
+     */
+    private $uploadMaxFilesize;
+
     private $postCount = 0;
 
     public function __construct()
@@ -59,6 +66,8 @@ final class MultipartParser
         if ($var !== false) {
             $this->maxInputNestingLevel = (int)$var;
         }
+
+        $this->uploadMaxFilesize = $this->iniUploadMaxFilesize();
     }
 
     public function parse(ServerRequestInterface $request)
@@ -152,6 +161,17 @@ final class MultipartParser
                 Psr7\stream_for(''),
                 $size,
                 UPLOAD_ERR_NO_FILE,
+                $filename,
+                $contentType
+            );
+        }
+
+        // file exceeds "upload_max_filesize" ini setting
+        if ($size > $this->uploadMaxFilesize) {
+            return new UploadedFile(
+                Psr7\stream_for(''),
+                $size,
+                UPLOAD_ERR_INI_SIZE,
                 $filename,
                 $contentType
             );
@@ -268,5 +288,29 @@ final class MultipartParser
         }
 
         return $postFields;
+    }
+
+    /**
+     * Gets upload_max_filesize from PHP's configuration expressed in bytes
+     *
+     * @return int
+     * @link http://php.net/manual/en/ini.core.php#ini.upload-max-filesize
+     * @codeCoverageIgnore
+     */
+    private function iniUploadMaxFilesize()
+    {
+        $size = ini_get('upload_max_filesize');
+        $suffix = strtoupper(substr($size, -1));
+        if ($suffix === 'K') {
+            return substr($size, 0, -1) * 1024;
+        }
+        if ($suffix === 'M') {
+            return substr($size, 0, -1) * 1024 * 1024;
+        }
+        if ($suffix === 'G') {
+            return substr($size, 0, -1) * 1024 * 1024 * 1024;
+        }
+
+        return $size;
     }
 }

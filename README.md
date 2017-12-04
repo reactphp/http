@@ -757,6 +757,8 @@ $handler = function (ServerRequestInterface $request) {
     if ($avatar instanceof UploadedFileInterface) {
         if ($avatar->getError() === UPLOAD_ERR_OK) {
             $uploaded = $avatar->getSize() . ' bytes';
+        } elseif ($avatar->getError() === UPLOAD_ERR_INI_SIZE) {
+            $uploaded = 'file too large';
         } else {
             $uploaded = 'with error';
         }
@@ -798,6 +800,8 @@ See also [example #12](examples) for more details.
 > PHP's `MAX_FILE_SIZE` hidden field is respected by this middleware.
 
 > This middleware respects the
+  [`upload_max_filesize`](http://php.net/manual/en/ini.core.php#ini.upload-max-filesize)
+  (default `2M`),
   [`max_input_vars`](http://php.net/manual/en/info.configuration.php#ini.max-input-vars)
   (default `1000`) and
   [`max_input_nesting_level`](http://php.net/manual/en/info.configuration.php#ini.max-input-nesting-level)
