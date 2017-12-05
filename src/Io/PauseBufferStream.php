@@ -30,6 +30,7 @@ class PauseBufferStream extends EventEmitter implements ReadableStreamInterface
     private $endPaused = false;
     private $closePaused = false;
     private $errorPaused = null;
+    private $implicit = false;
 
     public function __construct(ReadableStreamInterface $input)
     {
@@ -39,6 +40,29 @@ class PauseBufferStream extends EventEmitter implements ReadableStreamInterface
         $this->input->on('end', array($this, 'handleEnd'));
         $this->input->on('error', array($this, 'handleError'));
         $this->input->on('close', array($this, 'handleClose'));
+    }
+
+    /**
+     * pause and remember this was not explicitly from user control
+     *
+     * @internal
+     */
+    public function pauseImplicit()
+    {
+        $this->pause();
+        $this->implicit = true;
+    }
+
+    /**
+     * resume only if this was previously paused implicitly and not explicitly from user control
+     *
+     * @internal
+     */
+    public function resumeImplicit()
+    {
+        if ($this->implicit) {
+            $this->resume();
+        }
     }
 
     public function isReadable()
@@ -54,6 +78,7 @@ class PauseBufferStream extends EventEmitter implements ReadableStreamInterface
 
         $this->input->pause();
         $this->paused = true;
+        $this->implicit = false;
     }
 
     public function resume()
@@ -63,6 +88,7 @@ class PauseBufferStream extends EventEmitter implements ReadableStreamInterface
         }
 
         $this->paused = false;
+        $this->implicit = false;
 
         if ($this->dataPaused !== '') {
             $this->emit('data', array($this->dataPaused));

@@ -84,16 +84,18 @@ final class LimitHandlersMiddleware
     {
         $body = $request->getBody();
         if ($body instanceof ReadableStreamInterface) {
-            // replace with buffering body to ensure any readable events will be buffered
-            $body = new HttpBodyStream(
-                new PauseBufferStream($body),
-                $body->getSize()
-            );
-
             // pause actual body to stop emitting data until the handler is called
-            $request = $request->withBody($body);
-            $body->pause();
+            $size = $body->getSize();
+            $body = new PauseBufferStream($body);
+            $body->pauseImplicit();
+
+            // replace with buffering body to ensure any readable events will be buffered
+            $request = $request->withBody(new HttpBodyStream(
+                $body,
+                $size
+            ));
         }
+
         $deferred = new Deferred();
         $this->queued->enqueue($deferred);
 
@@ -101,15 +103,14 @@ final class LimitHandlersMiddleware
 
         $that = $this;
         $pending = &$this->pending;
-        return $deferred->promise()->then(function () use ($request, $next, &$pending) {
+        return $deferred->promise()->then(function () use ($request, $next, $body, &$pending) {
             $pending++;
 
             $ret = $next($request);
 
             // resume readable stream and replay buffered events
-            $body = $request->getBody();
-            if ($body instanceof ReadableStreamInterface) {
-                $body->resume();
+            if ($body instanceof PauseBufferStream) {
+                $body->resumeImplicit();
             }
 
             return $ret;

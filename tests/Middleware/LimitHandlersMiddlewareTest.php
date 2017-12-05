@@ -255,10 +255,95 @@ final class LimitHandlersMiddlewareTest extends TestCase
             new HttpBodyStream($stream, 10)
         );
 
-        $req = null;
         $once = $this->expectCallableOnceWith('helloworld');
         $middleware($request, function (ServerRequestInterface $request) use ($once) {
             $request->getBody()->on('data', $once);
+        });
+
+        $stream->write('hello');
+        $stream->write('world');
+
+        $deferred->reject(new \RuntimeException());
+    }
+
+    public function testReceivesNextStreamingBodyAndDoesNotEmitDataIfExplicitlyClosed()
+    {
+        $deferred = new Deferred();
+        $middleware = new LimitHandlersMiddleware(1);
+        $middleware(new ServerRequest('GET', 'http://example.com/'), function () use ($deferred) {
+            return $deferred->promise();
+        });
+
+        $stream = new ThroughStream();
+        $request = new ServerRequest(
+            'POST',
+            'http://example.com/',
+            array(),
+            new HttpBodyStream($stream, 10)
+        );
+
+        $never = $this->expectCallableNever();
+        $middleware($request, function (ServerRequestInterface $request) use ($never) {
+            $request->getBody()->close();
+            $request->getBody()->on('data', $never);
+        });
+
+        $stream->write('hello');
+        $stream->write('world');
+
+        $deferred->reject(new \RuntimeException());
+    }
+
+    public function testReceivesNextStreamingBodyAndDoesNotEmitDataIfExplicitlyPaused()
+    {
+        $deferred = new Deferred();
+        $middleware = new LimitHandlersMiddleware(1);
+        $middleware(new ServerRequest('GET', 'http://example.com/'), function () use ($deferred) {
+            return $deferred->promise();
+        });
+
+        $stream = new ThroughStream();
+        $request = new ServerRequest(
+            'POST',
+            'http://example.com/',
+            array(),
+            new HttpBodyStream($stream, 10)
+        );
+
+        $never = $this->expectCallableNever();
+        $middleware($request, function (ServerRequestInterface $request) use ($never) {
+            $request->getBody()->pause();
+            $request->getBody()->on('data', $never);
+        });
+
+        $stream->write('hello');
+        $stream->write('world');
+
+        $deferred->reject(new \RuntimeException());
+    }
+
+    public function testReceivesNextStreamingBodyAndDoesEmitDataImmediatelyIfExplicitlyResumed()
+    {
+        $deferred = new Deferred();
+        $middleware = new LimitHandlersMiddleware(1);
+        $middleware(new ServerRequest('GET', 'http://example.com/'), function () use ($deferred) {
+            return $deferred->promise();
+        });
+
+        $stream = new ThroughStream();
+        $request = new ServerRequest(
+            'POST',
+            'http://example.com/',
+            array(),
+            new HttpBodyStream($stream, 10)
+        );
+
+        $once = $this->expectCallableOnceWith('helloworld');
+        $never = $this->expectCallableNever();
+        $middleware($request, function (ServerRequestInterface $request) use ($once, $never) {
+            $request->getBody()->on('data', $once);
+            $request->getBody()->resume();
+            $request->getBody()->on('data', $never);
         });
 
         $stream->write('hello');
