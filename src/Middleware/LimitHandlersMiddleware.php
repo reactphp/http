@@ -5,9 +5,9 @@ namespace React\Http\Middleware;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Io\HttpBodyStream;
 use React\Http\Io\PauseBufferStream;
+use React\Promise;
 use React\Promise\Deferred;
 use React\Stream\ReadableStreamInterface;
-use SplQueue;
 
 /**
  * Limits how many next handlers can be executed concurrently.
@@ -66,7 +66,7 @@ final class LimitHandlersMiddleware
 {
     private $limit;
     private $pending = 0;
-    private $queued;
+    private $queue = array();
 
     /**
      * @param int $limit Maximum amount of concurrent requests handled.
@@ -77,7 +77,6 @@ final class LimitHandlersMiddleware
     public function __construct($limit)
     {
         $this->limit = $limit;
-        $this->queued = new SplQueue();
     }
 
     public function __invoke(ServerRequestInterface $request, $next)
@@ -96,9 +95,21 @@ final class LimitHandlersMiddleware
             ));
         }
 
-        $deferred = new Deferred();
-        $this->queued->enqueue($deferred);
+        // get next queue position
+        $queue =& $this->queue;
+        $queue[] = null;
+        end($queue);
+        $id = key($queue);
 
+        $deferred = new Deferred(function ($_, $reject) use (&$queue, $id) {
+            // queued promise cancelled before its next handler is invoked
+            // remove from queue and reject explicitly
+            unset($queue[$id]);
+            $reject(new \RuntimeException('Cancelled queued next handler'));
+        });
+
+        // queue request and process queue if pending does not exceed limit
+        $queue[$id] = $deferred;
         $this->processQueue();
 
         $that = $this;
@@ -117,11 +128,13 @@ final class LimitHandlersMiddleware
         })->then(function ($response) use ($that, &$pending) {
             $pending--;
             $that->processQueue();
+
             return $response;
         }, function ($error) use ($that, &$pending) {
             $pending--;
             $that->processQueue();
-            return $error;
+
+            return Promise\reject($error);
         });
     }
 
@@ -134,10 +147,13 @@ final class LimitHandlersMiddleware
             return;
         }
 
-        if ($this->queued->count() === 0) {
+        if (!$this->queue) {
             return;
         }
 
-        $this->queued->dequeue()->resolve();
+        $first = reset($this->queue);
+        unset($this->queue[key($this->queue)]);
+
+        $first->resolve();
     }
 }

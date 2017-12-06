@@ -10,6 +10,7 @@ use React\Promise\Deferred;
 use React\Promise\Promise;
 use React\Stream\ThroughStream;
 use React\Tests\Http\TestCase;
+use React\Promise\PromiseInterface;
 
 final class LimitHandlersMiddlewareTest extends TestCase
 {
@@ -199,6 +200,75 @@ final class LimitHandlersMiddlewareTest extends TestCase
         });
 
         $deferred->reject(new \RuntimeException());
+
+        $middleware($request, $this->expectCallableOnceWith($request));
+    }
+
+    public function testPendingRequestCanBeCancelledAndForwardsCancellationToInnerPromise()
+    {
+        $request = new ServerRequest(
+            'POST',
+            'http://example.com/',
+            array(),
+            'hello'
+        );
+
+        $once = $this->expectCallableOnce();
+        $deferred = new Deferred(function () use ($once) {
+            $once();
+            throw new \RuntimeException('Cancelled');
+        });
+        $middleware = new LimitHandlersMiddleware(1);
+        $promise = $middleware($request, function () use ($deferred) {
+            return $deferred->promise();
+        });
+
+        $this->assertTrue($promise instanceof PromiseInterface);
+        $promise->cancel();
+    }
+
+    public function testQueuedRequestCanBeCancelledBeforeItStartsProcessing()
+    {
+        $request = new ServerRequest(
+            'POST',
+            'http://example.com/',
+            array(),
+            'hello'
+        );
+
+        $deferred = new Deferred();
+        $middleware = new LimitHandlersMiddleware(1);
+        $middleware($request, function () use ($deferred) {
+            return $deferred->promise();
+        });
+
+        $promise = $middleware($request, $this->expectCallableNever());
+
+        $this->assertTrue($promise instanceof PromiseInterface);
+        $promise->cancel();
+        $promise->then(null, $this->expectCallableOnce());
+    }
+
+    public function testReceivesNextRequestAfterPreviousHandlerIsCancelled()
+    {
+        $request = new ServerRequest(
+            'POST',
+            'http://example.com/',
+            array(),
+            'hello'
+        );
+
+        $deferred = new Deferred(function () {
+            throw new \RuntimeException('Cancelled');
+        });
+        $middleware = new LimitHandlersMiddleware(1);
+        $promise = $middleware($request, function () use ($deferred) {
+            return $deferred->promise();
+        });
+
+        $this->assertTrue($promise instanceof PromiseInterface);
+        $promise->cancel();
+        $promise->then(null, $this->expectCallableOnce());
 
         $middleware($request, $this->expectCallableOnceWith($request));
     }
