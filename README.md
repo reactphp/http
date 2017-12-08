@@ -834,6 +834,13 @@ new RequestBodyParserMiddleware(10 * 1024, 100); // 100 files with 10 KiB each
   [`max_input_nesting_level`](http://php.net/manual/en/info.configuration.php#ini.max-input-nesting-level)
   (default `64`) ini settings.
 
+> Note that this middleware ignores the
+  [`enable_post_data_reading`](http://php.net/manual/en/ini.core.php#ini.enable-post-data-reading)
+  (default `1`) ini setting because it makes little sense to respect here and
+  is left up to higher-level implementations.
+  If you want to respect this setting, you have to check its value and
+  effectively avoid using this middleware entirely.
+
 #### Third-Party Middleware
 
 A non-exhaustive list of third-party middleware can be found at the [`Middleware`](https://github.com/reactphp/http/wiki/Middleware) wiki page. 
