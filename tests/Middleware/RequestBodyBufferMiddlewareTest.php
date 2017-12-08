@@ -38,6 +38,7 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
         $stream->write('world');
         $stream->end('!');
 
+        $this->assertSame(11, $exposedRequest->getBody()->getSize());
         $this->assertSame('helloworld!', $exposedRequest->getBody()->getContents());
     }
 
@@ -63,13 +64,14 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
             }
         );
 
+        $this->assertSame($size, $exposedRequest->getBody()->getSize());
         $this->assertSame($body, $exposedRequest->getBody()->getContents());
     }
 
     public function testKnownExcessiveSizedBodyIsDisgardedTheRequestIsPassedDownToTheNextMiddleware()
     {
         $loop = Factory::create();
-        
+
         $stream = new ThroughStream();
         $stream->end('aa');
         $serverRequest = new ServerRequest(
@@ -89,6 +91,28 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
 
         $this->assertSame(200, $response->getStatusCode());
         $this->assertSame('', $response->getBody()->getContents());
+    }
+
+    public function testAlreadyBufferedExceedingSizeResolvesImmediatelyWithEmptyBody()
+    {
+        $serverRequest = new ServerRequest(
+            'GET',
+            'https://example.com/',
+            array(),
+            'hello'
+        );
+
+        $exposedRequest = null;
+        $buffer = new RequestBodyBufferMiddleware(1);
+        $buffer(
+            $serverRequest,
+            function (ServerRequestInterface $request) use (&$exposedRequest) {
+                $exposedRequest = $request;
+            }
+        );
+
+        $this->assertSame(0, $exposedRequest->getBody()->getSize());
+        $this->assertSame('', $exposedRequest->getBody()->getContents());
     }
 
     public function testExcessiveSizeBodyIsDiscardedAndTheRequestIsPassedDownToTheNextMiddleware()
@@ -128,7 +152,7 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
     public function testBufferingErrorThrows()
     {
         $loop = Factory::create();
-        
+
         $stream = new ThroughStream();
         $serverRequest = new ServerRequest(
             'GET',

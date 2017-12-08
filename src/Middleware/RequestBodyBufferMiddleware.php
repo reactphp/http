@@ -29,16 +29,22 @@ final class RequestBodyBufferMiddleware
 
     public function __invoke(ServerRequestInterface $request, $stack)
     {
-        $sizeLimit = $this->sizeLimit;
         $body = $request->getBody();
 
-        // request body of known size exceeding limit
-        if ($body->getSize() > $this->sizeLimit) {
-            $sizeLimit = 0;
+        // skip if body is already buffered
+        if (!$body instanceof ReadableStreamInterface) {
+            // replace with empty buffer if size limit is exceeded
+            if ($body->getSize() > $this->sizeLimit) {
+                $request = $request->withBody(new BufferStream(0));
+            }
+
+            return $stack($request);
         }
 
-        if (!$body instanceof ReadableStreamInterface) {
-            return $stack($request);
+        // request body of known size exceeding limit
+        $sizeLimit = $this->sizeLimit;
+        if ($body->getSize() > $this->sizeLimit) {
+            $sizeLimit = 0;
         }
 
         return Stream\buffer($body, $sizeLimit)->then(function ($buffer) use ($request, $stack) {
