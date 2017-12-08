@@ -13,7 +13,7 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
   * [Request](#request)
   * [Response](#response)
   * [Middleware](#middleware)
-    * [LimitHandlersMiddleware](#limithandlersmiddleware)
+    * [LimitConcurrentRequestsMiddleware](#limitconcurrentrequestsmiddleware)
     * [RequestBodyBufferMiddleware](#requestbodybuffermiddleware)
     * [RequestBodyParserMiddleware](#requestbodyparsermiddleware)
     * [Third-Party Middleware](#third-party-middleware)
@@ -682,9 +682,9 @@ $server = new StreamingServer(new MiddlewareRunner([
 ]));
 ```
 
-#### LimitHandlersMiddleware
+#### LimitConcurrentRequestsMiddleware
 
-The `LimitHandlersMiddleware` can be used to
+The `LimitConcurrentRequestsMiddleware` can be used to
 limit how many next handlers can be executed concurrently.
 
 If this middleware is invoked, it will check if the number of pending
@@ -703,7 +703,7 @@ than 10 handlers will be invoked at once:
 
 ```php
 $server = new StreamingServer(new MiddlewareRunner([
-    new LimitHandlersMiddleware(10),
+    new LimitConcurrentRequestsMiddleware(10),
     $handler
 ]));
 ```
@@ -714,7 +714,7 @@ to limit the total number of requests that can be buffered at once:
 
 ```php
 $server = new StreamingServer(new MiddlewareRunner([
-    new LimitHandlersMiddleware(100), // 100 concurrent buffering handlers
+    new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
     new RequestBodyParserMiddleware(),
     $handler
@@ -727,10 +727,10 @@ processes one request after another without any concurrency:
 
 ```php
 $server = new StreamingServer(new MiddlewareRunner([
-    new LimitHandlersMiddleware(100), // 100 concurrent buffering handlers
+    new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
     new RequestBodyParserMiddleware(),
-    new LimitHandlersMiddleware(1), // only execute 1 handler (no concurrency)
+    new LimitConcurrentRequestsMiddleware(1), // only execute 1 handler (no concurrency)
     $handler
 ]));
 ```
@@ -772,14 +772,14 @@ Note that the given buffer size limit is applied to each request individually.
 This means that if you allow a 2 MiB limit and then receive 1000 concurrent
 requests, up to 2000 MiB may be allocated for these buffers alone.
 As such, it's highly recommended to use this along with the
-[`LimitHandlersMiddleware`](#limithandlersmiddleware) (see above) to limit
+[`LimitConcurrentRequestsMiddleware`](#limitconcurrentrequestsmiddleware) (see above) to limit
 the total number of concurrent requests.
 
 Usage:
 
 ```php
 $middlewares = new MiddlewareRunner([
-    new LimitHandlersMiddleware(100), // 100 concurrent buffering handlers
+    new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
     function (ServerRequestInterface $request, callable $next) {
         // The body from $request->getBody() is now fully available without the need to stream it 
@@ -838,7 +838,7 @@ $handler = function (ServerRequestInterface $request) {
 };
 
 $server = new StreamingServer(new MiddlewareRunner([
-    new LimitHandlersMiddleware(100), // 100 concurrent buffering handlers
+    new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
     new RequestBodyParserMiddleware(),
     $handler

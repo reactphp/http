@@ -5,14 +5,14 @@ namespace React\Tests\Http\Middleware;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Io\HttpBodyStream;
 use React\Http\Io\ServerRequest;
-use React\Http\Middleware\LimitHandlersMiddleware;
+use React\Http\Middleware\LimitConcurrentRequestsMiddleware;
 use React\Promise\Deferred;
 use React\Promise\Promise;
 use React\Stream\ThroughStream;
 use React\Tests\Http\TestCase;
 use React\Promise\PromiseInterface;
 
-final class LimitHandlersMiddlewareTest extends TestCase
+final class LimitConcurrentRequestsMiddlewareTest extends TestCase
 {
     public function testLimitOneRequestConcurrently()
     {
@@ -51,7 +51,7 @@ final class LimitHandlersMiddlewareTest extends TestCase
          * The handler
          *
          */
-        $limitHandlers = new LimitHandlersMiddleware(1);
+        $limitHandlers = new LimitConcurrentRequestsMiddleware(1);
 
         $this->assertFalse($calledA);
         $this->assertFalse($calledB);
@@ -99,7 +99,7 @@ final class LimitHandlersMiddlewareTest extends TestCase
         $body = $this->getMockBuilder('React\Http\Io\HttpBodyStream')->disableOriginalConstructor()->getMock();
         $body->expects($this->once())->method('pause');
         $body->expects($this->once())->method('resume');
-        $limitHandlers = new LimitHandlersMiddleware(1);
+        $limitHandlers = new LimitConcurrentRequestsMiddleware(1);
         $limitHandlers(new ServerRequest('GET', 'https://example.com/', array(), $body), function () {});
     }
 
@@ -113,7 +113,7 @@ final class LimitHandlersMiddlewareTest extends TestCase
         );
 
         $req = null;
-        $middleware = new LimitHandlersMiddleware(1);
+        $middleware = new LimitConcurrentRequestsMiddleware(1);
         $middleware($request, function (ServerRequestInterface $request) use (&$req) {
             $req = $request;
         });
@@ -132,7 +132,7 @@ final class LimitHandlersMiddlewareTest extends TestCase
         );
 
         $req = null;
-        $middleware = new LimitHandlersMiddleware(1);
+        $middleware = new LimitConcurrentRequestsMiddleware(1);
         $middleware($request, function (ServerRequestInterface $request) use (&$req) {
             $req = $request;
         });
@@ -159,7 +159,7 @@ final class LimitHandlersMiddlewareTest extends TestCase
             'hello'
         );
 
-        $middleware = new LimitHandlersMiddleware(1);
+        $middleware = new LimitConcurrentRequestsMiddleware(1);
         $middleware($request, $this->expectCallableOnceWith($request));
         $middleware($request, $this->expectCallableOnceWith($request));
         $middleware($request, $this->expectCallableOnceWith($request));
@@ -174,7 +174,7 @@ final class LimitHandlersMiddlewareTest extends TestCase
             'hello'
         );
 
-        $middleware = new LimitHandlersMiddleware(1);
+        $middleware = new LimitConcurrentRequestsMiddleware(1);
         $middleware($request, function () {
             return new Promise(function () {
                 // NO-OP: pending promise
@@ -194,7 +194,7 @@ final class LimitHandlersMiddlewareTest extends TestCase
         );
 
         $deferred = new Deferred();
-        $middleware = new LimitHandlersMiddleware(1);
+        $middleware = new LimitConcurrentRequestsMiddleware(1);
         $middleware($request, function () use ($deferred) {
             return $deferred->promise();
         });
@@ -218,7 +218,7 @@ final class LimitHandlersMiddlewareTest extends TestCase
             $once();
             throw new \RuntimeException('Cancelled');
         });
-        $middleware = new LimitHandlersMiddleware(1);
+        $middleware = new LimitConcurrentRequestsMiddleware(1);
         $promise = $middleware($request, function () use ($deferred) {
             return $deferred->promise();
         });
@@ -237,7 +237,7 @@ final class LimitHandlersMiddlewareTest extends TestCase
         );
 
         $deferred = new Deferred();
-        $middleware = new LimitHandlersMiddleware(1);
+        $middleware = new LimitConcurrentRequestsMiddleware(1);
         $middleware($request, function () use ($deferred) {
             return $deferred->promise();
         });
@@ -261,7 +261,7 @@ final class LimitHandlersMiddlewareTest extends TestCase
         $deferred = new Deferred(function () {
             throw new \RuntimeException('Cancelled');
         });
-        $middleware = new LimitHandlersMiddleware(1);
+        $middleware = new LimitConcurrentRequestsMiddleware(1);
         $promise = $middleware($request, function () use ($deferred) {
             return $deferred->promise();
         });
@@ -284,7 +284,7 @@ final class LimitHandlersMiddlewareTest extends TestCase
         );
 
         $deferred = new Deferred();
-        $middleware = new LimitHandlersMiddleware(1);
+        $middleware = new LimitConcurrentRequestsMiddleware(1);
         $middleware($request, function () use ($deferred) {
             return $deferred->promise();
         });
@@ -312,7 +312,7 @@ final class LimitHandlersMiddlewareTest extends TestCase
     public function testReceivesNextStreamingBodyWithBufferedDataAfterPreviousHandlerIsSettled()
     {
         $deferred = new Deferred();
-        $middleware = new LimitHandlersMiddleware(1);
+        $middleware = new LimitConcurrentRequestsMiddleware(1);
         $middleware(new ServerRequest('GET', 'http://example.com/'), function () use ($deferred) {
             return $deferred->promise();
         });
@@ -339,7 +339,7 @@ final class LimitHandlersMiddlewareTest extends TestCase
     public function testReceivesNextStreamingBodyAndDoesNotEmitDataIfExplicitlyClosed()
     {
         $deferred = new Deferred();
-        $middleware = new LimitHandlersMiddleware(1);
+        $middleware = new LimitConcurrentRequestsMiddleware(1);
         $middleware(new ServerRequest('GET', 'http://example.com/'), function () use ($deferred) {
             return $deferred->promise();
         });
@@ -367,7 +367,7 @@ final class LimitHandlersMiddlewareTest extends TestCase
     public function testReceivesNextStreamingBodyAndDoesNotEmitDataIfExplicitlyPaused()
     {
         $deferred = new Deferred();
-        $middleware = new LimitHandlersMiddleware(1);
+        $middleware = new LimitConcurrentRequestsMiddleware(1);
         $middleware(new ServerRequest('GET', 'http://example.com/'), function () use ($deferred) {
             return $deferred->promise();
         });
@@ -395,7 +395,7 @@ final class LimitHandlersMiddlewareTest extends TestCase
     public function testReceivesNextStreamingBodyAndDoesEmitDataImmediatelyIfExplicitlyResumed()
     {
         $deferred = new Deferred();
-        $middleware = new LimitHandlersMiddleware(1);
+        $middleware = new LimitConcurrentRequestsMiddleware(1);
         $middleware(new ServerRequest('GET', 'http://example.com/'), function () use ($deferred) {
             return $deferred->promise();
         });

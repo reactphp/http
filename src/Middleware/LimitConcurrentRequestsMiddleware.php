@@ -28,7 +28,7 @@ use React\Stream\ReadableStreamInterface;
  *
  * ```php
  * $server = new StreamingServer(new MiddlewareRunner([
- *     new LimitHandlersMiddleware(10),
+ *     new LimitConcurrentRequestsMiddleware(10),
  *     $handler
  * ]));
  * ```
@@ -39,7 +39,7 @@ use React\Stream\ReadableStreamInterface;
  *
  * ```php
  * $server = new StreamingServer(new MiddlewareRunner([
- *     new LimitHandlersMiddleware(100), // 100 concurrent buffering handlers
+ *     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
  *     new RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
  *     new RequestBodyParserMiddleware(),
  *    $handler
@@ -52,17 +52,17 @@ use React\Stream\ReadableStreamInterface;
  *
  * ```php
  * $server = new StreamingServer(new MiddlewareRunner([
- *     new LimitHandlersMiddleware(100), // 100 concurrent buffering handlers
+ *     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
  *     new RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
  *     new RequestBodyParserMiddleware(),
- *     new LimitHandlersMiddleware(1), // only execute 1 handler (no concurrency)
+ *     new LimitConcurrentRequestsMiddleware(1), // only execute 1 handler (no concurrency)
  *     $handler
  * ]));
  * ```
  *
  * @see RequestBodyBufferMiddleware
  */
-final class LimitHandlersMiddleware
+final class LimitConcurrentRequestsMiddleware
 {
     private $limit;
     private $pending = 0;

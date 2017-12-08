@@ -3,7 +3,7 @@
 namespace React\Tests\Http;
 
 use Psr\Http\Message\ServerRequestInterface;
-use React\Http\Middleware\LimitHandlersMiddleware;
+use React\Http\Middleware\LimitConcurrentRequestsMiddleware;
 use React\Http\Middleware\RequestBodyBufferMiddleware;
 use React\Http\MiddlewareRunner;
 use React\Socket\Server as Socket;
@@ -719,13 +719,13 @@ class FunctionalServerTest extends TestCase
         $socket->close();
     }
 
-    public function testLimitHandlersMiddlewareRequestStreamPausing()
+    public function testLimitConcurrentRequestsMiddlewareRequestStreamPausing()
     {
         $loop = Factory::create();
         $connector = new Connector($loop);
 
         $server = new StreamingServer(new MiddlewareRunner(array(
-            new LimitHandlersMiddleware(5),
+            new LimitConcurrentRequestsMiddleware(5),
             new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
             function (ServerRequestInterface $request, $next) use ($loop) {
                 return new Promise\Promise(function ($resolve) use ($request, $loop, $next) {
