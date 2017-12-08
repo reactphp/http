@@ -63,6 +63,7 @@ final class MultipartParser
 
     private $postCount = 0;
     private $filesCount = 0;
+    private $emptyCount = 0;
 
     /**
      * @param int|null $uploadMaxFilesize
@@ -97,6 +98,7 @@ final class MultipartParser
         $this->request = null;
         $this->postCount = 0;
         $this->filesCount = 0;
+        $this->emptyCount = 0;
         $this->maxFileSize = null;
 
         return $request;
@@ -176,6 +178,11 @@ final class MultipartParser
 
         // no file selected (zero size and empty filename)
         if ($size === 0 && $filename === '') {
+            // ignore excessive number of empty file uploads
+            if (++$this->emptyCount + $this->filesCount > $this->maxInputVars) {
+                return;
+            }
+
             return new UploadedFile(
                 Psr7\stream_for(''),
                 $size,
