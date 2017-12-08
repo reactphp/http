@@ -57,6 +57,8 @@ final class MultipartParser
     /**
      * ini setting "max_file_uploads"
      *
+     * Additionally, setting "file_uploads = off" effectively sets this to zero.
+     *
      * @var int
      */
     private $maxFileUploads;
@@ -81,7 +83,7 @@ final class MultipartParser
         }
 
         $this->uploadMaxFilesize = $uploadMaxFilesize === null ? $this->iniUploadMaxFilesize() : (int)$uploadMaxFilesize;
-        $this->maxFileUploads = $maxFileUploads === null ? (int)ini_get('max_file_uploads') : (int)$maxFileUploads;
+        $this->maxFileUploads = $maxFileUploads === null ? (ini_get('file_uploads') === '' ? 0 : (int)ini_get('max_file_uploads')) : (int)$maxFileUploads;
     }
 
     public function parse(ServerRequestInterface $request)

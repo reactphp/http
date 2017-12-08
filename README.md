@@ -797,8 +797,11 @@ new RequestBodyParserMiddleware(8 * 1024 * 1024); // 8 MiB limit per file
 ```
 
 By default, this middleware respects the
+[`file_uploads`](http://php.net/manual/en/ini.core.php#ini.file-uploads)
+(default `1`) and
 [`max_file_uploads`](http://php.net/manual/en/ini.core.php#ini.max-file-uploads)
-(default `20`) ini setting.
+(default `20`) ini settings.
+These settings control if any and how many files can be uploaded in a single request.
 If you upload more files in a single request, additional files will be ignored
 and the `getUploadedFiles()` method returns a truncated array.
 Note that upload fields left blank on submission do not count towards this limit.
