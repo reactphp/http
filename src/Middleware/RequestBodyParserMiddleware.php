@@ -7,6 +7,17 @@ use React\Http\Io\MultipartParser;
 
 final class RequestBodyParserMiddleware
 {
+    private $multipart;
+
+    /**
+     * @param int|null $uploadMaxFilesize
+     * @param int|null $maxFileUploads
+     */
+    public function __construct($uploadMaxFilesize = null, $maxFileUploads = null)
+    {
+        $this->multipart = new MultipartParser($uploadMaxFilesize, $maxFileUploads);
+    }
+
     public function __invoke(ServerRequestInterface $request, $next)
     {
         $type = strtolower($request->getHeaderLine('Content-Type'));
@@ -17,7 +28,7 @@ final class RequestBodyParserMiddleware
         }
 
         if ($type === 'multipart/form-data') {
-            return $next(MultipartParser::parseRequest($request));
+            return $next($this->multipart->parse($request));
         }
 
         return $next($request);

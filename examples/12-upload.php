@@ -42,6 +42,8 @@ $handler = function (ServerRequestInterface $request) {
                 // contents via `(string)$file->getStream()` instead.
                 // Here, we simply use an inline image to send back to client:
                 $avatar = '<img src="data:'. $file->getClientMediaType() . ';base64,' . base64_encode($file->getStream()) . '" /> (' . $file->getSize() . ' bytes)';
+            } elseif ($file->getError() === UPLOAD_ERR_INI_SIZE) {
+                $avatar = 'upload exceeds file size limit';
             } else {
                 // Real applications should probably check the error number and
                 // should print some human-friendly text
@@ -119,8 +121,8 @@ HTML;
 
 // buffer and parse HTTP request body before running our request handler
 $server = new StreamingServer(new MiddlewareRunner(array(
-    new RequestBodyBufferMiddleware(100000), // 100 KB max, ignore body otherwise
-    new RequestBodyParserMiddleware(),
+    new RequestBodyBufferMiddleware(8 * 1024 * 1024), // 8 MiB max, ignore body otherwise
+    new RequestBodyParserMiddleware(100 * 1024, 1), // 1 file with 100 KiB max, reject upload otherwise
     $handler
 )));
 

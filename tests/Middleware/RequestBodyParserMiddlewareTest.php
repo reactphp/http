@@ -316,4 +316,44 @@ final class RequestBodyParserMiddlewareTest extends TestCase
         $this->assertTrue(isset($body['a']));
         $this->assertCount($allowed, $body['a']);
     }
+
+    public function testMultipartFormDataTruncatesExcessiveNumberOfEmptyFileUploads()
+    {
+        // ini setting exists in PHP 5.3.9, not in HHVM: https://3v4l.org/VF6oV
+        // otherwise default to 1000 as implemented within
+        $allowed = (int)ini_get('max_input_vars');
+        if ($allowed === 0) {
+            $allowed = 1000;
+        }
+
+        $middleware = new RequestBodyParserMiddleware();
+
+        $boundary = "---------------------------12758086162038677464950549563";
+
+        $data  = "";
+        for ($i = 0; $i < $allowed + 1; ++$i) {
+            $data .= "--$boundary\r\n";
+            $data .= "Content-Disposition: form-data; name=\"empty[]\"; filename=\"\"\r\n";
+            $data .= "\r\n";
+            $data .= "\r\n";
+        }
+        $data .= "--$boundary--\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
+        ), $data, 1.1);
+
+        /** @var ServerRequestInterface $parsedRequest */
+        $parsedRequest = $middleware(
+            $request,
+            function (ServerRequestInterface $request) {
+                return $request;
+            }
+        );
+
+        $body = $parsedRequest->getUploadedFiles();
+        $this->assertCount(1, $body);
+        $this->assertTrue(isset($body['empty']));
+        $this->assertCount($allowed, $body['empty']);
+    }
 }

@@ -47,18 +47,32 @@ final class MultipartParser
      */
     private $maxInputNestingLevel = 64;
 
+    /**
+     * ini setting "upload_max_filesize"
+     *
+     * @var int
+     */
+    private $uploadMaxFilesize;
+
+    /**
+     * ini setting "max_file_uploads"
+     *
+     * Additionally, setting "file_uploads = off" effectively sets this to zero.
+     *
+     * @var int
+     */
+    private $maxFileUploads;
+
     private $postCount = 0;
+    private $filesCount = 0;
+    private $emptyCount = 0;
 
-    public static function parseRequest(ServerRequestInterface $request)
+    /**
+     * @param int|null $uploadMaxFilesize
+     * @param int|null $maxFileUploads
+     */
+    public function __construct($uploadMaxFilesize = null, $maxFileUploads = null)
     {
-        $parser = new self($request);
-        return $parser->parse();
-    }
-
-    private function __construct(ServerRequestInterface $request)
-    {
-        $this->request = $request;
-
         $var = ini_get('max_input_vars');
         if ($var !== false) {
             $this->maxInputVars = (int)$var;
@@ -67,18 +81,29 @@ final class MultipartParser
         if ($var !== false) {
             $this->maxInputNestingLevel = (int)$var;
         }
+
+        $this->uploadMaxFilesize = $uploadMaxFilesize === null ? $this->iniUploadMaxFilesize() : (int)$uploadMaxFilesize;
+        $this->maxFileUploads = $maxFileUploads === null ? (ini_get('file_uploads') === '' ? 0 : (int)ini_get('max_file_uploads')) : (int)$maxFileUploads;
     }
 
-    private function parse()
+    public function parse(ServerRequestInterface $request)
     {
-        $contentType = $this->request->getHeaderLine('content-type');
+        $contentType = $request->getHeaderLine('content-type');
         if(!preg_match('/boundary="?(.*)"?$/', $contentType, $matches)) {
-            return $this->request;
+            return $request;
         }
 
-        $this->parseBody('--' . $matches[1], (string)$this->request->getBody());
+        $this->request = $request;
+        $this->parseBody('--' . $matches[1], (string)$request->getBody());
 
-        return $this->request;
+        $request = $this->request;
+        $this->request = null;
+        $this->postCount = 0;
+        $this->filesCount = 0;
+        $this->emptyCount = 0;
+        $this->maxFileSize = null;
+
+        return $request;
     }
 
     private function parseBody($boundary, $buffer)
@@ -137,10 +162,15 @@ final class MultipartParser
 
     private function parseFile($name, $filename, $contentType, $contents)
     {
+        $file = $this->parseUploadedFile($filename, $contentType, $contents);
+        if ($file === null) {
+            return;
+        }
+
         $this->request = $this->request->withUploadedFiles($this->extractPost(
             $this->request->getUploadedFiles(),
             $name,
-            $this->parseUploadedFile($filename, $contentType, $contents)
+            $file
         ));
     }
 
@@ -150,10 +180,31 @@ final class MultipartParser
 
         // no file selected (zero size and empty filename)
         if ($size === 0 && $filename === '') {
+            // ignore excessive number of empty file uploads
+            if (++$this->emptyCount + $this->filesCount > $this->maxInputVars) {
+                return;
+            }
+
             return new UploadedFile(
                 Psr7\stream_for(''),
                 $size,
                 UPLOAD_ERR_NO_FILE,
+                $filename,
+                $contentType
+            );
+        }
+
+        // ignore excessive number of file uploads
+        if (++$this->filesCount > $this->maxFileUploads) {
+            return;
+        }
+
+        // file exceeds "upload_max_filesize" ini setting
+        if ($size > $this->uploadMaxFilesize) {
+            return new UploadedFile(
+                Psr7\stream_for(''),
+                $size,
+                UPLOAD_ERR_INI_SIZE,
                 $filename,
                 $contentType
             );
@@ -270,5 +321,29 @@ final class MultipartParser
         }
 
         return $postFields;
+    }
+
+    /**
+     * Gets upload_max_filesize from PHP's configuration expressed in bytes
+     *
+     * @return int
+     * @link http://php.net/manual/en/ini.core.php#ini.upload-max-filesize
+     * @codeCoverageIgnore
+     */
+    private function iniUploadMaxFilesize()
+    {
+        $size = ini_get('upload_max_filesize');
+        $suffix = strtoupper(substr($size, -1));
+        if ($suffix === 'K') {
+            return substr($size, 0, -1) * 1024;
+        }
+        if ($suffix === 'M') {
+            return substr($size, 0, -1) * 1024 * 1024;
+        }
+        if ($suffix === 'G') {
+            return substr($size, 0, -1) * 1024 * 1024 * 1024;
+        }
+
+        return $size;
     }
 }
