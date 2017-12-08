@@ -119,7 +119,7 @@ HTML;
 
 // buffer and parse HTTP request body before running our request handler
 $server = new StreamingServer(new MiddlewareRunner(array(
-    new RequestBodyBufferMiddleware(100000), // 100 KB max
+    new RequestBodyBufferMiddleware(100000), // 100 KB max, ignore body otherwise
     new RequestBodyParserMiddleware(),
     $handler
 )));

@@ -2,12 +2,11 @@
 
 namespace React\Http\Middleware;
 
+use OverflowException;
 use Psr\Http\Message\ServerRequestInterface;
-use React\Http\Response;
 use React\Promise\Stream;
 use React\Stream\ReadableStreamInterface;
 use RingCentral\Psr7\BufferStream;
-use OverflowException;
 
 final class RequestBodyBufferMiddleware
 {
@@ -32,25 +31,36 @@ final class RequestBodyBufferMiddleware
     {
         $body = $request->getBody();
 
-        // request body of known size exceeding limit
-        if ($body->getSize() > $this->sizeLimit) {
-            return new Response(413, array('Content-Type' => 'text/plain'), 'Request body exceeds allowed limit');
-        }
-
+        // skip if body is already buffered
         if (!$body instanceof ReadableStreamInterface) {
+            // replace with empty buffer if size limit is exceeded
+            if ($body->getSize() > $this->sizeLimit) {
+                $request = $request->withBody(new BufferStream(0));
+            }
+
             return $stack($request);
         }
 
-        return Stream\buffer($body, $this->sizeLimit)->then(function ($buffer) use ($request, $stack) {
+        // request body of known size exceeding limit
+        $sizeLimit = $this->sizeLimit;
+        if ($body->getSize() > $this->sizeLimit) {
+            $sizeLimit = 0;
+        }
+
+        return Stream\buffer($body, $sizeLimit)->then(function ($buffer) use ($request, $stack) {
             $stream = new BufferStream(strlen($buffer));
             $stream->write($buffer);
             $request = $request->withBody($stream);
 
             return $stack($request);
-        }, function($error) {
-            // request body of unknown size exceeding limit during buffering
+        }, function ($error) use ($stack, $request, $body) {
+            // On buffer overflow keep the request body stream in,
+            // but ignore the contents and wait for the close event
+            // before passing the request on to the next middleware.
             if ($error instanceof OverflowException) {
-                return new Response(413, array('Content-Type' => 'text/plain'), 'Request body exceeds allowed limit');
+                return Stream\first($body, 'close')->then(function () use ($stack, $request) {
+                    return $stack($request);
+                });
             }
 
             throw $error;

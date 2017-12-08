@@ -694,8 +694,14 @@ configuration.
 configuration in most cases.)
 
 Any incoming request that has a request body that exceeds this limit will be
-rejected with a `413` (Request Entity Too Large) error message without calling
-the next middleware handlers.
+accepted, but its request body will be discarded (empty request body).
+This is done in order to avoid having to keep an incoming request with an
+excessive size (for example, think of a 2 GB file upload) in memory.
+This allows the next middleware handler to still handle this request, but it
+will see an empty request body.
+This is similar to PHP's default behavior, where the body will not be parsed
+if this limit is exceeded. However, unlike PHP's default behavior, the raw
+request body is not available via `php://input`.
 
 The `RequestBodyBufferMiddleware` will buffer requests with bodies of known size 
 (i.e. with `Content-Length` header specified) as well as requests with bodies of 
@@ -782,6 +788,8 @@ See also [example #12](examples) for more details.
   handler as given in the example above.
   This previous middleware handler is also responsible for rejecting incoming
   requests that exceed allowed message sizes (such as big file uploads).
+  The [`RequestBodyBufferMiddleware`](#requestbodybuffermiddleware) used above
+  simply discards excessive request bodies, resulting in an empty body.
   If you use this middleware without buffering first, it will try to parse an
   empty (streaming) body and may thus assume an empty data structure.
   See also [`RequestBodyBufferMiddleware`](#requestbodybuffermiddleware) for
