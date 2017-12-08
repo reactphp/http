@@ -800,7 +800,8 @@ By default, this middleware respects the
 [`max_file_uploads`](http://php.net/manual/en/ini.core.php#ini.max-file-uploads)
 (default `20`) ini setting.
 If you upload more files in a single request, additional files will be ignored
-and the `getUploadedFiles()` method returns a truncated array. 
+and the `getUploadedFiles()` method returns a truncated array.
+Note that upload fields left blank on submission do not count towards this limit.
 You can control the maximum number of file uploads per request by explicitly
 passing the second parameter to the constructor like this:
 

@@ -172,11 +172,6 @@ final class MultipartParser
 
     private function parseUploadedFile($filename, $contentType, $contents)
     {
-        // ignore excessive number of file uploads
-        if (++$this->filesCount > $this->maxFileUploads) {
-            return;
-        }
-
         $size = strlen($contents);
 
         // no file selected (zero size and empty filename)
@@ -188,6 +183,11 @@ final class MultipartParser
                 $filename,
                 $contentType
             );
+        }
+
+        // ignore excessive number of file uploads
+        if (++$this->filesCount > $this->maxFileUploads) {
+            return;
         }
 
         // file exceeds "upload_max_filesize" ini setting
