@@ -784,6 +784,18 @@ $server = new StreamingServer(new MiddlewareRunner([
 
 See also [example #12](examples) for more details.
 
+By default, this middleware respects the
+[`upload_max_filesize`](http://php.net/manual/en/ini.core.php#ini.upload-max-filesize)
+(default `2M`) ini setting.
+Files that exceed this limit will be rejected with an `UPLOAD_ERR_INI_SIZE` error.
+You can control the maximum filesize for each individual file upload by
+explicitly passing the maximum filesize in bytes as the first parameter to the
+constructor like this:
+
+```php
+new RequestBodyParserMiddleware(8 * 1024 * 1024); // 8 MiB limit per file
+```
+
 > Note that this middleware handler simply parses everything that is already
   buffered in the request body.
   It is imperative that the request body is buffered by a prior middleware
@@ -798,10 +810,9 @@ See also [example #12](examples) for more details.
   more details.
   
 > PHP's `MAX_FILE_SIZE` hidden field is respected by this middleware.
+  Files that exceed this limit will be rejected with an `UPLOAD_ERR_FORM_SIZE` error.
 
 > This middleware respects the
-  [`upload_max_filesize`](http://php.net/manual/en/ini.core.php#ini.upload-max-filesize)
-  (default `2M`),
   [`max_input_vars`](http://php.net/manual/en/info.configuration.php#ini.max-input-vars)
   (default `1000`) and
   [`max_input_nesting_level`](http://php.net/manual/en/info.configuration.php#ini.max-input-nesting-level)

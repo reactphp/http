@@ -56,7 +56,10 @@ final class MultipartParser
 
     private $postCount = 0;
 
-    public function __construct()
+    /**
+     * @param int|null $uploadMaxFilesize
+     */
+    public function __construct($uploadMaxFilesize = null)
     {
         $var = ini_get('max_input_vars');
         if ($var !== false) {
@@ -67,7 +70,7 @@ final class MultipartParser
             $this->maxInputNestingLevel = (int)$var;
         }
 
-        $this->uploadMaxFilesize = $this->iniUploadMaxFilesize();
+        $this->uploadMaxFilesize = $uploadMaxFilesize === null ? $this->iniUploadMaxFilesize() : (int)$uploadMaxFilesize;
     }
 
     public function parse(ServerRequestInterface $request)
