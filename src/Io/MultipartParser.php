@@ -54,12 +54,21 @@ final class MultipartParser
      */
     private $uploadMaxFilesize;
 
+    /**
+     * ini setting "max_file_uploads"
+     *
+     * @var int
+     */
+    private $maxFileUploads;
+
     private $postCount = 0;
+    private $filesCount = 0;
 
     /**
      * @param int|null $uploadMaxFilesize
+     * @param int|null $maxFileUploads
      */
-    public function __construct($uploadMaxFilesize = null)
+    public function __construct($uploadMaxFilesize = null, $maxFileUploads = null)
     {
         $var = ini_get('max_input_vars');
         if ($var !== false) {
@@ -71,6 +80,7 @@ final class MultipartParser
         }
 
         $this->uploadMaxFilesize = $uploadMaxFilesize === null ? $this->iniUploadMaxFilesize() : (int)$uploadMaxFilesize;
+        $this->maxFileUploads = $maxFileUploads === null ? (int)ini_get('max_file_uploads') : (int)$maxFileUploads;
     }
 
     public function parse(ServerRequestInterface $request)
@@ -86,6 +96,7 @@ final class MultipartParser
         $request = $this->request;
         $this->request = null;
         $this->postCount = 0;
+        $this->filesCount = 0;
         $this->maxFileSize = null;
 
         return $request;
@@ -147,15 +158,25 @@ final class MultipartParser
 
     private function parseFile($name, $filename, $contentType, $contents)
     {
+        $file = $this->parseUploadedFile($filename, $contentType, $contents);
+        if ($file === null) {
+            return;
+        }
+
         $this->request = $this->request->withUploadedFiles($this->extractPost(
             $this->request->getUploadedFiles(),
             $name,
-            $this->parseUploadedFile($filename, $contentType, $contents)
+            $file
         ));
     }
 
     private function parseUploadedFile($filename, $contentType, $contents)
     {
+        // ignore excessive number of file uploads
+        if (++$this->filesCount > $this->maxFileUploads) {
+            return;
+        }
+
         $size = strlen($contents);
 
         // no file selected (zero size and empty filename)

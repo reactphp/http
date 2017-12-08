@@ -796,6 +796,18 @@ constructor like this:
 new RequestBodyParserMiddleware(8 * 1024 * 1024); // 8 MiB limit per file
 ```
 
+By default, this middleware respects the
+[`max_file_uploads`](http://php.net/manual/en/ini.core.php#ini.max-file-uploads)
+(default `20`) ini setting.
+If you upload more files in a single request, additional files will be ignored
+and the `getUploadedFiles()` method returns a truncated array. 
+You can control the maximum number of file uploads per request by explicitly
+passing the second parameter to the constructor like this:
+
+```php
+new RequestBodyParserMiddleware(10 * 1024, 100); // 100 files with 10 KiB each
+```
+
 > Note that this middleware handler simply parses everything that is already
   buffered in the request body.
   It is imperative that the request body is buffered by a prior middleware

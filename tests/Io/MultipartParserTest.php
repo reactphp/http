@@ -754,6 +754,42 @@ final class MultipartParserTest extends TestCase
         $this->assertSame(UPLOAD_ERR_NO_FILE, $file->getError());
     }
 
+    public function testUploadTooManyFilesReturnsTruncatedList()
+    {
+        $boundary = "---------------------------12758086162038677464950549563";
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"first\"; filename=\"first\"\r\n";
+        $data .= "Content-type: text/plain\r\n";
+        $data .= "\r\n";
+        $data .= "hello\r\n";
+        $data .= "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"second\"; filename=\"second\"\r\n";
+        $data .= "Content-type: text/plain\r\n";
+        $data .= "\r\n";
+        $data .= "world\r\n";
+        $data .= "--$boundary--\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
+        ), $data, 1.1);
+
+        $parser = new MultipartParser(100, 1);
+        $parsedRequest = $parser->parse($request);
+
+        $files = $parsedRequest->getUploadedFiles();
+
+        $this->assertCount(1, $files);
+        $this->assertTrue(isset($files['first']));
+
+        $file = $files['first'];
+        $this->assertSame('first', $file->getClientFilename());
+        $this->assertSame('text/plain', $file->getClientMediaType());
+        $this->assertSame(5, $file->getSize());
+        $this->assertSame(UPLOAD_ERR_OK, $file->getError());
+        $this->assertSame('hello', (string)$file->getStream());
+    }
+
     public function testPostMaxFileSize()
     {
         $boundary = "---------------------------12758086162038677464950549563";
