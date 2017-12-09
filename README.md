@@ -13,6 +13,7 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
   * [Request](#request)
   * [Response](#response)
   * [Middleware](#middleware)
+    * [LimitConcurrentRequestsMiddleware](#limitconcurrentrequestsmiddleware)
     * [RequestBodyBufferMiddleware](#requestbodybuffermiddleware)
     * [RequestBodyParserMiddleware](#requestbodyparsermiddleware)
     * [Third-Party Middleware](#third-party-middleware)
@@ -681,6 +682,59 @@ $server = new StreamingServer(new MiddlewareRunner([
 ]));
 ```
 
+#### LimitConcurrentRequestsMiddleware
+
+The `LimitConcurrentRequestsMiddleware` can be used to
+limit how many next handlers can be executed concurrently.
+
+If this middleware is invoked, it will check if the number of pending
+handlers is below the allowed limit and then simply invoke the next handler
+and it will return whatever the next handler returns (or throws).
+
+If the number of pending handlers exceeds the allowed limit, the request will
+be queued (and its streaming body will be paused) and it will return a pending
+promise.
+Once a pending handler returns (or throws), it will pick the oldest request
+from this queue and invokes the next handler (and its streaming body will be
+resumed).
+
+The following example shows how this middleware can be used to ensure no more
+than 10 handlers will be invoked at once:
+
+```php
+$server = new StreamingServer(new MiddlewareRunner([
+    new LimitConcurrentRequestsMiddleware(10),
+    $handler
+]));
+```
+
+Similarly, this middleware is often used in combination with the
+[`RequestBodyBufferMiddleware`](#requestbodybuffermiddleware) (see below)
+to limit the total number of requests that can be buffered at once:
+
+```php
+$server = new StreamingServer(new MiddlewareRunner([
+    new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
+    new RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
+    new RequestBodyParserMiddleware(),
+    $handler
+]));
+```
+
+More sophisticated examples include limiting the total number of requests
+that can be buffered at once and then ensure the actual request handler only
+processes one request after another without any concurrency:
+
+```php
+$server = new StreamingServer(new MiddlewareRunner([
+    new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
+    new RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
+    new RequestBodyParserMiddleware(),
+    new LimitConcurrentRequestsMiddleware(1), // only execute 1 handler (no concurrency)
+    $handler
+]));
+```
+
 #### RequestBodyBufferMiddleware
 
 One of the built-in middleware is the `RequestBodyBufferMiddleware` which
@@ -714,10 +768,18 @@ Similarly, this will immediately invoke the next middleware handler for requests
 that have an empty request body (such as a simple `GET` request) and requests
 that are already buffered (such as due to another middleware).
 
+Note that the given buffer size limit is applied to each request individually.
+This means that if you allow a 2 MiB limit and then receive 1000 concurrent
+requests, up to 2000 MiB may be allocated for these buffers alone.
+As such, it's highly recommended to use this along with the
+[`LimitConcurrentRequestsMiddleware`](#limitconcurrentrequestsmiddleware) (see above) to limit
+the total number of concurrent requests.
+
 Usage:
 
 ```php
 $middlewares = new MiddlewareRunner([
+    new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
     function (ServerRequestInterface $request, callable $next) {
         // The body from $request->getBody() is now fully available without the need to stream it 
@@ -776,6 +838,7 @@ $handler = function (ServerRequestInterface $request) {
 };
 
 $server = new StreamingServer(new MiddlewareRunner([
+    new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
     new RequestBodyParserMiddleware(),
     $handler
