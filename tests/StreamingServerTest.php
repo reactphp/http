@@ -2,12 +2,11 @@
 
 namespace React\Tests\Http;
 
-use React\Http\MiddlewareRunner;
-use React\Http\StreamingServer;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Response;
-use React\Stream\ThroughStream;
+use React\Http\StreamingServer;
 use React\Promise\Promise;
+use React\Stream\ThroughStream;
 
 class StreamingServerTest extends TestCase
 {
@@ -96,14 +95,14 @@ class StreamingServerTest extends TestCase
         $this->assertSame('127.0.0.1', $serverParams['REMOTE_ADDR']);
     }
 
-    public function testRequestEventWithMiddlewareRunner()
+    public function testRequestEventWithSingleRequestHandlerArray()
     {
         $i = 0;
         $requestAssertion = null;
-        $server = new StreamingServer(new MiddlewareRunner(array(function (ServerRequestInterface $request) use (&$i, &$requestAssertion) {
+        $server = new StreamingServer(array(function (ServerRequestInterface $request) use (&$i, &$requestAssertion) {
             $i++;
             $requestAssertion = $request;
-        })));
+        }));
 
         $this->connection
             ->expects($this->any())

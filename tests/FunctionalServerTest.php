@@ -5,7 +5,6 @@ namespace React\Tests\Http;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Middleware\LimitConcurrentRequestsMiddleware;
 use React\Http\Middleware\RequestBodyBufferMiddleware;
-use React\Http\MiddlewareRunner;
 use React\Socket\Server as Socket;
 use React\EventLoop\Factory;
 use React\Http\StreamingServer;
@@ -47,42 +46,16 @@ class FunctionalServerTest extends TestCase
         $socket->close();
     }
 
-    public function testPlainHttpOnRandomPortWithMiddlewareRunner()
+    public function testPlainHttpOnRandomPortWithSingleRequestHandlerArray()
     {
         $loop = Factory::create();
         $connector = new Connector($loop);
 
-        $server = new StreamingServer(new MiddlewareRunner(array(function (RequestInterface $request) {
-            return new Response(200, array(), (string)$request->getUri());
-        })));
-
-        $socket = new Socket(0, $loop);
-        $server->listen($socket);
-
-        $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
-            $conn->write("GET / HTTP/1.0\r\nHost: " . noScheme($conn->getRemoteAddress()) . "\r\n\r\n");
-
-            return Stream\buffer($conn);
-        });
-
-        $response = Block\await($result, $loop, 1.0);
-
-        $this->assertContains("HTTP/1.0 200 OK", $response);
-        $this->assertContains('http://' . noScheme($socket->getAddress()) . '/', $response);
-
-        $socket->close();
-    }
-
-    public function testPlainHttpOnRandomPortWithEmptyMiddlewareRunner()
-    {
-        $loop = Factory::create();
-        $connector = new Connector($loop);
-
-        $server = new StreamingServer(new MiddlewareRunner(array(
+        $server = new StreamingServer(array(
             function () {
                 return new Response(404);
             },
-        )));
+        ));
 
         $socket = new Socket(0, $loop);
         $server->listen($socket);
@@ -724,7 +697,7 @@ class FunctionalServerTest extends TestCase
         $loop = Factory::create();
         $connector = new Connector($loop);
 
-        $server = new StreamingServer(new MiddlewareRunner(array(
+        $server = new StreamingServer(array(
             new LimitConcurrentRequestsMiddleware(5),
             new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
             function (ServerRequestInterface $request, $next) use ($loop) {
@@ -737,7 +710,7 @@ class FunctionalServerTest extends TestCase
             function (ServerRequestInterface $request) {
                 return new Response(200, array(), (string)strlen((string)$request->getBody()));
             }
-        )));
+        ));
 
         $socket = new Socket(0, $loop);
         $server->listen($socket);

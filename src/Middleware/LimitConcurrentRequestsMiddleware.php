@@ -27,10 +27,10 @@ use React\Stream\ReadableStreamInterface;
  * than 10 handlers will be invoked at once:
  *
  * ```php
- * $server = new StreamingServer(new MiddlewareRunner([
+ * $server = new StreamingServer(array(
  *     new LimitConcurrentRequestsMiddleware(10),
  *     $handler
- * ]));
+ * ));
  * ```
  *
  * Similarly, this middleware is often used in combination with the
@@ -38,12 +38,12 @@ use React\Stream\ReadableStreamInterface;
  * to limit the total number of requests that can be buffered at once:
  *
  * ```php
- * $server = new StreamingServer(new MiddlewareRunner([
+ * $server = new StreamingServer(array(
  *     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
  *     new RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
  *     new RequestBodyParserMiddleware(),
- *    $handler
- * ]));
+ *     $handler
+ * ));
  * ```
  *
  * More sophisticated examples include limiting the total number of requests
@@ -51,13 +51,13 @@ use React\Stream\ReadableStreamInterface;
  * processes one request after another without any concurrency:
  *
  * ```php
- * $server = new StreamingServer(new MiddlewareRunner([
+ * $server = new StreamingServer(array(
  *     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
  *     new RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
  *     new RequestBodyParserMiddleware(),
  *     new LimitConcurrentRequestsMiddleware(1), // only execute 1 handler (no concurrency)
  *     $handler
- * ]));
+ * ));
  * ```
  *
  * @see RequestBodyBufferMiddleware

@@ -659,19 +659,41 @@ passed explicitly.
 
 ### Middleware
 
-Middleware can be added to the server using [`MiddlewareRunner`](src/MiddlewareRunner.php)
-instead of the `callable`. A middleware is expected to adhere the following rules:
+As documented above, the [`StreamingServer`](#streamingserver) accepts a single
+request handler argument that is responsible for processing an incoming
+HTTP request and then creating and returning an outgoing HTTP response.
+
+Many common use cases involve validating, processing, manipulating the incoming
+HTTP request before passing it to the final business logic request handler.
+As such, this project supports the concept of middleware request handlers.
+
+A middleware request handler is expected to adhere the following rules:
 
 * It is a `callable`.
 * It accepts `ServerRequestInterface` as first argument and optional `callable` as second argument.
 * It returns a `ResponseInterface` (or any promise which can be consumed by [`Promise\resolve`](http://reactphp.org/promise/#resolve) resolving to a `ResponseInterface`)
 * It calls `$next($request)` to continue processing the next middleware function or returns explicitly to abort the chain
 
-The following example adds a middleware that adds the current time to the request as a 
-header (`Request-Time`) and middleware that always returns a 200 code without a body: 
+Note that this very simple definition allows you to use either anonymous
+functions or any classes that use the magic `__invoke()` method.
+This allows you to easily create custom middleware request handlers on the fly
+or use a class based approach to ease using existing middleware implementations.
+
+While this project does provide the means to *use* middleware implementations,
+it does not aim to *define* how middleware implementations should look like.
+We realize that there's a vivid ecosystem of middleware implementations and
+ongoing effort to standardize interfaces between these and support this goal.
+As such, this project only bundles a few middleware implementations that are
+required to match PHP's request behavior (see below) and otherwise actively
+encourages [Third-Party Middleware](#third-party-middleware) implementations.
+
+In order to use middleware request handlers, simply pass an array with all
+callables as defined above to the [`StreamingServer`](#streamingserver).
+The following example adds a middleware request handler that adds the current time to the request as a 
+header (`Request-Time`) and a final request handler that always returns a 200 code without a body: 
 
 ```php
-$server = new StreamingServer(new MiddlewareRunner([
+$server = new StreamingServer(array(
     function (ServerRequestInterface $request, callable $next) {
         $request = $request->withHeader('Request-Time', time());
         return $next($request);
@@ -679,7 +701,7 @@ $server = new StreamingServer(new MiddlewareRunner([
     function (ServerRequestInterface $request, callable $next) {
         return new Response(200);
     },
-]));
+));
 ```
 
 #### LimitConcurrentRequestsMiddleware
@@ -702,10 +724,10 @@ The following example shows how this middleware can be used to ensure no more
 than 10 handlers will be invoked at once:
 
 ```php
-$server = new StreamingServer(new MiddlewareRunner([
+$server = new StreamingServer(array(
     new LimitConcurrentRequestsMiddleware(10),
     $handler
-]));
+));
 ```
 
 Similarly, this middleware is often used in combination with the
@@ -713,12 +735,12 @@ Similarly, this middleware is often used in combination with the
 to limit the total number of requests that can be buffered at once:
 
 ```php
-$server = new StreamingServer(new MiddlewareRunner([
+$server = new StreamingServer(array(
     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
     new RequestBodyParserMiddleware(),
     $handler
-]));
+));
 ```
 
 More sophisticated examples include limiting the total number of requests
@@ -726,13 +748,13 @@ that can be buffered at once and then ensure the actual request handler only
 processes one request after another without any concurrency:
 
 ```php
-$server = new StreamingServer(new MiddlewareRunner([
+$server = new StreamingServer(array(
     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
     new RequestBodyParserMiddleware(),
     new LimitConcurrentRequestsMiddleware(1), // only execute 1 handler (no concurrency)
     $handler
-]));
+));
 ```
 
 #### RequestBodyBufferMiddleware
@@ -778,14 +800,14 @@ the total number of concurrent requests.
 Usage:
 
 ```php
-$middlewares = new MiddlewareRunner([
+$server = new StreamServer(array(
     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
     function (ServerRequestInterface $request, callable $next) {
         // The body from $request->getBody() is now fully available without the need to stream it 
         return new Response(200);
     },
-]);
+));
 ```
 
 #### RequestBodyParserMiddleware
@@ -837,12 +859,12 @@ $handler = function (ServerRequestInterface $request) {
     );
 };
 
-$server = new StreamingServer(new MiddlewareRunner([
+$server = new StreamingServer(array((
     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
     new RequestBodyParserMiddleware(),
     $handler
-]));
+));
 ```
 
 See also [example #12](examples) for more details.
