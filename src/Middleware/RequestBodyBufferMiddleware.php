@@ -4,6 +4,7 @@ namespace React\Http\Middleware;
 
 use OverflowException;
 use Psr\Http\Message\ServerRequestInterface;
+use React\Http\Io\IniUtil;
 use React\Promise\Stream;
 use React\Stream\ReadableStreamInterface;
 use RingCentral\Psr7\BufferStream;
@@ -21,7 +22,7 @@ final class RequestBodyBufferMiddleware
     public function __construct($sizeLimit = null)
     {
         if ($sizeLimit === null) {
-            $sizeLimit = $this->iniMaxPostSize();
+            $sizeLimit = IniUtil::iniSizeToBytes(ini_get('post_max_size'));
         }
 
         $this->sizeLimit = $sizeLimit;
@@ -65,29 +66,5 @@ final class RequestBodyBufferMiddleware
 
             throw $error;
         });
-    }
-
-    /**
-     * Gets post_max_size from PHP's configuration expressed in bytes
-     *
-     * @return int
-     * @link http://php.net/manual/en/ini.core.php#ini.post-max-size
-     * @codeCoverageIgnore
-     */
-    private function iniMaxPostSize()
-    {
-        $size = ini_get('post_max_size');
-        $suffix = strtoupper(substr($size, -1));
-        if ($suffix === 'K') {
-            return substr($size, 0, -1) * 1024;
-        }
-        if ($suffix === 'M') {
-            return substr($size, 0, -1) * 1024 * 1024;
-        }
-        if ($suffix === 'G') {
-            return substr($size, 0, -1) * 1024  * 1024 * 1024;
-        }
-
-        return $size;
     }
 }
