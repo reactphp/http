@@ -11,6 +11,7 @@ use React\Http\Io\ChunkedEncoder;
 use React\Http\Io\CloseProtectionStream;
 use React\Http\Io\HttpBodyStream;
 use React\Http\Io\LengthLimitedStream;
+use React\Http\Io\MiddlewareRunner;
 use React\Http\Io\RequestHeaderParser;
 use React\Http\Io\ServerRequest;
 use React\Promise\CancellablePromiseInterface;

@@ -1,15 +1,16 @@
 <?php
 
-namespace React\Tests\Http;
+namespace React\Tests\Http\Io;
 
 use Clue\React\Block;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
+use React\Http\Io\MiddlewareRunner;
 use React\Http\Io\ServerRequest;
-use React\Http\MiddlewareRunner;
 use React\Promise;
 use React\Tests\Http\Middleware\ProcessStack;
+use React\Tests\Http\TestCase;
 use RingCentral\Psr7\Response;
 
 final class MiddlewareRunnerTest extends TestCase

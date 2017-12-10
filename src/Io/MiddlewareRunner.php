@@ -1,12 +1,17 @@
 <?php
 
-namespace React\Http;
+namespace React\Http\Io;
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Promise;
 use React\Promise\PromiseInterface;
 
+/**
+ * [Internal] Middleware runner to expose an array of middleware request handlers as a single request handler callable
+ *
+ * @internal
+ */
 final class MiddlewareRunner
 {
     /**
