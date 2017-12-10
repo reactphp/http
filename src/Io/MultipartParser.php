@@ -82,7 +82,11 @@ final class MultipartParser
             $this->maxInputNestingLevel = (int)$var;
         }
 
-        $this->uploadMaxFilesize = $uploadMaxFilesize === null ? $this->iniUploadMaxFilesize() : (int)$uploadMaxFilesize;
+        if ($uploadMaxFilesize === null) {
+            $uploadMaxFilesize = IniUtil::iniSizeToBytes(ini_get('upload_max_filesize'));
+        }
+
+        $this->uploadMaxFilesize = (int)$uploadMaxFilesize;
         $this->maxFileUploads = $maxFileUploads === null ? (ini_get('file_uploads') === '' ? 0 : (int)ini_get('max_file_uploads')) : (int)$maxFileUploads;
     }
 
@@ -321,29 +325,5 @@ final class MultipartParser
         }
 
         return $postFields;
-    }
-
-    /**
-     * Gets upload_max_filesize from PHP's configuration expressed in bytes
-     *
-     * @return int
-     * @link http://php.net/manual/en/ini.core.php#ini.upload-max-filesize
-     * @codeCoverageIgnore
-     */
-    private function iniUploadMaxFilesize()
-    {
-        $size = ini_get('upload_max_filesize');
-        $suffix = strtoupper(substr($size, -1));
-        if ($suffix === 'K') {
-            return substr($size, 0, -1) * 1024;
-        }
-        if ($suffix === 'M') {
-            return substr($size, 0, -1) * 1024 * 1024;
-        }
-        if ($suffix === 'G') {
-            return substr($size, 0, -1) * 1024 * 1024 * 1024;
-        }
-
-        return $size;
     }
 }
