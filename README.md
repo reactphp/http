@@ -9,6 +9,7 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
 
 * [Quickstart example](#quickstart-example)
 * [Usage](#usage)
+  * [Server](#server)
   * [StreamingServer](#streamingserver)
   * [Request](#request)
   * [Response](#response)
@@ -28,7 +29,7 @@ This is an HTTP server which responds with `Hello World` to every request.
 ```php
 $loop = React\EventLoop\Factory::create();
 
-$server = new StreamingServer(function (ServerRequestInterface $request) {
+$server = new Server(function (ServerRequestInterface $request) {
     return new Response(
         200,
         array('Content-Type' => 'text/plain'),
@@ -45,6 +46,19 @@ $loop->run();
 See also the [examples](examples).
 
 ## Usage
+
+### Server
+
+For most users a server that buffers and parses a requests before handling it over as a 
+PSR-7 request is what they want. The `Server` facade takes care of that, and takes the more 
+advanced configuration out of hand. Under the hood it uses [StreamingServer](#streamingserver) 
+with the the three stock middleware using default settings from `php.ini`. 
+
+The [LimitConcurrentRequestsMiddleware](#limitconcurrentrequestsmiddleware) requires a limit, 
+as such the `Server` facade uses the `memory_limit` and `post_max_size` ini settings to 
+calculate a sensible limit. It assumes a maximum of a quarter of the `memory_limit` for 
+buffering and the other three quarter for parsing and handling the requests. The limit is 
+division of half of `memory_limit` by `memory_limit` rounded up.
 
 ### StreamingServer
 
