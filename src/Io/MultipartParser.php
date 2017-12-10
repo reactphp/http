@@ -68,7 +68,7 @@ final class MultipartParser
     private $emptyCount = 0;
 
     /**
-     * @param int|null $uploadMaxFilesize
+     * @param int|string|null $uploadMaxFilesize
      * @param int|null $maxFileUploads
      */
     public function __construct($uploadMaxFilesize = null, $maxFileUploads = null)
@@ -83,10 +83,10 @@ final class MultipartParser
         }
 
         if ($uploadMaxFilesize === null) {
-            $uploadMaxFilesize = IniUtil::iniSizeToBytes(ini_get('upload_max_filesize'));
+            $uploadMaxFilesize = ini_get('upload_max_filesize');
         }
 
-        $this->uploadMaxFilesize = (int)$uploadMaxFilesize;
+        $this->uploadMaxFilesize = IniUtil::iniSizeToBytes($uploadMaxFilesize);
         $this->maxFileUploads = $maxFileUploads === null ? (ini_get('file_uploads') === '' ? 0 : (int)ini_get('max_file_uploads')) : (int)$maxFileUploads;
     }
 

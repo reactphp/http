@@ -10,7 +10,7 @@ final class RequestBodyParserMiddleware
     private $multipart;
 
     /**
-     * @param int|null $uploadMaxFilesize
+     * @param int|string|null $uploadMaxFilesize
      * @param int|null $maxFileUploads
      */
     public function __construct($uploadMaxFilesize = null, $maxFileUploads = null)

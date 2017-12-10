@@ -14,18 +14,19 @@ final class RequestBodyBufferMiddleware
     private $sizeLimit;
 
     /**
-     * @param int|null $sizeLimit Either an int with the max request body size
-     *                            or null to use post_max_size from PHP's
-     *                            configuration. (Note that the value from
-     *                            the CLI configuration will be used.)
+     * @param int|string|null $sizeLimit Either an int with the max request body size
+     *                                   in bytes or an ini like size string
+     *                                   or null to use post_max_size from PHP's
+     *                                   configuration. (Note that the value from
+     *                                   the CLI configuration will be used.)
      */
     public function __construct($sizeLimit = null)
     {
         if ($sizeLimit === null) {
-            $sizeLimit = IniUtil::iniSizeToBytes(ini_get('post_max_size'));
+            $sizeLimit = ini_get('post_max_size');
         }
 
-        $this->sizeLimit = $sizeLimit;
+        $this->sizeLimit = IniUtil::iniSizeToBytes($sizeLimit);
     }
 
     public function __invoke(ServerRequestInterface $request, $stack)
