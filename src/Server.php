@@ -2,6 +2,7 @@
 
 namespace React\Http;
 
+use Evenement\EventEmitter;
 use React\Http\Io\IniUtil;
 use React\Http\Middleware\LimitConcurrentRequestsMiddleware;
 use React\Http\Middleware\RequestBodyBufferMiddleware;
@@ -29,8 +30,10 @@ use React\Socket\ServerInterface;
  * - file_uploads
  * - max_file_uploads
  * - enable_post_data_reading
+ *
+ * Forwards the error event coming from StreamingServer.
  */
-final class Server
+final class Server extends EventEmitter
 {
     /**
      * @internal
@@ -66,6 +69,11 @@ final class Server
         $middleware[] = $callback;
 
         $this->streamingServer = new StreamingServer($middleware);
+
+        $that = $this;
+        $this->streamingServer->on('error', function ($error) use ($that) {
+            $that->emit('error', array($error));
+        });
     }
 
     /**

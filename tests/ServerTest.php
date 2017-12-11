@@ -4,15 +4,11 @@ namespace React\Tests\Http;
 
 use React\EventLoop\Factory;
 use React\EventLoop\Timer\TimerInterface;
-use React\Http\MiddlewareRunner;
 use React\Http\Server;
-use React\Http\StreamingServer;
 use Psr\Http\Message\ServerRequestInterface;
-use React\Http\Response;
 use React\Promise\Deferred;
 use Clue\React\Block;
-use React\Stream\ThroughStream;
-use React\Promise\Promise;
+use React\Promise;
 
 final class ServerTest extends TestCase
 {
@@ -79,6 +75,28 @@ final class ServerTest extends TestCase
         $this->assertSame('hello.txt', $files['file']->getClientFilename());
         $this->assertSame('text/plain', $files['file']->getClientMediaType());
         $this->assertSame("hello\r\n", (string)$files['file']->getStream());
+    }
+
+    public function testForwardErrors()
+    {
+        $exception = new \Exception();
+        $capturedException = null;
+        $server = new Server(function () use ($exception) {
+            return Promise\reject($exception);
+        });
+        $server->on('error', function ($error) use (&$capturedException) {
+            $capturedException = $error;
+        });
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createPostFileUploadRequest();
+        $this->connection->emit('data', array(implode('', $data)));
+
+        $this->assertInstanceOf('RuntimeException', $capturedException);
+        $this->assertInstanceOf('Exception', $capturedException->getPrevious());
+        $this->assertSame($exception, $capturedException->getPrevious());
     }
 
     private function createPostFileUploadRequest()

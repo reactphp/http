@@ -60,6 +60,8 @@ calculate a sensible limit. It assumes a maximum of a quarter of the `memory_lim
 buffering and the other three quarter for parsing and handling the requests. The limit is 
 division of half of `memory_limit` by `memory_limit` rounded up.
 
+> Note that any errors emitted by the wrapped `StreamingServer` are forwarded by `Server`.
+
 ### StreamingServer
 
 The `StreamingServer` class is responsible for handling incoming connections and then
