@@ -3,7 +3,6 @@
 namespace React\Http;
 
 use React\Http\Io\IniUtil;
-use React\Http\Io\MiddlewareRunner;
 use React\Http\Middleware\LimitConcurrentRequestsMiddleware;
 use React\Http\Middleware\RequestBodyBufferMiddleware;
 use React\Http\Middleware\RequestBodyParserMiddleware;
@@ -66,7 +65,7 @@ final class Server
         }
         $middleware[] = $callback;
 
-        $this->streamingServer = new StreamingServer(new MiddlewareRunner($middleware));
+        $this->streamingServer = new StreamingServer($middleware);
     }
 
     /**
