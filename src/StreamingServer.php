@@ -11,6 +11,7 @@ use React\Http\Io\ChunkedEncoder;
 use React\Http\Io\CloseProtectionStream;
 use React\Http\Io\HttpBodyStream;
 use React\Http\Io\LengthLimitedStream;
+use React\Http\Io\MiddlewareRunner;
 use React\Http\Io\RequestHeaderParser;
 use React\Http\Io\ServerRequest;
 use React\Promise\CancellablePromiseInterface;
@@ -93,16 +94,18 @@ class StreamingServer extends EventEmitter
      * connections in order to then parse incoming data as HTTP.
      * See also [listen()](#listen) for more details.
      *
-     * @param callable $callback
+     * @param callable|callable[] $requestHandler
      * @see self::listen()
      */
-    public function __construct($callback)
+    public function __construct($requestHandler)
     {
-        if (!is_callable($callback)) {
+        if (is_array($requestHandler)) {
+            $requestHandler = new MiddlewareRunner($requestHandler);
+        } elseif (!is_callable($requestHandler)) {
             throw new \InvalidArgumentException();
         }
 
-        $this->callback = $callback;
+        $this->callback = $requestHandler;
     }
 
     /**
