@@ -814,7 +814,7 @@ the total number of concurrent requests.
 Usage:
 
 ```php
-$server = new StreamServer(array(
+$server = new StreamingServer(array(
     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
     function (ServerRequestInterface $request, callable $next) {
