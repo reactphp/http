@@ -41,6 +41,71 @@ final class ServerTest extends TestCase
         $this->socket = new SocketServerStub();
     }
 
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testInvalidCallbackFunctionLeadsToException()
+    {
+        new Server('invalid');
+    }
+
+    public function testSimpleRequestCallsRequestHandlerOnce()
+    {
+        $called = null;
+        $server = new Server(function (ServerRequestInterface $request) use (&$called) {
+            ++$called;
+        });
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+        $this->connection->emit('data', array("GET / HTTP/1.0\r\n\r\n"));
+
+        $this->assertSame(1, $called);
+    }
+
+    /**
+     * @requires PHP 5.4
+     */
+    public function testSimpleRequestCallsArrayRequestHandlerOnce()
+    {
+        $this->called = null;
+        $server = new Server(array($this, 'helperCallableOnce'));
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+        $this->connection->emit('data', array("GET / HTTP/1.0\r\n\r\n"));
+
+        $this->assertSame(1, $this->called);
+    }
+
+    public function helperCallableOnce()
+    {
+        ++$this->called;
+    }
+
+    public function testSimpleRequestWithMiddlewareArrayProcessesMiddlewareStack()
+    {
+        $called = null;
+        $server = new Server(array(
+            function (ServerRequestInterface $request, $next) use (&$called) {
+                $called = 'before';
+                $ret = $next($request->withHeader('Demo', 'ok'));
+                $called .= 'after';
+
+                return $ret;
+            },
+            function (ServerRequestInterface $request) use (&$called) {
+                $called .= $request->getHeaderLine('Demo');
+            }
+        ));
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+        $this->connection->emit('data', array("GET / HTTP/1.0\r\n\r\n"));
+
+        $this->assertSame('beforeokafter', $called);
+    }
+
     public function testPostFileUpload()
     {
         $loop = Factory::create();

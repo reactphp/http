@@ -99,10 +99,10 @@ final class StreamingServer extends EventEmitter
      */
     public function __construct($requestHandler)
     {
-        if (is_array($requestHandler)) {
-            $requestHandler = new MiddlewareRunner($requestHandler);
+        if (!is_callable($requestHandler) && !is_array($requestHandler)) {
+            throw new \InvalidArgumentException('Invalid request handler given');
         } elseif (!is_callable($requestHandler)) {
-            throw new \InvalidArgumentException();
+            $requestHandler = new MiddlewareRunner($requestHandler);
         }
 
         $this->callback = $requestHandler;
