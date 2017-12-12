@@ -82,7 +82,7 @@ use RingCentral\Psr7 as Psr7Implementation;
  * @see Response
  * @see self::listen()
  */
-class StreamingServer extends EventEmitter
+final class StreamingServer extends EventEmitter
 {
     private $callback;
 
