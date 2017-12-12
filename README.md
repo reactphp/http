@@ -32,7 +32,9 @@ $loop = React\EventLoop\Factory::create();
 $server = new Server(function (ServerRequestInterface $request) {
     return new Response(
         200,
-        array('Content-Type' => 'text/plain'),
+        array(
+            'Content-Type' => 'text/plain'
+        ),
         "Hello World!\n"
     );
 });
@@ -49,6 +51,28 @@ See also the [examples](examples).
 
 ### Server
 
+The `Server` class is responsible for handling incoming connections and then
+processing each incoming HTTP request.
+
+It buffers and parses the complete incoming HTTP request in memory. Once the
+complete request has been received, it will invoke the request handler.
+
+For each request, it executes the callback function passed to the
+constructor with the respective [request](#request) object and expects
+a respective [response](#response) object in return.
+
+```php
+$server = new Server(function (ServerRequestInterface $request) {
+    return new Response(
+        200,
+        array(
+            'Content-Type' => 'text/plain'
+        ),
+        "Hello World!\n"
+    );
+});
+```
+
 For most users a server that buffers and parses a requests before handling it over as a 
 PSR-7 request is what they want. The `Server` facade takes care of that, and takes the more 
 advanced configuration out of hand. Under the hood it uses [StreamingServer](#streamingserver) 
@@ -64,8 +88,12 @@ division of half of `memory_limit` by `memory_limit` rounded up.
 
 ### StreamingServer
 
-The `StreamingServer` class is responsible for handling incoming connections and then
+The advanced `StreamingServer` class is responsible for handling incoming connections and then
 processing each incoming HTTP request.
+
+Unlike the [`Server`](#server) class, it does not buffer and parse the incoming
+HTTP request body by default. This means that the request handler will be
+invoked with a streaming request body.
 
 For each request, it executes the callback function passed to the
 constructor with the respective [request](#request) object and expects
@@ -75,7 +103,9 @@ a respective [response](#response) object in return.
 $server = new StreamingServer(function (ServerRequestInterface $request) {
     return new Response(
         200,
-        array('Content-Type' => 'text/plain'),
+        array(
+            'Content-Type' => 'text/plain'
+        ),
         "Hello World!\n"
     );
 });
@@ -160,10 +190,11 @@ Check out [request](#request) for more details.
 
 ### Request
 
-An seen above, the `StreamingServer` class is responsible for handling incoming
-connections and then processing each incoming HTTP request.
+As seen above, the [`Server`](#server) and [`StreamingServer`](#streamingserver)
+classes are responsible for handling incoming connections and then processing
+each incoming HTTP request.
 
-The request object will be processed once the request headers have
+The request object will be processed once the request has
 been received by the client.
 This request object implements the
 [PSR-7 ServerRequestInterface](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#321-psrhttpmessageserverrequestinterface)
@@ -172,13 +203,15 @@ which in turn extends the
 and will be passed to the callback function like this.
 
  ```php 
-$server = new StreamingServer(function (ServerRequestInterface $request) {
+$server = new Server(function (ServerRequestInterface $request) {
     $body = "The method of the request is: " . $request->getMethod();
     $body .= "The requested path is: " . $request->getUri()->getPath();
 
     return new Response(
         200,
-        array('Content-Type' => 'text/plain'),
+        array(
+            'Content-Type' => 'text/plain'
+        ),
         $body
     );
 });
@@ -206,12 +239,14 @@ The following parameters are currently available:
   Set to 'on' if the request used HTTPS, otherwise it won't be set
 
 ```php 
-$server = new StreamingServer(function (ServerRequestInterface $request) {
+$server = new Server(function (ServerRequestInterface $request) {
     $body = "Your IP is: " . $request->getServerParams()['REMOTE_ADDR'];
 
     return new Response(
         200,
-        array('Content-Type' => 'text/plain'),
+        array(
+            'Content-Type' => 'text/plain'
+        ),
         $body
     );
 });
@@ -223,7 +258,7 @@ The `getQueryParams(): array` method can be used to get the query parameters
 similiar to the `$_GET` variable.
 
 ```php
-$server = new StreamingServer(function (ServerRequestInterface $request) {
+$server = new Server(function (ServerRequestInterface $request) {
     $queryParams = $request->getQueryParams();
 
     $body = 'The query parameter "foo" is not set. Click the following link ';
@@ -235,7 +270,9 @@ $server = new StreamingServer(function (ServerRequestInterface $request) {
 
     return new Response(
         200,
-        array('Content-Type' => 'text/html'),
+        array(
+            'Content-Type' => 'text/html'
+        ),
         $body
     );
 });
@@ -296,7 +333,9 @@ $server = new StreamingServer(function (ServerRequestInterface $request) {
         $request->getBody()->on('end', function () use ($resolve, &$contentLength){
             $response = new Response(
                 200,
-                array('Content-Type' => 'text/plain'),
+                array(
+                    'Content-Type' => 'text/plain'
+                ),
                 "The length of the submitted request body is: " . $contentLength
             );
             $resolve($response);
@@ -306,7 +345,9 @@ $server = new StreamingServer(function (ServerRequestInterface $request) {
         $request->getBody()->on('error', function (\Exception $exception) use ($resolve, &$contentLength) {
             $response = new Response(
                 400,
-                array('Content-Type' => 'text/plain'),
+                array(
+                    'Content-Type' => 'text/plain'
+                ),
                 "An error occured while reading at length: " . $contentLength
             );
             $resolve($response);
@@ -358,14 +399,18 @@ $server = new StreamingServer(function (ServerRequestInterface $request) {
 
         return new Response(
             411,
-            array('Content-Type' => 'text/plain'),
+            array(
+                'Content-Type' => 'text/plain'
+            ),
             $body
         );
     }
 
     return new Response(
         200,
-        array('Content-Type' => 'text/plain'),
+        array(
+            'Content-Type' => 'text/plain'
+        ),
         "Request body size: " . $size . " bytes\n"
     );
 });
@@ -404,7 +449,7 @@ The `getCookieParams(): string[]` method can be used to
 get all cookies sent with the current request.
 
 ```php 
-$server = new StreamingServer(function (ServerRequestInterface $request) {
+$server = new Server(function (ServerRequestInterface $request) {
     $key = 'react\php';
 
     if (isset($request->getCookieParams()[$key])) {
@@ -412,7 +457,9 @@ $server = new StreamingServer(function (ServerRequestInterface $request) {
 
         return new Response(
             200,
-            array('Content-Type' => 'text/plain'),
+            array(
+                'Content-Type' => 'text/plain'
+            ),
             $body
         );
     }
@@ -439,9 +486,9 @@ See also [example #5](examples) for more details.
 
 ### Response
 
-The callback function passed to the constructor of the [StreamingServer](#server)
-is responsible for processing the request and returning a response,
-which will be delivered to the client.
+The callback function passed to the constructor of the [`Server`](#server) or
+advanced [`StreamingServer`](#server) is responsible for processing the request
+and returning a response, which will be delivered to the client.
 This function MUST return an instance implementing
 [PSR-7 ResponseInterface](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#33-psrhttpmessageresponseinterface)
 object or a 
@@ -455,10 +502,12 @@ but feel free to use any implemantation of the
 `PSR-7 ResponseInterface` you prefer.
 
 ```php 
-$server = new StreamingServer(function (ServerRequestInterface $request) {
+$server = new Server(function (ServerRequestInterface $request) {
     return new Response(
         200,
-        array('Content-Type' => 'text/plain'),
+        array(
+            'Content-Type' => 'text/plain'
+        ),
         "Hello World!\n"
     );
 });
@@ -474,12 +523,14 @@ To prevent this you SHOULD use a
 This example shows how such a long-term action could look like:
 
 ```php
-$server = new StreamingServer(function (ServerRequestInterface $request) use ($loop) {
+$server = new Server(function (ServerRequestInterface $request) use ($loop) {
     return new Promise(function ($resolve, $reject) use ($request, $loop) {
         $loop->addTimer(1.5, function() use ($loop, $resolve) {
             $response = new Response(
                 200,
-                array('Content-Type' => 'text/plain'),
+                array(
+                    'Content-Type' => 'text/plain'
+                ),
                 "Hello world"
             );
             $resolve($response);
@@ -507,7 +558,7 @@ Note that other implementations of the `PSR-7 ResponseInterface` likely
 only support strings.
 
 ```php
-$server = new StreamingServer(function (ServerRequestInterface $request) use ($loop) {
+$server = new Server(function (ServerRequestInterface $request) use ($loop) {
     $stream = new ThroughStream();
 
     $timer = $loop->addPeriodicTimer(0.5, function () use ($stream) {
@@ -519,7 +570,13 @@ $server = new StreamingServer(function (ServerRequestInterface $request) use ($l
         $stream->emit('end');
     });
 
-    return new Response(200, array('Content-Type' => 'text/plain'), $stream);
+    return new Response(
+        200,
+        array(
+            'Content-Type' => 'text/plain'
+        ),
+        $stream
+    );
 });
 ```
 
@@ -550,7 +607,7 @@ If you know the length of your stream body, you MAY specify it like this instead
 
 ```php
 $stream = new ThroughStream()
-$server = new StreamingServer(function (ServerRequestInterface $request) use ($stream) {
+$server = new Server(function (ServerRequestInterface $request) use ($stream) {
     return new Response(
         200,
         array(
@@ -635,8 +692,13 @@ A `Date` header will be automatically added with the system date and time if non
 You can add a custom `Date` header yourself like this:
 
 ```php
-$server = new StreamingServer(function (ServerRequestInterface $request) {
-    return new Response(200, array('Date' => date('D, d M Y H:i:s T')));
+$server = new Server(function (ServerRequestInterface $request) {
+    return new Response(
+        200,
+        array(
+            'Date' => date('D, d M Y H:i:s T')
+        )
+    );
 });
 ```
 
@@ -644,8 +706,13 @@ If you don't have a appropriate clock to rely on, you should
 unset this header with an empty string:
 
 ```php
-$server = new StreamingServer(function (ServerRequestInterface $request) {
-    return new Response(200, array('Date' => ''));
+$server = new Server(function (ServerRequestInterface $request) {
+    return new Response(
+        200,
+        array(
+            'Date' => ''
+        )
+    );
 });
 ```
 
@@ -653,8 +720,13 @@ Note that it will automatically assume a `X-Powered-By: react/alpha` header
 unless your specify a custom `X-Powered-By` header yourself:
 
 ```php
-$server = new StreamingServer(function (ServerRequestInterface $request) {
-    return new Response(200, array('X-Powered-By' => 'PHP 3'));
+$server = new Server(function (ServerRequestInterface $request) {
+    return new Response(
+        200,
+        array(
+            'X-Powered-By' => 'PHP 3'
+        )
+    );
 });
 ```
 
@@ -662,8 +734,13 @@ If you do not want to send this header at all, you can use an empty string as
 value like this:
 
 ```php
-$server = new StreamingServer(function (ServerRequestInterface $request) {
-    return new Response(200, array('X-Powered-By' => ''));
+$server = new Server(function (ServerRequestInterface $request) {
+    return new Response(
+        200,
+        array(
+            'X-Powered-By' => ''
+        )
+    );
 });
 ```
 

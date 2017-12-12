@@ -3,7 +3,7 @@
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Response;
-use React\Http\StreamingServer;
+use React\Http\Server;
 use React\Socket\Connector;
 use React\Socket\ConnectionInterface;
 
@@ -12,11 +12,18 @@ require __DIR__ . '/../vendor/autoload.php';
 $loop = Factory::create();
 $connector = new Connector($loop);
 
-$server = new StreamingServer(function (ServerRequestInterface $request) use ($connector) {
+// Note how this example uses the `Server` instead of `StreamingServer`.
+// Unlike the plain HTTP proxy, the CONNECT method does not contain a body
+// and we establish an end-to-end connection over the stream object, so this
+// doesn't have to store any payload data in memory at all.
+$server = new Server(function (ServerRequestInterface $request) use ($connector) {
     if ($request->getMethod() !== 'CONNECT') {
         return new Response(
             405,
-            array('Content-Type' => 'text/plain', 'Allow' => 'CONNECT'),
+            array(
+                'Content-Type' => 'text/plain',
+                'Allow' => 'CONNECT'
+            ),
             'This is a HTTP CONNECT (secure HTTPS) proxy'
         );
     }
@@ -34,7 +41,9 @@ $server = new StreamingServer(function (ServerRequestInterface $request) use ($c
         function ($e) {
             return new Response(
                 502,
-                array('Content-Type' => 'text/plain'),
+                array(
+                    'Content-Type' => 'text/plain'
+                ),
                 'Unable to connect: ' . $e->getMessage()
             );
         }

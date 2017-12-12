@@ -3,7 +3,7 @@
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Response;
-use React\Http\StreamingServer;
+use React\Http\Server;
 use React\Promise\Promise;
 
 require __DIR__ . '/../vendor/autoload.php';
@@ -11,7 +11,7 @@ require __DIR__ . '/../vendor/autoload.php';
 $loop = Factory::create();
 
 $count = 0;
-$server = new StreamingServer(function (ServerRequestInterface $request) use (&$count) {
+$server = new Server(function (ServerRequestInterface $request) use (&$count) {
     return new Promise(function ($resolve, $reject) use (&$count) {
         $count++;
 
@@ -21,7 +21,9 @@ $server = new StreamingServer(function (ServerRequestInterface $request) use (&$
 
         $response = new Response(
             200,
-            array('Content-Type' => 'text/plain'),
+            array(
+                'Content-Type' => 'text/plain'
+            ),
             "Hello World!\n"
         );
 

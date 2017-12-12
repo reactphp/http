@@ -114,12 +114,15 @@ HTML;
 
     return new Response(
         200,
-        array('Content-Type' => 'text/html; charset=UTF-8'),
+        array(
+            'Content-Type' => 'text/html; charset=UTF-8'
+        ),
         $html
     );
 };
 
-// buffer and parse HTTP request body before running our request handler
+// Note how this example explicitly uses the advanced `StreamingServer` to apply
+// custom request buffering limits below before running our request handler.
 $server = new StreamingServer(array(
     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers, queue otherwise
     new RequestBodyBufferMiddleware(8 * 1024 * 1024), // 8 MiB max, ignore body otherwise

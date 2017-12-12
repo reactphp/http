@@ -3,14 +3,16 @@
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Response;
-use React\Http\StreamingServer;
+use React\Http\Server;
 use React\Stream\ThroughStream;
 
 require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
 
-$server = new StreamingServer($loop,function (ServerRequestInterface $request) use ($loop) {
+// Note how this example still uses `Server` instead of `StreamingServer`.
+// The `StreamingServer` is only required for streaming *incoming* requests.
+$server = new Server($loop,function (ServerRequestInterface $request) use ($loop) {
     if ($request->getMethod() !== 'GET' || $request->getUri()->getPath() !== '/') {
         return new Response(404);
     }
@@ -28,7 +30,9 @@ $server = new StreamingServer($loop,function (ServerRequestInterface $request) u
 
     return new Response(
         200,
-        array('Content-Type' => 'text/plain'),
+        array(
+            'Content-Type' => 'text/plain'
+        ),
         $stream
     );
 });

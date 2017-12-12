@@ -3,18 +3,20 @@
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Response;
-use React\Http\StreamingServer;
+use React\Http\Server;
 
 require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
 
-$server = new StreamingServer(function (ServerRequestInterface $request) {
+$server = new Server(function (ServerRequestInterface $request) {
     $body = "Your IP is: " . $request->getServerParams()['REMOTE_ADDR'];
 
     return new Response(
         200,
-        array('Content-Type' => 'text/plain'),
+        array(
+            'Content-Type' => 'text/plain'
+        ),
         $body
     );
 });

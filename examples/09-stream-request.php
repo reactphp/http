@@ -10,6 +10,9 @@ require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
 
+// Note how this example uses the advanced `StreamingServer` to allow streaming
+// the incoming HTTP request. This very simple example merely counts the size
+// of the streaming body, it does not otherwise buffer its contents in memory.
 $server = new StreamingServer(function (ServerRequestInterface $request) {
     return new Promise(function ($resolve, $reject) use ($request) {
         $contentLength = 0;
@@ -20,7 +23,9 @@ $server = new StreamingServer(function (ServerRequestInterface $request) {
         $request->getBody()->on('end', function () use ($resolve, &$contentLength){
             $response = new Response(
                 200,
-                array('Content-Type' => 'text/plain'),
+                array(
+                    'Content-Type' => 'text/plain'
+                ),
                 "The length of the submitted request body is: " . $contentLength
             );
             $resolve($response);
@@ -30,7 +35,9 @@ $server = new StreamingServer(function (ServerRequestInterface $request) {
         $request->getBody()->on('error', function (\Exception $exception) use ($resolve, &$contentLength) {
             $response = new Response(
                 400,
-                array('Content-Type' => 'text/plain'),
+                array(
+                    'Content-Type' => 'text/plain'
+                ),
                 "An error occured while reading at length: " . $contentLength
             );
             $resolve($response);
