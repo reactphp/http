@@ -46,7 +46,7 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
     {
         $size = 1024;
         $body = str_repeat('x', $size);
-        $stream = new BufferStream($size);
+        $stream = new BufferStream(1024);
         $stream->write($body);
         $serverRequest = new ServerRequest(
             'GET',
@@ -82,6 +82,33 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
         );
 
         $buffer = new RequestBodyBufferMiddleware(1);
+        $response = Block\await($buffer(
+            $serverRequest,
+            function (ServerRequestInterface $request) {
+                return new Response(200, array(), $request->getBody()->getContents());
+            }
+        ), $loop);
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('', $response->getBody()->getContents());
+    }
+
+    public function testKnownExcessiveSizedWithIniLikeSize()
+    {
+        $loop = Factory::create();
+
+        $stream = new ThroughStream();
+        $loop->addTimer(0.001, function () use ($stream) {
+            $stream->end(str_repeat('a', 2048));
+        });
+        $serverRequest = new ServerRequest(
+            'GET',
+            'https://example.com/',
+            array(),
+            new HttpBodyStream($stream, 2048)
+        );
+
+        $buffer = new RequestBodyBufferMiddleware('1K');
         $response = Block\await($buffer(
             $serverRequest,
             function (ServerRequestInterface $request) {
