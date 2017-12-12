@@ -12,7 +12,17 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
   * [Server](#server)
   * [StreamingServer](#streamingserver)
   * [Request](#request)
+    * [Request parameters](#request-parameters)
+    * [Query parameters](#query-parameters)
+    * [Streaming request](#streaming-request)
+    * [Request method](#request-method)
+    * [Cookie parameters](#cookie-parameters)
   * [Response](#response)
+    * [Deferred response](#deferred-response)
+    * [Streaming response](#streaming-response)
+    * [Response length](#response-length)
+    * [Invalid response](#invalid-response)
+    * [Default response headers](#default-response-headers)
   * [Middleware](#middleware)
     * [LimitConcurrentRequestsMiddleware](#limitconcurrentrequestsmiddleware)
     * [RequestBodyBufferMiddleware](#requestbodybuffermiddleware)
@@ -217,6 +227,13 @@ $server = new Server(function (ServerRequestInterface $request) {
 });
 ```
 
+For more details about the request object, also check out the documentation of
+[PSR-7 ServerRequestInterface](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#321-psrhttpmessageserverrequestinterface)
+and
+[PSR-7 RequestInterface](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#32-psrhttpmessagerequestinterface).
+
+#### Request parameters
+
 The `getServerParams(): mixed[]` method can be used to
 get server-side parameters similar to the `$_SERVER` variable.
 The following parameters are currently available:
@@ -252,7 +269,9 @@ $server = new Server(function (ServerRequestInterface $request) {
 });
 ```
 
-See also [example #2](examples).
+See also [example #3](examples).
+
+#### Query parameters
 
 The `getQueryParams(): array` method can be used to get the query parameters
 similiar to the `$_GET` variable.
@@ -284,18 +303,19 @@ Use [`htmlentities`](http://php.net/manual/en/function.htmlentities.php)
 like in this example to prevent
 [Cross-Site Scripting (abbreviated as XSS)](https://en.wikipedia.org/wiki/Cross-site_scripting).
 
-See also [example #3](examples).
+See also [example #4](examples).
 
-For more details about the request object, check out the documentation of
-[PSR-7 ServerRequestInterface](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#321-psrhttpmessageserverrequestinterface)
-and
-[PSR-7 RequestInterface](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#32-psrhttpmessagerequestinterface).
+#### Streaming request
 
-Note that by default, the request object will be processed once the request headers have
-been received (see also [`RequestBodyBufferMiddleware`](#requestbodybuffermiddleware)
-for an alternative).
+If you're using the [`Server`](#server), then the request object will be
+buffered and parsed in memory and contains the full request body.
+This includes the parsed request body and any file uploads.
+
+If you're using the advanced [`StreamingServer`](#streamingserver), the
+request object will be processed once the request headers have been received.
 This means that this happens irrespective of (i.e. *before*) receiving the
 (potentially much larger) request body.
+
 While this may be uncommon in the PHP ecosystem, this is actually a very powerful
 approach that gives you several advantages not otherwise possible:
 
@@ -416,6 +436,8 @@ $server = new StreamingServer(function (ServerRequestInterface $request) {
 });
 ```
 
+#### Request method
+
 Note that the server supports *any* request method (including custom and non-
 standard ones) and all request-target formats defined in the HTTP specs for each
 respective method, including *normal* `origin-form` requests as well as
@@ -444,6 +466,8 @@ Allowed).
   Note that if you want to handle this method, the client MAY send a different
   request-target than the `Host` header value (such as removing default ports)
   and the request-target MUST take precendence when forwarding.
+
+#### Cookie parameters
 
 The `getCookieParams(): string[]` method can be used to
 get all cookies sent with the current request.
@@ -513,6 +537,8 @@ $server = new Server(function (ServerRequestInterface $request) {
 });
 ```
 
+#### Deferred response
+
 The example above returns the response directly, because it needs
 no time to be processed.
 Using a database, the file system or long calculations 
@@ -549,6 +575,8 @@ promise will automatically be cancelled.
 The promise cancellation handler can be used to clean up any pending resources
 allocated in this case (if applicable).
 If a promise is resolved after the client closes, it will simply be ignored.
+
+#### Streaming response
 
 The `Response` class in this project supports to add an instance which implements the
 [ReactPHP ReadableStreamInterface](https://github.com/reactphp/stream#readablestreaminterface)
@@ -594,52 +622,6 @@ If a promise is resolved with a streaming body after the client closes, the
 response stream will automatically be closed.
 The `close` event can be used to clean up any pending resources allocated
 in this case (if applicable).
-
-If the response body is a `string`, a `Content-Length` header will be added
-automatically.
-If the response body is a ReactPHP `ReadableStreamInterface` and you do not
-specify a `Content-Length` header, HTTP/1.1 responses will automatically use
-chunked transfer encoding and send the respective header
-(`Transfer-Encoding: chunked`) automatically.
-The server is responsible for handling `Transfer-Encoding`, so you SHOULD NOT
-pass this header yourself.
-If you know the length of your stream body, you MAY specify it like this instead:
-
-```php
-$stream = new ThroughStream()
-$server = new Server(function (ServerRequestInterface $request) use ($stream) {
-    return new Response(
-        200,
-        array(
-            'Content-Length' => '5',
-            'Content-Type' => 'text/plain',
-        ),
-        $stream
-    );
-});
-```
-
-An invalid return value or an unhandled `Exception` or `Throwable` in the code
-of the callback function, will result in an `500 Internal Server Error` message.
-Make sure to catch `Exceptions` or `Throwables` to create own response messages.
-
-After the return in the callback function the response will be processed by the `StreamingServer`.
-The `StreamingServer` will add the protocol version of the request, so you don't have to.
-
-Any response to a `HEAD` request and any response with a `1xx` (Informational),
-`204` (No Content) or `304` (Not Modified) status code will *not* include a
-message body as per the HTTP specs.
-This means that your callback does not have to take special care of this and any
-response body will simply be ignored.
-
-Similarly, any `2xx` (Successful) response to a `CONNECT` request, any response
-with a `1xx` (Informational) or `204` (No Content) status code will *not*
-include a `Content-Length` or `Transfer-Encoding` header as these do not apply
-to these messages.
-Note that a response to a `HEAD` request and any response with a `304` (Not
-Modified) status code MAY include these headers even though
-the message does not contain a response body, because these header would apply
-to the message if the same request would have used an (unconditional) `GET`.
 
 > Note that special care has to be taken if you use a body stream instance that
   implements ReactPHP's
@@ -687,6 +669,59 @@ to the message if the same request would have used an (unconditional) `GET`.
   here and the connection will only turn to "tunneling mode" after the request
   body has been processed (which should be empty in most cases).
   See also [example #22](examples) for more details.
+
+#### Response length
+
+If the response body is a `string`, a `Content-Length` header will be added
+automatically.
+If the response body is a ReactPHP `ReadableStreamInterface` and you do not
+specify a `Content-Length` header, HTTP/1.1 responses will automatically use
+chunked transfer encoding and send the respective header
+(`Transfer-Encoding: chunked`) automatically.
+The server is responsible for handling `Transfer-Encoding`, so you SHOULD NOT
+pass this header yourself.
+If you know the length of your stream body, you MAY specify it like this instead:
+
+```php
+$stream = new ThroughStream()
+$server = new Server(function (ServerRequestInterface $request) use ($stream) {
+    return new Response(
+        200,
+        array(
+            'Content-Length' => '5',
+            'Content-Type' => 'text/plain',
+        ),
+        $stream
+    );
+});
+```
+
+Any response to a `HEAD` request and any response with a `1xx` (Informational),
+`204` (No Content) or `304` (Not Modified) status code will *not* include a
+message body as per the HTTP specs.
+This means that your callback does not have to take special care of this and any
+response body will simply be ignored.
+
+Similarly, any `2xx` (Successful) response to a `CONNECT` request, any response
+with a `1xx` (Informational) or `204` (No Content) status code will *not*
+include a `Content-Length` or `Transfer-Encoding` header as these do not apply
+to these messages.
+Note that a response to a `HEAD` request and any response with a `304` (Not
+Modified) status code MAY include these headers even though
+the message does not contain a response body, because these header would apply
+to the message if the same request would have used an (unconditional) `GET`.
+
+#### Invalid response
+
+An invalid return value or an unhandled `Exception` or `Throwable` in the code
+of the callback function, will result in an `500 Internal Server Error` message.
+Make sure to catch `Exceptions` or `Throwables` to create own response messages.
+
+#### Default response headers
+
+After the return in the callback function the response will be processed by the
+[`Server`](#server) or [`StreamingServer`](#streamingserver) respectively.
+They will add the protocol version of the request, so you don't have to.
 
 A `Date` header will be automatically added with the system date and time if none is given.
 You can add a custom `Date` header yourself like this:
