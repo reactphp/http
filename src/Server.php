@@ -48,10 +48,10 @@ final class Server extends EventEmitter
     /**
      * @see StreamingServer::__construct()
      */
-    public function __construct($callback)
+    public function __construct($requestHandler)
     {
-        if (!is_callable($callback)) {
-            throw new \InvalidArgumentException();
+        if (!is_callable($requestHandler) && !is_array($requestHandler)) {
+            throw new \InvalidArgumentException('Invalid request handler given');
         }
 
         $middleware = array();
@@ -66,7 +66,14 @@ final class Server extends EventEmitter
         if ($enablePostDataReading !== '') {
             $middleware[] = new RequestBodyParserMiddleware();
         }
-        $middleware[] = $callback;
+
+        if (is_callable($requestHandler)) {
+            $middleware[] = $requestHandler;
+        } else {
+            foreach ($requestHandler as $one) {
+                $middleware[] = $one;
+            }
+        }
 
         $this->streamingServer = new StreamingServer($middleware);
 
@@ -84,6 +91,10 @@ final class Server extends EventEmitter
         $this->streamingServer->listen($server);
     }
 
+    /**
+     * @return int
+     * @codeCoverageIgnore
+     */
     private function getConcurrentRequestsLimit()
     {
         if (ini_get('memory_limit') == -1) {

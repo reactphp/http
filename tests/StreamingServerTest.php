@@ -62,6 +62,28 @@ class StreamingServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
+    /**
+     * @requires PHP 5.4
+     */
+    public function testRequestEventIsEmittedForArrayCallable()
+    {
+        $this->called = null;
+        $server = new StreamingServer(array($this, 'helperCallableOnce'));
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+        $this->connection->emit('data', array($data));
+
+        $this->assertEquals(1, $this->called);
+    }
+
+    public function helperCallableOnce()
+    {
+        ++$this->called;
+    }
+
     public function testRequestEvent()
     {
         $i = 0;

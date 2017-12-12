@@ -675,7 +675,8 @@ passed explicitly.
 
 ### Middleware
 
-As documented above, the [`StreamingServer`](#streamingserver) accepts a single
+As documented above, the [`Server`](#server) and advanced
+[`StreamingServer`](#streamingserver) accept a single
 request handler argument that is responsible for processing an incoming
 HTTP request and then creating and returning an outgoing HTTP response.
 
@@ -704,12 +705,13 @@ required to match PHP's request behavior (see below) and otherwise actively
 encourages [Third-Party Middleware](#third-party-middleware) implementations.
 
 In order to use middleware request handlers, simply pass an array with all
-callables as defined above to the [`StreamingServer`](#streamingserver).
+callables as defined above to the [`Server`](#server) or
+[`StreamingServer`](#streamingserver) respectively.
 The following example adds a middleware request handler that adds the current time to the request as a 
 header (`Request-Time`) and a final request handler that always returns a 200 code without a body: 
 
 ```php
-$server = new StreamingServer(array(
+$server = new Server(array(
     function (ServerRequestInterface $request, callable $next) {
         $request = $request->withHeader('Request-Time', time());
         return $next($request);
@@ -740,7 +742,7 @@ The following example shows how this middleware can be used to ensure no more
 than 10 handlers will be invoked at once:
 
 ```php
-$server = new StreamingServer(array(
+$server = new Server(array(
     new LimitConcurrentRequestsMiddleware(10),
     $handler
 ));
