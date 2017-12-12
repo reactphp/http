@@ -3,17 +3,19 @@
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Response;
-use React\Http\StreamingServer;
+use React\Http\Server;
 
 require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
 
 $counter = 0;
-$server = new StreamingServer(function (ServerRequestInterface $request) use (&$counter) {
+$server = new Server(function (ServerRequestInterface $request) use (&$counter) {
     return new Response(
         200,
-        array('Content-Type' => 'text/plain'),
+        array(
+            'Content-Type' => 'text/plain'
+        ),
         "Welcome number " . ++$counter . "!\n"
     );
 });

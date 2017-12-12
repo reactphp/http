@@ -3,18 +3,24 @@
 use Psr\Http\Message\RequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Response;
-use React\Http\StreamingServer;
+use React\Http\Server;
 use RingCentral\Psr7;
 
 require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
 
-$server = new StreamingServer(function (RequestInterface $request) {
+// Note how this example uses the `Server` instead of `StreamingServer`.
+// This means that this proxy buffers the whole request before "processing" it.
+// As such, this is store-and-forward proxy. This could also use the advanced
+// `StreamingServer` to forward the incoming request as it comes in.
+$server = new Server(function (RequestInterface $request) {
     if (strpos($request->getRequestTarget(), '://') === false) {
         return new Response(
             400,
-            array('Content-Type' => 'text/plain'),
+            array(
+                'Content-Type' => 'text/plain'
+            ),
             'This is a plain HTTP proxy'
         );
     }
@@ -32,7 +38,9 @@ $server = new StreamingServer(function (RequestInterface $request) {
     // and forward the incoming response to the original client request
     return new Response(
         200,
-        array('Content-Type' => 'text/plain'),
+        array(
+            'Content-Type' => 'text/plain'
+        ),
         Psr7\str($outgoing)
     );
 });
