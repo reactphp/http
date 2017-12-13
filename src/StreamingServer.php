@@ -214,7 +214,7 @@ final class StreamingServer extends EventEmitter
             $string = $request->getHeaderLine('Content-Length');
 
             $contentLength = (int)$string;
-            if ((string)$contentLength !== (string)$string) {
+            if ((string)$contentLength !== $string) {
                 // Content-Length value is not an integer or not a single integer
                 $this->emit('error', array(new \InvalidArgumentException('The value of `Content-Length` is not valid')));
                 return $this->writeError($conn, 400, $request);
@@ -355,7 +355,7 @@ final class StreamingServer extends EventEmitter
         // response to HEAD and 1xx, 204 and 304 responses MUST NOT include a body
         // exclude status 101 (Switching Protocols) here for Upgrade request handling below
         if ($request->getMethod() === 'HEAD' || $code === 100 || ($code > 101 && $code < 200) || $code === 204 || $code === 304) {
-            $response = $response->withBody(Psr7Implementation\stream_for(''));
+            $response = $response->withBody(Psr7Implementation\stream_for());
         }
 
         // 101 (Switching Protocols) response uses Connection: upgrade header

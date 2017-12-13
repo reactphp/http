@@ -19,7 +19,6 @@ class LengthLimitedStream extends EventEmitter implements ReadableStreamInterfac
 {
     private $stream;
     private $closed = false;
-    private $encoder;
     private $transferredLength = 0;
     private $maxLength;
 

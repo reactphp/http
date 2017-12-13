@@ -3,6 +3,8 @@
 namespace React\Http\Io;
 
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\StreamInterface;
+use Psr\Http\Message\UriInterface;
 use RingCentral\Psr7\Request;
 
 /**
@@ -37,7 +39,7 @@ class ServerRequest extends Request implements ServerRequestInterface
      * @param string $protocolVersion HTTP protocol version.
      * @param array server-side parameters
      *
-     * @throws InvalidArgumentException for an invalid URI
+     * @throws \InvalidArgumentException for an invalid URI
      */
     public function __construct(
         $method,

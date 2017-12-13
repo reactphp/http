@@ -190,7 +190,7 @@ final class MultipartParser
             }
 
             return new UploadedFile(
-                Psr7\stream_for(''),
+                Psr7\stream_for(),
                 $size,
                 UPLOAD_ERR_NO_FILE,
                 $filename,
@@ -206,7 +206,7 @@ final class MultipartParser
         // file exceeds "upload_max_filesize" ini setting
         if ($size > $this->uploadMaxFilesize) {
             return new UploadedFile(
-                Psr7\stream_for(''),
+                Psr7\stream_for(),
                 $size,
                 UPLOAD_ERR_INI_SIZE,
                 $filename,
@@ -217,7 +217,7 @@ final class MultipartParser
         // file exceeds MAX_FILE_SIZE value
         if ($this->maxFileSize !== null && $size > $this->maxFileSize) {
             return new UploadedFile(
-                Psr7\stream_for(''),
+                Psr7\stream_for(),
                 $size,
                 UPLOAD_ERR_FORM_SIZE,
                 $filename,
