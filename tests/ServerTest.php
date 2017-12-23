@@ -3,7 +3,6 @@
 namespace React\Tests\Http;
 
 use React\EventLoop\Factory;
-use React\EventLoop\Timer\TimerInterface;
 use React\Http\Server;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Promise\Deferred;
@@ -119,7 +118,7 @@ final class ServerTest extends TestCase
 
         $connection = $this->connection;
         $data = $this->createPostFileUploadRequest();
-        $loop->addPeriodicTimer(0.01, function (TimerInterface $timer) use ($loop, &$data, $connection) {
+        $loop->addPeriodicTimer(0.01, function ($timer) use ($loop, &$data, $connection) {
             $line = array_shift($data);
             $connection->emit('data', array($line));
 
