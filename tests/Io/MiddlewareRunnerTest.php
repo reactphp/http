@@ -80,6 +80,14 @@ final class MiddlewareRunnerTest extends TestCase
      */
     public function testProcessStack(array $middlewares, $expectedCallCount)
     {
+        // the ProcessStack middleware instances are stateful, so reset these
+        // before running the test, to not fail with --repeat=100
+        foreach ($middlewares as $middleware) {
+            if ($middleware instanceof ProcessStack) {
+                $middleware->reset();
+            }
+        }
+
         $request = new ServerRequest('GET', 'https://example.com/');
         $middlewareStack = new MiddlewareRunner($middlewares);
 

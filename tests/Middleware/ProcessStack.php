@@ -25,4 +25,9 @@ final class ProcessStack
     {
         return $this->callCount;
     }
+
+    public function reset()
+    {
+        $this->callCount = 0;
+    }
 }
