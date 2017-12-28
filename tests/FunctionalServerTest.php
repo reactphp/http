@@ -472,13 +472,38 @@ class FunctionalServerTest extends TestCase
         $socket->close();
     }
 
+    public function testRequestHandlerWillReceiveCloseEventIfConnectionClosesWhileSendingBody()
+    {
+        $loop = Factory::create();
+        $connector = new Connector($loop);
+
+        $once = $this->expectCallableOnce();
+        $server = new StreamingServer(function (RequestInterface $request) use ($once) {
+            $request->getBody()->on('close', $once);
+        });
+
+        $socket = new Socket(0, $loop);
+        $server->listen($socket);
+
+        $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) use ($loop) {
+            $conn->write("GET / HTTP/1.0\r\nContent-Length: 100\r\n\r\n");
+
+            $loop->addTimer(0.001, function() use ($conn) {
+                $conn->end();
+            });
+        });
+
+        Block\sleep(0.1, $loop);
+
+        $socket->close();
+    }
+
     public function testStreamFromRequestHandlerWillBeClosedIfConnectionClosesWhileSendingBody()
     {
         $loop = Factory::create();
         $connector = new Connector($loop);
 
         $stream = new ThroughStream();
-        $stream->on('close', $this->expectCallableOnce());
 
         $server = new StreamingServer(function (RequestInterface $request) use ($stream) {
             return new Response(200, array(), $stream);
@@ -487,22 +512,20 @@ class FunctionalServerTest extends TestCase
         $socket = new Socket(0, $loop);
         $server->listen($socket);
 
-        $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) use ($loop) {
+        $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) use ($loop) {
             $conn->write("GET / HTTP/1.0\r\nContent-Length: 100\r\n\r\n");
 
-            $loop->addTimer(0.1, function() use ($conn) {
+            $loop->addTimer(0.001, function() use ($conn) {
                 $conn->end();
             });
-
-            return Stream\buffer($conn);
         });
 
-        $response = Block\await($result, $loop, 1.0);
-
-        $this->assertStringStartsWith("HTTP/1.0 200 OK", $response);
-        $this->assertStringEndsWith("\r\n\r\n", $response);
+        // stream will be closed within 0.1s
+        $ret = Block\await(Stream\first($stream, 'close'), $loop, 0.1);
 
         $socket->close();
+
+        $this->assertNull($ret);
     }
 
     public function testStreamFromRequestHandlerWillBeClosedIfConnectionClosesButWillOnlyBeDetectedOnNextWrite()
