@@ -20,7 +20,6 @@ use React\Socket\ConnectionInterface;
 use React\Socket\ServerInterface;
 use React\Stream\ReadableStreamInterface;
 use React\Stream\WritableStreamInterface;
-use RingCentral\Psr7 as Psr7Implementation;
 
 /**
  * The `Server` class is responsible for handling incoming connections and then
@@ -373,12 +372,6 @@ final class StreamingServer extends EventEmitter
             $response = $response->withoutHeader('Content-Length')->withoutHeader('Transfer-Encoding');
         }
 
-        // response to HEAD and 1xx, 204 and 304 responses MUST NOT include a body
-        // exclude status 101 (Switching Protocols) here for Upgrade request handling below
-        if ($request->getMethod() === 'HEAD' || $code === 100 || ($code > 101 && $code < 200) || $code === 204 || $code === 304) {
-            $response = $response->withBody(Psr7Implementation\stream_for());
-        }
-
         // 101 (Switching Protocols) response uses Connection: upgrade header
         // persistent connections are currently not supported, so do not use
         // this for any other replies in order to preserve "Connection: close"
@@ -404,11 +397,7 @@ final class StreamingServer extends EventEmitter
             }
         }
 
-        $this->handleResponseBody($response, $connection);
-    }
-
-    private function handleResponseBody(ResponseInterface $response, ConnectionInterface $connection)
-    {
+        // build HTTP response header by appending status line and header fields
         $headers = "HTTP/" . $response->getProtocolVersion() . " " . $response->getStatusCode() . " " . $response->getReasonPhrase() . "\r\n";
         foreach ($response->getHeaders() as $name => $values) {
             foreach ($values as $value) {
@@ -416,34 +405,38 @@ final class StreamingServer extends EventEmitter
             }
         }
 
-        $stream = $response->getBody();
+        // response to HEAD and 1xx, 204 and 304 responses MUST NOT include a body
+        // exclude status 101 (Switching Protocols) here for Upgrade request handling above
+        if ($request->getMethod() === 'HEAD' || $code === 100 || ($code > 101 && $code < 200) || $code === 204 || $code === 304) {
+            $body = '';
+        }
 
-        if (!$stream instanceof ReadableStreamInterface) {
-            $connection->write($headers . "\r\n" . $stream);
-            return $connection->end();
+        // this is a non-streaming response body or the body stream already closed?
+        if (!$body instanceof ReadableStreamInterface || !$body->isReadable()) {
+            // add final chunk if a streaming body is already closed and uses `Transfer-Encoding: chunked`
+            if ($body instanceof ReadableStreamInterface && $response->getHeaderLine('Transfer-Encoding') === 'chunked') {
+                $body = "0\r\n\r\n";
+            }
+
+            // end connection after writing response headers and body
+            $connection->write($headers . "\r\n" . $body);
+            $connection->end();
+            return;
         }
 
         $connection->write($headers . "\r\n");
 
-        if ($stream->isReadable()) {
-            if ($response->getHeaderLine('Transfer-Encoding') === 'chunked') {
-                $stream = new ChunkedEncoder($stream);
-            }
-
-            // Close response stream once connection closes.
-            // Note that this TCP/IP close detection may take some time,
-            // in particular this may only fire on a later read/write attempt
-            // because we stop/pause reading from the connection once the
-            // request has been processed.
-            $connection->on('close', array($stream, 'close'));
-
-            $stream->pipe($connection);
-        } else {
-            if ($response->getHeaderLine('Transfer-Encoding') === 'chunked') {
-                $connection->write("0\r\n\r\n");
-            }
-
-            $connection->end();
+        if ($response->getHeaderLine('Transfer-Encoding') === 'chunked') {
+            $body = new ChunkedEncoder($body);
         }
+
+        // Close response stream once connection closes.
+        // Note that this TCP/IP close detection may take some time,
+        // in particular this may only fire on a later read/write attempt
+        // because we stop/pause reading from the connection once the
+        // request has been processed.
+        $connection->on('close', array($body, 'close'));
+
+        $body->pipe($connection);
     }
 }
