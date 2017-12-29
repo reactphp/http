@@ -325,6 +325,13 @@ final class StreamingServer extends EventEmitter
     /** @internal */
     public function handleResponse(ConnectionInterface $connection, ServerRequestInterface $request, ResponseInterface $response)
     {
+        // return early and close response body if connection is already closed
+        $body = $response->getBody();
+        if (!$connection->isWritable()) {
+            $body->close();
+            return;
+        }
+
         $response = $response->withProtocolVersion($request->getProtocolVersion());
 
         // assign default "X-Powered-By" header as first for history reasons
@@ -348,8 +355,8 @@ final class StreamingServer extends EventEmitter
             $response = $response->withoutHeader('Date');
         }
 
-        if (!$response->getBody() instanceof HttpBodyStream) {
-            $response = $response->withHeader('Content-Length', (string)$response->getBody()->getSize());
+        if (!$body instanceof HttpBodyStream) {
+            $response = $response->withHeader('Content-Length', (string)$body->getSize());
         } elseif (!$response->hasHeader('Content-Length') && $request->getProtocolVersion() === '1.1') {
             // assign chunked transfer-encoding if no 'content-length' is given for HTTP/1.1 responses
             $response = $response->withHeader('Transfer-Encoding', 'chunked');
@@ -381,7 +388,6 @@ final class StreamingServer extends EventEmitter
 
         // 101 (Switching Protocols) response (for Upgrade request) forwards upgraded data through duplex stream
         // 2xx (Successful) response to CONNECT forwards tunneled application data through duplex stream
-        $body = $response->getBody();
         if (($code === 101 || ($request->getMethod() === 'CONNECT' && $code >= 200 && $code < 300)) && $body instanceof HttpBodyStream && $body->input instanceof WritableStreamInterface) {
             if ($request->getBody()->isReadable()) {
                 // request is still streaming => wait for request close before forwarding following data from connection
@@ -415,11 +421,6 @@ final class StreamingServer extends EventEmitter
         if (!$stream instanceof ReadableStreamInterface) {
             $connection->write($headers . "\r\n" . $stream);
             return $connection->end();
-        }
-
-        // close response stream if connection is already closed
-        if (!$connection->isWritable()) {
-            return $stream->close();
         }
 
         $connection->write($headers . "\r\n");
