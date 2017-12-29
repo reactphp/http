@@ -17,7 +17,7 @@ use React\Stream\WritableStreamInterface;
  * */
 class CloseProtectionStream extends EventEmitter implements ReadableStreamInterface
 {
-    private $connection;
+    private $input;
     private $closed = false;
 
     /**
