@@ -68,6 +68,54 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
         $this->assertSame($body, $exposedRequest->getBody()->getContents());
     }
 
+    public function testEmptyStreamingResolvesImmediatelyWithEmptyBufferedBody()
+    {
+        $stream = new ThroughStream();
+        $serverRequest = new ServerRequest(
+            'GET',
+            'https://example.com/',
+            array(),
+            $body = new HttpBodyStream($stream, 0)
+        );
+
+        $exposedRequest = null;
+        $buffer = new RequestBodyBufferMiddleware();
+        $buffer(
+            $serverRequest,
+            function (ServerRequestInterface $request) use (&$exposedRequest) {
+                $exposedRequest = $request;
+            }
+        );
+
+        $this->assertSame(0, $exposedRequest->getBody()->getSize());
+        $this->assertSame('', $exposedRequest->getBody()->getContents());
+        $this->assertNotSame($body, $exposedRequest->getBody());
+    }
+
+    public function testEmptyBufferedResolvesImmediatelyWithSameBody()
+    {
+        $serverRequest = new ServerRequest(
+            'GET',
+            'https://example.com/',
+            array(),
+            ''
+        );
+        $body = $serverRequest->getBody();
+
+        $exposedRequest = null;
+        $buffer = new RequestBodyBufferMiddleware();
+        $buffer(
+            $serverRequest,
+            function (ServerRequestInterface $request) use (&$exposedRequest) {
+                $exposedRequest = $request;
+            }
+        );
+
+        $this->assertSame(0, $exposedRequest->getBody()->getSize());
+        $this->assertSame('', $exposedRequest->getBody()->getContents());
+        $this->assertSame($body, $exposedRequest->getBody());
+    }
+
     public function testKnownExcessiveSizedBodyIsDisgardedTheRequestIsPassedDownToTheNextMiddleware()
     {
         $loop = Factory::create();
