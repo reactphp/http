@@ -16,9 +16,8 @@ final class MiddlewareRunner
 {
     /**
      * @var callable[]
-     * @internal
      */
-    public $middleware = array();
+    private $middleware = array();
 
     /**
      * @param callable[] $middleware
@@ -38,34 +37,26 @@ final class MiddlewareRunner
             return Promise\reject(new \RuntimeException('No middleware to run'));
         }
 
-        $position = 0;
+        return $this->call($request, 0);
+    }
 
+    /** @internal */
+    public function call(ServerRequestInterface $request, $position)
+    {
         $that = $this;
-        $func = function (ServerRequestInterface $request) use (&$func, &$position, &$that) {
-            $middleware = $that->middleware[$position];
-            $response = null;
-            $promise = new Promise\Promise(function ($resolve) use ($middleware, $request, $func, &$response, &$position) {
-                $position++;
-
-                $response = $middleware(
-                    $request,
-                    $func
-                );
-
-                $resolve($response);
-            }, function () use (&$response) {
-                if ($response instanceof Promise\CancellablePromiseInterface) {
-                    $response->cancel();
-                }
-            });
-
-            return $promise->then(null, function ($error) use (&$position) {
-                $position--;
-
-                return Promise\reject($error);
-            });
+        $next = function (ServerRequestInterface $request) use ($that, $position) {
+            return $that->call($request, $position + 1);
         };
 
-        return $func($request);
+        $handler = $this->middleware[$position];
+        try {
+            return Promise\resolve($handler($request, $next));
+        } catch (\Exception $error) {
+            // request handler callback throws an Exception
+            return Promise\reject($error);
+        } catch (\Throwable $error) { // @codeCoverageIgnoreStart
+            // request handler callback throws a PHP7+ Error
+            return Promise\reject($error); // @codeCoverageIgnoreEnd
+        }
     }
 }
