@@ -12,6 +12,8 @@ use React\Promise;
 use React\Tests\Http\Middleware\ProcessStack;
 use React\Tests\Http\TestCase;
 use RingCentral\Psr7\Response;
+use Psr\Http\Message\RequestInterface;
+use React\Promise\CancellablePromiseInterface;
 
 final class MiddlewareRunnerTest extends TestCase
 {
@@ -26,6 +28,39 @@ final class MiddlewareRunnerTest extends TestCase
         $middlewareStack = new MiddlewareRunner($middlewares);
 
         Block\await($middlewareStack($request), Factory::create());
+    }
+
+    public function testReturnsRejectedPromiseIfHandlerThrowsException()
+    {
+        $middleware = new MiddlewareRunner(array(
+            function (ServerRequestInterface $request) {
+                throw new \RuntimeException('hello');
+            }
+        ));
+
+        $request = new ServerRequest('GET', 'http://example.com/');
+
+        $promise = $middleware($request);
+
+        $promise->then(null, $this->expectCallableOnceWith($this->isInstanceOf('RuntimeException')));
+    }
+
+    /**
+     * @requires PHP 7
+     */
+    public function testReturnsRejectedPromiseIfHandlerThrowsThrowable()
+    {
+        $middleware = new MiddlewareRunner(array(
+            function (ServerRequestInterface $request) {
+                throw new \Error('hello');
+            }
+        ));
+
+        $request = new ServerRequest('GET', 'http://example.com/');
+
+        $promise = $middleware($request);
+
+        $promise->then(null, $this->expectCallableOnceWith($this->isInstanceOf('Throwable')));
     }
 
     public function provideProcessStackMiddlewares()
@@ -341,5 +376,70 @@ final class MiddlewareRunnerTest extends TestCase
         $response = Block\await($middlewareStack($request), Factory::create());
 
         $this->assertSame($expectedSequence, (string) $response->getBody());
+    }
+
+    public function testPendingNextRequestHandlersCanBeCalledConcurrently()
+    {
+        $called = 0;
+        $middleware = new MiddlewareRunner(array(
+            function (RequestInterface $request, $next) {
+                $first = $next($request);
+                $second = $next($request);
+
+                return new Response();
+            },
+            function (RequestInterface $request) use (&$called) {
+                ++$called;
+
+                return new Promise\Promise(function () { });
+            }
+        ));
+
+        $request = new ServerRequest('GET', 'http://example.com/');
+
+        $response = Block\await($middleware($request), Factory::create());
+
+        $this->assertTrue($response instanceof ResponseInterface);
+        $this->assertEquals(2, $called);
+    }
+
+    public function testCancelPendingNextHandler()
+    {
+        $once = $this->expectCallableOnce();
+        $middleware = new MiddlewareRunner(array(
+            function (RequestInterface $request, $next) {
+                $ret = $next($request);
+                $ret->cancel();
+
+                return $ret;
+            },
+            function (RequestInterface $request) use ($once) {
+                return new Promise\Promise(function () { }, $once);
+            }
+        ));
+
+        $request = new ServerRequest('GET', 'http://example.com/');
+
+        $middleware($request);
+    }
+
+    public function testCancelResultingPromiseWillCancelPendingNextHandler()
+    {
+        $once = $this->expectCallableOnce();
+        $middleware = new MiddlewareRunner(array(
+            function (RequestInterface $request, $next) {
+                return $next($request);
+            },
+            function (RequestInterface $request) use ($once) {
+                return new Promise\Promise(function () { }, $once);
+            }
+        ));
+
+        $request = new ServerRequest('GET', 'http://example.com/');
+
+        $promise = $middleware($request);
+
+        $this->assertTrue($promise instanceof CancellablePromiseInterface);
+        $promise->cancel();
     }
 }
