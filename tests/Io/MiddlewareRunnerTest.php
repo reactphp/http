@@ -14,6 +14,7 @@ use React\Tests\Http\TestCase;
 use RingCentral\Psr7\Response;
 use Psr\Http\Message\RequestInterface;
 use React\Promise\CancellablePromiseInterface;
+use React\Promise\PromiseInterface;
 
 final class MiddlewareRunnerTest extends TestCase
 {
@@ -21,16 +22,20 @@ final class MiddlewareRunnerTest extends TestCase
      * @expectedException RuntimeException
      * @expectedExceptionMessage No middleware to run
      */
-    public function testDefaultResponse()
+    public function testEmptyMiddlewareStackThrowsException()
     {
         $request = new ServerRequest('GET', 'https://example.com/');
         $middlewares = array();
         $middlewareStack = new MiddlewareRunner($middlewares);
 
-        Block\await($middlewareStack($request), Factory::create());
+        $middlewareStack($request);
     }
 
-    public function testReturnsRejectedPromiseIfHandlerThrowsException()
+    /**
+     * @expectedException RuntimeException
+     * @expectedExceptionMessage hello
+     */
+    public function testThrowsIfHandlerThrowsException()
     {
         $middleware = new MiddlewareRunner(array(
             function (ServerRequestInterface $request) {
@@ -40,15 +45,15 @@ final class MiddlewareRunnerTest extends TestCase
 
         $request = new ServerRequest('GET', 'http://example.com/');
 
-        $promise = $middleware($request);
-
-        $promise->then(null, $this->expectCallableOnceWith($this->isInstanceOf('RuntimeException')));
+        $middleware($request);
     }
 
     /**
      * @requires PHP 7
+     * @expectedException Throwable
+     * @expectedExceptionMessage hello
      */
-    public function testReturnsRejectedPromiseIfHandlerThrowsThrowable()
+    public function testThrowsIfHandlerThrowsThrowable()
     {
         $middleware = new MiddlewareRunner(array(
             function (ServerRequestInterface $request) {
@@ -58,9 +63,7 @@ final class MiddlewareRunnerTest extends TestCase
 
         $request = new ServerRequest('GET', 'http://example.com/');
 
-        $promise = $middleware($request);
-
-        $promise->then(null, $this->expectCallableOnceWith($this->isInstanceOf('Throwable')));
+        $middleware($request);
     }
 
     public function provideProcessStackMiddlewares()
@@ -126,9 +129,14 @@ final class MiddlewareRunnerTest extends TestCase
         $request = new ServerRequest('GET', 'https://example.com/');
         $middlewareStack = new MiddlewareRunner($middlewares);
 
-        /** @var ResponseInterface $result */
-        $result = Block\await($middlewareStack($request), Factory::create());
-        $this->assertSame(200, $result->getStatusCode());
+        $response = $middlewareStack($request);
+
+        $this->assertTrue($response instanceof PromiseInterface);
+        $response = Block\await($response, Factory::create());
+
+        $this->assertTrue($response instanceof ResponseInterface);
+        $this->assertSame(200, $response->getStatusCode());
+
         foreach ($middlewares as $middleware) {
             if (!($middleware instanceof ProcessStack)) {
                 continue;
@@ -163,7 +171,11 @@ final class MiddlewareRunnerTest extends TestCase
         $retryCalled = 0;
         $error = null;
         $retry = function ($request, $next) use (&$error, &$retryCalled) {
-            return $next($request)->then(null, function ($et) use (&$error, $request, $next, &$retryCalled) {
+            $promise = new \React\Promise\Promise(function ($resolve) use ($request, $next) {
+                $resolve($next($request));
+            });
+
+            return $promise->then(null, function ($et) use (&$error, $request, $next, &$retryCalled) {
                 $retryCalled++;
                 $error = $et;
                 // the $next failed. discard $error and retry once again:
@@ -214,7 +226,7 @@ final class MiddlewareRunnerTest extends TestCase
             },
             function (ServerRequestInterface $request, $next) use (&$receivedRequests) {
                 $receivedRequests[] = 'middleware3: ' . $request->getUri();
-                return $next($request);
+                return new \React\Promise\Promise(function () { });
             }
         ));
 
@@ -372,9 +384,9 @@ final class MiddlewareRunnerTest extends TestCase
         $request = new ServerRequest('GET', 'https://example.com/');
         $middlewareStack = new MiddlewareRunner($middlewareFactory());
 
-        /** @var ResponseInterface $response */
-        $response = Block\await($middlewareStack($request), Factory::create());
+        $response = $middlewareStack($request);
 
+        $this->assertTrue($response instanceof ResponseInterface);
         $this->assertSame($expectedSequence, (string) $response->getBody());
     }
 
@@ -397,7 +409,7 @@ final class MiddlewareRunnerTest extends TestCase
 
         $request = new ServerRequest('GET', 'http://example.com/');
 
-        $response = Block\await($middleware($request), Factory::create());
+        $response = $middleware($request);
 
         $this->assertTrue($response instanceof ResponseInterface);
         $this->assertEquals(2, $called);

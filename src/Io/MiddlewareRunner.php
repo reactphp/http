@@ -4,7 +4,6 @@ namespace React\Http\Io;
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use React\Promise;
 use React\Promise\PromiseInterface;
 
 /**
@@ -29,12 +28,13 @@ final class MiddlewareRunner
 
     /**
      * @param ServerRequestInterface $request
-     * @return PromiseInterface<ResponseInterface>
+     * @return ResponseInterface|PromiseInterface<ResponseInterface>
+     * @throws Exception
      */
     public function __invoke(ServerRequestInterface $request)
     {
         if (count($this->middleware) === 0) {
-            return Promise\reject(new \RuntimeException('No middleware to run'));
+            throw new \RuntimeException('No middleware to run');
         }
 
         return $this->call($request, 0);
@@ -49,14 +49,6 @@ final class MiddlewareRunner
         };
 
         $handler = $this->middleware[$position];
-        try {
-            return Promise\resolve($handler($request, $next));
-        } catch (\Exception $error) {
-            // request handler callback throws an Exception
-            return Promise\reject($error);
-        } catch (\Throwable $error) { // @codeCoverageIgnoreStart
-            // request handler callback throws a PHP7+ Error
-            return Promise\reject($error); // @codeCoverageIgnoreEnd
-        }
+        return $handler($request, $next);
     }
 }
