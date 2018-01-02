@@ -11,6 +11,7 @@ use React\Promise\Promise;
 use React\Stream\ThroughStream;
 use React\Tests\Http\TestCase;
 use React\Promise\PromiseInterface;
+use React\Http\Response;
 
 final class LimitConcurrentRequestsMiddlewareTest extends TestCase
 {
@@ -94,13 +95,110 @@ final class LimitConcurrentRequestsMiddlewareTest extends TestCase
         $this->assertTrue($calledC);
     }
 
-    public function testStreamPauseAndResume()
+    public function testReturnsResponseDirectlyFromMiddlewareWhenBelowLimit()
+    {
+        $middleware = new LimitConcurrentRequestsMiddleware(1);
+
+        $response = new Response();
+        $ret = $middleware(new ServerRequest('GET', 'https://example.com/'), function () use ($response) {
+            return $response;
+        });
+
+        $this->assertSame($response, $ret);
+    }
+
+    /**
+     * @expectedException RuntimeException
+     * @expectedExceptionMessage demo
+     */
+    public function testThrowsExceptionDirectlyFromMiddlewareWhenBelowLimit()
+    {
+        $middleware = new LimitConcurrentRequestsMiddleware(1);
+
+        $middleware(new ServerRequest('GET', 'https://example.com/'), function () {
+            throw new \RuntimeException('demo');
+        });
+    }
+
+    /**
+     * @requires PHP 7
+     * @expectedException Error
+     * @expectedExceptionMessage demo
+     */
+    public function testThrowsErrorDirectlyFromMiddlewareWhenBelowLimit()
+    {
+        $middleware = new LimitConcurrentRequestsMiddleware(1);
+
+        $middleware(new ServerRequest('GET', 'https://example.com/'), function () {
+            throw new \Error('demo');
+        });
+    }
+
+    public function testReturnsPendingPromiseChainedFromMiddlewareWhenBelowLimit()
+    {
+        $middleware = new LimitConcurrentRequestsMiddleware(1);
+
+        $deferred = new Deferred();
+        $ret = $middleware(new ServerRequest('GET', 'https://example.com/'), function () use ($deferred) {
+            return $deferred->promise();
+        });
+
+        $this->assertTrue($ret instanceof PromiseInterface);
+    }
+
+    public function testReturnsPendingPromiseFromMiddlewareWhenAboveLimit()
+    {
+        $middleware = new LimitConcurrentRequestsMiddleware(1);
+
+        $middleware(new ServerRequest('GET', 'https://example.com/'), function () {
+            return new Promise(function () { });
+        });
+
+        $ret = $middleware(new ServerRequest('GET', 'https://example.com/'), function () {
+            return new Response();
+        });
+
+        $this->assertTrue($ret instanceof PromiseInterface);
+    }
+
+    public function testStreamDoesNotPauseOrResumeWhenBelowLimit()
+    {
+        $body = $this->getMockBuilder('React\Http\Io\HttpBodyStream')->disableOriginalConstructor()->getMock();
+        $body->expects($this->never())->method('pause');
+        $body->expects($this->never())->method('resume');
+        $limitHandlers = new LimitConcurrentRequestsMiddleware(1);
+        $limitHandlers(new ServerRequest('GET', 'https://example.com/', array(), $body), function () {});
+    }
+
+    public function testStreamDoesPauseWhenAboveLimit()
+    {
+        $body = $this->getMockBuilder('React\Http\Io\HttpBodyStream')->disableOriginalConstructor()->getMock();
+        $body->expects($this->once())->method('pause');
+        $body->expects($this->never())->method('resume');
+        $limitHandlers = new LimitConcurrentRequestsMiddleware(1);
+
+        $limitHandlers(new ServerRequest('GET', 'https://example.com'), function () {
+            return new Promise(function () { });
+        });
+
+        $limitHandlers(new ServerRequest('GET', 'https://example.com/', array(), $body), function () {});
+    }
+
+    public function testStreamDoesPauseAndThenResumeWhenDequeued()
     {
         $body = $this->getMockBuilder('React\Http\Io\HttpBodyStream')->disableOriginalConstructor()->getMock();
         $body->expects($this->once())->method('pause');
         $body->expects($this->once())->method('resume');
         $limitHandlers = new LimitConcurrentRequestsMiddleware(1);
+
+        $deferred = new Deferred();
+        $limitHandlers(new ServerRequest('GET', 'https://example.com'), function () use ($deferred) {
+            return $deferred->promise();
+        });
+
         $limitHandlers(new ServerRequest('GET', 'https://example.com/', array(), $body), function () {});
+
+        $deferred->reject();
     }
 
     public function testReceivesBufferedRequestSameInstance()
@@ -121,7 +219,7 @@ final class LimitConcurrentRequestsMiddlewareTest extends TestCase
         $this->assertSame($request, $req);
     }
 
-    public function testReceivesStreamingBodyChangesInstanceWithCustomBodyButSameData()
+    public function testReceivesStreamingBodyRequestSameInstanceWhenBelowLimit()
     {
         $stream = new ThroughStream();
         $request = new ServerRequest(
@@ -137,15 +235,9 @@ final class LimitConcurrentRequestsMiddlewareTest extends TestCase
             $req = $request;
         });
 
-        $this->assertNotSame($request, $req);
-        $this->assertInstanceOf('Psr\Http\Message\ServerRequestInterface', $req);
+        $this->assertSame($request, $req);
 
         $body = $req->getBody();
-        $this->assertInstanceOf('React\Stream\ReadableStreamInterface', $body);
-        /* @var $body \React\Stream\ReadableStreamInterface */
-
-        $this->assertEquals(5, $body->getSize());
-
         $body->on('data', $this->expectCallableOnce('hello'));
         $stream->write('hello');
     }
@@ -273,7 +365,7 @@ final class LimitConcurrentRequestsMiddlewareTest extends TestCase
         $middleware($request, $this->expectCallableOnceWith($request));
     }
 
-    public function testReceivesNextStreamingBodyWithSameDataAfterPreviousHandlerIsSettled()
+    public function testReceivesStreamingBodyChangesInstanceWithCustomBodyButSameDataWhenDequeued()
     {
         $stream = new ThroughStream();
         $request = new ServerRequest(
@@ -283,18 +375,19 @@ final class LimitConcurrentRequestsMiddlewareTest extends TestCase
             new HttpBodyStream($stream, 5)
         );
 
-        $deferred = new Deferred();
         $middleware = new LimitConcurrentRequestsMiddleware(1);
-        $middleware($request, function () use ($deferred) {
+
+        $deferred = new Deferred();
+        $middleware(new ServerRequest('GET', 'https://example.com/'), function () use ($deferred) {
             return $deferred->promise();
         });
-
-        $deferred->reject(new \RuntimeException());
 
         $req = null;
         $middleware($request, function (ServerRequestInterface $request) use (&$req) {
             $req = $request;
         });
+
+        $deferred->reject();
 
         $this->assertNotSame($request, $req);
         $this->assertInstanceOf('Psr\Http\Message\ServerRequestInterface', $req);
