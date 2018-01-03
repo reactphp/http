@@ -171,7 +171,7 @@ final class StreamingServer extends EventEmitter
         $parser = new RequestHeaderParser($uriLocal, $uriRemote);
 
         $listener = array($parser, 'feed');
-        $parser->on('headers', function (RequestInterface $request, $bodyBuffer) use ($conn, $listener, $that) {
+        $parser->on('headers', function (ServerRequestInterface $request, $bodyBuffer) use ($conn, $listener, $that) {
             // parsing request completed => stop feeding parser
             $conn->removeListener('data', $listener);
 
