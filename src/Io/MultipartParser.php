@@ -101,7 +101,6 @@ final class MultipartParser
         $this->parseBody('--' . $matches[1], (string)$request->getBody());
 
         $request = $this->request;
-        $this->request = null;
         $this->postCount = 0;
         $this->filesCount = 0;
         $this->emptyCount = 0;
