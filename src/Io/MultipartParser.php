@@ -87,7 +87,7 @@ final class MultipartParser
         }
 
         $this->uploadMaxFilesize = IniUtil::iniSizeToBytes($uploadMaxFilesize);
-        $this->maxFileUploads = $maxFileUploads === null ? (ini_get('file_uploads') === '' ? 0 : (int)ini_get('max_file_uploads')) : (int)$maxFileUploads;
+        $this->maxFileUploads = $maxFileUploads === null ? (ini_get('file_uploads') === '' ? 0 : (int)ini_get('max_file_uploads')) : $maxFileUploads;
     }
 
     public function parse(ServerRequestInterface $request)
