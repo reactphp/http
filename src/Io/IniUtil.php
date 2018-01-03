@@ -10,13 +10,13 @@ final class IniUtil
     /**
      * Convert a ini like size to a numeric size in bytes.
      *
-     * @param string $iniSetting
+     * @param string $size
      * @return int
      */
     public static function iniSizeToBytes($size)
     {
         if (is_numeric($size)) {
-            return $size;
+            return (int)$size;
         }
 
         $suffix = strtoupper(substr($size, -1));
@@ -31,18 +31,18 @@ final class IniUtil
         }
 
         if ($suffix === 'K') {
-            return $strippedSize * 1024;
+            return (int)($strippedSize * 1024);
         }
         if ($suffix === 'M') {
-            return $strippedSize * 1024 * 1024;
+            return (int)($strippedSize * 1024 * 1024);
         }
         if ($suffix === 'G') {
-            return $strippedSize * 1024 * 1024 * 1024;
+            return (int)($strippedSize * 1024 * 1024 * 1024);
         }
         if ($suffix === 'T') {
-            return $strippedSize * 1024  * 1024 * 1024 * 1024;
+            return (int)($strippedSize * 1024  * 1024 * 1024 * 1024);
         }
 
-        return $size;
+        return (int)$size;
     }
 }
