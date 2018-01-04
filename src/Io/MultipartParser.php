@@ -18,14 +18,14 @@ use RingCentral\Psr7;
 final class MultipartParser
 {
     /**
-     * @var ServerRequestInterface
+     * @var ServerRequestInterface|null
      */
-    protected $request;
+    private $request;
 
     /**
      * @var int|null
      */
-    protected $maxFileSize;
+    private $maxFileSize;
 
     /**
      * ini setting "max_input_vars"
