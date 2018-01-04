@@ -18,7 +18,7 @@ use RingCentral\Psr7;
 final class MultipartParser
 {
     /**
-     * @var ServerRequestInterface
+     * @var ServerRequestInterface|null
      */
     protected $request;
 
@@ -50,7 +50,7 @@ final class MultipartParser
     /**
      * ini setting "upload_max_filesize"
      *
-     * @var int
+     * @var number
      */
     private $uploadMaxFilesize;
 
@@ -101,6 +101,7 @@ final class MultipartParser
         $this->parseBody('--' . $matches[1], (string)$request->getBody());
 
         $request = $this->request;
+        $this->request = null;
         $this->postCount = 0;
         $this->filesCount = 0;
         $this->emptyCount = 0;
@@ -167,6 +168,10 @@ final class MultipartParser
     {
         $file = $this->parseUploadedFile($filename, $contentType, $contents);
         if ($file === null) {
+            return;
+        }
+
+        if (!$this->request instanceof ServerRequestInterface) {
             return;
         }
 
@@ -240,11 +245,13 @@ final class MultipartParser
             return;
         }
 
-        $this->request = $this->request->withParsedBody($this->extractPost(
-            $this->request->getParsedBody(),
-            $name,
-            $value
-        ));
+        if ($this->request instanceof ServerRequestInterface) {
+            $this->request = $this->request->withParsedBody($this->extractPost(
+                $this->request->getParsedBody(),
+                $name,
+                $value
+            ));
+        }
 
         if (strtoupper($name) === 'MAX_FILE_SIZE') {
             $this->maxFileSize = (int)$value;
