@@ -3,7 +3,6 @@
 namespace React\Http;
 
 use Evenement\EventEmitter;
-use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Io\ChunkedDecoder;
