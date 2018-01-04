@@ -2,10 +2,12 @@
 
 namespace React\Http\Middleware;
 
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Io\HttpBodyStream;
 use React\Http\Io\PauseBufferStream;
 use React\Promise;
+use React\Promise\PromiseInterface;
 use React\Promise\Deferred;
 use React\Stream\ReadableStreamInterface;
 
@@ -81,6 +83,35 @@ final class LimitConcurrentRequestsMiddleware
 
     public function __invoke(ServerRequestInterface $request, $next)
     {
+        // happy path: simply invoke next request handler if we're below limit
+        if ($this->pending < $this->limit) {
+            ++$this->pending;
+
+            try {
+                $response = $next($request);
+            } catch (\Exception $e) {
+                $this->processQueue();
+                throw $e;
+            } catch (\Throwable $e) { // @codeCoverageIgnoreStart
+                // handle Errors just like Exceptions (PHP 7+ only)
+                $this->processQueue();
+                throw $e; // @codeCoverageIgnoreEnd
+            }
+
+            // happy path: if next request handler returned immediately,
+            // we can simply try to invoke the next queued request
+            if ($response instanceof ResponseInterface) {
+                $this->processQueue();
+                return $response;
+            }
+
+            // if the next handler returns a pending promise, we have to
+            // await its resolution before invoking next queued request
+            return $this->await(Promise\resolve($response));
+        }
+
+        // if we reach this point, then this request will need to be queued
+        // check if the body is streaming, in which case we need to buffer everything
         $body = $request->getBody();
         if ($body instanceof ReadableStreamInterface) {
             // pause actual body to stop emitting data until the handler is called
@@ -110,13 +141,12 @@ final class LimitConcurrentRequestsMiddleware
 
         // queue request and process queue if pending does not exceed limit
         $queue[$id] = $deferred;
-        $this->processQueue();
 
         $that = $this;
         $pending = &$this->pending;
-        return $deferred->promise()->then(function () use ($request, $next, $body, &$pending) {
-            $pending++;
-
+        return $this->await($deferred->promise()->then(function () use ($request, $next, $body, &$pending) {
+            // invoke next request handler
+            ++$pending;
             $ret = $next($request);
 
             // resume readable stream and replay buffered events
@@ -125,13 +155,18 @@ final class LimitConcurrentRequestsMiddleware
             }
 
             return $ret;
-        })->then(function ($response) use ($that, &$pending) {
-            $pending--;
+        }));
+    }
+
+    private function await(PromiseInterface $promise)
+    {
+        $that = $this;
+
+        return $promise->then(function ($response) use ($that) {
             $that->processQueue();
 
             return $response;
-        }, function ($error) use ($that, &$pending) {
-            $pending--;
+        }, function ($error) use ($that) {
             $that->processQueue();
 
             return Promise\reject($error);
@@ -143,11 +178,8 @@ final class LimitConcurrentRequestsMiddleware
      */
     public function processQueue()
     {
-        if ($this->pending >= $this->limit) {
-            return;
-        }
-
-        if (!$this->queue) {
+        // skip if we're still above concurrency limit or there's no queued request waiting
+        if (--$this->pending >= $this->limit || !$this->queue) {
             return;
         }
 
