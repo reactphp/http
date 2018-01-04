@@ -798,10 +798,27 @@ As such, this project supports the concept of middleware request handlers.
 
 A middleware request handler is expected to adhere the following rules:
 
-* It is a `callable`.
-* It accepts `ServerRequestInterface` as first argument and optional `callable` as second argument.
-* It returns a `ResponseInterface` (or any promise which can be consumed by [`Promise\resolve`](http://reactphp.org/promise/#resolve) resolving to a `ResponseInterface`)
-* It calls `$next($request)` to continue processing the next middleware function or returns explicitly to abort the chain
+* It is a valid `callable`.
+* It accepts `ServerRequestInterface` as first argument and an optional
+  `callable` as second argument.
+* It returns either:
+  * An instance implementing `ResponseInterface` for direct consumption.
+  * Any promise which can be consumed by
+    [`Promise\resolve()`](http://reactphp.org/promise/#resolve) resolving to a
+  `ResponseInterface` for deferred consumption.
+  * It MAY throw an `Exception` (or return a rejected promise) in order to
+    signal an error condition and abort the chain.
+* It calls `$next($request)` to continue processing the next middleware
+  request handler function or returns explicitly without calling `$next` to
+  abort the chain.
+  * The `$next` request handler function (recursively) invokes the next request
+    handler from the chain with the same logic as above and returns (or throws)
+    as above.
+  * The `$request` may be modified prior to calling `$next($request)` to
+    change the incoming request the next middleware operates on.
+  * The `$next` return value may be consumed to modify the outgoing response.
+  * The `$next` request handler MAY be called more than once if you want to
+    implement custom "retry" logic etc.
 
 Note that this very simple definition allows you to use either anonymous
 functions or any classes that use the magic `__invoke()` method.
@@ -828,9 +845,62 @@ $server = new Server(array(
         $request = $request->withHeader('Request-Time', time());
         return $next($request);
     },
-    function (ServerRequestInterface $request, callable $next) {
+    function (ServerRequestInterface $request) {
         return new Response(200);
+    }
+));
+```
+
+Similarly, you can use the result of the `$next` middleware request handler
+function to modify the outgoing response.
+Note that as per the above documentation, the `$next` method may return a
+`ResponseInterface` directly or one wrapped in a promise for deferred
+resolution.
+In order to simplify handling both paths, you can simply wrap this in a
+[`Promise\resolve()`](http://reactphp.org/promise/#resolve) call like this:
+
+```php
+$server = new Server(array(
+    function (ServerRequestInterface $request, callable $next) {
+        $promise = React\Promise\resolve($next($request));
+        return $promise->then(function (ResponseInterface $response) {
+            return $response->withHeader('Content-Type', 'text/html');
+        });
     },
+    function (ServerRequestInterface $request) {
+        return new Response(200);
+    }
+));
+```
+
+Note that the `$next` middleware request handler function may also throw an
+`Exception` (or return a rejected promise) as described above.
+The previous example does not catch any exceptions and would thus signal an
+error condition to the `Server`.
+Alternatively, you can also catch any `Exception` to implement custom error
+handling logic (or logging etc.) by wrapping this in a
+[`Promise`](http://reactphp.org/promise/#promise) like this:
+
+```php
+$server = new Server(array(
+    function (ServerRequestInterface $request, callable $next) {
+        $promise = new React\Promise\Promise(function ($resolve) use ($next, $request) {
+            $resolve($next($request));
+        });
+        return $promise->then(null, function (Exception $e) {
+            return new Response(
+                500,
+                array(),
+                'Internal error: ' . $e->getMessage()
+            );
+        });
+    },
+    function (ServerRequestInterface $request) {
+        if (mt_rand(0, 1) === 1) {
+            throw new RuntimeException('Database error');
+        }
+        return new Response(200);
+    }
 ));
 ```
 
