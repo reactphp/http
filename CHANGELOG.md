@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.8.1 (2018-01-05)
+
+*   Major request handler performance improvement. Benchmarks suggest number of
+    requests/s improved by more than 50% for common `GET` requests!
+    We now avoid queuing, buffering and wrapping incoming requests in promises
+    when we're below limits and instead can directly process common requests.
+    (#291, #292, #293, #294 and #296 by @clue)
+
+*   Fix: Fix concurrent invoking next middleware request handlers
+    (#293 by @clue)
+
+*   Small code improvements
+    (#286 by @seregazhuk)
+
+*   Improve test suite to be less fragile when using `ext-event` and
+    fix test suite forward compatibility with upcoming EventLoop releases
+    (#288 and #290 by @clue)
+
 ## 0.8.0 (2017-12-12)
 
 *   Feature / BC break: Add new `Server` facade that buffers and parses incoming
