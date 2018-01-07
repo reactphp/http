@@ -808,9 +808,9 @@ A middleware request handler is expected to adhere the following rules:
   * It MAY throw an `Exception` (or return a rejected promise) in order to
     signal an error condition and abort the chain.
 * It calls `$next($request)` to continue processing the next middleware
-  request handler function or returns explicitly without calling `$next` to
+  request handler or returns explicitly without calling `$next` to
   abort the chain.
-  * The `$next` request handler function (recursively) invokes the next request
+  * The `$next` request handler (recursively) invokes the next request
     handler from the chain with the same logic as above and returns (or throws)
     as above.
   * The `$request` may be modified prior to calling `$next($request)` to
