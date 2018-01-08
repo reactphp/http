@@ -549,8 +549,8 @@ This example shows how such a long-term action could look like:
 
 ```php
 $server = new Server(function (ServerRequestInterface $request) use ($loop) {
-    return new Promise(function ($resolve, $reject) use ($request, $loop) {
-        $loop->addTimer(1.5, function() use ($loop, $resolve) {
+    return new Promise(function ($resolve, $reject) use ($loop) {
+        $loop->addTimer(1.5, function() use ($resolve) {
             $response = new Response(
                 200,
                 array(
@@ -682,7 +682,7 @@ pass this header yourself.
 If you know the length of your stream body, you MAY specify it like this instead:
 
 ```php
-$stream = new ThroughStream()
+$stream = new ThroughStream();
 $server = new Server(function (ServerRequestInterface $request) use ($stream) {
     return new Response(
         200,
