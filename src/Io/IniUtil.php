@@ -10,7 +10,7 @@ final class IniUtil
     /**
      * Convert a ini like size to a numeric size in bytes.
      *
-     * @param string $iniSetting
+     * @param string $size
      * @return int
      */
     public static function iniSizeToBytes($size)
@@ -23,11 +23,11 @@ final class IniUtil
         $strippedSize = substr($size, 0, -1);
 
         if (!is_numeric($strippedSize)) {
-            throw new \InvalidArgumentException('"' . $size . '" is not a valid ini size');
+            throw new \InvalidArgumentException("$size is not a valid ini size");
         }
 
         if ($strippedSize <= 0) {
-            throw new \InvalidArgumentException('Expect "' . $size . '" to be higher isn\'t zero or lower');
+            throw new \InvalidArgumentException("Expect $size to be higher isn't zero or lower");
         }
 
         if ($suffix === 'K') {

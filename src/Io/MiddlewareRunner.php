@@ -16,7 +16,7 @@ final class MiddlewareRunner
     /**
      * @var callable[]
      */
-    private $middleware = array();
+    private $middleware;
 
     /**
      * @param callable[] $middleware
@@ -29,11 +29,11 @@ final class MiddlewareRunner
     /**
      * @param ServerRequestInterface $request
      * @return ResponseInterface|PromiseInterface<ResponseInterface>
-     * @throws Exception
+     * @throws \Exception
      */
     public function __invoke(ServerRequestInterface $request)
     {
-        if (count($this->middleware) === 0) {
+        if (empty($this->middleware)) {
             throw new \RuntimeException('No middleware to run');
         }
 

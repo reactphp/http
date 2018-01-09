@@ -29,7 +29,7 @@ class PauseBufferStream extends EventEmitter implements ReadableStreamInterface
     private $dataPaused = '';
     private $endPaused = false;
     private $closePaused = false;
-    private $errorPaused = null;
+    private $errorPaused;
     private $implicit = false;
 
     public function __construct(ReadableStreamInterface $input)
