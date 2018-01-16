@@ -454,4 +454,19 @@ final class MiddlewareRunnerTest extends TestCase
         $this->assertTrue($promise instanceof CancellablePromiseInterface);
         $promise->cancel();
     }
+
+    public function testLastMiddlewareCanInvokeNext()
+    {
+        $middleware = new MiddlewareRunner(array(
+            function (RequestInterface $request, $next) {
+                return $next($request);
+            }
+        ));
+
+        $request = new ServerRequest('GET', 'http://example.com/');
+
+        $response = $middleware($request);
+
+        $this->assertNull($response);
+    }
 }
