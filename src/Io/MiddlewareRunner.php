@@ -48,6 +48,10 @@ final class MiddlewareRunner
             return $that->call($request, $position + 1);
         };
 
+        if (!isset($this->middleware[$position])) {
+            return null;
+        }
+
         $handler = $this->middleware[$position];
         return $handler($request, $next);
     }
