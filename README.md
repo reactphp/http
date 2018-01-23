@@ -27,6 +27,7 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
     * [RequestBodyBufferMiddleware](#requestbodybuffermiddleware)
     * [RequestBodyParserMiddleware](#requestbodyparsermiddleware)
     * [Third-Party Middleware](#third-party-middleware)
+    * [PSR-15 Middleware](#psr-15-middleware)
 * [Install](#install)
 * [Tests](#tests)
 * [License](#license)
@@ -1128,6 +1129,10 @@ new RequestBodyParserMiddleware(10 * 1024, 100); // 100 files with 10 KiB each
 #### Third-Party Middleware
 
 A non-exhaustive list of third-party middleware can be found at the [`Middleware`](https://github.com/reactphp/http/wiki/Middleware) wiki page. 
+
+#### PSR-15 Middleware
+
+Additionally we support PSR-15 through the [Friends of ReactPHP](https://github.com/friends-of-reactphp) [PSR-15 middleware adapter](https://github.com/friends-of-reactphp/http-middleware-psr15-adapter).
 
 ## Install
 
