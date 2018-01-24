@@ -16,11 +16,12 @@ $loop = Factory::create();
 $server = new StreamingServer(function (ServerRequestInterface $request) {
     return new Promise(function ($resolve, $reject) use ($request) {
         $contentLength = 0;
-        $request->getBody()->on('data', function ($data) use (&$contentLength) {
+        $requestBody = $request->getBody();
+        $requestBody->on('data', function ($data) use (&$contentLength) {
             $contentLength += strlen($data);
         });
 
-        $request->getBody()->on('end', function () use ($resolve, &$contentLength){
+        $requestBody->on('end', function () use ($resolve, &$contentLength){
             $response = new Response(
                 200,
                 array(
@@ -32,7 +33,7 @@ $server = new StreamingServer(function (ServerRequestInterface $request) {
         });
 
         // an error occures e.g. on invalid chunked encoded data or an unexpected 'end' event
-        $request->getBody()->on('error', function (\Exception $exception) use ($resolve, &$contentLength) {
+        $requestBody->on('error', function (\Exception $exception) use ($resolve, &$contentLength) {
             $response = new Response(
                 400,
                 array(

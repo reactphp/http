@@ -102,8 +102,7 @@ final class Server extends EventEmitter
         }
 
         $availableMemory = IniUtil::iniSizeToBytes(ini_get('memory_limit')) / 4;
-        $concurrentRequests = $availableMemory / IniUtil::iniSizeToBytes(ini_get('post_max_size'));
-        $concurrentRequests = ceil($concurrentRequests);
+        $concurrentRequests = ceil($availableMemory / IniUtil::iniSizeToBytes(ini_get('post_max_size')));
 
         if ($concurrentRequests >= self::MAXIMUM_CONCURRENT_REQUESTS) {
             return self::MAXIMUM_CONCURRENT_REQUESTS;
