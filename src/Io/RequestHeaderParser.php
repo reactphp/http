@@ -70,10 +70,10 @@ class RequestHeaderParser extends EventEmitter
         // parser does not support asterisk-form and authority-form
         // remember original target and temporarily replace and re-apply below
         $originalTarget = null;
-        if (strpos($headers, 'OPTIONS * ') === 0) {
+        if (strncmp($headers, 'OPTIONS * ', 10) === 0) {
             $originalTarget = '*';
             $headers = 'OPTIONS / ' . substr($headers, 10);
-        } elseif (strpos($headers, 'CONNECT ') === 0) {
+        } elseif (strncmp($headers, 'CONNECT ', 8) === 0) {
             $parts = explode(' ', $headers, 3);
             $uri = parse_url('tcp://' . $parts[1]);
 
