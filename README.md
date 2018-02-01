@@ -1132,7 +1132,7 @@ A non-exhaustive list of third-party middleware can be found at the [`Middleware
 
 #### PSR-15 Middleware
 
-Additionally we support PSR-15 through the [Friends of ReactPHP](https://github.com/friends-of-reactphp) [PSR-15 middleware adapter](https://github.com/friends-of-reactphp/http-middleware-psr15-adapter).
+We support PSR-15 through the [Friends of ReactPHP](https://github.com/friends-of-reactphp) [PSR-15 middleware adapter](https://github.com/friends-of-reactphp/http-middleware-psr15-adapter).
 
 ## Install
 
