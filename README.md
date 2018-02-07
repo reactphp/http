@@ -1132,7 +1132,12 @@ A non-exhaustive list of third-party middleware can be found at the [`Middleware
 
 #### PSR-15 Middleware
 
-We support PSR-15 through the [Friends of ReactPHP](https://github.com/friends-of-reactphp) [PSR-15 middleware adapter](https://github.com/friends-of-reactphp/http-middleware-psr15-adapter).
+While we would love to support PSR-15 directly in `react/http` we choose a different path for middleware. One with 
+promises as expected return value, where the PSR-15 `MiddlewareInterface` and `RequestHandlerInterface` enforce 
+`ResponseInterface`. This isn't achievable with out on the fly changing of code, which is beyond the scope of this 
+package. However, our friends over at [Friends of ReactPHP](https://github.com/friends-of-reactphp) did came up with a 
+solution that makes using most PSR-15 middleware possible with `react/http` using the 
+[PSR-15 middleware adapter](https://github.com/friends-of-reactphp/http-middleware-psr15-adapter).
 
 ## Install
 
