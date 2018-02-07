@@ -828,7 +828,7 @@ or use a class based approach to ease using existing middleware implementations.
 While this project does provide the means to *use* middleware implementations,
 it does not aim to *define* how middleware implementations should look like.
 We realize that there's a vivid ecosystem of middleware implementations and
-ongoing effort to standardize interfaces between these and support this goal.
+that is has its standard in [PSR-15 Middleware](#psr-15-middleware). 
 As such, this project only bundles a few middleware implementations that are
 required to match PHP's request behavior (see below) and otherwise actively
 encourages [Third-Party Middleware](#third-party-middleware) implementations.
