@@ -97,16 +97,23 @@ class RequestHeaderParser extends EventEmitter
             'REQUEST_TIME_FLOAT' => microtime(true)
         );
 
+        // apply REMOTE_ADDR and REMOTE_PORT if source address is known
+        // address should always be known, unless this is over Unix domain sockets (UDS)
         if ($this->remoteSocketUri !== null) {
             $remoteAddress = parse_url($this->remoteSocketUri);
             $serverParams['REMOTE_ADDR'] = $remoteAddress['host'];
             $serverParams['REMOTE_PORT'] = $remoteAddress['port'];
         }
 
+        // apply SERVER_ADDR and SERVER_PORT if server address is known
+        // address should always be known, even for Unix domain sockets (UDS)
+        // but skip UDS as it doesn't have a concept of host/port.s
         if ($this->localSocketUri !== null) {
             $localAddress = parse_url($this->localSocketUri);
-            $serverParams['SERVER_ADDR'] = $localAddress['host'];
-            $serverParams['SERVER_PORT'] = $localAddress['port'];
+            if (isset($localAddress['host'], $localAddress['port'])) {
+                $serverParams['SERVER_ADDR'] = $localAddress['host'];
+                $serverParams['SERVER_PORT'] = $localAddress['port'];
+            }
             if (isset($localAddress['scheme']) && $localAddress['scheme'] === 'https') {
                 $serverParams['HTTPS'] = 'on';
             }

@@ -270,6 +270,10 @@ $server = new Server(function (ServerRequestInterface $request) {
 
 See also [example #3](examples).
 
+> Advanced: Note that address parameters will not be set if you're listening on
+  a Unix domain socket (UDS) path as this protocol lacks the concept of
+  host/port.
+
 #### Query parameters
 
 The `getQueryParams(): array` method can be used to get the query parameters
