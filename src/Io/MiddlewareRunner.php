@@ -29,7 +29,7 @@ final class MiddlewareRunner
     /**
      * @param ServerRequestInterface $request
      * @return ResponseInterface|PromiseInterface<ResponseInterface>
-     * @throws Exception
+     * @throws \Exception
      */
     public function __invoke(ServerRequestInterface $request)
     {
@@ -43,11 +43,18 @@ final class MiddlewareRunner
     /** @internal */
     public function call(ServerRequestInterface $request, $position)
     {
+        // final request handler will be invoked without a next handler
+        if (!isset($this->middleware[$position + 1])) {
+            $handler = $this->middleware[$position];
+            return $handler($request);
+        }
+
         $that = $this;
         $next = function (ServerRequestInterface $request) use ($that, $position) {
             return $that->call($request, $position + 1);
         };
 
+        // invoke middleware request handler with next handler
         $handler = $this->middleware[$position];
         return $handler($request, $next);
     }

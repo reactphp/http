@@ -850,9 +850,13 @@ $server = new Server(array(
 ));
 ```
 
+> Note how the middleware request handler and the final request handler have a
+  very simple (and similar) interface. The only difference is that the final
+  request handler does not receive a `$next` handler.
+
 Similarly, you can use the result of the `$next` middleware request handler
 function to modify the outgoing response.
-Note that as per the above documentation, the `$next` method may return a
+Note that as per the above documentation, the `$next` function may return a
 `ResponseInterface` directly or one wrapped in a promise for deferred
 resolution.
 In order to simplify handling both paths, you can simply wrap this in a
@@ -1002,7 +1006,7 @@ Usage:
 $server = new StreamingServer(array(
     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
-    function (ServerRequestInterface $request, callable $next) {
+    function (ServerRequestInterface $request) {
         // The body from $request->getBody() is now fully available without the need to stream it 
         return new Response(200);
     },
