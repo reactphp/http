@@ -408,6 +408,33 @@ class RequestHeaderParserTest extends TestCase
         $this->assertEquals('8001', $serverParams['REMOTE_PORT']);
     }
 
+    public function testServerParamsWillNotSetRemoteAddressForUnixDomainSockets()
+    {
+        $request = null;
+
+        $parser = new RequestHeaderParser(
+            'unix://./server.sock',
+            null
+        );
+
+        $parser->on('headers', function ($parsedRequest) use (&$request) {
+            $request = $parsedRequest;
+        });
+
+        $parser->feed("GET /foo HTTP/1.0\r\nHost: example.com\r\n\r\n");
+        $serverParams = $request->getServerParams();
+
+        $this->assertArrayNotHasKey('HTTPS', $serverParams);
+        $this->assertNotEmpty($serverParams['REQUEST_TIME']);
+        $this->assertNotEmpty($serverParams['REQUEST_TIME_FLOAT']);
+
+        $this->assertArrayNotHasKey('SERVER_ADDR', $serverParams);
+        $this->assertArrayNotHasKey('SERVER_PORT', $serverParams);
+
+        $this->assertArrayNotHasKey('REMOTE_ADDR', $serverParams);
+        $this->assertArrayNotHasKey('REMOTE_PORT', $serverParams);
+    }
+
     public function testServerParamsWontBeSetOnMissingUrls()
     {
         $request = null;
