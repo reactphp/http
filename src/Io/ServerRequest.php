@@ -37,7 +37,7 @@ class ServerRequest extends Request implements ServerRequestInterface
      * @param array $headers Headers for the message.
      * @param string|resource|StreamInterface $body Message body.
      * @param string $protocolVersion HTTP protocol version.
-     * @param array server-side parameters
+     * @param array $serverParams server-side parameters
      *
      * @throws \InvalidArgumentException for an invalid URI
      */

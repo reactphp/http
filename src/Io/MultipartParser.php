@@ -18,7 +18,7 @@ use RingCentral\Psr7;
 final class MultipartParser
 {
     /**
-     * @var ServerRequestInterface
+     * @var ServerRequestInterface|null
      */
     protected $request;
 
@@ -50,7 +50,7 @@ final class MultipartParser
     /**
      * ini setting "upload_max_filesize"
      *
-     * @var int
+     * @var number
      */
     private $uploadMaxFilesize;
 
@@ -87,7 +87,7 @@ final class MultipartParser
         }
 
         $this->uploadMaxFilesize = IniUtil::iniSizeToBytes($uploadMaxFilesize);
-        $this->maxFileUploads = $maxFileUploads === null ? (ini_get('file_uploads') === '' ? 0 : (int)ini_get('max_file_uploads')) : (int)$maxFileUploads;
+        $this->maxFileUploads = $maxFileUploads === null ? (ini_get('file_uploads') === '' ? 0 : (int)ini_get('max_file_uploads')) : $maxFileUploads;
     }
 
     public function parse(ServerRequestInterface $request)
@@ -171,6 +171,10 @@ final class MultipartParser
             return;
         }
 
+        if (!$this->request instanceof ServerRequestInterface) {
+            return;
+        }
+
         $this->request = $this->request->withUploadedFiles($this->extractPost(
             $this->request->getUploadedFiles(),
             $name,
@@ -241,11 +245,13 @@ final class MultipartParser
             return;
         }
 
-        $this->request = $this->request->withParsedBody($this->extractPost(
-            $this->request->getParsedBody(),
-            $name,
-            $value
-        ));
+        if ($this->request instanceof ServerRequestInterface) {
+            $this->request = $this->request->withParsedBody($this->extractPost(
+                $this->request->getParsedBody(),
+                $name,
+                $value
+            ));
+        }
 
         if (strtoupper($name) === 'MAX_FILE_SIZE') {
             $this->maxFileSize = (int)$value;

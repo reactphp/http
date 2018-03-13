@@ -10,8 +10,8 @@ final class IniUtil
     /**
      * Convert a ini like size to a numeric size in bytes.
      *
-     * @param string $iniSetting
-     * @return int
+     * @param number $size
+     * @return number
      */
     public static function iniSizeToBytes($size)
     {
