@@ -31,6 +31,43 @@ final class MiddlewareRunnerTest extends TestCase
         $middlewareStack($request);
     }
 
+    public function testMiddlewareHandlerReceivesTwoArguments()
+    {
+        $args = null;
+        $middleware = new MiddlewareRunner(array(
+            function (ServerRequestInterface $request, $next) use (&$args) {
+                $args = func_num_args();
+                return $next($request);
+            },
+            function (ServerRequestInterface $request) {
+                return null;
+            }
+        ));
+
+        $request = new ServerRequest('GET', 'http://example.com/');
+
+        $middleware($request);
+
+        $this->assertEquals(2, $args);
+    }
+
+    public function testFinalHandlerReceivesOneArgument()
+    {
+        $args = null;
+        $middleware = new MiddlewareRunner(array(
+            function (ServerRequestInterface $request) use (&$args) {
+                $args = func_num_args();
+                return null;
+            }
+        ));
+
+        $request = new ServerRequest('GET', 'http://example.com/');
+
+        $middleware($request);
+
+        $this->assertEquals(1, $args);
+    }
+
     /**
      * @expectedException RuntimeException
      * @expectedExceptionMessage hello
@@ -224,7 +261,7 @@ final class MiddlewareRunnerTest extends TestCase
                 $receivedRequests[] = 'middleware2: ' . $request->getUri();
                 return $next($request);
             },
-            function (ServerRequestInterface $request, $next) use (&$receivedRequests) {
+            function (ServerRequestInterface $request) use (&$receivedRequests) {
                 $receivedRequests[] = 'middleware3: ' . $request->getUri();
                 return new \React\Promise\Promise(function () { });
             }
