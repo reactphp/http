@@ -70,9 +70,7 @@ final class Server extends EventEmitter
         if (is_callable($requestHandler)) {
             $middleware[] = $requestHandler;
         } else {
-            foreach ($requestHandler as $one) {
-                $middleware[] = $one;
-            }
+            $middleware = array_merge($middleware, $requestHandler);
         }
 
         $this->streamingServer = new StreamingServer($middleware);

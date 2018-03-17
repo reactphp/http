@@ -25,11 +25,11 @@ class ServerRequest extends Request implements ServerRequestInterface
 {
     private $attributes = array();
 
-    private $serverParams = array();
+    private $serverParams;
     private $fileParams = array();
     private $cookies = array();
     private $queryParams = array();
-    private $parsedBody = null;
+    private $parsedBody;
 
     /**
      * @param null|string $method HTTP method for the request.
@@ -37,7 +37,7 @@ class ServerRequest extends Request implements ServerRequestInterface
      * @param array $headers Headers for the message.
      * @param string|resource|StreamInterface $body Message body.
      * @param string $protocolVersion HTTP protocol version.
-     * @param array server-side parameters
+     * @param array $serverParams server-side parameters
      *
      * @throws \InvalidArgumentException for an invalid URI
      */

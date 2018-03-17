@@ -142,7 +142,6 @@ final class LimitConcurrentRequestsMiddleware
         // queue request and process queue if pending does not exceed limit
         $queue[$id] = $deferred;
 
-        $that = $this;
         $pending = &$this->pending;
         return $this->await($deferred->promise()->then(function () use ($request, $next, $body, &$pending) {
             // invoke next request handler
