@@ -860,7 +860,7 @@ $server = new Server(array(
 
 Similarly, you can use the result of the `$next` middleware request handler
 function to modify the outgoing response.
-Note that as per the above documentation, the `$next` function may return a
+Note that as per the above documentation, the `$next` middleware request handler may return a
 `ResponseInterface` directly or one wrapped in a promise for deferred
 resolution.
 In order to simplify handling both paths, you can simply wrap this in a
@@ -880,7 +880,7 @@ $server = new Server(array(
 ));
 ```
 
-Note that the `$next` middleware request handler function may also throw an
+Note that the `$next` middleware request handler may also throw an
 `Exception` (or return a rejected promise) as described above.
 The previous example does not catch any exceptions and would thus signal an
 error condition to the `Server`.
