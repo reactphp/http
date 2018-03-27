@@ -296,6 +296,31 @@ final class LimitConcurrentRequestsMiddlewareTest extends TestCase
         $middleware($request, $this->expectCallableOnceWith($request));
     }
 
+    public function testReceivesNextRequestWhichThrowsAfterPreviousHandlerIsSettled()
+    {
+        $request = new ServerRequest(
+            'POST',
+            'http://example.com/',
+            array(),
+            'hello'
+        );
+
+        $deferred = new Deferred();
+        $middleware = new LimitConcurrentRequestsMiddleware(1);
+        $middleware($request, function () use ($deferred) {
+            return $deferred->promise();
+        });
+
+        $second = $middleware($request, function () {
+            throw new \RuntimeException();
+        });
+
+        $this->assertTrue($second instanceof PromiseInterface);
+        $second->then(null, $this->expectCallableOnce());
+
+        $deferred->reject(new \RuntimeException());
+    }
+
     public function testPendingRequestCanBeCancelledAndForwardsCancellationToInnerPromise()
     {
         $request = new ServerRequest(
@@ -363,6 +388,50 @@ final class LimitConcurrentRequestsMiddlewareTest extends TestCase
         $promise->then(null, $this->expectCallableOnce());
 
         $middleware($request, $this->expectCallableOnceWith($request));
+    }
+
+    public function testRejectsWhenQueuedPromiseIsCancelled()
+    {
+        $request = new ServerRequest(
+            'POST',
+            'http://example.com/',
+            array(),
+            'hello'
+        );
+
+        $deferred = new Deferred();
+        $middleware = new LimitConcurrentRequestsMiddleware(1);
+        $first = $middleware($request, function () use ($deferred) {
+            return $deferred->promise();
+        });
+
+        $second = $middleware($request, $this->expectCallableNever());
+
+        $this->assertTrue($second instanceof PromiseInterface);
+        $second->cancel();
+        $second->then(null, $this->expectCallableOnce());
+    }
+
+    public function testDoesNotInvokeNextHandlersWhenQueuedPromiseIsCancelled()
+    {
+        $request = new ServerRequest(
+            'POST',
+            'http://example.com/',
+            array(),
+            'hello'
+            );
+
+        $deferred = new Deferred();
+        $middleware = new LimitConcurrentRequestsMiddleware(1);
+        $first = $middleware($request, function () use ($deferred) {
+            return $deferred->promise();
+        });
+
+        $second = $middleware($request, $this->expectCallableNever());
+        /* $third = */ $middleware($request, $this->expectCallableNever());
+
+        $this->assertTrue($second instanceof PromiseInterface);
+        $second->cancel();
     }
 
     public function testReceivesStreamingBodyChangesInstanceWithCustomBodyButSameDataWhenDequeued()

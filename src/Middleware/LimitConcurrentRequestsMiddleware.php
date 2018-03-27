@@ -143,21 +143,39 @@ final class LimitConcurrentRequestsMiddleware
         $queue[$id] = $deferred;
 
         $pending = &$this->pending;
-        return $this->await($deferred->promise()->then(function () use ($request, $next, $body, &$pending) {
+        $that = $this;
+        return $deferred->promise()->then(function () use ($request, $next, $body, &$pending, $that) {
             // invoke next request handler
             ++$pending;
-            $ret = $next($request);
+
+            try {
+                $response = $next($request);
+            } catch (\Exception $e) {
+                $that->processQueue();
+                throw $e;
+            } catch (\Throwable $e) { // @codeCoverageIgnoreStart
+                // handle Errors just like Exceptions (PHP 7+ only)
+                $that->processQueue();
+                throw $e; // @codeCoverageIgnoreEnd
+            }
 
             // resume readable stream and replay buffered events
             if ($body instanceof PauseBufferStream) {
                 $body->resumeImplicit();
             }
 
-            return $ret;
-        }));
+            // if the next handler returns a pending promise, we have to
+            // await its resolution before invoking next queued request
+            return $that->await(Promise\resolve($response));
+        });
     }
 
-    private function await(PromiseInterface $promise)
+    /**
+     * @internal
+     * @param PromiseInterface $promise
+     * @return PromiseInterface
+     */
+    public function await(PromiseInterface $promise)
     {
         $that = $this;
 
