@@ -27,6 +27,7 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
     * [RequestBodyBufferMiddleware](#requestbodybuffermiddleware)
     * [RequestBodyParserMiddleware](#requestbodyparsermiddleware)
     * [Third-Party Middleware](#third-party-middleware)
+    * [PSR-15 Middleware](#psr-15-middleware)
 * [Install](#install)
 * [Tests](#tests)
 * [License](#license)
@@ -831,7 +832,7 @@ or use a class based approach to ease using existing middleware implementations.
 While this project does provide the means to *use* middleware implementations,
 it does not aim to *define* how middleware implementations should look like.
 We realize that there's a vivid ecosystem of middleware implementations and
-ongoing effort to standardize interfaces between these and support this goal.
+that is has its standard in [PSR-15 Middleware](#psr-15-middleware). 
 As such, this project only bundles a few middleware implementations that are
 required to match PHP's request behavior (see below) and otherwise actively
 encourages [Third-Party Middleware](#third-party-middleware) implementations.
@@ -1136,6 +1137,15 @@ new RequestBodyParserMiddleware(10 * 1024, 100); // 100 files with 10 KiB each
 #### Third-Party Middleware
 
 A non-exhaustive list of third-party middleware can be found at the [`Middleware`](https://github.com/reactphp/http/wiki/Middleware) wiki page. 
+
+#### PSR-15 Middleware
+
+While we would love to support PSR-15 directly in `react/http` we choose a different path for middleware. One with 
+promises as expected return value, where the PSR-15 `MiddlewareInterface` and `RequestHandlerInterface` enforce 
+`ResponseInterface`. This isn't achievable with out on the fly changing of code, which is beyond the scope of this 
+package. However, our friends over at [Friends of ReactPHP](https://github.com/friends-of-reactphp) did came up with a 
+solution that makes using most PSR-15 middleware possible with `react/http` using the 
+[PSR-15 middleware adapter](https://github.com/friends-of-reactphp/http-middleware-psr15-adapter).
 
 ## Install
 
