@@ -5,14 +5,14 @@ namespace React\Tests\Http;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Middleware\LimitConcurrentRequestsMiddleware;
 use React\Http\Middleware\RequestBodyBufferMiddleware;
+use React\Http\Response;
+use React\Http\StreamingServer;
 use React\Socket\Server as Socket;
 use React\EventLoop\Factory;
-use React\Http\StreamingServer;
 use Psr\Http\Message\RequestInterface;
 use React\Socket\Connector;
 use React\Socket\ConnectionInterface;
 use Clue\React\Block;
-use React\Http\Response;
 use React\Socket\SecureServer;
 use React\Promise;
 use React\Promise\Stream;
@@ -498,7 +498,7 @@ class FunctionalServerTest extends TestCase
         $socket->close();
     }
 
-    public function testStreamFromRequestHandlerWillBeClosedIfConnectionClosesWhileSendingBody()
+    public function testStreamFromRequestHandlerWillBeClosedIfConnectionClosesWhileSendingRequestBody()
     {
         $loop = Factory::create();
         $connector = new Connector($loop);
@@ -528,13 +528,12 @@ class FunctionalServerTest extends TestCase
         $this->assertNull($ret);
     }
 
-    public function testStreamFromRequestHandlerWillBeClosedIfConnectionClosesButWillOnlyBeDetectedOnNextWrite()
+    public function testStreamFromRequestHandlerWillBeClosedIfConnectionCloses()
     {
         $loop = Factory::create();
         $connector = new Connector($loop);
 
         $stream = new ThroughStream();
-        $stream->on('close', $this->expectCallableOnce());
 
         $server = new StreamingServer(function (RequestInterface $request) use ($stream) {
             return new Response(200, array(), $stream);
@@ -543,27 +542,20 @@ class FunctionalServerTest extends TestCase
         $socket = new Socket(0, $loop);
         $server->listen($socket);
 
-        $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) use ($loop) {
+        $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) use ($loop) {
             $conn->write("GET / HTTP/1.0\r\n\r\n");
 
-            $loop->addTimer(0.1, function() use ($conn) {
-                $conn->end();
+            $loop->addTimer(0.1, function () use ($conn) {
+                $conn->close();
             });
-
-            return Stream\buffer($conn);
         });
 
-        $response = Block\await($result, $loop, 1.0);
-
-        $stream->write('nope');
-        Block\sleep(0.1, $loop);
-        $stream->write('nope');
-        Block\sleep(0.1, $loop);
-
-        $this->assertStringStartsWith("HTTP/1.0 200 OK", $response);
-        $this->assertStringEndsWith("\r\n\r\n", $response);
+        // await response stream to be closed
+        $ret = Block\await(Stream\first($stream, 'close'), $loop, 1.0);
 
         $socket->close();
+
+        $this->assertNull($ret);
     }
 
     public function testUpgradeWithThroughStreamReturnsDataAsGiven()

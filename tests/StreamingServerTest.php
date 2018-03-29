@@ -497,7 +497,7 @@ class StreamingServerTest extends TestCase
         $this->assertSame('example.com', $requestAssertion->getHeaderLine('Host'));
     }
 
-    public function testRequestPauseWillbeForwardedToConnection()
+    public function testRequestPauseWillBeForwardedToConnection()
     {
         $server = new StreamingServer(function (ServerRequestInterface $request) {
             $request->getBody()->pause();
@@ -517,7 +517,7 @@ class StreamingServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
-    public function testRequestResumeWillbeForwardedToConnection()
+    public function testRequestResumeWillBeForwardedToConnection()
     {
         $server = new StreamingServer(function (ServerRequestInterface $request) {
             $request->getBody()->resume();
@@ -532,13 +532,13 @@ class StreamingServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
-    public function testRequestCloseWillPauseConnection()
+    public function testRequestCloseWillNotCloseConnection()
     {
         $server = new StreamingServer(function (ServerRequestInterface $request) {
             $request->getBody()->close();
         });
 
-        $this->connection->expects($this->once())->method('pause');
+        $this->connection->expects($this->never())->method('close');
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -554,7 +554,8 @@ class StreamingServerTest extends TestCase
             $request->getBody()->pause();
         });
 
-        $this->connection->expects($this->once())->method('pause');
+        $this->connection->expects($this->never())->method('close');
+        $this->connection->expects($this->never())->method('pause');
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -570,7 +571,7 @@ class StreamingServerTest extends TestCase
             $request->getBody()->resume();
         });
 
-        $this->connection->expects($this->once())->method('pause');
+        $this->connection->expects($this->never())->method('close');
         $this->connection->expects($this->never())->method('resume');
 
         $server->listen($this->socket);
@@ -1964,7 +1965,6 @@ class StreamingServerTest extends TestCase
         });
 
         $this->connection->expects($this->never())->method('close');
-        $this->connection->expects($this->once())->method('pause');
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -1989,7 +1989,6 @@ class StreamingServerTest extends TestCase
         });
 
         $this->connection->expects($this->never())->method('close');
-        $this->connection->expects($this->once())->method('pause');
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -2012,7 +2011,6 @@ class StreamingServerTest extends TestCase
         });
 
         $this->connection->expects($this->never())->method('close');
-        $this->connection->expects($this->once())->method('pause');
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -2036,7 +2034,6 @@ class StreamingServerTest extends TestCase
         });
 
         $this->connection->expects($this->never())->method('close');
-        $this->connection->expects($this->once())->method('pause');
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -2059,7 +2056,6 @@ class StreamingServerTest extends TestCase
         });
 
         $this->connection->expects($this->never())->method('close');
-        $this->connection->expects($this->once())->method('pause');
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -2089,7 +2085,6 @@ class StreamingServerTest extends TestCase
             $request->getBody()->on('error', $errorEvent);
         });
 
-        $this->connection->expects($this->once())->method('pause');
         $this->connection->expects($this->never())->method('close');
 
         $server->listen($this->socket);

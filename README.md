@@ -396,7 +396,8 @@ successfully, i.e. it was read until its expected end.
 The `error` event will be emitted in case the request stream contains invalid
 chunked data or the connection closes before the complete request stream has
 been received.
-The server will automatically `pause()` the connection instead of closing it.
+The server will automatically stop reading from the connection and discard all
+incoming data instead of closing it.
 A response message can still be sent (unless the connection is already closed).
 
 A `close` event will be emitted after an `error` or `end` event.

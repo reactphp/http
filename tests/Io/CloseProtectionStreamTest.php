@@ -8,10 +8,11 @@ use React\Tests\Http\TestCase;
 
 class CloseProtectionStreamTest extends TestCase
 {
-    public function testClosePausesTheInputStreamInsteadOfClosing()
+    public function testCloseDoesNotCloseTheInputStream()
     {
         $input = $this->getMockBuilder('React\Stream\ReadableStreamInterface')->disableOriginalConstructor()->getMock();
-        $input->expects($this->once())->method('pause');
+        $input->expects($this->never())->method('pause');
+        $input->expects($this->never())->method('resume');
         $input->expects($this->never())->method('close');
 
         $protection = new CloseProtectionStream($input);
@@ -41,6 +42,17 @@ class CloseProtectionStreamTest extends TestCase
         $protection = new CloseProtectionStream($input);
         $protection->pause();
         $protection->resume();
+    }
+
+    public function testCloseResumesInputStreamIfItWasPreviouslyPaused()
+    {
+        $input = $this->getMockBuilder('React\Stream\ReadableStreamInterface')->getMock();
+        $input->expects($this->once())->method('pause');
+        $input->expects($this->once())->method('resume');
+
+        $protection = new CloseProtectionStream($input);
+        $protection->pause();
+        $protection->close();
     }
 
     public function testInputStreamIsNotReadableAfterClose()
@@ -121,7 +133,8 @@ class CloseProtectionStreamTest extends TestCase
     public function testPauseAfterCloseHasNoEffect()
     {
         $input = $this->getMockBuilder('React\Stream\ReadableStreamInterface')->getMock();
-        $input->expects($this->once())->method('pause');
+        $input->expects($this->never())->method('pause');
+        $input->expects($this->never())->method('resume');
 
         $protection = new CloseProtectionStream($input);
         $protection->on('data', $this->expectCallableNever());
@@ -134,7 +147,7 @@ class CloseProtectionStreamTest extends TestCase
     public function testResumeAfterCloseHasNoEffect()
     {
         $input = $this->getMockBuilder('React\Stream\ReadableStreamInterface')->getMock();
-        $input->expects($this->once())->method('pause');
+        $input->expects($this->never())->method('pause');
         $input->expects($this->never())->method('resume');
 
         $protection = new CloseProtectionStream($input);
