@@ -831,7 +831,9 @@ or use a class based approach to ease using existing middleware implementations.
 While this project does provide the means to *use* middleware implementations,
 it does not aim to *define* how middleware implementations should look like.
 We realize that there's a vivid ecosystem of middleware implementations and
-ongoing effort to standardize interfaces between these and support this goal.
+ongoing effort to standardize interfaces between these with
+[PSR-15](https://www.php-fig.org/psr/psr-15/) (HTTP Server Request Handlers)
+and support this goal.
 As such, this project only bundles a few middleware implementations that are
 required to match PHP's request behavior (see below) and otherwise actively
 encourages [Third-Party Middleware](#third-party-middleware) implementations.
@@ -1135,7 +1137,31 @@ new RequestBodyParserMiddleware(10 * 1024, 100); // 100 files with 10 KiB each
 
 #### Third-Party Middleware
 
-A non-exhaustive list of third-party middleware can be found at the [`Middleware`](https://github.com/reactphp/http/wiki/Middleware) wiki page. 
+While this project does provide the means to *use* middleware implementations
+(see above), it does not aim to *define* how middleware implementations should
+look like. We realize that there's a vivid ecosystem of middleware
+implementations and ongoing effort to standardize interfaces between these with
+[PSR-15](https://www.php-fig.org/psr/psr-15/) (HTTP Server Request Handlers)
+and support this goal.
+As such, this project only bundles a few middleware implementations that are
+required to match PHP's request behavior (see above) and otherwise actively
+encourages third-party middleware implementations.
+
+While we would love to support PSR-15 directy in `react/http`, we understand
+that this interface does not specifically target async APIs and as such does
+not take advantage of promises for [deferred responses](#deferred-response).
+The gist of this is that where PSR-15 enforces a `ResponseInterface` return
+value, we also accept a `PromiseInterface<ResponseInterface>`.
+As such, we suggest using the external
+[PSR-15 middleware adapter](https://github.com/friends-of-reactphp/http-middleware-psr15-adapter)
+that uses on the fly monkey patching of these return values which makes using
+most PSR-15 middleware possible with this package without any changes required.
+
+Other than that, you can also use the above [middleware definition](#middleware)
+to create custom middleware. A non-exhaustive list of third-party middleware can
+be found at the [middleware wiki](https://github.com/reactphp/http/wiki/Middleware).
+If you build or know a custom middleware, make sure to let the world know and
+feel free to add it to this list.
 
 ## Install
 
