@@ -1444,7 +1444,7 @@ class StreamingServerTest extends TestCase
 
         $this->connection->emit('data', array($data));
 
-        $this->assertFalse($requestValidation->hasHeader('Transfer-Encoding'));
+        $this->assertEquals('chunked', $requestValidation->getHeaderLine('Transfer-Encoding'));
     }
 
     public function testRequestChunkedTransferEncodingWithAdditionalDataWontBeEmitted()
@@ -1509,12 +1509,14 @@ class StreamingServerTest extends TestCase
         $endEvent = $this->expectCallableOnce();
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
+        $requestValidation = null;
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+        $server = new StreamingServer(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent, &$requestValidation) {
             $request->getBody()->on('data', $dataEvent);
             $request->getBody()->on('end', $endEvent);
             $request->getBody()->on('close', $closeEvent);
             $request->getBody()->on('error', $errorEvent);
+            $requestValidation = $request;
         });
 
         $server->listen($this->socket);
@@ -1529,6 +1531,7 @@ class StreamingServerTest extends TestCase
         $data .= "0\r\n\r\n";
 
         $this->connection->emit('data', array($data));
+        $this->assertEquals('CHUNKED', $requestValidation->getHeaderLine('Transfer-Encoding'));
     }
 
     public function testRequestChunkedTransferEncodingCanBeMixedUpperAndLowerCase()
@@ -1804,7 +1807,7 @@ class StreamingServerTest extends TestCase
         $this->connection->emit('data', array($data));
 
         $this->assertFalse($requestValidation->hasHeader('Content-Length'));
-        $this->assertFalse($requestValidation->hasHeader('Transfer-Encoding'));
+        $this->assertEquals('chunked', $requestValidation->getHeaderLine('Transfer-Encoding'));
     }
 
     public function testRequestInvalidContentLengthWillBeIgnoreddIfTransferEncodingIsSet()
@@ -1842,7 +1845,7 @@ class StreamingServerTest extends TestCase
         $this->connection->emit('data', array($data));
 
         $this->assertFalse($requestValidation->hasHeader('Content-Length'));
-        $this->assertFalse($requestValidation->hasHeader('Transfer-Encoding'));
+        $this->assertEquals('chunked', $requestValidation->getHeaderLine('Transfer-Encoding'));
     }
 
     public function testRequestInvalidNonIntegerContentLengthWillEmitServerErrorAndSendResponse()
