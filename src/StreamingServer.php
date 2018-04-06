@@ -203,9 +203,14 @@ final class StreamingServer extends EventEmitter
                 return $this->writeError($conn, 501, $request);
             }
 
-            $stream = new ChunkedDecoder($stream);
-            $request = $request->withoutHeader('Content-Length');
+            // Transfer-Encoding: chunked and Content-Length header MUST NOT be used at the same time
+            // as per https://tools.ietf.org/html/rfc7230#section-3.3.3
+            if ($request->hasHeader('Content-Length')) {
+                $this->emit('error', array(new \InvalidArgumentException('Using both `Transfer-Encoding: chunked` and `Content-Length` is not allowed')));
+                return $this->writeError($conn, 400, $request);
+            }
 
+            $stream = new ChunkedDecoder($stream);
             $contentLength = null;
         } elseif ($request->hasHeader('Content-Length')) {
             $string = $request->getHeaderLine('Content-Length');

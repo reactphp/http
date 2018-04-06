@@ -411,14 +411,14 @@ message boundaries.
 This value may be `0` if the request message does not contain a request body
 (such as a simple `GET` request).
 Note that this value may be `null` if the request body size is unknown in
-advance because the request message uses chunked transfer encoding.
+advance because the request message uses `Transfer-Encoding: chunked`.
 
 ```php 
 $server = new StreamingServer(function (ServerRequestInterface $request) {
     $size = $request->getBody()->getSize();
     if ($size === null) {
         $body = 'The request does not contain an explicit length.';
-        $body .= 'This server does not accept chunked transfer encoding.';
+        $body .= 'This example does not accept chunked transfer encoding.';
 
         return new Response(
             411,

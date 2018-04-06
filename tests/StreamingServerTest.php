@@ -1773,21 +1773,25 @@ class StreamingServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
-    public function testRequestContentLengthWillBeIgnoredIfTransferEncodingIsSet()
+    public function testRequestWithBothContentLengthAndTransferEncodingWillEmitServerErrorAndSendResponse()
     {
-        $dataEvent = $this->expectCallableOnceWith('hello');
-        $endEvent = $this->expectCallableOnce();
-        $closeEvent = $this->expectCallableOnce();
-        $errorEvent = $this->expectCallableNever();
-
-        $requestValidation = null;
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent, &$requestValidation) {
-            $request->getBody()->on('data', $dataEvent);
-            $request->getBody()->on('end', $endEvent);
-            $request->getBody()->on('close', $closeEvent);
-            $request->getBody()->on('error', $errorEvent);
-            $requestValidation = $request;
+        $error = null;
+        $server = new StreamingServer($this->expectCallableNever());
+        $server->on('error', function ($message) use (&$error) {
+            $error = $message;
         });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -1795,57 +1799,16 @@ class StreamingServerTest extends TestCase
         $data = "GET / HTTP/1.1\r\n";
         $data .= "Host: example.com:80\r\n";
         $data .= "Connection: close\r\n";
-        $data .= "Content-Length: 4\r\n";
+        $data .= "Content-Length: 5\r\n";
         $data .= "Transfer-Encoding: chunked\r\n";
         $data .= "\r\n";
+        $data .= "hello";
 
         $this->connection->emit('data', array($data));
 
-        $data = "5\r\nhello\r\n";
-        $data .= "0\r\n\r\n";
-
-        $this->connection->emit('data', array($data));
-
-        $this->assertFalse($requestValidation->hasHeader('Content-Length'));
-        $this->assertEquals('chunked', $requestValidation->getHeaderLine('Transfer-Encoding'));
-    }
-
-    public function testRequestInvalidContentLengthWillBeIgnoreddIfTransferEncodingIsSet()
-    {
-        $dataEvent = $this->expectCallableOnceWith('hello');
-        $endEvent = $this->expectCallableOnce();
-        $closeEvent = $this->expectCallableOnce();
-        $errorEvent = $this->expectCallableNever();
-
-        $requestValidation = null;
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent, &$requestValidation) {
-            $request->getBody()->on('data', $dataEvent);
-            $request->getBody()->on('end', $endEvent);
-            $request->getBody()->on('close', $closeEvent);
-            $request->getBody()->on('error', $errorEvent);
-            $requestValidation = $request;
-        });
-
-        $server->listen($this->socket);
-        $this->socket->emit('connection', array($this->connection));
-
-        $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
-        $data .= "Connection: close\r\n";
-        // this is valid behavior according to: https://www.ietf.org/rfc/rfc2616.txt chapter 4.4
-        $data .= "Content-Length: hello world\r\n";
-        $data .= "Transfer-Encoding: chunked\r\n";
-        $data .= "\r\n";
-
-        $this->connection->emit('data', array($data));
-
-        $data = "5\r\nhello\r\n";
-        $data .= "0\r\n\r\n";
-
-        $this->connection->emit('data', array($data));
-
-        $this->assertFalse($requestValidation->hasHeader('Content-Length'));
-        $this->assertEquals('chunked', $requestValidation->getHeaderLine('Transfer-Encoding'));
+        $this->assertContains("HTTP/1.1 400 Bad Request\r\n", $buffer);
+        $this->assertContains("\r\n\r\nError 400: Bad Request", $buffer);
+        $this->assertInstanceOf('InvalidArgumentException', $error);
     }
 
     public function testRequestInvalidNonIntegerContentLengthWillEmitServerErrorAndSendResponse()
