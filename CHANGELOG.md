@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.8.2 (2018-04-06)
+
+*   Fix: Do not pass `$next` handler to final request handler.
+    (#308 by @clue)
+
+*   Fix: Fix awaiting queued handlers when cancelling a queued handler.
+    (#313 by @clue)
+
+*   Fix: Fix Server to skip `SERVER_ADDR` params for Unix domain sockets (UDS).
+    (#307 by @clue)
+
+*   Documentation for PSR-15 middleware and minor documentation improvements.
+    (#314 by @clue and #297, #298 and #310 by @seregazhuk)
+
+*   Minor code improvements and micro optimizations.
+    (#301 by @seregazhuk and #305 by @kalessil)
+
 ## 0.8.1 (2018-01-05)
 
 *   Major request handler performance improvement. Benchmarks suggest number of
