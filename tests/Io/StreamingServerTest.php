@@ -6,6 +6,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Io\StreamingServer;
 use React\Http\Message\Response;
+use React\Http\Message\ServerRequest;
 use React\Promise\Promise;
 use React\Stream\ThroughStream;
 use React\Tests\Http\SocketServerStub;
@@ -957,7 +958,7 @@ class StreamingServerTest extends TestCase
         $data = "GET / HTTP/1.1\r\n\r\n";
         $this->connection->emit('data', array($data));
 
-        $this->assertEquals("HTTP/1.1 200 OK\r\nUpgrade: demo\r\nContent-Length: 3\r\nConnection: close\r\n\r\nfoo", $buffer);
+        $this->assertEquals("HTTP/1.1 200 OK\r\nUpgrade: demo\r\nContent-Length: 3\r\n\r\nfoo", $buffer);
     }
 
     public function testResponseUpgradeWishInRequestCanBeIgnoredByReturningNormalResponse()
@@ -992,7 +993,7 @@ class StreamingServerTest extends TestCase
         $data = "GET / HTTP/1.1\r\nUpgrade: demo\r\n\r\n";
         $this->connection->emit('data', array($data));
 
-        $this->assertEquals("HTTP/1.1 200 OK\r\nContent-Length: 3\r\nConnection: close\r\n\r\nfoo", $buffer);
+        $this->assertEquals("HTTP/1.1 200 OK\r\nContent-Length: 3\r\n\r\nfoo", $buffer);
     }
 
     public function testResponseUpgradeSwitchingProtocolIncludesConnectionUpgradeHeaderWithoutContentLength()
@@ -2811,6 +2812,196 @@ class StreamingServerTest extends TestCase
 
         $this->connection->emit('data', array($data));
         $this->assertEquals(array('test' => 'abc,def', 'hello' => 'world'), $requestValidation->getCookieParams());
+    }
+
+    public function testNewConnectionWillInvokeParserOnce()
+    {
+        $server = new StreamingServer(Factory::create(), $this->expectCallableNever());
+
+        $parser = $this->getMockBuilder('React\Http\Io\RequestHeaderParser')->getMock();
+        $parser->expects($this->once())->method('handle');
+
+        $ref = new \ReflectionProperty($server, 'parser');
+        $ref->setAccessible(true);
+        $ref->setValue($server, $parser);
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+    }
+
+    public function testNewConnectionWillInvokeParserOnceAndInvokeRequestHandlerWhenParserIsDoneForHttp10()
+    {
+        $request = new ServerRequest('GET', 'http://localhost/', array(), '', '1.0');
+
+        $server = new StreamingServer(Factory::create(), $this->expectCallableOnceWith($request));
+
+        $parser = $this->getMockBuilder('React\Http\Io\RequestHeaderParser')->getMock();
+        $parser->expects($this->once())->method('handle');
+
+        $ref = new \ReflectionProperty($server, 'parser');
+        $ref->setAccessible(true);
+        $ref->setValue($server, $parser);
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $this->connection->expects($this->once())->method('write');
+        $this->connection->expects($this->once())->method('end');
+
+        // pretend parser just finished parsing
+        $server->handleRequest($this->connection, $request);
+    }
+
+    public function testNewConnectionWillInvokeParserOnceAndInvokeRequestHandlerWhenParserIsDoneForHttp11ConnectionClose()
+    {
+        $request = new ServerRequest('GET', 'http://localhost/', array('Connection' => 'close'));
+
+        $server = new StreamingServer(Factory::create(), $this->expectCallableOnceWith($request));
+
+        $parser = $this->getMockBuilder('React\Http\Io\RequestHeaderParser')->getMock();
+        $parser->expects($this->once())->method('handle');
+
+        $ref = new \ReflectionProperty($server, 'parser');
+        $ref->setAccessible(true);
+        $ref->setValue($server, $parser);
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $this->connection->expects($this->once())->method('write');
+        $this->connection->expects($this->once())->method('end');
+
+        // pretend parser just finished parsing
+        $server->handleRequest($this->connection, $request);
+    }
+
+    public function testNewConnectionWillInvokeParserOnceAndInvokeRequestHandlerWhenParserIsDoneAndRequestHandlerReturnsConnectionClose()
+    {
+        $request = new ServerRequest('GET', 'http://localhost/');
+
+        $server = new StreamingServer(Factory::create(), function () {
+            return new Response(200, array('Connection' => 'close'));
+        });
+
+        $parser = $this->getMockBuilder('React\Http\Io\RequestHeaderParser')->getMock();
+        $parser->expects($this->once())->method('handle');
+
+        $ref = new \ReflectionProperty($server, 'parser');
+        $ref->setAccessible(true);
+        $ref->setValue($server, $parser);
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $this->connection->expects($this->once())->method('write');
+        $this->connection->expects($this->once())->method('end');
+
+        // pretend parser just finished parsing
+        $server->handleRequest($this->connection, $request);
+    }
+
+    public function testNewConnectionWillInvokeParserTwiceAfterInvokingRequestHandlerWhenConnectionCanBeKeptAliveForHttp11Default()
+    {
+        $request = new ServerRequest('GET', 'http://localhost/');
+
+        $server = new StreamingServer(Factory::create(), function () {
+            return new Response();
+        });
+
+        $parser = $this->getMockBuilder('React\Http\Io\RequestHeaderParser')->getMock();
+        $parser->expects($this->exactly(2))->method('handle');
+
+        $ref = new \ReflectionProperty($server, 'parser');
+        $ref->setAccessible(true);
+        $ref->setValue($server, $parser);
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $this->connection->expects($this->once())->method('write');
+        $this->connection->expects($this->never())->method('end');
+
+        // pretend parser just finished parsing
+        $server->handleRequest($this->connection, $request);
+    }
+
+    public function testNewConnectionWillInvokeParserTwiceAfterInvokingRequestHandlerWhenConnectionCanBeKeptAliveForHttp10ConnectionKeepAlive()
+    {
+        $request = new ServerRequest('GET', 'http://localhost/', array('Connection' => 'keep-alive'), '', '1.0');
+
+        $server = new StreamingServer(Factory::create(), function () {
+            return new Response();
+        });
+
+        $parser = $this->getMockBuilder('React\Http\Io\RequestHeaderParser')->getMock();
+        $parser->expects($this->exactly(2))->method('handle');
+
+        $ref = new \ReflectionProperty($server, 'parser');
+        $ref->setAccessible(true);
+        $ref->setValue($server, $parser);
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $this->connection->expects($this->once())->method('write');
+        $this->connection->expects($this->never())->method('end');
+
+        // pretend parser just finished parsing
+        $server->handleRequest($this->connection, $request);
+    }
+
+    public function testNewConnectionWillInvokeParserOnceAfterInvokingRequestHandlerWhenStreamingResponseBodyKeepsStreaming()
+    {
+        $request = new ServerRequest('GET', 'http://localhost/');
+
+        $body = new ThroughStream();
+        $server = new StreamingServer(Factory::create(), function () use ($body) {
+            return new Response(200, array(), $body);
+        });
+
+        $parser = $this->getMockBuilder('React\Http\Io\RequestHeaderParser')->getMock();
+        $parser->expects($this->once())->method('handle');
+
+        $ref = new \ReflectionProperty($server, 'parser');
+        $ref->setAccessible(true);
+        $ref->setValue($server, $parser);
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $this->connection->expects($this->once())->method('write');
+        $this->connection->expects($this->never())->method('end');
+
+        // pretend parser just finished parsing
+        $server->handleRequest($this->connection, $request);
+    }
+
+    public function testNewConnectionWillInvokeParserTwiceAfterInvokingRequestHandlerWhenStreamingResponseBodyEnds()
+    {
+        $request = new ServerRequest('GET', 'http://localhost/');
+
+        $body = new ThroughStream();
+        $server = new StreamingServer(Factory::create(), function () use ($body) {
+            return new Response(200, array(), $body);
+        });
+
+        $parser = $this->getMockBuilder('React\Http\Io\RequestHeaderParser')->getMock();
+        $parser->expects($this->exactly(2))->method('handle');
+
+        $ref = new \ReflectionProperty($server, 'parser');
+        $ref->setAccessible(true);
+        $ref->setValue($server, $parser);
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $this->connection->expects($this->exactly(2))->method('write');
+        $this->connection->expects($this->never())->method('end');
+
+        // pretend parser just finished parsing
+        $server->handleRequest($this->connection, $request);
+
+        $body->end();
     }
 
     private function createGetRequest()

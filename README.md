@@ -1698,11 +1698,12 @@ so you don't have to. For instance, if the client sends the request using the
 HTTP/1.1 protocol version, the response message will also use the same protocol
 version, no matter what version is returned from the request handler function.
 
-Note that persistent connections (`Connection: keep-alive`) are currently
-not supported.
-As such, HTTP/1.1 response messages will automatically include a
-`Connection: close` header, irrespective of what header values are
-passed explicitly.
+The server supports persistent connections. An appropriate `Connection: keep-alive`
+or `Connection: close` response header will be added automatically, respecting the
+matching request header value and HTTP default header values. The server is
+responsible for handling the `Connection` response header, so you SHOULD NOT pass
+this response header yourself, unless you explicitly want to override the user's
+choice with a `Connection: close` response header.
 
 ### Middleware
 

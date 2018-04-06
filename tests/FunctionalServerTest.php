@@ -662,7 +662,7 @@ class FunctionalServerTest extends TestCase
         $server->listen($socket);
 
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
-            $conn->write("CONNECT example.com:80 HTTP/1.1\r\nHost: example.com:80\r\n\r\n");
+            $conn->write("CONNECT example.com:80 HTTP/1.1\r\nHost: example.com:80\r\nConnection: close\r\n\r\n");
 
             $conn->once('data', function () use ($conn) {
                 $conn->write('hello');
@@ -703,7 +703,7 @@ class FunctionalServerTest extends TestCase
         $server->listen($socket);
 
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
-            $conn->write("CONNECT example.com:80 HTTP/1.1\r\nHost: example.com:80\r\n\r\n");
+            $conn->write("CONNECT example.com:80 HTTP/1.1\r\nHost: example.com:80\r\nConnection: close\r\n\r\n");
 
             $conn->once('data', function () use ($conn) {
                 $conn->write('hello');
@@ -737,7 +737,7 @@ class FunctionalServerTest extends TestCase
         $server->listen($socket);
 
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
-            $conn->write("CONNECT example.com:80 HTTP/1.1\r\nHost: example.com:80\r\n\r\n");
+            $conn->write("CONNECT example.com:80 HTTP/1.1\r\nHost: example.com:80\r\nConnection: close\r\n\r\n");
 
             $conn->once('data', function () use ($conn) {
                 $conn->write('hello');
