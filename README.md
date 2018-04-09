@@ -386,16 +386,15 @@ See also [example #9](examples) for more details.
 
 The `data` event will be emitted whenever new data is available on the request
 body stream.
-The server automatically takes care of decoding chunked transfer encoding
-and will only emit the actual payload as data.
-In this case, the `Transfer-Encoding` header will be removed.
+The server also automatically takes care of decoding any incoming requests using
+`Transfer-Encoding: chunked` and will only emit the actual payload as data.
 
 The `end` event will be emitted when the request body stream terminates
 successfully, i.e. it was read until its expected end.
 
 The `error` event will be emitted in case the request stream contains invalid
-chunked data or the connection closes before the complete request stream has
-been received.
+data for `Transfer-Encoding: chunked` or when the connection closes before
+the complete request stream has been received.
 The server will automatically stop reading from the connection and discard all
 incoming data instead of closing it.
 A response message can still be sent (unless the connection is already closed).
@@ -678,12 +677,14 @@ in this case (if applicable).
 
 If the response body is a `string`, a `Content-Length` header will be added
 automatically.
+
 If the response body is a ReactPHP `ReadableStreamInterface` and you do not
-specify a `Content-Length` header, HTTP/1.1 responses will automatically use
-chunked transfer encoding and send the respective header
-(`Transfer-Encoding: chunked`) automatically.
+specify a `Content-Length` header, outgoing HTTP/1.1 response messages will
+automatically use `Transfer-Encoding: chunked` and send the respective header
+automatically.
 The server is responsible for handling `Transfer-Encoding`, so you SHOULD NOT
 pass this header yourself.
+
 If you know the length of your stream body, you MAY specify it like this instead:
 
 ```php

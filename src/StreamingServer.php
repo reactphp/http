@@ -204,8 +204,6 @@ final class StreamingServer extends EventEmitter
             }
 
             $stream = new ChunkedDecoder($stream);
-
-            $request = $request->withoutHeader('Transfer-Encoding');
             $request = $request->withoutHeader('Content-Length');
 
             $contentLength = null;
