@@ -432,9 +432,7 @@ final class StreamingServer extends EventEmitter
 
         // Close response stream once connection closes.
         // Note that this TCP/IP close detection may take some time,
-        // in particular this may only fire on a later read/write attempt
-        // because we stop/pause reading from the connection once the
-        // request has been processed.
+        // in particular this may only fire on a later read/write attempt.
         $connection->on('close', array($body, 'close'));
 
         $body->pipe($connection);
