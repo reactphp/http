@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.8.3 (2018-04-11)
+
+*   Feature: Do not pause connection stream to detect closed connections immediately.
+    (#315 by @clue)
+
+*   Feature: Keep incoming `Transfer-Encoding: chunked` request header.
+    (#316 by @clue)
+
+*   Feature: Reject invalid requests that contain both `Content-Length` and `Transfer-Encoding` request headers.
+    (#318 by @clue)
+
+*   Minor internal refactoring to simplify connection close logic after sending response.
+    (#317 by @clue)
+
 ## 0.8.2 (2018-04-06)
 
 *   Fix: Do not pass `$next` handler to final request handler.
