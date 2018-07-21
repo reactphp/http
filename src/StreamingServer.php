@@ -185,9 +185,11 @@ final class StreamingServer extends EventEmitter
             $conn->removeListener('data', $listener);
             $that->emit('error', array($e));
 
+            // parsing failed => assume dummy request and send appropriate error
             $that->writeError(
                 $conn,
-                $e->getCode() !== 0 ? $e->getCode() : 400
+                $e->getCode() !== 0 ? $e->getCode() : 400,
+                new ServerRequest('GET', '/')
             );
         });
     }
@@ -298,7 +300,7 @@ final class StreamingServer extends EventEmitter
     }
 
     /** @internal */
-    public function writeError(ConnectionInterface $conn, $code, ServerRequestInterface $request = null)
+    public function writeError(ConnectionInterface $conn, $code, ServerRequestInterface $request)
     {
         $response = new Response(
             $code,
@@ -314,10 +316,6 @@ final class StreamingServer extends EventEmitter
             $body = $response->getBody();
             $body->seek(0, SEEK_END);
             $body->write(': ' . $reason);
-        }
-
-        if ($request === null) {
-            $request = new ServerRequest('GET', '/', array(), null, '1.1');
         }
 
         $this->handleResponse($conn, $request, $response);
