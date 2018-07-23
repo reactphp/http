@@ -185,9 +185,11 @@ final class StreamingServer extends EventEmitter
             $conn->removeListener('data', $listener);
             $that->emit('error', array($e));
 
+            // parsing failed => assume dummy request and send appropriate error
             $that->writeError(
                 $conn,
-                $e->getCode() !== 0 ? $e->getCode() : 400
+                $e->getCode() !== 0 ? $e->getCode() : 400,
+                new ServerRequest('GET', '/')
             );
         });
     }
@@ -298,7 +300,7 @@ final class StreamingServer extends EventEmitter
     }
 
     /** @internal */
-    public function writeError(ConnectionInterface $conn, $code, ServerRequestInterface $request = null)
+    public function writeError(ConnectionInterface $conn, $code, ServerRequestInterface $request)
     {
         $response = new Response(
             $code,
@@ -316,10 +318,6 @@ final class StreamingServer extends EventEmitter
             $body->write(': ' . $reason);
         }
 
-        if ($request === null) {
-            $request = new ServerRequest('GET', '/', array(), null, '1.1');
-        }
-
         $this->handleResponse($conn, $request, $response);
     }
 
@@ -334,57 +332,61 @@ final class StreamingServer extends EventEmitter
             return;
         }
 
-        $response = $response->withProtocolVersion($request->getProtocolVersion());
+        $code = $response->getStatusCode();
+        $method = $request->getMethod();
 
-        // assign default "X-Powered-By" header as first for history reasons
+        // assign HTTP protocol version from request automatically
+        $version = $request->getProtocolVersion();
+        $response = $response->withProtocolVersion($version);
+
+        // assign default "X-Powered-By" header automatically
         if (!$response->hasHeader('X-Powered-By')) {
             $response = $response->withHeader('X-Powered-By', 'React/alpha');
-        }
-
-        if ($response->hasHeader('X-Powered-By') && $response->getHeaderLine('X-Powered-By') === ''){
+        } elseif ($response->getHeaderLine('X-Powered-By') === ''){
             $response = $response->withoutHeader('X-Powered-By');
         }
 
-        $response = $response->withoutHeader('Transfer-Encoding');
-
-        // assign date header if no 'date' is given, use the current time where this code is running
+        // assign default "Date" header from current time automatically
         if (!$response->hasHeader('Date')) {
             // IMF-fixdate  = day-name "," SP date1 SP time-of-day SP GMT
             $response = $response->withHeader('Date', gmdate('D, d M Y H:i:s') . ' GMT');
-        }
-
-        if ($response->hasHeader('Date') && $response->getHeaderLine('Date') === ''){
+        } elseif ($response->getHeaderLine('Date') === ''){
             $response = $response->withoutHeader('Date');
         }
 
-        if (!$body instanceof HttpBodyStream) {
-            $response = $response->withHeader('Content-Length', (string)$body->getSize());
-        } elseif (!$response->hasHeader('Content-Length') && $request->getProtocolVersion() === '1.1') {
+        // assign "Content-Length" and "Transfer-Encoding" headers automatically
+        $chunked = false;
+        if (($method === 'CONNECT' && $code >= 200 && $code < 300) || ($code >= 100 && $code < 200) || $code === 204) {
+            // 2xx response to CONNECT and 1xx and 204 MUST NOT include Content-Length or Transfer-Encoding header
+            $response = $response->withoutHeader('Content-Length')->withoutHeader('Transfer-Encoding');
+        } elseif (!$body instanceof HttpBodyStream) {
+            // assign Content-Length header when using a "normal" buffered body string
+            $response = $response->withHeader('Content-Length', (string)$body->getSize())->withoutHeader('Transfer-Encoding');
+        } elseif (!$response->hasHeader('Content-Length') && $version === '1.1') {
             // assign chunked transfer-encoding if no 'content-length' is given for HTTP/1.1 responses
             $response = $response->withHeader('Transfer-Encoding', 'chunked');
+            $chunked = true;
+        } else {
+            // remove any Transfer-Encoding headers unless automatically enabled above
+            $response = $response->withoutHeader('Transfer-Encoding');
         }
 
-        // HTTP/1.1 assumes persistent connection support by default
-        // we do not support persistent connections, so let the client know
-        if ($request->getProtocolVersion() === '1.1') {
-            $response = $response->withHeader('Connection', 'close');
-        }
-        // 2xx response to CONNECT and 1xx and 204 MUST NOT include Content-Length or Transfer-Encoding header
-        $code = $response->getStatusCode();
-        if (($request->getMethod() === 'CONNECT' && $code >= 200 && $code < 300) || ($code >= 100 && $code < 200) || $code === 204) {
-            $response = $response->withoutHeader('Content-Length')->withoutHeader('Transfer-Encoding');
-        }
-
-        // 101 (Switching Protocols) response uses Connection: upgrade header
-        // persistent connections are currently not supported, so do not use
-        // this for any other replies in order to preserve "Connection: close"
+        // assign "Connection" header automatically
         if ($code === 101) {
+            // 101 (Switching Protocols) response uses Connection: upgrade header
             $response = $response->withHeader('Connection', 'upgrade');
+        } elseif ($version === '1.1') {
+            // HTTP/1.1 assumes persistent connection support by default
+            // we do not support persistent connections, so let the client know
+            $response = $response->withHeader('Connection', 'close');
+        } else {
+            // remove any Connection headers unless automatically enabled above
+            $response = $response->withoutHeader('Connection');
         }
 
         // 101 (Switching Protocols) response (for Upgrade request) forwards upgraded data through duplex stream
         // 2xx (Successful) response to CONNECT forwards tunneled application data through duplex stream
-        if (($code === 101 || ($request->getMethod() === 'CONNECT' && $code >= 200 && $code < 300)) && $body instanceof HttpBodyStream && $body->input instanceof WritableStreamInterface) {
+        if (($code === 101 || ($method === 'CONNECT' && $code >= 200 && $code < 300)) && $body instanceof HttpBodyStream && $body->input instanceof WritableStreamInterface) {
             if ($request->getBody()->isReadable()) {
                 // request is still streaming => wait for request close before forwarding following data from connection
                 $request->getBody()->on('close', function () use ($connection, $body) {
@@ -401,7 +403,7 @@ final class StreamingServer extends EventEmitter
         }
 
         // build HTTP response header by appending status line and header fields
-        $headers = "HTTP/" . $response->getProtocolVersion() . " " . $response->getStatusCode() . " " . $response->getReasonPhrase() . "\r\n";
+        $headers = "HTTP/" . $version . " " . $code . " " . $response->getReasonPhrase() . "\r\n";
         foreach ($response->getHeaders() as $name => $values) {
             foreach ($values as $value) {
                 $headers .= $name . ": " . $value . "\r\n";
@@ -410,14 +412,14 @@ final class StreamingServer extends EventEmitter
 
         // response to HEAD and 1xx, 204 and 304 responses MUST NOT include a body
         // exclude status 101 (Switching Protocols) here for Upgrade request handling above
-        if ($request->getMethod() === 'HEAD' || $code === 100 || ($code > 101 && $code < 200) || $code === 204 || $code === 304) {
+        if ($method === 'HEAD' || $code === 100 || ($code > 101 && $code < 200) || $code === 204 || $code === 304) {
             $body = '';
         }
 
         // this is a non-streaming response body or the body stream already closed?
         if (!$body instanceof ReadableStreamInterface || !$body->isReadable()) {
             // add final chunk if a streaming body is already closed and uses `Transfer-Encoding: chunked`
-            if ($body instanceof ReadableStreamInterface && $response->getHeaderLine('Transfer-Encoding') === 'chunked') {
+            if ($body instanceof ReadableStreamInterface && $chunked) {
                 $body = "0\r\n\r\n";
             }
 
@@ -429,7 +431,7 @@ final class StreamingServer extends EventEmitter
 
         $connection->write($headers . "\r\n");
 
-        if ($response->getHeaderLine('Transfer-Encoding') === 'chunked') {
+        if ($chunked) {
             $body = new ChunkedEncoder($body);
         }
 
