@@ -294,7 +294,12 @@ final class StreamingServer extends EventEmitter
                 $exception = new \RuntimeException($message, null, $previous);
 
                 $that->emit('error', array($exception));
-                return $that->writeError($conn, 500, $request);
+                //return $that->writeError($conn, 500, $request);
+                try {
+                    return $that->fcWriteError($conn, $error, $request);
+                } catch (Throwable $e) {
+                    return $that->writeError($conn, 500, $request);
+                }
             }
         );
     }
@@ -320,6 +325,44 @@ final class StreamingServer extends EventEmitter
 
         $this->handleResponse($conn, $request, $response);
     }
+    
+    /** @internal */
+	public function fcWriteError(ConnectionInterface $conn, $e, ServerRequestInterface $request) {
+		$err = array(
+			"errorMessage" => $e->getMessage(),
+			"errorType" => get_class($e),
+			"stackTrace" => array(
+				$e->getFile() . PHP_EOL,
+				$e->getLine() . PHP_EOL,
+				//$e->getTraceAsString(),
+			),
+		);
+		$errStr = json_encode($err);
+
+		$response = new Response(
+			200,
+			array(
+				'Content-Type' => 'application/octet-stream',
+				'Content-Length' => strlen($errStr),
+				'Connection' => 'keep-alive',
+			),
+			$errStr
+		);
+
+		// append reason phrase to response body if known
+		$reason = $response->getReasonPhrase();
+		if ($reason !== '') {
+			$body = $response->getBody();
+			$body->seek(0, SEEK_END);
+			$body->write(': ' . $reason);
+		}
+
+		if ($request === null) {
+			$request = new ServerRequest('GET', '/', array(), null, '1.1');
+		}
+
+		$this->handleResponse($conn, $request, $response);
+	}
 
 
     /** @internal */
