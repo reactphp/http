@@ -593,12 +593,12 @@ $server = new Server(function (ServerRequestInterface $request) use ($loop) {
     $stream = new ThroughStream();
 
     $timer = $loop->addPeriodicTimer(0.5, function () use ($stream) {
-        $stream->emit('data', array(microtime(true) . PHP_EOL));
+        $stream->write(microtime(true) . PHP_EOL);
     });
 
     $loop->addTimer(5, function() use ($loop, $timer, $stream) {
         $loop->cancelTimer($timer);
-        $stream->emit('end');
+        $stream->end();
     });
 
     return new Response(
@@ -675,25 +675,41 @@ in this case (if applicable).
 
 #### Response length
 
-If the response body is a `string`, a `Content-Length` header will be added
-automatically.
+If the response body size is known, a `Content-Length` response header will be
+added automatically. This is the most common use case, for example when using
+a `string` response body like this:
 
-If the response body is a ReactPHP `ReadableStreamInterface` and you do not
-specify a `Content-Length` header, outgoing HTTP/1.1 response messages will
-automatically use `Transfer-Encoding: chunked` and send the respective header
-automatically.
-The server is responsible for handling `Transfer-Encoding`, so you SHOULD NOT
-pass this header yourself.
-
-If you know the length of your stream body, you MAY specify it like this instead:
-
-```php
-$stream = new ThroughStream();
-$server = new Server(function (ServerRequestInterface $request) use ($stream) {
+```php 
+$server = new Server(function (ServerRequestInterface $request) {
     return new Response(
         200,
         array(
-            'Content-Length' => '5',
+            'Content-Type' => 'text/plain'
+        ),
+        "Hello World!\n"
+    );
+});
+```
+
+If the response body size is unknown, a `Content-Length` response header can not
+be added automatically. When using a [streaming response](#streaming-response)
+without an explicit `Content-Length` response header, outgoing HTTP/1.1 response
+messages will automatically use `Transfer-Encoding: chunked` while legacy HTTP/1.0
+response messages will contain the plain response body. If you know the length
+of your streaming response body, you MAY want to specify it explicitly like this:
+
+```php
+$server = new Server(function (ServerRequestInterface $request) use ($loop) {
+    $stream = new ThroughStream();
+
+    $loop->addTimer(2.0, function () use ($stream) {
+        $stream->end("Hello World!\n");
+    });
+
+    return new Response(
+        200,
+        array(
+            'Content-Length' => '13',
             'Content-Type' => 'text/plain',
         ),
         $stream

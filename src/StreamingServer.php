@@ -359,7 +359,7 @@ final class StreamingServer extends EventEmitter
         if (($method === 'CONNECT' && $code >= 200 && $code < 300) || ($code >= 100 && $code < 200) || $code === 204) {
             // 2xx response to CONNECT and 1xx and 204 MUST NOT include Content-Length or Transfer-Encoding header
             $response = $response->withoutHeader('Content-Length')->withoutHeader('Transfer-Encoding');
-        } elseif (!$body instanceof HttpBodyStream) {
+        } elseif ($body->getSize() !== null) {
             // assign Content-Length header when using a "normal" buffered body string
             $response = $response->withHeader('Content-Length', (string)$body->getSize())->withoutHeader('Transfer-Encoding');
         } elseif (!$response->hasHeader('Content-Length') && $version === '1.1') {
