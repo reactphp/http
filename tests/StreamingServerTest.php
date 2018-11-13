@@ -2156,6 +2156,80 @@ class StreamingServerTest extends TestCase
         $this->assertContains("hello", $buffer);
     }
 
+    public function testResponseContainsResponseBodyWithTransferEncodingChunkedForBodyWithUnknownSize()
+    {
+        $body = $this->getMockBuilder('Psr\Http\Message\StreamInterface')->getMock();
+        $body->expects($this->once())->method('getSize')->willReturn(null);
+        $body->expects($this->once())->method('__toString')->willReturn('body');
+
+        $server = new StreamingServer(function (ServerRequestInterface $request) use ($body) {
+            return new Response(
+                200,
+                array(),
+                $body
+            );
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertContains("Transfer-Encoding: chunked", $buffer);
+        $this->assertNotContains("Content-Length:", $buffer);
+        $this->assertContains("body", $buffer);
+    }
+
+    public function testResponseContainsResponseBodyWithPlainBodyWithUnknownSizeForLegacyHttp10()
+    {
+        $body = $this->getMockBuilder('Psr\Http\Message\StreamInterface')->getMock();
+        $body->expects($this->once())->method('getSize')->willReturn(null);
+        $body->expects($this->once())->method('__toString')->willReturn('body');
+
+        $server = new StreamingServer(function (ServerRequestInterface $request) use ($body) {
+            return new Response(
+                200,
+                array(),
+                $body
+            );
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.0\r\nHost: localhost\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertNotContains("Transfer-Encoding: chunked", $buffer);
+        $this->assertNotContains("Content-Length:", $buffer);
+        $this->assertContains("body", $buffer);
+    }
+
     public function testResponseWithCustomTransferEncodingWillBeIgnoredAndUseChunkedTransferEncodingInstead()
     {
         $stream = new ThroughStream();
