@@ -50,7 +50,7 @@ final class Server extends EventEmitter
      */
     public function __construct($requestHandler)
     {
-        if (!is_callable($requestHandler) && !is_array($requestHandler)) {
+        if (!\is_callable($requestHandler) && !\is_array($requestHandler)) {
             throw new \InvalidArgumentException('Invalid request handler given');
         }
 
@@ -62,15 +62,15 @@ final class Server extends EventEmitter
         // @link http://php.net/manual/en/ini.core.php#ini.enable-post-data-reading
         // @link http://php.net/manual/en/function.ini-get.php#refsect1-function.ini-get-notes
         // @link https://3v4l.org/qJtsa
-        $enablePostDataReading = ini_get('enable_post_data_reading');
+        $enablePostDataReading = \ini_get('enable_post_data_reading');
         if ($enablePostDataReading !== '') {
             $middleware[] = new RequestBodyParserMiddleware();
         }
 
-        if (is_callable($requestHandler)) {
+        if (\is_callable($requestHandler)) {
             $middleware[] = $requestHandler;
         } else {
-            $middleware = array_merge($middleware, $requestHandler);
+            $middleware = \array_merge($middleware, $requestHandler);
         }
 
         $this->streamingServer = new StreamingServer($middleware);
@@ -95,12 +95,12 @@ final class Server extends EventEmitter
      */
     private function getConcurrentRequestsLimit()
     {
-        if (ini_get('memory_limit') == -1) {
+        if (\ini_get('memory_limit') == -1) {
             return self::MAXIMUM_CONCURRENT_REQUESTS;
         }
 
-        $availableMemory = IniUtil::iniSizeToBytes(ini_get('memory_limit')) / 4;
-        $concurrentRequests = ceil($availableMemory / IniUtil::iniSizeToBytes(ini_get('post_max_size')));
+        $availableMemory = IniUtil::iniSizeToBytes(\ini_get('memory_limit')) / 4;
+        $concurrentRequests = \ceil($availableMemory / IniUtil::iniSizeToBytes(\ini_get('post_max_size')));
 
         if ($concurrentRequests >= self::MAXIMUM_CONCURRENT_REQUESTS) {
             return self::MAXIMUM_CONCURRENT_REQUESTS;

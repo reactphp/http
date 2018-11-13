@@ -34,7 +34,7 @@ class RequestHeaderParser extends EventEmitter
     public function feed($data)
     {
         $this->buffer .= $data;
-        $endOfHeader = strpos($this->buffer, "\r\n\r\n");
+        $endOfHeader = \strpos($this->buffer, "\r\n\r\n");
 
         if ($endOfHeader > $this->maxSize || ($endOfHeader === false && isset($this->buffer[$this->maxSize]))) {
             $this->emit('error', array(new \OverflowException("Maximum header size of {$this->maxSize} exceeded.", 431), $this));
@@ -54,8 +54,8 @@ class RequestHeaderParser extends EventEmitter
 
     private function parseAndEmitRequest($endOfHeader)
     {
-        $request = $this->parseRequest((string)substr($this->buffer, 0, $endOfHeader));
-        $bodyBuffer = isset($this->buffer[$endOfHeader + 4]) ? substr($this->buffer, $endOfHeader + 4) : '';
+        $request = $this->parseRequest((string)\substr($this->buffer, 0, $endOfHeader));
+        $bodyBuffer = isset($this->buffer[$endOfHeader + 4]) ? \substr($this->buffer, $endOfHeader + 4) : '';
         $this->emit('headers', array($request, $bodyBuffer));
     }
 
@@ -63,19 +63,19 @@ class RequestHeaderParser extends EventEmitter
     {
         // additional, stricter safe-guard for request line
         // because request parser doesn't properly cope with invalid ones
-        if (!preg_match('#^[^ ]+ [^ ]+ HTTP/\d\.\d#m', $headers)) {
+        if (!\preg_match('#^[^ ]+ [^ ]+ HTTP/\d\.\d#m', $headers)) {
             throw new \InvalidArgumentException('Unable to parse invalid request-line');
         }
 
         // parser does not support asterisk-form and authority-form
         // remember original target and temporarily replace and re-apply below
         $originalTarget = null;
-        if (strncmp($headers, 'OPTIONS * ', 10) === 0) {
+        if (\strncmp($headers, 'OPTIONS * ', 10) === 0) {
             $originalTarget = '*';
-            $headers = 'OPTIONS / ' . substr($headers, 10);
-        } elseif (strncmp($headers, 'CONNECT ', 8) === 0) {
-            $parts = explode(' ', $headers, 3);
-            $uri = parse_url('tcp://' . $parts[1]);
+            $headers = 'OPTIONS / ' . \substr($headers, 10);
+        } elseif (\strncmp($headers, 'CONNECT ', 8) === 0) {
+            $parts = \explode(' ', $headers, 3);
+            $uri = \parse_url('tcp://' . $parts[1]);
 
             // check this is a valid authority-form request-target (host:port)
             if (isset($uri['scheme'], $uri['host'], $uri['port']) && count($uri) === 3) {
@@ -93,14 +93,14 @@ class RequestHeaderParser extends EventEmitter
         // create new obj implementing ServerRequestInterface by preserving all
         // previous properties and restoring original request-target
         $serverParams = array(
-            'REQUEST_TIME' => time(),
-            'REQUEST_TIME_FLOAT' => microtime(true)
+            'REQUEST_TIME' => \time(),
+            'REQUEST_TIME_FLOAT' => \microtime(true)
         );
 
         // apply REMOTE_ADDR and REMOTE_PORT if source address is known
         // address should always be known, unless this is over Unix domain sockets (UDS)
         if ($this->remoteSocketUri !== null) {
-            $remoteAddress = parse_url($this->remoteSocketUri);
+            $remoteAddress = \parse_url($this->remoteSocketUri);
             $serverParams['REMOTE_ADDR'] = $remoteAddress['host'];
             $serverParams['REMOTE_PORT'] = $remoteAddress['port'];
         }
@@ -109,7 +109,7 @@ class RequestHeaderParser extends EventEmitter
         // address should always be known, even for Unix domain sockets (UDS)
         // but skip UDS as it doesn't have a concept of host/port.s
         if ($this->localSocketUri !== null) {
-            $localAddress = parse_url($this->localSocketUri);
+            $localAddress = \parse_url($this->localSocketUri);
             if (isset($localAddress['host'], $localAddress['port'])) {
                 $serverParams['SERVER_ADDR'] = $localAddress['host'];
                 $serverParams['SERVER_PORT'] = $localAddress['port'];
@@ -134,7 +134,7 @@ class RequestHeaderParser extends EventEmitter
         $queryString = $request->getUri()->getQuery();
         if ($queryString !== '') {
             $queryParams = array();
-            parse_str($queryString, $queryParams);
+            \parse_str($queryString, $queryParams);
             $request = $request->withQueryParams($queryParams);
         }
 
@@ -159,8 +159,8 @@ class RequestHeaderParser extends EventEmitter
 
         // ensure absolute-form request-target contains a valid URI
         $requestTarget = $request->getRequestTarget();
-        if (strpos($requestTarget, '://') !== false && substr($requestTarget, 0, 1) !== '/') {
-            $parts = parse_url($requestTarget);
+        if (\strpos($requestTarget, '://') !== false && \substr($requestTarget, 0, 1) !== '/') {
+            $parts = \parse_url($requestTarget);
 
             // make sure value contains valid host component (IP or hostname), but no fragment
             if (!isset($parts['scheme'], $parts['host']) || $parts['scheme'] !== 'http' || isset($parts['fragment'])) {
@@ -170,7 +170,7 @@ class RequestHeaderParser extends EventEmitter
 
         // Optional Host header value MUST be valid (host and optional port)
         if ($request->hasHeader('Host')) {
-            $parts = parse_url('http://' . $request->getHeaderLine('Host'));
+            $parts = \parse_url('http://' . $request->getHeaderLine('Host'));
 
             // make sure value contains valid host component (IP or hostname)
             if (!$parts || !isset($parts['scheme'], $parts['host'])) {
@@ -186,7 +186,7 @@ class RequestHeaderParser extends EventEmitter
 
         // set URI components from socket address if not already filled via Host header
         if ($request->getUri()->getHost() === '') {
-            $parts = parse_url($this->localSocketUri);
+            $parts = \parse_url($this->localSocketUri);
             if (!isset($parts['host'], $parts['port'])) {
                 $parts = array('host' => '127.0.0.1', 'port' => 80);
             }
@@ -207,13 +207,13 @@ class RequestHeaderParser extends EventEmitter
         }
 
         // Update request URI to "https" scheme if the connection is encrypted
-        $parts = parse_url($this->localSocketUri);
+        $parts = \parse_url($this->localSocketUri);
         if (isset($parts['scheme']) && $parts['scheme'] === 'https') {
             // The request URI may omit default ports here, so try to parse port
             // from Host header field (if possible)
             $port = $request->getUri()->getPort();
             if ($port === null) {
-                $port = parse_url('tcp://' . $request->getHeaderLine('Host'), PHP_URL_PORT); // @codeCoverageIgnore
+                $port = \parse_url('tcp://' . $request->getHeaderLine('Host'), PHP_URL_PORT); // @codeCoverageIgnore
             }
 
             $request = $request->withUri(

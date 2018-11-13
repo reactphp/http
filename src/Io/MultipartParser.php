@@ -73,27 +73,27 @@ final class MultipartParser
      */
     public function __construct($uploadMaxFilesize = null, $maxFileUploads = null)
     {
-        $var = ini_get('max_input_vars');
+        $var = \ini_get('max_input_vars');
         if ($var !== false) {
             $this->maxInputVars = (int)$var;
         }
-        $var = ini_get('max_input_nesting_level');
+        $var = \ini_get('max_input_nesting_level');
         if ($var !== false) {
             $this->maxInputNestingLevel = (int)$var;
         }
 
         if ($uploadMaxFilesize === null) {
-            $uploadMaxFilesize = ini_get('upload_max_filesize');
+            $uploadMaxFilesize = \ini_get('upload_max_filesize');
         }
 
         $this->uploadMaxFilesize = IniUtil::iniSizeToBytes($uploadMaxFilesize);
-        $this->maxFileUploads = $maxFileUploads === null ? (ini_get('file_uploads') === '' ? 0 : (int)ini_get('max_file_uploads')) : (int)$maxFileUploads;
+        $this->maxFileUploads = $maxFileUploads === null ? (\ini_get('file_uploads') === '' ? 0 : (int)\ini_get('max_file_uploads')) : (int)$maxFileUploads;
     }
 
     public function parse(ServerRequestInterface $request)
     {
         $contentType = $request->getHeaderLine('content-type');
-        if(!preg_match('/boundary="?(.*)"?$/', $contentType, $matches)) {
+        if(!\preg_match('/boundary="?(.*)"?$/', $contentType, $matches)) {
             return $request;
         }
 
@@ -112,35 +112,35 @@ final class MultipartParser
 
     private function parseBody($boundary, $buffer)
     {
-        $len = strlen($boundary);
+        $len = \strlen($boundary);
 
         // ignore everything before initial boundary (SHOULD be empty)
-        $start = strpos($buffer, $boundary . "\r\n");
+        $start = \strpos($buffer, $boundary . "\r\n");
 
         while ($start !== false) {
             // search following boundary (preceded by newline)
             // ignore last if not followed by boundary (SHOULD end with "--")
             $start += $len + 2;
-            $end = strpos($buffer, "\r\n" . $boundary, $start);
+            $end = \strpos($buffer, "\r\n" . $boundary, $start);
             if ($end === false) {
                 break;
             }
 
             // parse one part and continue searching for next
-            $this->parsePart(substr($buffer, $start, $end - $start));
+            $this->parsePart(\substr($buffer, $start, $end - $start));
             $start = $end;
         }
     }
 
     private function parsePart($chunk)
     {
-        $pos = strpos($chunk, "\r\n\r\n");
+        $pos = \strpos($chunk, "\r\n\r\n");
         if ($pos === false) {
             return;
         }
 
         $headers = $this->parseHeaders((string)substr($chunk, 0, $pos));
-        $body = (string)substr($chunk, $pos + 4);
+        $body = (string)\substr($chunk, $pos + 4);
 
         if (!isset($headers['content-disposition'])) {
             return;
@@ -180,7 +180,7 @@ final class MultipartParser
 
     private function parseUploadedFile($filename, $contentType, $contents)
     {
-        $size = strlen($contents);
+        $size = \strlen($contents);
 
         // no file selected (zero size and empty filename)
         if ($size === 0 && $filename === '') {
@@ -192,7 +192,7 @@ final class MultipartParser
             return new UploadedFile(
                 Psr7\stream_for(),
                 $size,
-                UPLOAD_ERR_NO_FILE,
+                \UPLOAD_ERR_NO_FILE,
                 $filename,
                 $contentType
             );
@@ -208,7 +208,7 @@ final class MultipartParser
             return new UploadedFile(
                 Psr7\stream_for(),
                 $size,
-                UPLOAD_ERR_INI_SIZE,
+                \UPLOAD_ERR_INI_SIZE,
                 $filename,
                 $contentType
             );
@@ -219,7 +219,7 @@ final class MultipartParser
             return new UploadedFile(
                 Psr7\stream_for(),
                 $size,
-                UPLOAD_ERR_FORM_SIZE,
+                \UPLOAD_ERR_FORM_SIZE,
                 $filename,
                 $contentType
             );
@@ -228,7 +228,7 @@ final class MultipartParser
         return new UploadedFile(
             Psr7\stream_for($contents),
             $size,
-            UPLOAD_ERR_OK,
+            \UPLOAD_ERR_OK,
             $filename,
             $contentType
         );
@@ -247,7 +247,7 @@ final class MultipartParser
             $value
         ));
 
-        if (strtoupper($name) === 'MAX_FILE_SIZE') {
+        if (\strtoupper($name) === 'MAX_FILE_SIZE') {
             $this->maxFileSize = (int)$value;
 
             if ($this->maxFileSize === 0) {
@@ -260,15 +260,15 @@ final class MultipartParser
     {
         $headers = array();
 
-        foreach (explode("\r\n", trim($header)) as $line) {
-            $parts = explode(':', $line, 2);
+        foreach (\explode("\r\n", \trim($header)) as $line) {
+            $parts = \explode(':', $line, 2);
             if (!isset($parts[1])) {
                 continue;
             }
 
-            $key = strtolower(trim($parts[0]));
-            $values = explode(';', $parts[1]);
-            $values = array_map('trim', $values);
+            $key = \strtolower(trim($parts[0]));
+            $values = \explode(';', $parts[1]);
+            $values = \array_map('trim', $values);
             $headers[$key] = $values;
         }
 
@@ -278,7 +278,7 @@ final class MultipartParser
     private function getParameterFromHeader(array $header, $parameter)
     {
         foreach ($header as $part) {
-            if (preg_match('/' . $parameter . '="?(.*)"$/', $part, $matches)) {
+            if (\preg_match('/' . $parameter . '="?(.*)"$/', $part, $matches)) {
                 return $matches[1];
             }
         }
@@ -288,8 +288,8 @@ final class MultipartParser
 
     private function extractPost($postFields, $key, $value)
     {
-        $chunks = explode('[', $key);
-        if (count($chunks) == 1) {
+        $chunks = \explode('[', $key);
+        if (\count($chunks) == 1) {
             $postFields[$key] = $value;
             return $postFields;
         }
@@ -299,23 +299,23 @@ final class MultipartParser
             return $postFields;
         }
 
-        $chunkKey = rtrim($chunks[0], ']');
+        $chunkKey = \rtrim($chunks[0], ']');
         $parent = &$postFields;
         for ($i = 1; isset($chunks[$i]); $i++) {
             $previousChunkKey = $chunkKey;
 
             if ($previousChunkKey === '') {
                 $parent[] = array();
-                end($parent);
-                $parent = &$parent[key($parent)];
+                \end($parent);
+                $parent = &$parent[\key($parent)];
             } else {
-                if (!isset($parent[$previousChunkKey]) || !is_array($parent[$previousChunkKey])) {
+                if (!isset($parent[$previousChunkKey]) || !\is_array($parent[$previousChunkKey])) {
                     $parent[$previousChunkKey] = array();
                 }
                 $parent = &$parent[$previousChunkKey];
             }
 
-            $chunkKey = rtrim($chunks[$i], ']');
+            $chunkKey = \rtrim($chunks[$i], ']');
         }
 
         if ($chunkKey === '') {

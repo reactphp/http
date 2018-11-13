@@ -72,13 +72,13 @@ class LengthLimitedStream extends EventEmitter implements ReadableStreamInterfac
     /** @internal */
     public function handleData($data)
     {
-        if (($this->transferredLength + strlen($data)) > $this->maxLength) {
+        if (($this->transferredLength + \strlen($data)) > $this->maxLength) {
             // Only emit data until the value of 'Content-Length' is reached, the rest will be ignored
-            $data = (string)substr($data, 0, $this->maxLength - $this->transferredLength);
+            $data = (string)\substr($data, 0, $this->maxLength - $this->transferredLength);
         }
 
         if ($data !== '') {
-            $this->transferredLength += strlen($data);
+            $this->transferredLength += \strlen($data);
             $this->emit('data', array($data));
         }
 

@@ -15,14 +15,14 @@ final class IniUtil
      */
     public static function iniSizeToBytes($size)
     {
-        if (is_numeric($size)) {
+        if (\is_numeric($size)) {
             return (int)$size;
         }
 
-        $suffix = strtoupper(substr($size, -1));
-        $strippedSize = substr($size, 0, -1);
+        $suffix = \strtoupper(\substr($size, -1));
+        $strippedSize = \substr($size, 0, -1);
 
-        if (!is_numeric($strippedSize)) {
+        if (!\is_numeric($strippedSize)) {
             throw new \InvalidArgumentException("$size is not a valid ini size");
         }
 

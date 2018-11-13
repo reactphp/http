@@ -97,7 +97,7 @@ class ChunkedDecoder extends EventEmitter implements ReadableStreamInterface
 
         while ($this->buffer !== '') {
             if (!$this->headerCompleted) {
-                $positionCrlf = strpos($this->buffer, static::CRLF);
+                $positionCrlf = \strpos($this->buffer, static::CRLF);
 
                 if ($positionCrlf === false) {
                     // Header shouldn't be bigger than 1024 bytes
@@ -107,43 +107,43 @@ class ChunkedDecoder extends EventEmitter implements ReadableStreamInterface
                     return;
                 }
 
-                $header = strtolower((string)substr($this->buffer, 0, $positionCrlf));
+                $header = \strtolower((string)\substr($this->buffer, 0, $positionCrlf));
                 $hexValue = $header;
 
-                if (strpos($header, ';') !== false) {
-                    $array = explode(';', $header);
+                if (\strpos($header, ';') !== false) {
+                    $array = \explode(';', $header);
                     $hexValue = $array[0];
                 }
 
                 if ($hexValue !== '') {
-                    $hexValue = ltrim($hexValue, "0");
+                    $hexValue = \ltrim($hexValue, "0");
                     if ($hexValue === '') {
                         $hexValue = "0";
                     }
                 }
 
-                $this->chunkSize = hexdec($hexValue);
-                if (dechex($this->chunkSize) !== $hexValue) {
+                $this->chunkSize = \hexdec($hexValue);
+                if (\dechex($this->chunkSize) !== $hexValue) {
                     $this->handleError(new Exception($hexValue . ' is not a valid hexadecimal number'));
                     return;
                 }
 
-                $this->buffer = (string)substr($this->buffer, $positionCrlf + 2);
+                $this->buffer = (string)\substr($this->buffer, $positionCrlf + 2);
                 $this->headerCompleted = true;
                 if ($this->buffer === '') {
                     return;
                 }
             }
 
-            $chunk = (string)substr($this->buffer, 0, $this->chunkSize - $this->transferredSize);
+            $chunk = (string)\substr($this->buffer, 0, $this->chunkSize - $this->transferredSize);
 
             if ($chunk !== '') {
-                $this->transferredSize += strlen($chunk);
+                $this->transferredSize += \strlen($chunk);
                 $this->emit('data', array($chunk));
-                $this->buffer = (string)substr($this->buffer, strlen($chunk));
+                $this->buffer = (string)\substr($this->buffer, \strlen($chunk));
             }
 
-            $positionCrlf = strpos($this->buffer, static::CRLF);
+            $positionCrlf = \strpos($this->buffer, static::CRLF);
 
             if ($positionCrlf === 0) {
                 if ($this->chunkSize === 0) {
@@ -154,16 +154,16 @@ class ChunkedDecoder extends EventEmitter implements ReadableStreamInterface
                 $this->chunkSize = 0;
                 $this->headerCompleted = false;
                 $this->transferredSize = 0;
-                $this->buffer = (string)substr($this->buffer, 2);
+                $this->buffer = (string)\substr($this->buffer, 2);
             }
 
-            if ($positionCrlf !== 0 && $this->chunkSize === $this->transferredSize && strlen($this->buffer) > 2) {
+            if ($positionCrlf !== 0 && $this->chunkSize === $this->transferredSize && \strlen($this->buffer) > 2) {
                 // the first 2 characters are not CLRF, send error event
                 $this->handleError(new Exception('Chunk does not end with a CLRF'));
                 return;
             }
 
-            if ($positionCrlf !== 0 && strlen($this->buffer) < 2) {
+            if ($positionCrlf !== 0 && \strlen($this->buffer) < 2) {
                 // No CLRF found, wait for additional data which could be a CLRF
                 return;
             }
