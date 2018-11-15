@@ -129,8 +129,8 @@ final class LimitConcurrentRequestsMiddleware
         // get next queue position
         $queue =& $this->queue;
         $queue[] = null;
-        end($queue);
-        $id = key($queue);
+        \end($queue);
+        $id = \key($queue);
 
         $deferred = new Deferred(function ($_, $reject) use (&$queue, $id) {
             // queued promise cancelled before its next handler is invoked
@@ -200,7 +200,7 @@ final class LimitConcurrentRequestsMiddleware
             return;
         }
 
-        $first = reset($this->queue);
+        $first = \reset($this->queue);
         unset($this->queue[key($this->queue)]);
 
         $first->resolve();

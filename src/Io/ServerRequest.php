@@ -113,7 +113,7 @@ class ServerRequest extends Request implements ServerRequestInterface
 
     public function getAttribute($name, $default = null)
     {
-        if (!array_key_exists($name, $this->attributes)) {
+        if (!\array_key_exists($name, $this->attributes)) {
             return $default;
         }
         return $this->attributes[$name];
@@ -143,20 +143,20 @@ class ServerRequest extends Request implements ServerRequestInterface
         // PSR-7 `getHeaderLine('Cookies')` will return multiple
         // cookie header comma-seperated. Multiple cookie headers
         // are not allowed according to https://tools.ietf.org/html/rfc6265#section-5.4
-        if (strpos($cookie, ',') !== false) {
+        if (\strpos($cookie, ',') !== false) {
             return false;
         }
 
-        $cookieArray = explode(';', $cookie);
+        $cookieArray = \explode(';', $cookie);
         $result = array();
 
         foreach ($cookieArray as $pair) {
-            $pair = trim($pair);
-            $nameValuePair = explode('=', $pair, 2);
+            $pair = \trim($pair);
+            $nameValuePair = \explode('=', $pair, 2);
 
-            if (count($nameValuePair) === 2) {
-                $key = urldecode($nameValuePair[0]);
-                $value = urldecode($nameValuePair[1]);
+            if (\count($nameValuePair) === 2) {
+                $key = \urldecode($nameValuePair[0]);
+                $value = \urldecode($nameValuePair[1]);
                 $result[$key] = $value;
             }
         }

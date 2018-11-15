@@ -98,9 +98,9 @@ final class StreamingServer extends EventEmitter
      */
     public function __construct($requestHandler)
     {
-        if (!is_callable($requestHandler) && !is_array($requestHandler)) {
+        if (!\is_callable($requestHandler) && !\is_array($requestHandler)) {
             throw new \InvalidArgumentException('Invalid request handler given');
-        } elseif (!is_callable($requestHandler)) {
+        } elseif (!\is_callable($requestHandler)) {
             $requestHandler = new MiddlewareRunner($requestHandler);
         }
 
@@ -160,7 +160,7 @@ final class StreamingServer extends EventEmitter
         $uriLocal = $conn->getLocalAddress();
         if ($uriLocal !== null) {
             // local URI known, so translate transport scheme to application scheme
-            $uriLocal = strtr($uriLocal, array('tcp://' => 'http://', 'tls://' => 'https://'));
+            $uriLocal = \strtr($uriLocal, array('tcp://' => 'http://', 'tls://' => 'https://'));
         }
 
         $uriRemote = $conn->getRemoteAddress();
@@ -200,7 +200,7 @@ final class StreamingServer extends EventEmitter
         $contentLength = 0;
         $stream = new CloseProtectionStream($conn);
         if ($request->hasHeader('Transfer-Encoding')) {
-            if (strtolower($request->getHeaderLine('Transfer-Encoding')) !== 'chunked') {
+            if (\strtolower($request->getHeaderLine('Transfer-Encoding')) !== 'chunked') {
                 $this->emit('error', array(new \InvalidArgumentException('Only chunked-encoding is allowed for Transfer-Encoding')));
                 return $this->writeError($conn, 501, $request);
             }
@@ -229,7 +229,7 @@ final class StreamingServer extends EventEmitter
 
         $request = $request->withBody(new HttpBodyStream($stream, $contentLength));
 
-        if ($request->getProtocolVersion() !== '1.0' && '100-continue' === strtolower($request->getHeaderLine('Expect'))) {
+        if ($request->getProtocolVersion() !== '1.0' && '100-continue' === \strtolower($request->getHeaderLine('Expect'))) {
             $conn->write("HTTP/1.1 100 Continue\r\n\r\n");
         }
 
@@ -273,7 +273,7 @@ final class StreamingServer extends EventEmitter
             function ($response) use ($that, $conn, $request) {
                 if (!$response instanceof ResponseInterface) {
                     $message = 'The response callback is expected to resolve with an object implementing Psr\Http\Message\ResponseInterface, but resolved with "%s" instead.';
-                    $message = sprintf($message, is_object($response) ? get_class($response) : gettype($response));
+                    $message = \sprintf($message, \is_object($response) ? \get_class($response) : \gettype($response));
                     $exception = new \RuntimeException($message);
 
                     $that->emit('error', array($exception));
@@ -283,7 +283,7 @@ final class StreamingServer extends EventEmitter
             },
             function ($error) use ($that, $conn, $request) {
                 $message = 'The response callback is expected to resolve with an object implementing Psr\Http\Message\ResponseInterface, but rejected with "%s" instead.';
-                $message = sprintf($message, is_object($error) ? get_class($error) : gettype($error));
+                $message = \sprintf($message, \is_object($error) ? \get_class($error) : \gettype($error));
 
                 $previous = null;
 

@@ -23,7 +23,7 @@ final class RequestBodyBufferMiddleware
     public function __construct($sizeLimit = null)
     {
         if ($sizeLimit === null) {
-            $sizeLimit = ini_get('post_max_size');
+            $sizeLimit = \ini_get('post_max_size');
         }
 
         $this->sizeLimit = IniUtil::iniSizeToBytes($sizeLimit);
@@ -51,7 +51,7 @@ final class RequestBodyBufferMiddleware
         }
 
         return Stream\buffer($body, $sizeLimit)->then(function ($buffer) use ($request, $stack) {
-            $stream = new BufferStream(strlen($buffer));
+            $stream = new BufferStream(\strlen($buffer));
             $stream->write($buffer);
             $request = $request->withBody($stream);
 

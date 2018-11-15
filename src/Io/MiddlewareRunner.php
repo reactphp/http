@@ -23,7 +23,7 @@ final class MiddlewareRunner
      */
     public function __construct(array $middleware)
     {
-        $this->middleware = array_values($middleware);
+        $this->middleware = \array_values($middleware);
     }
 
     /**

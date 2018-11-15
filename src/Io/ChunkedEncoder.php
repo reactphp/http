@@ -101,7 +101,7 @@ class ChunkedEncoder extends EventEmitter implements ReadableStreamInterface
      */
     private function createChunk($data)
     {
-        $byteSize = dechex(strlen($data));
+        $byteSize = \dechex(\strlen($data));
         $chunkBeginning = $byteSize . "\r\n";
 
         return $chunkBeginning . $data . "\r\n";
