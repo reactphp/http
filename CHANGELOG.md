@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.8.4 (2019-01-16)
+
+*   Improvement: Internal refactoring to simplify response header logic.
+    (#321 by @clue)
+
+*   Improvement: Assign Content-Length response header automatically only when size is known.
+    (#329 by @clue)
+
+*   Improvement: Import global functions for better performance.
+    (#330 by @WyriHaximus)
+
 ## 0.8.3 (2018-04-11)
 
 *   Feature: Do not pause connection stream to detect closed connections immediately.

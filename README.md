@@ -1189,7 +1189,7 @@ The recommended way to install this library is [through Composer](https://getcom
 This will install the latest supported version:
 
 ```bash
-$ composer require react/http:^0.8.3
+$ composer require react/http:^0.8.4
 ```
 
 See also the [CHANGELOG](CHANGELOG.md) for details about version upgrades.
