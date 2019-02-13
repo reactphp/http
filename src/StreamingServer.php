@@ -139,7 +139,9 @@ final class StreamingServer extends EventEmitter
      *
      * $socket = new React\Socket\Server(8080, $loop);
      * $socket = new React\Socket\SecureServer($socket, $loop, array(
-     *     'local_cert' => __DIR__ . '/localhost.pem'
+     *     'local_cert' => __DIR__ . '/localhost.pem',
+     *     'verify_peer' => false,         // Used to authenticate the identity of the remote peer (client)
+     *     'verify_peer_name' => false     // Used to authenticate the identity of the remote peer (client)
      * ));
      *
      * $server->listen($socket);
