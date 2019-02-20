@@ -950,6 +950,10 @@ resumed).
 The following example shows how this middleware can be used to ensure no more
 than 10 handlers will be invoked at once:
 
+> Note, that the real concurency limit can be lower due to
+  [internal calculations](src/Server.php#L58) in [`Server`](#server)
+  based on `memory_limit` and `post_max_size` ini settings.
+
 ```php
 $server = new Server(array(
     new LimitConcurrentRequestsMiddleware(10),
