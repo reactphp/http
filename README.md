@@ -93,6 +93,11 @@ calculate a sensible limit. It assumes a maximum of a quarter of the `memory_lim
 buffering and the other three quarter for parsing and handling the requests. The limit is 
 division of half of `memory_limit` by `memory_limit` rounded up.
 
+> Make attention, __especially on development machines__, that setting `post_max_size` in php.ini to
+  high values can lead to `LimitConcurrentRequestsMiddleware` will be set with very low values.
+  For example `memory_limit = 256M` and `post_max_size = 64M` means synchronous processing
+  (one at time) of requests as `(256 / 4) / 64 = 1`.
+
 > Note that any errors emitted by the wrapped `StreamingServer` are forwarded by `Server`.
 
 ### StreamingServer
