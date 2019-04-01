@@ -51,6 +51,13 @@ class ServerRequest extends Request implements ServerRequestInterface
     ) {
         $this->serverParams = $serverParams;
         parent::__construct($method, $uri, $headers, $body, $protocolVersion);
+
+        $query = $this->getUri()->getQuery();
+        if ($query !== '') {
+            \parse_str($query, $this->queryParams);
+        }
+
+        $this->cookies = $this->parseCookie($this->getHeaderLine('Cookie'));
     }
 
     public function getServerParams()
@@ -134,17 +141,16 @@ class ServerRequest extends Request implements ServerRequestInterface
     }
 
     /**
-     * @internal
      * @param string $cookie
-     * @return boolean|mixed[]
+     * @return array
      */
-    public static function parseCookie($cookie)
+    private function parseCookie($cookie)
     {
-        // PSR-7 `getHeaderLine('Cookies')` will return multiple
+        // PSR-7 `getHeaderLine('Cookie')` will return multiple
         // cookie header comma-seperated. Multiple cookie headers
         // are not allowed according to https://tools.ietf.org/html/rfc6265#section-5.4
-        if (\strpos($cookie, ',') !== false) {
-            return false;
+        if ($cookie === '' || \strpos($cookie, ',') !== false) {
+            return array();
         }
 
         $cookieArray = \explode(';', $cookie);
