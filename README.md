@@ -13,6 +13,7 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
   * [Request](#request)
     * [Request parameters](#request-parameters)
     * [Query parameters](#query-parameters)
+    * [Request body](#request-body)
     * [Streaming request](#streaming-request)
     * [Request method](#request-method)
     * [Cookie parameters](#cookie-parameters)
@@ -308,16 +309,111 @@ like in this example to prevent
 
 See also [example #4](examples).
 
-#### Streaming request
+#### Request body
 
 If you're using the [`Server`](#server), then the request object will be
 buffered and parsed in memory and contains the full request body.
 This includes the parsed request body and any file uploads.
 
+> If you're using the advanced [`StreamingServer`](#streamingserver) class, jump
+  to the next chapter to learn more about how to process a
+  [streaming request](#streaming-request).
+
+As stated above, each incoming HTTP request is always represented by the
+[PSR-7 `ServerRequestInterface`](https://www.php-fig.org/psr/psr-7/#321-psrhttpmessageserverrequestinterface).
+This interface provides several methods that are useful when working with the
+incoming request body as described below.
+
+The `getParsedBody(): null|array|object` method can be used to
+get the parsed request body, similar to
+[PHP's `$_POST` variable](https://www.php.net/manual/en/reserved.variables.post.php).
+This method may return a (possibly nested) array structure with all body
+parameters or a `null` value if the request body could not be parsed.
+By default, this method will only return parsed data for requests using
+`Content-Type: application/x-www-form-urlencoded` or `Content-Type: multipart/form-data`
+request headers (commonly used for `POST` requests for HTML form submission data).
+
+```php
+$server = new Server(function (ServerRequestInterface $request) {
+    $name = $request->getParsedBody()['name'] ?? 'anonymous';
+
+    return new Response(
+        200,
+        array(),
+        "Hello $name!\n"
+    );
+});
+```
+
+See also [example #12](examples) for more details.
+
+The `getBody(): StreamInterface` method can be used to
+get the raw data from this request body, similar to
+[PHP's `php://input` stream](https://www.php.net/manual/en/wrappers.php.php#wrappers.php.input).
+This method returns an instance of the request body represented by the
+[PSR-7 `StreamInterface`](https://www.php-fig.org/psr/psr-7/#34-psrhttpmessagestreaminterface).
+This is particularly useful when using a custom request body that will not
+otherwise be parsed by default, such as a JSON (`Content-Type: application/json`) or
+an XML (`Content-Type: application/xml`) request body (which is commonly used for
+`POST`, `PUT` or `PATCH` requests in JSON-based or RESTful/RESTish APIs).
+
+```php
+$server = new Server(function (ServerRequestInterface $request) {
+    $data = json_decode((string)$request->getBody());
+    $name = $data->name ?? 'anonymous';
+
+    return new Response(
+        200,
+        array('Content-Type' => 'application/json'),
+        json_encode(['message' => "Hello $name!"])
+    );
+});
+```
+
+See also [example #9](examples) for more details.
+
+The `getUploadedFiles(): array` method can be used to
+get the uploaded files in this request, similar to
+[PHP's `$_FILES` variable](https://www.php.net/manual/en/reserved.variables.files.php).
+This method returns a (possibly nested) array structure with all file uploads, each represented by the
+[PSR-7 `UploadedFileInterface`](https://www.php-fig.org/psr/psr-7/#36-psrhttpmessageuploadedfileinterface).
+This array will only be filled when using the `Content-Type: multipart/form-data`
+request header (commonly used for `POST` requests for HTML file uploads).
+
+```php
+$server = new Server(function (ServerRequestInterface $request) {
+    $files = $request->getUploadedFiles();
+    $name = isset($files['avatar']) ? $files['avatar']->getClientFilename() : 'nothing';
+
+    return new Response(
+        200,
+        array(),
+        "Uploaded $name\n"
+    );
+});
+```
+
+See also [example #12](examples) for more details.
+
+The `getSize(): ?int` method can be used to
+get the size of the request body, similar to PHP's `$_SERVER['CONTENT_LENGTH']` variable.
+This method returns the complete size of the request body measured in number
+of bytes as defined by the message boundaries.
+This value may be `0` if the request message does not contain a request body
+(such as a simple `GET` request).
+This method operates on the buffered request body, i.e. the request body size
+is always known, even when the request does not specify a `Content-Length` request
+header or when using `Transfer-Encoding: chunked` for HTTP/1.1 requests.
+
+#### Streaming request
+
 If you're using the advanced [`StreamingServer`](#streamingserver), the
 request object will be processed once the request headers have been received.
 This means that this happens irrespective of (i.e. *before*) receiving the
 (potentially much larger) request body.
+
+> If you're using the [`Server`](#server) class, jump to the previous chapter
+  to learn more about how to process a buffered [request body](#request-body).
 
 While this may be uncommon in the PHP ecosystem, this is actually a very powerful
 approach that gives you several advantages not otherwise possible:
@@ -330,19 +426,20 @@ approach that gives you several advantages not otherwise possible:
 * Process a large request body without having to buffer anything in memory,
   such as accepting a huge file upload or possibly unlimited request body stream.
 
-The `getBody()` method can be used to access the request body stream.
-In the default streaming mode, this method returns a stream instance that implements both the
-[PSR-7 StreamInterface](http://www.php-fig.org/psr/psr-7/#psrhttpmessagestreaminterface)
-and the [ReactPHP ReadableStreamInterface](https://github.com/reactphp/stream#readablestreaminterface).
-However, most of the `PSR-7 StreamInterface` methods have been
-designed under the assumption of being in control of the request body.
+The `getBody(): StreamInterface` method can be used to
+access the request body stream.
+In the streaming mode, this method returns a stream instance that implements both the
+[PSR-7 `StreamInterface`](https://www.php-fig.org/psr/psr-7/#34-psrhttpmessagestreaminterface)
+and the [ReactPHP `ReadableStreamInterface`](https://github.com/reactphp/stream#readablestreaminterface).
+However, most of the PSR-7 `StreamInterface` methods have been
+designed under the assumption of being in control of a synchronous request body.
 Given that this does not apply to this server, the following
-`PSR-7 StreamInterface` methods are not used and SHOULD NOT be called:
+PSR-7 `StreamInterface` methods are not used and SHOULD NOT be called:
 `tell()`, `eof()`, `seek()`, `rewind()`, `write()` and `read()`.
 If this is an issue for your use case and/or you want to access uploaded files,
-it's highly recommended to use the
+it's highly recommended to use a buffered [request body](#request-body) or use the
 [`RequestBodyBufferMiddleware`](#requestbodybuffermiddleware) instead.
-The `ReactPHP ReadableStreamInterface` gives you access to the incoming
+The ReactPHP `ReadableStreamInterface` gives you access to the incoming
 request body as the individual chunks arrive:
 
 ```php
@@ -382,7 +479,7 @@ $server = new StreamingServer(function (ServerRequestInterface $request) {
 The above example simply counts the number of bytes received in the request body.
 This can be used as a skeleton for buffering or processing the request body.
 
-See also [example #9](examples) for more details.
+See also [example #13](examples) for more details.
 
 The `data` event will be emitted whenever new data is available on the request
 body stream.
@@ -404,14 +501,14 @@ A `close` event will be emitted after an `error` or `end` event.
 For more details about the request body stream, check out the documentation of
 [ReactPHP ReadableStreamInterface](https://github.com/reactphp/stream#readablestreaminterface).
 
-The `getSize(): ?int` method can be used if you only want to know the request
-body size.
-This method returns the complete size of the request body as defined by the
-message boundaries.
+The `getSize(): ?int` method can be used to
+get the size of the request body, similar to PHP's `$_SERVER['CONTENT_LENGTH']` variable.
+This method returns the complete size of the request body measured in number
+of bytes as defined by the message boundaries.
 This value may be `0` if the request message does not contain a request body
 (such as a simple `GET` request).
-Note that this value may be `null` if the request body size is unknown in
-advance because the request message uses `Transfer-Encoding: chunked`.
+This method operates on the streaming request body, i.e. the request body size
+may be unknown (`null`) when using `Transfer-Encoding: chunked` for HTTP/1.1 requests.
 
 ```php 
 $server = new StreamingServer(function (ServerRequestInterface $request) {
