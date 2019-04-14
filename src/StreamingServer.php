@@ -22,60 +22,63 @@ use React\Stream\ReadableStreamInterface;
 use React\Stream\WritableStreamInterface;
 
 /**
- * The `Server` class is responsible for handling incoming connections and then
+ * The advanced `StreamingServer` class is responsible for handling incoming connections and then
  * processing each incoming HTTP request.
  *
- * For each request, it executes the callback function passed to the
- * constructor with the respective [request](#request) object and expects
- * a respective [response](#response) object in return.
+ * Unlike the [`Server`](#server) class, it does not buffer and parse the incoming
+ * HTTP request body by default. This means that the request handler will be
+ * invoked with a streaming request body. Once the request headers have been
+ * received, it will invoke the request handler function. This request handler
+ * function needs to be passed to the constructor and will be invoked with the
+ * respective [request](#request) object and expects a [response](#response)
+ * object in return:
  *
  * ```php
  * $server = new StreamingServer(function (ServerRequestInterface $request) {
  *     return new Response(
  *         200,
- *         array('Content-Type' => 'text/plain'),
+ *         array(
+ *             'Content-Type' => 'text/plain'
+ *         ),
  *         "Hello World!\n"
  *     );
  * });
  * ```
  *
+ * Each incoming HTTP request message is always represented by the
+ * [PSR-7 `ServerRequestInterface`](https://www.php-fig.org/psr/psr-7/#321-psrhttpmessageserverrequestinterface),
+ * see also following [request](#request) chapter for more details.
+ * Each outgoing HTTP response message is always represented by the
+ * [PSR-7 `ResponseInterface`](https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface),
+ * see also following [response](#response) chapter for more details.
+ *
  * In order to process any connections, the server needs to be attached to an
- * instance of `React\Socket\ServerInterface` which emits underlying streaming
- * connections in order to then parse incoming data as HTTP.
+ * instance of `React\Socket\ServerInterface` through the [`listen()`](#listen) method
+ * as described in the following chapter. In its most simple form, you can attach
+ * this to a [`React\Socket\Server`](https://github.com/reactphp/socket#server)
+ * in order to start a plaintext HTTP server like this:
  *
  * ```php
- * $socket = new React\Socket\Server(8080, $loop);
+ * $server = new StreamingServer($handler);
+ *
+ * $socket = new React\Socket\Server('0.0.0.0:8080', $loop);
  * $server->listen($socket);
  * ```
  *
- * See also the [listen()](#listen) method and the [first example](examples) for more details.
+ * See also the [`listen()`](#listen) method and the [first example](examples) for more details.
  *
- * When HTTP/1.1 clients want to send a bigger request body, they MAY send only
- * the request headers with an additional `Expect: 100-continue` header and
- * wait before sending the actual (large) message body.
- * In this case the server will automatically send an intermediary
- * `HTTP/1.1 100 Continue` response to the client.
- * This ensures you will receive the request body without a delay as expected.
- * The [Response](#response) still needs to be created as described in the
- * examples above.
+ * The `StreamingServer` class is considered advanced usage and unless you know
+ * what you're doing, you're recommended to use the [`Server`](#server) class
+ * instead. The `StreamingServer` class is specifically designed to help with
+ * more advanced use cases where you want to have full control over consuming
+ * the incoming HTTP request body and concurrency settings.
  *
- * See also [request](#request) and [response](#response)
- * for more details (e.g. the request data body).
- *
- * The `Server` supports both HTTP/1.1 and HTTP/1.0 request messages.
- * If a client sends an invalid request message, uses an invalid HTTP protocol
- * version or sends an invalid `Transfer-Encoding` in the request header, it will
- * emit an `error` event, send an HTTP error response to the client and
- * close the connection:
- *
- * ```php
- * $server->on('error', function (Exception $e) {
- *     echo 'Error: ' . $e->getMessage() . PHP_EOL;
- * });
- * ```
- *
- * Note that the request object can also emit an error.
- * Check out [request](#request) for more details.
+ * In particular, this class does not buffer and parse the incoming HTTP request
+ * in memory. It will invoke the request handler function once the HTTP request
+ * headers have been received, i.e. before receiving the potentially much larger
+ * HTTP request body. This means the [request](#request) passed to your request
+ * handler function may not be fully compatible with PSR-7. See also
+ * [streaming request](#streaming-request) below for more details.
  *
  * @see Request
  * @see Response
