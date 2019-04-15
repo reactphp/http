@@ -11,7 +11,6 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
   * [Server](#server)
   * [StreamingServer](#streamingserver)
   * [listen()](#listen)
-  * [error event](#error-event)
   * [Request](#request)
     * [Request parameters](#request-parameters)
     * [Query parameters](#query-parameters)
@@ -19,6 +18,7 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
     * [Streaming request](#streaming-request)
     * [Request method](#request-method)
     * [Cookie parameters](#cookie-parameters)
+    * [Invalid request](#invalid-request)
   * [Response](#response)
     * [Deferred response](#deferred-response)
     * [Streaming response](#streaming-response)
@@ -265,41 +265,6 @@ $server->listen($socket);
 ```
 
 See also [example #11](examples) for more details.
-
-### error event
-
-The `StreamingServer` supports both HTTP/1.1 and HTTP/1.0 request messages.
-If a client sends an invalid request message, uses an invalid HTTP protocol
-version or sends an invalid `Transfer-Encoding` in the request header, it will
-emit an `error` event, send an HTTP error response to the client and
-close the connection:
-
-```php
-$server->on('error', function (Exception $e) {
-    echo 'Error: ' . $e->getMessage() . PHP_EOL;
-});
-```
-
-The server will also emit an `error` event if you return an invalid
-type in the callback function or have a unhandled `Exception` or `Throwable`.
-If your callback function throws an `Exception` or `Throwable`,
-the `StreamingServer` will emit a `RuntimeException` and add the thrown exception
-as previous:
-
-```php
-$server->on('error', function (Exception $e) {
-    echo 'Error: ' . $e->getMessage() . PHP_EOL;
-    if ($e->getPrevious() !== null) {
-        $previousException = $e->getPrevious();
-        echo $previousException->getMessage() . PHP_EOL;
-    }
-});
-```
-
-Note that the request object can also emit an error.
-Check out [request](#request) for more details.
-
-> Note that any errors emitted by the wrapped `StreamingServer` are forwarded by `Server`.
 
 ### Request
 
@@ -727,6 +692,26 @@ This encoding is also used internally when decoding the name and value of cookie
 
 See also [example #5](examples) for more details.
 
+#### Invalid request
+
+The `Server` and `StreamingServer` classes support both HTTP/1.1 and HTTP/1.0 request
+messages. If a client sends an invalid request message, uses an invalid HTTP
+protocol version or sends an invalid `Transfer-Encoding` request header value,
+the server will automatically send a `400` (Bad Request) HTTP error response
+to the client and close the connection.
+On top of this, it will emit an `error` event that can be used for logging
+purposes like this:
+
+```php
+$server->on('error', function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
+});
+```
+
+Note that the server will also emit an `error` event if you do not return a
+valid response object from your request handler function. See also
+[invalid response](#invalid-response) for more details.
+
 ### Response
 
 The callback function passed to the constructor of the [`Server`](#server) or
@@ -950,9 +935,37 @@ to the message if the same request would have used an (unconditional) `GET`.
 
 #### Invalid response
 
-An invalid return value or an unhandled `Exception` or `Throwable` in the code
-of the callback function, will result in an `500 Internal Server Error` message.
-Make sure to catch `Exceptions` or `Throwables` to create own response messages.
+As stated above, each outgoing HTTP response is always represented by the
+[PSR-7 `ResponseInterface`](https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface).
+If your request handler function returns an invalid value or throws an
+unhandled `Exception` or `Throwable`, the server will automatically send a `500`
+(Internal Server Error) HTTP error response to the client.
+On top of this, it will emit an `error` event that can be used for logging
+purposes like this:
+
+```php
+$server->on('error', function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
+    if ($e->getPrevious() !== null) {
+        echo 'Previous: ' . $e->getPrevious()->getMessage() . PHP_EOL;
+    }
+});
+```
+
+Note that the server will also emit an `error` event if the client sends an
+invalid HTTP request that never reaches your request handler function. See
+also [invalid request](#invalid-request) for more details.
+Additionally, a [streaming request](#streaming-request) body can also emit
+an `error` event on the request body.
+
+The server will only send a very generic `500` (Interval Server Error) HTTP
+error response without any further details to the client if an unhandled
+error occurs. While we understand this might make initial debugging harder,
+it also means that the server does not leak any application details or stack
+traces to the outside by default. It is usually recommended to catch any
+`Exception` or `Throwable` within your request handler function or alternatively
+use a [`middleware`](#middleware) to avoid this generic error handling and
+create your own HTTP response message instead.
 
 #### Default response headers
 
