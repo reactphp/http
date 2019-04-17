@@ -10,6 +10,7 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
 * [Usage](#usage)
   * [Server](#server)
   * [StreamingServer](#streamingserver)
+  * [listen()](#listen)
   * [Request](#request)
     * [Request parameters](#request-parameters)
     * [Query parameters](#query-parameters)
@@ -17,6 +18,7 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
     * [Streaming request](#streaming-request)
     * [Request method](#request-method)
     * [Cookie parameters](#cookie-parameters)
+    * [Invalid request](#invalid-request)
   * [Response](#response)
     * [Deferred response](#deferred-response)
     * [Streaming response](#streaming-response)
@@ -65,11 +67,10 @@ The `Server` class is responsible for handling incoming connections and then
 processing each incoming HTTP request.
 
 It buffers and parses the complete incoming HTTP request in memory. Once the
-complete request has been received, it will invoke the request handler.
-
-For each request, it executes the callback function passed to the
-constructor with the respective [request](#request) object and expects
-a respective [response](#response) object in return.
+complete request has been received, it will invoke the request handler function.
+This request handler function needs to be passed to the constructor and will be
+invoked with the respective [request](#request) object and expects a
+[response](#response) object in return:
 
 ```php
 $server = new Server(function (ServerRequestInterface $request) {
@@ -83,18 +84,79 @@ $server = new Server(function (ServerRequestInterface $request) {
 });
 ```
 
-For most users a server that buffers and parses a requests before handling it over as a 
-PSR-7 request is what they want. The `Server` facade takes care of that, and takes the more 
-advanced configuration out of hand. Under the hood it uses [StreamingServer](#streamingserver) 
-with the the three stock middleware using default settings from `php.ini`. 
+Each incoming HTTP request message is always represented by the
+[PSR-7 `ServerRequestInterface`](https://www.php-fig.org/psr/psr-7/#321-psrhttpmessageserverrequestinterface),
+see also following [request](#request) chapter for more details.
+Each outgoing HTTP response message is always represented by the
+[PSR-7 `ResponseInterface`](https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface),
+see also following [response](#response) chapter for more details.
 
-The [LimitConcurrentRequestsMiddleware](#limitconcurrentrequestsmiddleware) requires a limit, 
-as such the `Server` facade uses the `memory_limit` and `post_max_size` ini settings to 
-calculate a sensible limit. It assumes a maximum of a quarter of the `memory_limit` for 
-buffering and the other three quarter for parsing and handling the requests. The limit is 
-division of half of `memory_limit` by `memory_limit` rounded up.
+In order to process any connections, the server needs to be attached to an
+instance of `React\Socket\ServerInterface` through the [`listen()`](#listen) method
+as described in the following chapter. In its most simple form, you can attach
+this to a [`React\Socket\Server`](https://github.com/reactphp/socket#server)
+in order to start a plaintext HTTP server like this:
 
-> Note that any errors emitted by the wrapped `StreamingServer` are forwarded by `Server`.
+```php
+$server = new Server($handler);
+
+$socket = new React\Socket\Server('0.0.0.0:8080', $loop);
+$server->listen($socket);
+```
+
+See also the [`listen()`](#listen) method and the [first example](examples) for more details.
+
+The `Server` class is built as a facade around the underlying
+[`StreamingServer`](#streamingserver) to provide sane defaults for 80% of the
+use cases and is the recommended way to use this library unless you're sure
+you know what you're doing.
+
+Unlike the underlying [`StreamingServer`](#streamingserver), this class
+buffers and parses the complete incoming HTTP request in memory. Once the
+complete request has been received, it will invoke the request handler
+function. This means the [request](#request) passed to your request handler
+function will be fully compatible with PSR-7.
+
+On the other hand, buffering complete HTTP requests in memory until they can
+be processed by your request handler function means that this class has to
+employ a number of limits to avoid consuming too much memory. In order to
+take the more advanced configuration out your hand, it respects setting from
+your [`php.ini`](https://www.php.net/manual/en/ini.core.php) to apply its
+default settings. This is a list of PHP settings this class respects with
+their respective default values:
+
+```
+memory_limit 128M
+post_max_size 8M
+enable_post_data_reading 1
+max_input_nesting_level 64
+max_input_vars 1000
+
+file_uploads 1
+upload_max_filesize 2M
+max_file_uploads 20
+```
+
+In particular, the `post_max_size` setting limits how much memory a single HTTP
+request is allowed to consume while buffering its request body. On top of
+this, this class will try to avoid consuming more than 1/4 of your
+`memory_limit` for buffering multiple concurrent HTTP requests. As such, with
+the above default settings of `128M` max, it will try to consume no more than
+`32M` for buffering multiple concurrent HTTP requests. As a consequence, it
+will limit the concurrency to 4 HTTP requests with the above defaults.
+
+It is imperative that you assign reasonable values to your PHP ini settings.
+It is usually recommended to either reduce the memory a single request is
+allowed to take (set `post_max_size 1M` or less) or to increase the total memory
+limit to allow for more concurrent requests (set `memory_limit 512M` or more).
+Failure to do so means that this class may have to disable concurrency and
+only handle one request at a time.
+
+Internally, this class automatically assigns these limits to the
+[middleware](#middleware) request handlers as described below. For more
+advanced use cases, you may also use the advanced
+[`StreamingServer`](#streamingserver) and assign these middleware request
+handlers yourself as described in the following chapters.
 
 ### StreamingServer
 
@@ -103,11 +165,11 @@ processing each incoming HTTP request.
 
 Unlike the [`Server`](#server) class, it does not buffer and parse the incoming
 HTTP request body by default. This means that the request handler will be
-invoked with a streaming request body.
-
-For each request, it executes the callback function passed to the
-constructor with the respective [request](#request) object and expects
-a respective [response](#response) object in return.
+invoked with a streaming request body. Once the request headers have been
+received, it will invoke the request handler function. This request handler
+function needs to be passed to the constructor and will be invoked with the
+respective [request](#request) object and expects a [response](#response)
+object in return:
 
 ```php
 $server = new StreamingServer(function (ServerRequestInterface $request) {
@@ -121,82 +183,88 @@ $server = new StreamingServer(function (ServerRequestInterface $request) {
 });
 ```
 
-In order to process any connections, the server needs to be attached to an
-instance of `React\Socket\ServerInterface` which emits underlying streaming
-connections in order to then parse incoming data as HTTP.
+Each incoming HTTP request message is always represented by the
+[PSR-7 `ServerRequestInterface`](https://www.php-fig.org/psr/psr-7/#321-psrhttpmessageserverrequestinterface),
+see also following [request](#request) chapter for more details.
+Each outgoing HTTP response message is always represented by the
+[PSR-7 `ResponseInterface`](https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface),
+see also following [response](#response) chapter for more details.
 
-You can attach this to a
-[`React\Socket\Server`](https://github.com/reactphp/socket#server)
+In order to process any connections, the server needs to be attached to an
+instance of `React\Socket\ServerInterface` through the [`listen()`](#listen) method
+as described in the following chapter. In its most simple form, you can attach
+this to a [`React\Socket\Server`](https://github.com/reactphp/socket#server)
 in order to start a plaintext HTTP server like this:
 
 ```php
 $server = new StreamingServer($handler);
 
-$socket = new React\Socket\Server(8080, $loop);
+$socket = new React\Socket\Server('0.0.0.0:8080', $loop);
 $server->listen($socket);
 ```
 
-See also the `listen()` method and the [first example](examples) for more details.
+See also the [`listen()`](#listen) method and the [first example](examples) for more details.
 
-Similarly, you can also attach this to a
-[`React\Socket\SecureServer`](https://github.com/reactphp/socket#secureserver)
-in order to start a secure HTTPS server like this:
+The `StreamingServer` class is considered advanced usage and unless you know
+what you're doing, you're recommended to use the [`Server`](#server) class
+instead. The `StreamingServer` class is specifically designed to help with
+more advanced use cases where you want to have full control over consuming
+the incoming HTTP request body and concurrency settings.
+
+In particular, this class does not buffer and parse the incoming HTTP request
+in memory. It will invoke the request handler function once the HTTP request
+headers have been received, i.e. before receiving the potentially much larger
+HTTP request body. This means the [request](#request) passed to your request
+handler function may not be fully compatible with PSR-7. See also
+[streaming request](#streaming-request) below for more details.
+
+### listen()
+
+The `listen(React\Socket\ServerInterface $socket): void` method can be used to
+start processing connections from the given socket server.
+The given [`React\Socket\ServerInterface`](https://github.com/reactphp/socket#serverinterface)
+is responsible for emitting the underlying streaming connections.
+This HTTP server needs to be attached to it in order to process any connections
+and pase incoming streaming data as incoming HTTP request messages.
+In its most common form, you can attach this to a
+[`React\Socket\Server`](https://github.com/reactphp/socket#server)
+in order to start a plaintext HTTP server like this:
 
 ```php
+$server = new Server($handler);
+// or
 $server = new StreamingServer($handler);
 
-$socket = new React\Socket\Server(8080, $loop);
-$socket = new React\Socket\SecureServer($socket, $loop, array(
+$socket = new React\Socket\Server('0.0.0.0:8080', $loop);
+$server->listen($socket);
+```
+
+This example will start listening for HTTP requests on the alternative HTTP port
+`8080` on all interfaces (publicly). As an alternative, it is very common to use
+a reverse proxy and let this HTTP server listen on the localhost (loopback)
+interface only by using the listen address `127.0.0.1:8080` instead. This way, you
+host your application(s) on the default HTTP port `80` and only route specific
+requests to this HTTP server.
+
+Likewise, it's usually recommended to use a reverse proxy setup to accept
+secure HTTPS requests on default HTTPS port `443` (TLS termination) and only
+route plaintext requests to this HTTP server. As an alternative, you can also
+accept secure HTTPS requests with this HTTP server by attaching this to a
+[`React\Socket\Server`](https://github.com/reactphp/socket#server) using a
+secure TLS listen address, a certificate file and optional `passphrase` like this:
+
+```php
+$server = new Server($handler);
+// or
+$server = new StreamingServer($handler);
+
+$socket = new React\Socket\Server('tls://0.0.0.0:8443', $loop, array(
     'local_cert' => __DIR__ . '/localhost.pem'
 ));
-
 $server->listen($socket);
 ```
 
 See also [example #11](examples) for more details.
-
-When HTTP/1.1 clients want to send a bigger request body, they MAY send only
-the request headers with an additional `Expect: 100-continue` header and
-wait before sending the actual (large) message body.
-In this case the server will automatically send an intermediary
-`HTTP/1.1 100 Continue` response to the client.
-This ensures you will receive the request body without a delay as expected.
-The [Response](#response) still needs to be created as described in the
-examples above.
-
-See also [request](#request) and [response](#response)
-for more details (e.g. the request data body).
-
-The `StreamingServer` supports both HTTP/1.1 and HTTP/1.0 request messages.
-If a client sends an invalid request message, uses an invalid HTTP protocol
-version or sends an invalid `Transfer-Encoding` in the request header, it will
-emit an `error` event, send an HTTP error response to the client and
-close the connection:
-
-```php
-$server->on('error', function (Exception $e) {
-    echo 'Error: ' . $e->getMessage() . PHP_EOL;
-});
-```
-
-The server will also emit an `error` event if you return an invalid
-type in the callback function or have a unhandled `Exception` or `Throwable`.
-If your callback function throws an `Exception` or `Throwable`,
-the `StreamingServer` will emit a `RuntimeException` and add the thrown exception
-as previous:
-
-```php
-$server->on('error', function (Exception $e) {
-    echo 'Error: ' . $e->getMessage() . PHP_EOL;
-    if ($e->getPrevious() !== null) {
-        $previousException = $e->getPrevious();
-        echo $previousException->getMessage() . PHP_EOL;
-    }
-});
-```
-
-Note that the request object can also emit an error.
-Check out [request](#request) for more details.
 
 ### Request
 
@@ -405,6 +473,14 @@ This method operates on the buffered request body, i.e. the request body size
 is always known, even when the request does not specify a `Content-Length` request
 header or when using `Transfer-Encoding: chunked` for HTTP/1.1 requests.
 
+> Note: The `Server` automatically takes care of handling requests with the
+  additional `Expect: 100-continue` request header. When HTTP/1.1 clients want to
+  send a bigger request body, they MAY send only the request headers with an
+  additional `Expect: 100-continue` request header and wait before sending the actual
+  (large) message body. In this case the server will automatically send an
+  intermediary `HTTP/1.1 100 Continue` response to the client. This ensures you
+  will receive the request body without a delay as expected.
+
 #### Streaming request
 
 If you're using the advanced [`StreamingServer`](#streamingserver), the
@@ -536,6 +612,14 @@ $server = new StreamingServer(function (ServerRequestInterface $request) {
 });
 ```
 
+> Note: The `StreamingServer` automatically takes care of handling requests with the
+  additional `Expect: 100-continue` request header. When HTTP/1.1 clients want to
+  send a bigger request body, they MAY send only the request headers with an
+  additional `Expect: 100-continue` request header and wait before sending the actual
+  (large) message body. In this case the server will automatically send an
+  intermediary `HTTP/1.1 100 Continue` response to the client. This ensures you
+  will receive the streaming request body without a delay as expected.
+
 #### Request method
 
 Note that the server supports *any* request method (including custom and non-
@@ -607,6 +691,26 @@ This encoding is also used internally when decoding the name and value of cookie
 (which is in line with other implementations, such as PHP's cookie functions).
 
 See also [example #5](examples) for more details.
+
+#### Invalid request
+
+The `Server` and `StreamingServer` classes support both HTTP/1.1 and HTTP/1.0 request
+messages. If a client sends an invalid request message, uses an invalid HTTP
+protocol version or sends an invalid `Transfer-Encoding` request header value,
+the server will automatically send a `400` (Bad Request) HTTP error response
+to the client and close the connection.
+On top of this, it will emit an `error` event that can be used for logging
+purposes like this:
+
+```php
+$server->on('error', function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
+});
+```
+
+Note that the server will also emit an `error` event if you do not return a
+valid response object from your request handler function. See also
+[invalid response](#invalid-response) for more details.
 
 ### Response
 
@@ -831,9 +935,37 @@ to the message if the same request would have used an (unconditional) `GET`.
 
 #### Invalid response
 
-An invalid return value or an unhandled `Exception` or `Throwable` in the code
-of the callback function, will result in an `500 Internal Server Error` message.
-Make sure to catch `Exceptions` or `Throwables` to create own response messages.
+As stated above, each outgoing HTTP response is always represented by the
+[PSR-7 `ResponseInterface`](https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface).
+If your request handler function returns an invalid value or throws an
+unhandled `Exception` or `Throwable`, the server will automatically send a `500`
+(Internal Server Error) HTTP error response to the client.
+On top of this, it will emit an `error` event that can be used for logging
+purposes like this:
+
+```php
+$server->on('error', function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
+    if ($e->getPrevious() !== null) {
+        echo 'Previous: ' . $e->getPrevious()->getMessage() . PHP_EOL;
+    }
+});
+```
+
+Note that the server will also emit an `error` event if the client sends an
+invalid HTTP request that never reaches your request handler function. See
+also [invalid request](#invalid-request) for more details.
+Additionally, a [streaming request](#streaming-request) body can also emit
+an `error` event on the request body.
+
+The server will only send a very generic `500` (Interval Server Error) HTTP
+error response without any further details to the client if an unhandled
+error occurs. While we understand this might make initial debugging harder,
+it also means that the server does not leak any application details or stack
+traces to the outside by default. It is usually recommended to catch any
+`Exception` or `Throwable` within your request handler function or alternatively
+use a [`middleware`](#middleware) to avoid this generic error handling and
+create your own HTTP response message instead.
 
 #### Default response headers
 
