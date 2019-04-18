@@ -3,6 +3,7 @@
 namespace React\Http\Io;
 
 use Evenement\EventEmitter;
+use Psr\Http\Message\ServerRequestInterface;
 use RingCentral\Psr7 as g7;
 use Exception;
 
@@ -44,21 +45,24 @@ class RequestHeaderParser extends EventEmitter
 
         if (false !== $endOfHeader) {
             try {
-                $this->parseAndEmitRequest($endOfHeader);
+                $request = $this->parseRequest((string)\substr($this->buffer, 0, $endOfHeader));
             } catch (Exception $exception) {
                 $this->emit('error', array($exception));
+                $this->removeAllListeners();
+                return;
             }
+
+            $bodyBuffer = isset($this->buffer[$endOfHeader + 4]) ? \substr($this->buffer, $endOfHeader + 4) : '';
+            $this->emit('headers', array($request, $bodyBuffer));
             $this->removeAllListeners();
         }
     }
 
-    private function parseAndEmitRequest($endOfHeader)
-    {
-        $request = $this->parseRequest((string)\substr($this->buffer, 0, $endOfHeader));
-        $bodyBuffer = isset($this->buffer[$endOfHeader + 4]) ? \substr($this->buffer, $endOfHeader + 4) : '';
-        $this->emit('headers', array($request, $bodyBuffer));
-    }
-
+    /**
+     * @param string $headers buffer string containing request headers only
+     * @throws \InvalidArgumentException
+     * @return ServerRequestInterface
+     */
     private function parseRequest($headers)
     {
         // additional, stricter safe-guard for request line
