@@ -87,6 +87,7 @@ use React\Stream\WritableStreamInterface;
 final class StreamingServer extends EventEmitter
 {
     private $callback;
+    private $parser;
 
     /**
      * Creates an HTTP server that invokes the given callback for each incoming HTTP request
@@ -108,6 +109,27 @@ final class StreamingServer extends EventEmitter
         }
 
         $this->callback = $requestHandler;
+        $this->parser = new RequestHeaderParser();
+
+        $that = $this;
+        $this->parser->on('headers', function (ServerRequestInterface $request, $bodyBuffer, ConnectionInterface $conn) use ($that) {
+            $that->handleRequest($conn, $request);
+
+            if ($bodyBuffer !== '') {
+                $conn->emit('data', array($bodyBuffer));
+            }
+        });
+
+        $this->parser->on('error', function(\Exception $e, ConnectionInterface $conn) use ($that) {
+            $that->emit('error', array($e));
+
+            // parsing failed => assume dummy request and send appropriate error
+            $that->writeError(
+                $conn,
+                $e->getCode() !== 0 ? $e->getCode() : 400,
+                new ServerRequest('GET', '/')
+            );
+        });
     }
 
     /**
@@ -154,47 +176,7 @@ final class StreamingServer extends EventEmitter
      */
     public function listen(ServerInterface $socket)
     {
-        $socket->on('connection', array($this, 'handleConnection'));
-    }
-
-    /** @internal */
-    public function handleConnection(ConnectionInterface $conn)
-    {
-        $uriLocal = $conn->getLocalAddress();
-        if ($uriLocal !== null) {
-            // local URI known, so translate transport scheme to application scheme
-            $uriLocal = \strtr($uriLocal, array('tcp://' => 'http://', 'tls://' => 'https://'));
-        }
-
-        $uriRemote = $conn->getRemoteAddress();
-
-        $that = $this;
-        $parser = new RequestHeaderParser($uriLocal, $uriRemote);
-
-        $listener = array($parser, 'feed');
-        $parser->on('headers', function (ServerRequestInterface $request, $bodyBuffer) use ($conn, $listener, $that) {
-            // parsing request completed => stop feeding parser
-            $conn->removeListener('data', $listener);
-
-            $that->handleRequest($conn, $request);
-
-            if ($bodyBuffer !== '') {
-                $conn->emit('data', array($bodyBuffer));
-            }
-        });
-
-        $conn->on('data', $listener);
-        $parser->on('error', function(\Exception $e) use ($conn, $listener, $that) {
-            $conn->removeListener('data', $listener);
-            $that->emit('error', array($e));
-
-            // parsing failed => assume dummy request and send appropriate error
-            $that->writeError(
-                $conn,
-                $e->getCode() !== 0 ? $e->getCode() : 400,
-                new ServerRequest('GET', '/')
-            );
-        });
+        $socket->on('connection', array($this->parser, 'handle'));
     }
 
     /** @internal */
