@@ -199,6 +199,26 @@ class RequestHeaderParser extends EventEmitter
             }
         }
 
+        // ensure message boundaries are valid according to Content-Length and Transfer-Encoding request headers
+        if ($request->hasHeader('Transfer-Encoding')) {
+            if (\strtolower($request->getHeaderLine('Transfer-Encoding')) !== 'chunked') {
+                throw new \InvalidArgumentException('Only chunked-encoding is allowed for Transfer-Encoding', 501);
+            }
+
+            // Transfer-Encoding: chunked and Content-Length header MUST NOT be used at the same time
+            // as per https://tools.ietf.org/html/rfc7230#section-3.3.3
+            if ($request->hasHeader('Content-Length')) {
+                throw new \InvalidArgumentException('Using both `Transfer-Encoding: chunked` and `Content-Length` is not allowed', 400);
+            }
+        } elseif ($request->hasHeader('Content-Length')) {
+            $string = $request->getHeaderLine('Content-Length');
+
+            if ((string)(int)$string !== $string) {
+                // Content-Length value is not an integer or not a single integer
+                throw new \InvalidArgumentException('The value of `Content-Length` is not valid', 400);
+            }
+        }
+
         // set URI components from socket address if not already filled via Host header
         if ($request->getUri()->getHost() === '') {
             $parts = \parse_url($localSocketUri);

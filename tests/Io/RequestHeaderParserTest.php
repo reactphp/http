@@ -423,6 +423,86 @@ class RequestHeaderParserTest extends TestCase
         $this->assertSame('Received request with invalid protocol version', $error->getMessage());
     }
 
+    public function testInvalidContentLengthRequestHeaderWillEmitError()
+    {
+        $error = null;
+
+        $parser = new RequestHeaderParser();
+        $parser->on('headers', $this->expectCallableNever());
+        $parser->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(null)->getMock();
+        $parser->handle($connection);
+
+        $connection->emit('data', array("GET / HTTP/1.1\r\nContent-Length: foo\r\n\r\n"));
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+        $this->assertSame(400, $error->getCode());
+        $this->assertSame('The value of `Content-Length` is not valid', $error->getMessage());
+    }
+
+    public function testInvalidRequestWithMultipleContentLengthRequestHeadersWillEmitError()
+    {
+        $error = null;
+
+        $parser = new RequestHeaderParser();
+        $parser->on('headers', $this->expectCallableNever());
+        $parser->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(null)->getMock();
+        $parser->handle($connection);
+
+        $connection->emit('data', array("GET / HTTP/1.1\r\nContent-Length: 4\r\nContent-Length: 5\r\n\r\n"));
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+        $this->assertSame(400, $error->getCode());
+        $this->assertSame('The value of `Content-Length` is not valid', $error->getMessage());
+    }
+
+    public function testInvalidTransferEncodingRequestHeaderWillEmitError()
+    {
+        $error = null;
+
+        $parser = new RequestHeaderParser();
+        $parser->on('headers', $this->expectCallableNever());
+        $parser->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(null)->getMock();
+        $parser->handle($connection);
+
+        $connection->emit('data', array("GET / HTTP/1.1\r\nTransfer-Encoding: foo\r\n\r\n"));
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+        $this->assertSame(501, $error->getCode());
+        $this->assertSame('Only chunked-encoding is allowed for Transfer-Encoding', $error->getMessage());
+    }
+
+    public function testInvalidRequestWithBothTransferEncodingAndContentLengthWillEmitError()
+    {
+        $error = null;
+
+        $parser = new RequestHeaderParser();
+        $parser->on('headers', $this->expectCallableNever());
+        $parser->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(null)->getMock();
+        $parser->handle($connection);
+
+        $connection->emit('data', array("GET / HTTP/1.1\r\nTransfer-Encoding: chunked\r\nContent-Length: 0\r\n\r\n"));
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+        $this->assertSame(400, $error->getCode());
+        $this->assertSame('Using both `Transfer-Encoding: chunked` and `Content-Length` is not allowed', $error->getMessage());
+    }
+
     public function testServerParamsWillBeSetOnHttpsRequest()
     {
         $request = null;

@@ -185,30 +185,10 @@ final class StreamingServer extends EventEmitter
         $contentLength = 0;
         $stream = new CloseProtectionStream($conn);
         if ($request->hasHeader('Transfer-Encoding')) {
-            if (\strtolower($request->getHeaderLine('Transfer-Encoding')) !== 'chunked') {
-                $this->emit('error', array(new \InvalidArgumentException('Only chunked-encoding is allowed for Transfer-Encoding')));
-                return $this->writeError($conn, 501, $request);
-            }
-
-            // Transfer-Encoding: chunked and Content-Length header MUST NOT be used at the same time
-            // as per https://tools.ietf.org/html/rfc7230#section-3.3.3
-            if ($request->hasHeader('Content-Length')) {
-                $this->emit('error', array(new \InvalidArgumentException('Using both `Transfer-Encoding: chunked` and `Content-Length` is not allowed')));
-                return $this->writeError($conn, 400, $request);
-            }
-
-            $stream = new ChunkedDecoder($stream);
             $contentLength = null;
+            $stream = new ChunkedDecoder($stream);
         } elseif ($request->hasHeader('Content-Length')) {
-            $string = $request->getHeaderLine('Content-Length');
-
-            $contentLength = (int)$string;
-            if ((string)$contentLength !== $string) {
-                // Content-Length value is not an integer or not a single integer
-                $this->emit('error', array(new \InvalidArgumentException('The value of `Content-Length` is not valid')));
-                return $this->writeError($conn, 400, $request);
-            }
-
+            $contentLength = (int)$request->getHeaderLine('Content-Length');
             $stream = new LengthLimitedStream($stream, $contentLength);
         }
 
