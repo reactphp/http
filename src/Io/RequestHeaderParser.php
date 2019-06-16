@@ -69,9 +69,34 @@ class RequestHeaderParser extends EventEmitter
                 return;
             }
 
+            $contentLength = 0;
+            $stream = new CloseProtectionStream($conn);
+            if ($request->hasHeader('Transfer-Encoding')) {
+                $contentLength = null;
+                $stream = new ChunkedDecoder($stream);
+            } elseif ($request->hasHeader('Content-Length')) {
+                $contentLength = (int)$request->getHeaderLine('Content-Length');
+            }
+
+            if ($contentLength !== null) {
+                $stream = new LengthLimitedStream($stream, $contentLength);
+            }
+
+            $request = $request->withBody(new HttpBodyStream($stream, $contentLength));
+
             $bodyBuffer = isset($buffer[$endOfHeader + 4]) ? \substr($buffer, $endOfHeader + 4) : '';
             $buffer = '';
-            $that->emit('headers', array($request, $bodyBuffer, $conn));
+            $that->emit('headers', array($request, $conn));
+
+            if ($bodyBuffer !== '') {
+                $conn->emit('data', array($bodyBuffer));
+            }
+
+            // happy path: request body is known to be empty => immediately end stream
+            if ($contentLength === 0) {
+                $stream->emit('end');
+                $stream->close();
+            }
         });
 
         $conn->on('close', function () use (&$buffer, &$fn) {
