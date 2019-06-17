@@ -3,6 +3,8 @@
 namespace React\Http\Io;
 
 use Evenement\EventEmitter;
+use Psr\Http\Message\ServerRequestInterface;
+use React\Socket\ConnectionInterface;
 use RingCentral\Psr7 as g7;
 use Exception;
 
@@ -19,47 +21,73 @@ use Exception;
  */
 class RequestHeaderParser extends EventEmitter
 {
-    private $buffer = '';
     private $maxSize = 8192;
 
-    private $localSocketUri;
-    private $remoteSocketUri;
-
-    public function __construct($localSocketUri = null, $remoteSocketUri = null)
+    public function handle(ConnectionInterface $conn)
     {
-        $this->localSocketUri = $localSocketUri;
-        $this->remoteSocketUri = $remoteSocketUri;
-    }
+        $buffer = '';
+        $maxSize = $this->maxSize;
+        $that = $this;
+        $conn->on('data', $fn = function ($data) use (&$buffer, &$fn, $conn, $maxSize, $that) {
+            // append chunk of data to buffer and look for end of request headers
+            $buffer .= $data;
+            $endOfHeader = \strpos($buffer, "\r\n\r\n");
 
-    public function feed($data)
-    {
-        $this->buffer .= $data;
-        $endOfHeader = \strpos($this->buffer, "\r\n\r\n");
+            // reject request if buffer size is exceeded
+            if ($endOfHeader > $maxSize || ($endOfHeader === false && isset($buffer[$maxSize]))) {
+                $conn->removeListener('data', $fn);
+                $fn = null;
 
-        if ($endOfHeader > $this->maxSize || ($endOfHeader === false && isset($this->buffer[$this->maxSize]))) {
-            $this->emit('error', array(new \OverflowException("Maximum header size of {$this->maxSize} exceeded.", 431), $this));
-            $this->removeAllListeners();
-            return;
-        }
-
-        if (false !== $endOfHeader) {
-            try {
-                $this->parseAndEmitRequest($endOfHeader);
-            } catch (Exception $exception) {
-                $this->emit('error', array($exception));
+                $that->emit('error', array(
+                    new \OverflowException("Maximum header size of {$maxSize} exceeded.", 431),
+                    $conn
+                ));
+                return;
             }
-            $this->removeAllListeners();
-        }
+
+            // ignore incomplete requests
+            if ($endOfHeader === false) {
+                return;
+            }
+
+            // request headers received => try to parse request
+            $conn->removeListener('data', $fn);
+            $fn = null;
+
+            try {
+                $request = $that->parseRequest(
+                    (string)\substr($buffer, 0, $endOfHeader),
+                    $conn->getRemoteAddress(),
+                    $conn->getLocalAddress()
+                );
+            } catch (Exception $exception) {
+                $buffer = '';
+                $that->emit('error', array(
+                    $exception,
+                    $conn
+                ));
+                return;
+            }
+
+            $bodyBuffer = isset($buffer[$endOfHeader + 4]) ? \substr($buffer, $endOfHeader + 4) : '';
+            $buffer = '';
+            $that->emit('headers', array($request, $bodyBuffer, $conn));
+        });
+
+        $conn->on('close', function () use (&$buffer, &$fn) {
+            $fn = $buffer = null;
+        });
     }
 
-    private function parseAndEmitRequest($endOfHeader)
-    {
-        $request = $this->parseRequest((string)\substr($this->buffer, 0, $endOfHeader));
-        $bodyBuffer = isset($this->buffer[$endOfHeader + 4]) ? \substr($this->buffer, $endOfHeader + 4) : '';
-        $this->emit('headers', array($request, $bodyBuffer));
-    }
-
-    private function parseRequest($headers)
+    /**
+     * @param string $headers buffer string containing request headers only
+     * @param ?string $remoteSocketUri
+     * @param ?string $localSocketUri
+     * @return ServerRequestInterface
+     * @throws \InvalidArgumentException
+     * @internal
+     */
+    public function parseRequest($headers, $remoteSocketUri, $localSocketUri)
     {
         // additional, stricter safe-guard for request line
         // because request parser doesn't properly cope with invalid ones
@@ -99,8 +127,8 @@ class RequestHeaderParser extends EventEmitter
 
         // apply REMOTE_ADDR and REMOTE_PORT if source address is known
         // address should always be known, unless this is over Unix domain sockets (UDS)
-        if ($this->remoteSocketUri !== null) {
-            $remoteAddress = \parse_url($this->remoteSocketUri);
+        if ($remoteSocketUri !== null) {
+            $remoteAddress = \parse_url($remoteSocketUri);
             $serverParams['REMOTE_ADDR'] = $remoteAddress['host'];
             $serverParams['REMOTE_PORT'] = $remoteAddress['port'];
         }
@@ -108,13 +136,13 @@ class RequestHeaderParser extends EventEmitter
         // apply SERVER_ADDR and SERVER_PORT if server address is known
         // address should always be known, even for Unix domain sockets (UDS)
         // but skip UDS as it doesn't have a concept of host/port.s
-        if ($this->localSocketUri !== null) {
-            $localAddress = \parse_url($this->localSocketUri);
+        if ($localSocketUri !== null) {
+            $localAddress = \parse_url($localSocketUri);
             if (isset($localAddress['host'], $localAddress['port'])) {
                 $serverParams['SERVER_ADDR'] = $localAddress['host'];
                 $serverParams['SERVER_PORT'] = $localAddress['port'];
             }
-            if (isset($localAddress['scheme']) && $localAddress['scheme'] === 'https') {
+            if (isset($localAddress['scheme']) && $localAddress['scheme'] === 'tls') {
                 $serverParams['HTTPS'] = 'on';
             }
         }
@@ -173,7 +201,7 @@ class RequestHeaderParser extends EventEmitter
 
         // set URI components from socket address if not already filled via Host header
         if ($request->getUri()->getHost() === '') {
-            $parts = \parse_url($this->localSocketUri);
+            $parts = \parse_url($localSocketUri);
             if (!isset($parts['host'], $parts['port'])) {
                 $parts = array('host' => '127.0.0.1', 'port' => 80);
             }
@@ -194,8 +222,8 @@ class RequestHeaderParser extends EventEmitter
         }
 
         // Update request URI to "https" scheme if the connection is encrypted
-        $parts = \parse_url($this->localSocketUri);
-        if (isset($parts['scheme']) && $parts['scheme'] === 'https') {
+        $parts = \parse_url($localSocketUri);
+        if (isset($parts['scheme']) && $parts['scheme'] === 'tls') {
             // The request URI may omit default ports here, so try to parse port
             // from Host header field (if possible)
             $port = $request->getUri()->getPort();
