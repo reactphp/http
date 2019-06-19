@@ -70,19 +70,27 @@ class RequestHeaderParser extends EventEmitter
             }
 
             $contentLength = 0;
-            $stream = new CloseProtectionStream($conn);
             if ($request->hasHeader('Transfer-Encoding')) {
                 $contentLength = null;
-                $stream = new ChunkedDecoder($stream);
             } elseif ($request->hasHeader('Content-Length')) {
                 $contentLength = (int)$request->getHeaderLine('Content-Length');
             }
 
-            if ($contentLength !== null) {
-                $stream = new LengthLimitedStream($stream, $contentLength);
-            }
+            if ($contentLength === 0) {
+                // happy path: request body is known to be empty
+                $stream = new EmptyBodyStream();
+                $request = $request->withBody($stream);
+            } else {
+                // otherwise body is present => delimit using Content-Length or ChunkedDecoder
+                $stream = new CloseProtectionStream($conn);
+                if ($contentLength !== null) {
+                    $stream = new LengthLimitedStream($stream, $contentLength);
+                } else {
+                    $stream = new ChunkedDecoder($stream);
+                }
 
-            $request = $request->withBody(new HttpBodyStream($stream, $contentLength));
+                $request = $request->withBody(new HttpBodyStream($stream, $contentLength));
+            }
 
             $bodyBuffer = isset($buffer[$endOfHeader + 4]) ? \substr($buffer, $endOfHeader + 4) : '';
             $buffer = '';
@@ -160,7 +168,7 @@ class RequestHeaderParser extends EventEmitter
 
         // apply SERVER_ADDR and SERVER_PORT if server address is known
         // address should always be known, even for Unix domain sockets (UDS)
-        // but skip UDS as it doesn't have a concept of host/port.s
+        // but skip UDS as it doesn't have a concept of host/port.
         if ($localSocketUri !== null) {
             $localAddress = \parse_url($localSocketUri);
             if (isset($localAddress['host'], $localAddress['port'])) {

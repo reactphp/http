@@ -528,7 +528,12 @@ class StreamingServerTest extends TestCase
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
 
-        $data = $this->createGetRequest();
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Content-Length: 5\r\n";
+        $data .= "\r\n";
+
         $this->connection->emit('data', array($data));
     }
 
