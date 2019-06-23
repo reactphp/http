@@ -12,6 +12,9 @@
         "evenement/evenement": "^3.0 || ^2.0 || ^1.0",
         "react/promise-stream": "^1.1"
     },
+    "suggest": {
+        "psr/http-server-handler": "Allows the usage of PSR-15 compatible middlewares."
+    },
     "autoload": {
         "psr-4": {
             "React\\Http\\": "src"
