@@ -28,8 +28,9 @@ sudo: false
 
 install:
   - composer install --no-interaction
+  - if [ "$(php -v|grep 'PHP 7\.')" != "" ]; then composer require --dev psr/http-server-middleware; fi
   - if [ "$DEPENDENCIES" = "lowest" ]; then composer update --prefer-lowest -n; fi
-  
+
 script:
   - ./vendor/bin/phpunit --coverage-text
   - if [ "$DEPENDENCIES" = "lowest" ]; then php -n tests/benchmark-middleware-runner.php; fi

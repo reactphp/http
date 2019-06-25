@@ -13,7 +13,8 @@
         "react/promise-stream": "^1.1"
     },
     "suggest": {
-        "psr/http-server-handler": "Allows the usage of PSR-15 compatible middlewares."
+        "psr/http-server-handler": "Allows the usage of PSR-15 compatible middlewares.",
+        "psr/http-server-middleware": "Allows using PSR-15 compatible middlewares."
     },
     "autoload": {
         "psr-4": {
