@@ -69,9 +69,42 @@ class RequestHeaderParser extends EventEmitter
                 return;
             }
 
+            $contentLength = 0;
+            if ($request->hasHeader('Transfer-Encoding')) {
+                $contentLength = null;
+            } elseif ($request->hasHeader('Content-Length')) {
+                $contentLength = (int)$request->getHeaderLine('Content-Length');
+            }
+
+            if ($contentLength === 0) {
+                // happy path: request body is known to be empty
+                $stream = new EmptyBodyStream();
+                $request = $request->withBody($stream);
+            } else {
+                // otherwise body is present => delimit using Content-Length or ChunkedDecoder
+                $stream = new CloseProtectionStream($conn);
+                if ($contentLength !== null) {
+                    $stream = new LengthLimitedStream($stream, $contentLength);
+                } else {
+                    $stream = new ChunkedDecoder($stream);
+                }
+
+                $request = $request->withBody(new HttpBodyStream($stream, $contentLength));
+            }
+
             $bodyBuffer = isset($buffer[$endOfHeader + 4]) ? \substr($buffer, $endOfHeader + 4) : '';
             $buffer = '';
-            $that->emit('headers', array($request, $bodyBuffer, $conn));
+            $that->emit('headers', array($request, $conn));
+
+            if ($bodyBuffer !== '') {
+                $conn->emit('data', array($bodyBuffer));
+            }
+
+            // happy path: request body is known to be empty => immediately end stream
+            if ($contentLength === 0) {
+                $stream->emit('end');
+                $stream->close();
+            }
         });
 
         $conn->on('close', function () use (&$buffer, &$fn) {
@@ -135,7 +168,7 @@ class RequestHeaderParser extends EventEmitter
 
         // apply SERVER_ADDR and SERVER_PORT if server address is known
         // address should always be known, even for Unix domain sockets (UDS)
-        // but skip UDS as it doesn't have a concept of host/port.s
+        // but skip UDS as it doesn't have a concept of host/port.
         if ($localSocketUri !== null) {
             $localAddress = \parse_url($localSocketUri);
             if (isset($localAddress['host'], $localAddress['port'])) {
@@ -196,6 +229,26 @@ class RequestHeaderParser extends EventEmitter
             unset($parts['scheme'], $parts['host'], $parts['port']);
             if ($parts === false || $parts) {
                 throw new \InvalidArgumentException('Invalid Host header value');
+            }
+        }
+
+        // ensure message boundaries are valid according to Content-Length and Transfer-Encoding request headers
+        if ($request->hasHeader('Transfer-Encoding')) {
+            if (\strtolower($request->getHeaderLine('Transfer-Encoding')) !== 'chunked') {
+                throw new \InvalidArgumentException('Only chunked-encoding is allowed for Transfer-Encoding', 501);
+            }
+
+            // Transfer-Encoding: chunked and Content-Length header MUST NOT be used at the same time
+            // as per https://tools.ietf.org/html/rfc7230#section-3.3.3
+            if ($request->hasHeader('Content-Length')) {
+                throw new \InvalidArgumentException('Using both `Transfer-Encoding: chunked` and `Content-Length` is not allowed', 400);
+            }
+        } elseif ($request->hasHeader('Content-Length')) {
+            $string = $request->getHeaderLine('Content-Length');
+
+            if ((string)(int)$string !== $string) {
+                // Content-Length value is not an integer or not a single integer
+                throw new \InvalidArgumentException('The value of `Content-Length` is not valid', 400);
             }
         }
 

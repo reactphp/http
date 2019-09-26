@@ -528,7 +528,12 @@ class StreamingServerTest extends TestCase
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
 
-        $data = $this->createGetRequest();
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Content-Length: 5\r\n";
+        $data .= "\r\n";
+
         $this->connection->emit('data', array($data));
     }
 
@@ -1561,72 +1566,6 @@ class StreamingServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
-    public function testRequestWithMalformedHostWillEmitErrorAndSendErrorResponse()
-    {
-        $error = null;
-        $server = new StreamingServer($this->expectCallableNever());
-        $server->on('error', function ($message) use (&$error) {
-            $error = $message;
-        });
-
-        $buffer = '';
-
-        $this->connection
-            ->expects($this->any())
-            ->method('write')
-            ->will(
-                $this->returnCallback(
-                    function ($data) use (&$buffer) {
-                        $buffer .= $data;
-                    }
-                )
-            );
-
-        $server->listen($this->socket);
-        $this->socket->emit('connection', array($this->connection));
-
-        $data = "GET / HTTP/1.1\r\nHost: ///\r\n\r\n";
-        $this->connection->emit('data', array($data));
-
-        $this->assertInstanceOf('InvalidArgumentException', $error);
-
-        $this->assertContains("HTTP/1.1 400 Bad Request\r\n", $buffer);
-        $this->assertContains("\r\n\r\nError 400: Bad Request", $buffer);
-    }
-
-    public function testRequestWithInvalidHostUriComponentsWillEmitErrorAndSendErrorResponse()
-    {
-        $error = null;
-        $server = new StreamingServer($this->expectCallableNever());
-        $server->on('error', function ($message) use (&$error) {
-            $error = $message;
-        });
-
-        $buffer = '';
-
-        $this->connection
-            ->expects($this->any())
-            ->method('write')
-            ->will(
-                $this->returnCallback(
-                    function ($data) use (&$buffer) {
-                        $buffer .= $data;
-                    }
-                )
-            );
-
-        $server->listen($this->socket);
-        $this->socket->emit('connection', array($this->connection));
-
-        $data = "GET / HTTP/1.1\r\nHost: localhost:80/test\r\n\r\n";
-        $this->connection->emit('data', array($data));
-
-        $this->assertInstanceOf('InvalidArgumentException', $error);
-
-        $this->assertContains("HTTP/1.1 400 Bad Request\r\n", $buffer);
-        $this->assertContains("\r\n\r\nError 400: Bad Request", $buffer);
-    }
-
     public function testRequestContentLengthWillEmitDataEventAndEndEventAndAdditionalDataWillBeIgnored()
     {
         $dataEvent = $this->expectCallableOnceWith('hello');
@@ -1771,155 +1710,6 @@ class StreamingServerTest extends TestCase
         $data = "hello";
 
         $this->connection->emit('data', array($data));
-    }
-
-    public function testRequestWithBothContentLengthAndTransferEncodingWillEmitServerErrorAndSendResponse()
-    {
-        $error = null;
-        $server = new StreamingServer($this->expectCallableNever());
-        $server->on('error', function ($message) use (&$error) {
-            $error = $message;
-        });
-
-        $buffer = '';
-        $this->connection
-            ->expects($this->any())
-            ->method('write')
-            ->will(
-                $this->returnCallback(
-                    function ($data) use (&$buffer) {
-                        $buffer .= $data;
-                    }
-                )
-            );
-
-        $server->listen($this->socket);
-        $this->socket->emit('connection', array($this->connection));
-
-        $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
-        $data .= "Connection: close\r\n";
-        $data .= "Content-Length: 5\r\n";
-        $data .= "Transfer-Encoding: chunked\r\n";
-        $data .= "\r\n";
-        $data .= "hello";
-
-        $this->connection->emit('data', array($data));
-
-        $this->assertContains("HTTP/1.1 400 Bad Request\r\n", $buffer);
-        $this->assertContains("\r\n\r\nError 400: Bad Request", $buffer);
-        $this->assertInstanceOf('InvalidArgumentException', $error);
-    }
-
-    public function testRequestInvalidNonIntegerContentLengthWillEmitServerErrorAndSendResponse()
-    {
-        $error = null;
-        $server = new StreamingServer($this->expectCallableNever());
-        $server->on('error', function ($message) use (&$error) {
-            $error = $message;
-        });
-
-        $buffer = '';
-        $this->connection
-            ->expects($this->any())
-            ->method('write')
-            ->will(
-                $this->returnCallback(
-                    function ($data) use (&$buffer) {
-                        $buffer .= $data;
-                    }
-                )
-            );
-
-        $server->listen($this->socket);
-        $this->socket->emit('connection', array($this->connection));
-
-        $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
-        $data .= "Connection: close\r\n";
-        $data .= "Content-Length: bla\r\n";
-        $data .= "\r\n";
-        $data .= "hello";
-
-        $this->connection->emit('data', array($data));
-
-        $this->assertContains("HTTP/1.1 400 Bad Request\r\n", $buffer);
-        $this->assertContains("\r\n\r\nError 400: Bad Request", $buffer);
-        $this->assertInstanceOf('InvalidArgumentException', $error);
-    }
-
-    public function testRequestInvalidHeadRequestWithInvalidNonIntegerContentLengthWillEmitServerErrorAndSendResponseWithoutBody()
-    {
-        $error = null;
-        $server = new StreamingServer($this->expectCallableNever());
-        $server->on('error', function ($message) use (&$error) {
-            $error = $message;
-        });
-
-        $buffer = '';
-        $this->connection
-            ->expects($this->any())
-            ->method('write')
-            ->will(
-                $this->returnCallback(
-                    function ($data) use (&$buffer) {
-                        $buffer .= $data;
-                    }
-                )
-            );
-
-        $server->listen($this->socket);
-        $this->socket->emit('connection', array($this->connection));
-
-        $data = "HEAD / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
-        $data .= "Connection: close\r\n";
-        $data .= "Content-Length: bla\r\n";
-        $data .= "\r\n";
-        $data .= "hello";
-
-        $this->connection->emit('data', array($data));
-
-        $this->assertContains("HTTP/1.1 400 Bad Request\r\n", $buffer);
-        $this->assertNotContains("\r\n\r\nError 400: Bad Request", $buffer);
-        $this->assertInstanceOf('InvalidArgumentException', $error);
-    }
-
-    public function testRequestInvalidMultipleContentLengthWillEmitErrorOnServer()
-    {
-        $error = null;
-        $server = new StreamingServer($this->expectCallableNever());
-        $server->on('error', function ($message) use (&$error) {
-            $error = $message;
-        });
-
-        $buffer = '';
-        $this->connection
-            ->expects($this->any())
-            ->method('write')
-            ->will(
-                $this->returnCallback(
-                    function ($data) use (&$buffer) {
-                        $buffer .= $data;
-                    }
-                )
-            );
-
-        $server->listen($this->socket);
-        $this->socket->emit('connection', array($this->connection));
-
-        $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
-        $data .= "Connection: close\r\n";
-        $data .= "Content-Length: 5, 3, 4\r\n";
-        $data .= "\r\n";
-        $data .= "hello";
-
-        $this->connection->emit('data', array($data));
-
-        $this->assertContains("HTTP/1.1 400 Bad Request\r\n", $buffer);
-        $this->assertContains("\r\n\r\nError 400: Bad Request", $buffer);
-        $this->assertInstanceOf('InvalidArgumentException', $error);
     }
 
     public function testRequestInvalidChunkHeaderTooLongWillEmitErrorOnRequestStream()
@@ -2400,78 +2190,6 @@ class StreamingServerTest extends TestCase
         $this->connection->emit('data', array($data));
 
         $this->assertEquals("HTTP/1.1 200 OK\r\nSet-Cookie: name=test\r\nSet-Cookie: session=abc\r\nContent-Length: 0\r\nConnection: close\r\n\r\n", $buffer);
-    }
-
-    public function testRequestOnlyChunkedEncodingIsAllowedForTransferEncoding()
-    {
-        $error = null;
-
-        $server = new StreamingServer($this->expectCallableNever());
-        $server->on('error', function ($exception) use (&$error) {
-            $error = $exception;
-        });
-
-        $buffer = '';
-        $this->connection
-            ->expects($this->any())
-            ->method('write')
-            ->will(
-                $this->returnCallback(
-                    function ($data) use (&$buffer) {
-                        $buffer .= $data;
-                    }
-                )
-            );
-
-        $server->listen($this->socket);
-        $this->socket->emit('connection', array($this->connection));
-
-        $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
-        $data .= "Connection: close\r\n";
-        $data .= "Transfer-Encoding: custom\r\n";
-        $data .= "\r\n";
-
-        $this->connection->emit('data', array($data));
-
-        $this->assertContains("HTTP/1.1 501 Not Implemented\r\n", $buffer);
-        $this->assertContains("\r\n\r\nError 501: Not Implemented", $buffer);
-        $this->assertInstanceOf('InvalidArgumentException', $error);
-    }
-
-    public function testRequestOnlyChunkedEncodingIsAllowedForTransferEncodingWithHttp10()
-    {
-        $error = null;
-
-        $server = new StreamingServer($this->expectCallableNever());
-        $server->on('error', function ($exception) use (&$error) {
-            $error = $exception;
-        });
-
-        $buffer = '';
-        $this->connection
-            ->expects($this->any())
-            ->method('write')
-            ->will(
-                $this->returnCallback(
-                    function ($data) use (&$buffer) {
-                        $buffer .= $data;
-                    }
-                )
-            );
-
-        $server->listen($this->socket);
-        $this->socket->emit('connection', array($this->connection));
-
-        $data = "GET / HTTP/1.0\r\n";
-        $data .= "Transfer-Encoding: custom\r\n";
-        $data .= "\r\n";
-
-        $this->connection->emit('data', array($data));
-
-        $this->assertContains("HTTP/1.0 501 Not Implemented\r\n", $buffer);
-        $this->assertContains("\r\n\r\nError 501: Not Implemented", $buffer);
-        $this->assertInstanceOf('InvalidArgumentException', $error);
     }
 
     public function testReponseWithExpectContinueRequestContainsContinueWithLaterResponse()

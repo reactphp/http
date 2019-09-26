@@ -112,12 +112,8 @@ final class StreamingServer extends EventEmitter
         $this->parser = new RequestHeaderParser();
 
         $that = $this;
-        $this->parser->on('headers', function (ServerRequestInterface $request, $bodyBuffer, ConnectionInterface $conn) use ($that) {
+        $this->parser->on('headers', function (ServerRequestInterface $request, ConnectionInterface $conn) use ($that) {
             $that->handleRequest($conn, $request);
-
-            if ($bodyBuffer !== '') {
-                $conn->emit('data', array($bodyBuffer));
-            }
         });
 
         $this->parser->on('error', function(\Exception $e, ConnectionInterface $conn) use ($that) {
@@ -182,38 +178,6 @@ final class StreamingServer extends EventEmitter
     /** @internal */
     public function handleRequest(ConnectionInterface $conn, ServerRequestInterface $request)
     {
-        $contentLength = 0;
-        $stream = new CloseProtectionStream($conn);
-        if ($request->hasHeader('Transfer-Encoding')) {
-            if (\strtolower($request->getHeaderLine('Transfer-Encoding')) !== 'chunked') {
-                $this->emit('error', array(new \InvalidArgumentException('Only chunked-encoding is allowed for Transfer-Encoding')));
-                return $this->writeError($conn, 501, $request);
-            }
-
-            // Transfer-Encoding: chunked and Content-Length header MUST NOT be used at the same time
-            // as per https://tools.ietf.org/html/rfc7230#section-3.3.3
-            if ($request->hasHeader('Content-Length')) {
-                $this->emit('error', array(new \InvalidArgumentException('Using both `Transfer-Encoding: chunked` and `Content-Length` is not allowed')));
-                return $this->writeError($conn, 400, $request);
-            }
-
-            $stream = new ChunkedDecoder($stream);
-            $contentLength = null;
-        } elseif ($request->hasHeader('Content-Length')) {
-            $string = $request->getHeaderLine('Content-Length');
-
-            $contentLength = (int)$string;
-            if ((string)$contentLength !== $string) {
-                // Content-Length value is not an integer or not a single integer
-                $this->emit('error', array(new \InvalidArgumentException('The value of `Content-Length` is not valid')));
-                return $this->writeError($conn, 400, $request);
-            }
-
-            $stream = new LengthLimitedStream($stream, $contentLength);
-        }
-
-        $request = $request->withBody(new HttpBodyStream($stream, $contentLength));
-
         if ($request->getProtocolVersion() !== '1.0' && '100-continue' === \strtolower($request->getHeaderLine('Expect'))) {
             $conn->write("HTTP/1.1 100 Continue\r\n\r\n");
         }
@@ -235,12 +199,6 @@ final class StreamingServer extends EventEmitter
             $conn->on('close', function () use ($response) {
                 $response->cancel();
             });
-        }
-
-        // happy path: request body is known to be empty => immediately end stream
-        if ($contentLength === 0) {
-            $stream->emit('end');
-            $stream->close();
         }
 
         // happy path: response returned, handle and return immediately

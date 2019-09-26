@@ -4,6 +4,7 @@ namespace React\Tests\Http\Io;
 
 use React\Http\Io\RequestHeaderParser;
 use React\Tests\Http\TestCase;
+use Psr\Http\Message\ServerRequestInterface;
 
 class RequestHeaderParserTest extends TestCase
 {
@@ -59,16 +60,14 @@ class RequestHeaderParserTest extends TestCase
         $this->assertEquals(2, $called);
     }
 
-    public function testHeadersEventShouldReturnRequestAndBodyBufferAndConnection()
+    public function testHeadersEventShouldEmitRequestAndConnection()
     {
         $request = null;
-        $bodyBuffer = null;
         $conn = null;
 
         $parser = new RequestHeaderParser();
-        $parser->on('headers', function ($parsedRequest, $parsedBodyBuffer, $connection) use (&$request, &$bodyBuffer, &$conn) {
+        $parser->on('headers', function ($parsedRequest, $connection) use (&$request, &$conn) {
             $request = $parsedRequest;
-            $bodyBuffer = $parsedBodyBuffer;
             $conn = $connection;
         });
 
@@ -76,7 +75,6 @@ class RequestHeaderParserTest extends TestCase
         $parser->handle($connection);
 
         $data = $this->createGetRequest();
-        $data .= 'RANDOM DATA';
         $connection->emit('data', array($data));
 
         $this->assertInstanceOf('Psr\Http\Message\RequestInterface', $request);
@@ -85,28 +83,135 @@ class RequestHeaderParserTest extends TestCase
         $this->assertSame('1.1', $request->getProtocolVersion());
         $this->assertSame(array('Host' => array('example.com'), 'Connection' => array('close')), $request->getHeaders());
 
-        $this->assertSame('RANDOM DATA', $bodyBuffer);
-
         $this->assertSame($connection, $conn);
     }
 
-    public function testHeadersEventShouldReturnBinaryBodyBuffer()
+    public function testHeadersEventShouldEmitRequestWhichShouldEmitEndForStreamingBodyWithoutContentLengthFromInitialRequestBody()
     {
-        $bodyBuffer = null;
-
         $parser = new RequestHeaderParser();
-        $parser->on('headers', function ($parsedRequest, $parsedBodyBuffer) use (&$bodyBuffer) {
-            $bodyBuffer = $parsedBodyBuffer;
+
+        $ended = false;
+        $that = $this;
+        $parser->on('headers', function (ServerRequestInterface $request) use (&$ended, $that) {
+            $body = $request->getBody();
+            $that->assertInstanceOf('React\Stream\ReadableStreamInterface', $body);
+
+            $body->on('end', function () use (&$ended) {
+                $ended = true;
+            });
         });
 
         $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(null)->getMock();
         $parser->handle($connection);
 
-        $data = $this->createGetRequest();
-        $data .= "\0x01\0x02\0x03\0x04\0x05";
+        $data = "GET / HTTP/1.0\r\n\r\n";
         $connection->emit('data', array($data));
 
-        $this->assertSame("\0x01\0x02\0x03\0x04\0x05", $bodyBuffer);
+        $this->assertTrue($ended);
+    }
+
+    public function testHeadersEventShouldEmitRequestWhichShouldEmitStreamingBodyDataFromInitialRequestBody()
+    {
+        $parser = new RequestHeaderParser();
+
+        $buffer = '';
+        $that = $this;
+        $parser->on('headers', function (ServerRequestInterface $request) use (&$buffer, $that) {
+            $body = $request->getBody();
+            $that->assertInstanceOf('React\Stream\ReadableStreamInterface', $body);
+
+            $body->on('data', function ($chunk) use (&$buffer) {
+                $buffer .= $chunk;
+            });
+            $body->on('end', function () use (&$buffer) {
+                $buffer .= '.';
+            });
+        });
+
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(null)->getMock();
+        $parser->handle($connection);
+
+        $data = "POST / HTTP/1.0\r\nContent-Length: 11\r\n\r\n";
+        $data .= 'RANDOM DATA';
+        $connection->emit('data', array($data));
+
+        $this->assertSame('RANDOM DATA.', $buffer);
+    }
+
+    public function testHeadersEventShouldEmitRequestWhichShouldEmitStreamingBodyWithPlentyOfDataFromInitialRequestBody()
+    {
+        $parser = new RequestHeaderParser();
+
+        $buffer = '';
+        $that = $this;
+        $parser->on('headers', function (ServerRequestInterface $request) use (&$buffer, $that) {
+            $body = $request->getBody();
+            $that->assertInstanceOf('React\Stream\ReadableStreamInterface', $body);
+
+            $body->on('data', function ($chunk) use (&$buffer) {
+                $buffer .= $chunk;
+            });
+        });
+
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(null)->getMock();
+        $parser->handle($connection);
+
+        $size = 10000;
+        $data = "POST / HTTP/1.0\r\nContent-Length: $size\r\n\r\n";
+        $data .= str_repeat('x', $size);
+        $connection->emit('data', array($data));
+
+        $this->assertSame($size, strlen($buffer));
+    }
+
+    public function testHeadersEventShouldEmitRequestWhichShouldNotEmitStreamingBodyDataWithoutContentLengthFromInitialRequestBody()
+    {
+        $parser = new RequestHeaderParser();
+
+        $buffer = '';
+        $that = $this;
+        $parser->on('headers', function (ServerRequestInterface $request) use (&$buffer, $that) {
+            $body = $request->getBody();
+            $that->assertInstanceOf('React\Stream\ReadableStreamInterface', $body);
+
+            $body->on('data', function ($chunk) use (&$buffer) {
+                $buffer .= $chunk;
+            });
+        });
+
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(null)->getMock();
+        $parser->handle($connection);
+
+        $data = "POST / HTTP/1.0\r\n\r\n";
+        $data .= 'RANDOM DATA';
+        $connection->emit('data', array($data));
+
+        $this->assertSame('', $buffer);
+    }
+
+    public function testHeadersEventShouldEmitRequestWhichShouldEmitStreamingBodyDataUntilContentLengthBoundaryFromInitialRequestBody()
+    {
+        $parser = new RequestHeaderParser();
+
+        $buffer = '';
+        $that = $this;
+        $parser->on('headers', function (ServerRequestInterface $request) use (&$buffer, $that) {
+            $body = $request->getBody();
+            $that->assertInstanceOf('React\Stream\ReadableStreamInterface', $body);
+
+            $body->on('data', function ($chunk) use (&$buffer) {
+                $buffer .= $chunk;
+            });
+        });
+
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(null)->getMock();
+        $parser->handle($connection);
+
+        $data = "POST / HTTP/1.0\r\nContent-Length: 6\r\n\r\n";
+        $data .= 'RANDOM DATA';
+        $connection->emit('data', array($data));
+
+        $this->assertSame('RANDOM', $buffer);
     }
 
     public function testHeadersEventShouldParsePathAndQueryString()
@@ -114,7 +219,7 @@ class RequestHeaderParserTest extends TestCase
         $request = null;
 
         $parser = new RequestHeaderParser();
-        $parser->on('headers', function ($parsedRequest, $parsedBodyBuffer) use (&$request) {
+        $parser->on('headers', function ($parsedRequest) use (&$request) {
             $request = $parsedRequest;
         });
 
@@ -195,35 +300,6 @@ class RequestHeaderParserTest extends TestCase
         $this->assertInstanceOf('OverflowException', $error);
         $this->assertSame('Maximum header size of 8192 exceeded.', $error->getMessage());
         $this->assertSame($connection, $passedConnection);
-    }
-
-    public function testHeaderOverflowShouldNotEmitErrorWhenDataExceedsMaxHeaderSize()
-    {
-        $request = null;
-        $bodyBuffer = null;
-
-        $parser = new RequestHeaderParser();
-        $parser->on('headers', function ($parsedRequest, $parsedBodyBuffer) use (&$request, &$bodyBuffer) {
-            $request = $parsedRequest;
-            $bodyBuffer = $parsedBodyBuffer;
-        });
-
-        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(null)->getMock();
-        $parser->handle($connection);
-
-        $data = $this->createAdvancedPostRequest();
-        $body = str_repeat('A', 8193 - strlen($data));
-        $data .= $body;
-        $connection->emit('data', array($data));
-
-        $headers = array(
-            'Host' => array('example.com'),
-            'User-Agent' => array('react/alpha'),
-            'Connection' => array('close'),
-        );
-        $this->assertSame($headers, $request->getHeaders());
-
-        $this->assertSame($body, $bodyBuffer);
     }
 
     public function testInvalidEmptyRequestHeadersParseException()
@@ -421,6 +497,86 @@ class RequestHeaderParserTest extends TestCase
         $this->assertInstanceOf('InvalidArgumentException', $error);
         $this->assertSame(505, $error->getCode());
         $this->assertSame('Received request with invalid protocol version', $error->getMessage());
+    }
+
+    public function testInvalidContentLengthRequestHeaderWillEmitError()
+    {
+        $error = null;
+
+        $parser = new RequestHeaderParser();
+        $parser->on('headers', $this->expectCallableNever());
+        $parser->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(null)->getMock();
+        $parser->handle($connection);
+
+        $connection->emit('data', array("GET / HTTP/1.1\r\nContent-Length: foo\r\n\r\n"));
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+        $this->assertSame(400, $error->getCode());
+        $this->assertSame('The value of `Content-Length` is not valid', $error->getMessage());
+    }
+
+    public function testInvalidRequestWithMultipleContentLengthRequestHeadersWillEmitError()
+    {
+        $error = null;
+
+        $parser = new RequestHeaderParser();
+        $parser->on('headers', $this->expectCallableNever());
+        $parser->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(null)->getMock();
+        $parser->handle($connection);
+
+        $connection->emit('data', array("GET / HTTP/1.1\r\nContent-Length: 4\r\nContent-Length: 5\r\n\r\n"));
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+        $this->assertSame(400, $error->getCode());
+        $this->assertSame('The value of `Content-Length` is not valid', $error->getMessage());
+    }
+
+    public function testInvalidTransferEncodingRequestHeaderWillEmitError()
+    {
+        $error = null;
+
+        $parser = new RequestHeaderParser();
+        $parser->on('headers', $this->expectCallableNever());
+        $parser->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(null)->getMock();
+        $parser->handle($connection);
+
+        $connection->emit('data', array("GET / HTTP/1.1\r\nTransfer-Encoding: foo\r\n\r\n"));
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+        $this->assertSame(501, $error->getCode());
+        $this->assertSame('Only chunked-encoding is allowed for Transfer-Encoding', $error->getMessage());
+    }
+
+    public function testInvalidRequestWithBothTransferEncodingAndContentLengthWillEmitError()
+    {
+        $error = null;
+
+        $parser = new RequestHeaderParser();
+        $parser->on('headers', $this->expectCallableNever());
+        $parser->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(null)->getMock();
+        $parser->handle($connection);
+
+        $connection->emit('data', array("GET / HTTP/1.1\r\nTransfer-Encoding: chunked\r\nContent-Length: 0\r\n\r\n"));
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+        $this->assertSame(400, $error->getCode());
+        $this->assertSame('Using both `Transfer-Encoding: chunked` and `Content-Length` is not allowed', $error->getMessage());
     }
 
     public function testServerParamsWillBeSetOnHttpsRequest()
