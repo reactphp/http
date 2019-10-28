@@ -340,6 +340,50 @@ class RequestHeaderParserTest extends TestCase
         $this->assertSame('Unable to parse invalid request-line', $error->getMessage());
     }
 
+    /**
+     * @group a
+     */
+    public function testInvalidMalformedRequestHeadersThrowsParseException()
+    {
+        $error = null;
+
+        $parser = new RequestHeaderParser();
+        $parser->on('headers', $this->expectCallableNever());
+        $parser->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(null)->getMock();
+        $parser->handle($connection);
+
+        $connection->emit('data', array("GET / HTTP/1.1\r\nHost : yes\r\n\r\n"));
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+        $this->assertSame('Unable to parse invalid request header fields', $error->getMessage());
+    }
+
+    /**
+     * @group a
+     */
+    public function testInvalidMalformedRequestHeadersWhitespaceThrowsParseException()
+    {
+        $error = null;
+
+        $parser = new RequestHeaderParser();
+        $parser->on('headers', $this->expectCallableNever());
+        $parser->on('error', function ($message) use (&$error) {
+            $error = $message;
+        });
+
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(null)->getMock();
+        $parser->handle($connection);
+
+        $connection->emit('data', array("GET / HTTP/1.1\r\nHost: yes\rFoo: bar\r\n\r\n"));
+
+        $this->assertInstanceOf('InvalidArgumentException', $error);
+        $this->assertSame('Unable to parse invalid request header fields', $error->getMessage());
+    }
+
     public function testInvalidAbsoluteFormSchemeEmitsError()
     {
         $error = null;
@@ -400,7 +444,7 @@ class RequestHeaderParserTest extends TestCase
         $connection->emit('data', array("GET ://example.com:80/ HTTP/1.0\r\n\r\n"));
 
         $this->assertInstanceOf('InvalidArgumentException', $error);
-        $this->assertSame('Invalid request string', $error->getMessage());
+        $this->assertSame('Invalid absolute-form request-target', $error->getMessage());
     }
 
     public function testInvalidAbsoluteFormWithFragmentEmitsError()
