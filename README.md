@@ -371,7 +371,7 @@ $server = new Server(function (ServerRequestInterface $request) {
 
 The response in the above example will return a response body with a link.
 The URL contains the query parameter `foo` with the value `bar`.
-Use [`htmlentities`](http://php.net/manual/en/function.htmlentities.php)
+Use [`htmlentities`](https://www.php.net/manual/en/function.htmlentities.php)
 like in this example to prevent
 [Cross-Site Scripting (abbreviated as XSS)](https://en.wikipedia.org/wiki/Cross-site_scripting).
 
@@ -1054,7 +1054,7 @@ A middleware request handler is expected to adhere the following rules:
 * It returns either:
   * An instance implementing `ResponseInterface` for direct consumption.
   * Any promise which can be consumed by
-    [`Promise\resolve()`](http://reactphp.org/promise/#resolve) resolving to a
+    [`Promise\resolve()`](https://reactphp.org/promise/#resolve) resolving to a
   `ResponseInterface` for deferred consumption.
   * It MAY throw an `Exception` (or return a rejected promise) in order to
     signal an error condition and abort the chain.
@@ -1113,7 +1113,7 @@ Note that as per the above documentation, the `$next` middleware request handler
 `ResponseInterface` directly or one wrapped in a promise for deferred
 resolution.
 In order to simplify handling both paths, you can simply wrap this in a
-[`Promise\resolve()`](http://reactphp.org/promise/#resolve) call like this:
+[`Promise\resolve()`](https://reactphp.org/promise/#resolve) call like this:
 
 ```php
 $server = new Server(array(
@@ -1135,7 +1135,7 @@ The previous example does not catch any exceptions and would thus signal an
 error condition to the `Server`.
 Alternatively, you can also catch any `Exception` to implement custom error
 handling logic (or logging etc.) by wrapping this in a
-[`Promise`](http://reactphp.org/promise/#promise) like this:
+[`Promise`](https://reactphp.org/promise/#promise) like this:
 
 ```php
 $server = new Server(array(
@@ -1326,7 +1326,7 @@ $server = new StreamingServer(array((
 See also [example #12](examples) for more details.
 
 By default, this middleware respects the
-[`upload_max_filesize`](http://php.net/manual/en/ini.core.php#ini.upload-max-filesize)
+[`upload_max_filesize`](https://www.php.net/manual/en/ini.core.php#ini.upload-max-filesize)
 (default `2M`) ini setting.
 Files that exceed this limit will be rejected with an `UPLOAD_ERR_INI_SIZE` error.
 You can control the maximum filesize for each individual file upload by
@@ -1338,9 +1338,9 @@ new RequestBodyParserMiddleware(8 * 1024 * 1024); // 8 MiB limit per file
 ```
 
 By default, this middleware respects the
-[`file_uploads`](http://php.net/manual/en/ini.core.php#ini.file-uploads)
+[`file_uploads`](https://www.php.net/manual/en/ini.core.php#ini.file-uploads)
 (default `1`) and
-[`max_file_uploads`](http://php.net/manual/en/ini.core.php#ini.max-file-uploads)
+[`max_file_uploads`](https://www.php.net/manual/en/ini.core.php#ini.max-file-uploads)
 (default `20`) ini settings.
 These settings control if any and how many files can be uploaded in a single request.
 If you upload more files in a single request, additional files will be ignored
@@ -1370,13 +1370,13 @@ new RequestBodyParserMiddleware(10 * 1024, 100); // 100 files with 10 KiB each
   Files that exceed this limit will be rejected with an `UPLOAD_ERR_FORM_SIZE` error.
 
 > This middleware respects the
-  [`max_input_vars`](http://php.net/manual/en/info.configuration.php#ini.max-input-vars)
+  [`max_input_vars`](https://www.php.net/manual/en/info.configuration.php#ini.max-input-vars)
   (default `1000`) and
-  [`max_input_nesting_level`](http://php.net/manual/en/info.configuration.php#ini.max-input-nesting-level)
+  [`max_input_nesting_level`](https://www.php.net/manual/en/info.configuration.php#ini.max-input-nesting-level)
   (default `64`) ini settings.
 
 > Note that this middleware ignores the
-  [`enable_post_data_reading`](http://php.net/manual/en/ini.core.php#ini.enable-post-data-reading)
+  [`enable_post_data_reading`](https://www.php.net/manual/en/ini.core.php#ini.enable-post-data-reading)
   (default `1`) ini setting because it makes little sense to respect here and
   is left up to higher-level implementations.
   If you want to respect this setting, you have to check its value and
@@ -1418,7 +1418,7 @@ The recommended way to install this library is [through Composer](https://getcom
 This will install the latest supported version:
 
 ```bash
-$ composer require react/http:^0.8.4
+$ composer require react/http:^0.8.5
 ```
 
 See also the [CHANGELOG](CHANGELOG.md) for details about version upgrades.
