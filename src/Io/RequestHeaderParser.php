@@ -166,6 +166,19 @@ class RequestHeaderParser extends EventEmitter
         if (isset($localParts['scheme']) && $localParts['scheme'] === 'tls') {
             $scheme = 'https://';
             $serverParams['HTTPS'] = 'on';
+            
+            // Try and get the SSL info from the stream
+            $sslOptions = stream_context_get_options($conn->stream);
+            
+            // If there appears to be a client cert and it can be exported, add it to the server params
+            if(!empty($sslOptions['ssl']['peer_certificate'])) {
+                $cert = false;
+                // SSL_CLIENT_CERT
+                openssl_x509_export($sslOptions['ssl']['peer_certificate'], $cert);
+                if($cert){
+                    $serverParams['SSL_CLIENT_CERT'] = $cert;
+                }
+            }
         } else {
             $scheme = 'http://';
         }
