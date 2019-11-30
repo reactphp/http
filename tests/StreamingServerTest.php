@@ -2790,6 +2790,25 @@ class StreamingServerTest extends TestCase
         $this->assertEquals(array('hello' => 'world', 'test' => 'abc'), $requestValidation->getCookieParams());
     }
 
+    public function testRequestCookieWithCommaValueWillBeAddedToServerRequest() {
+        $requestValidation = null;
+        $server = new StreamingServer(function (ServerRequestInterface $request) use (&$requestValidation) {
+            $requestValidation = $request;
+        });
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n";
+        $data .= "Host: example.com:80\r\n";
+        $data .= "Connection: close\r\n";
+        $data .= "Cookie: test=abc,def; hello=world\r\n";
+        $data .= "\r\n";
+
+        $this->connection->emit('data', array($data));
+        $this->assertEquals(array('test' => 'abc,def', 'hello' => 'world'), $requestValidation->getCookieParams());
+    }
+
     private function createGetRequest()
     {
         $data = "GET / HTTP/1.1\r\n";
