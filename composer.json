@@ -19,6 +19,6 @@
     },
     "require-dev": {
         "clue/block-react": "^1.1",
-        "phpunit/phpunit": "^6.4 || ^5.7 || ^4.8.35"
+        "phpunit/phpunit": "^7.0 || ^6.4 || ^5.7 || ^4.8.35"
     }
 }
