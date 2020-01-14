@@ -5,13 +5,19 @@
     "license": "MIT",
     "require": {
         "php": ">=5.3.0",
+        "evenement/evenement": "^3.0 || ^2.0 || ^1.0",
         "ringcentral/psr7": "^1.2",
         "react/socket": "^1.0 || ^0.8.3",
         "react/stream": "^1.0 || ^0.7.1",
-        "react/promise": "^2.3 || ^1.2.1",
-        "evenement/evenement": "^3.0 || ^2.0 || ^1.0",
-        "react/promise-stream": "^1.1"
+        "react/promise": "dev-master as 2.999.999",
+        "react/promise-timer": "dev-promise-3 as 1.6.0"
     },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/WyriHaximus-labs/promise-timer"
+        }
+    ],
     "autoload": {
         "psr-4": {
             "React\\Http\\": "src"
