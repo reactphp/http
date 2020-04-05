@@ -82,7 +82,7 @@ use React\Stream\WritableStreamInterface;
  * @see Response
  * @see self::listen()
  */
-final class StreamingServer extends EventEmitter
+class StreamingServer extends EventEmitter
 {
     private $callback;
     private $parser;
