@@ -9,15 +9,13 @@ use React\Socket\ConnectionInterface;
 use Exception;
 
 /**
- * [Internal] Parses an incoming request header from an input stream
+ * Parses an incoming request header from an input stream
  *
  * This is used internally to parse the request header from the connection and
  * then process the remaining connection as the request body.
  *
  * @event headers
  * @event error
- *
- * @internal
  */
 class RequestHeaderParser extends EventEmitter implements RequestParserInterface
 {
