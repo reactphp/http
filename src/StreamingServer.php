@@ -11,6 +11,7 @@ use React\Http\Io\CloseProtectionStream;
 use React\Http\Io\HttpBodyStream;
 use React\Http\Io\LengthLimitedStream;
 use React\Http\Io\MiddlewareRunner;
+use React\Http\Io\RequestParserInterface;
 use React\Http\Io\RequestHeaderParser;
 use React\Http\Io\ServerRequest;
 use React\Promise;
@@ -109,7 +110,7 @@ final class StreamingServer extends EventEmitter
         }
 
         $this->callback = $requestHandler;
-        $this->parser = new RequestHeaderParser();
+	    $this->parser = $this->createParser();
 
         $that = $this;
         $this->parser->on('headers', function (ServerRequestInterface $request, ConnectionInterface $conn) use ($that) {
@@ -126,6 +127,14 @@ final class StreamingServer extends EventEmitter
                 new ServerRequest('GET', '/')
             );
         });
+    }
+
+	/**
+	 * @return RequestParserInterface
+	 */
+    protected function createParser()
+    {
+	    return new RequestHeaderParser();
     }
 
     /**

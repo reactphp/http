@@ -4,6 +4,7 @@ namespace React\Http\Io;
 
 use Evenement\EventEmitter;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\UriInterface;
 use React\Socket\ConnectionInterface;
 use Exception;
 
@@ -18,7 +19,7 @@ use Exception;
  *
  * @internal
  */
-class RequestHeaderParser extends EventEmitter
+class RequestHeaderParser extends EventEmitter implements RequestParserInterface
 {
     private $maxSize = 8192;
 
@@ -112,12 +113,7 @@ class RequestHeaderParser extends EventEmitter
     }
 
     /**
-     * @param string $headers buffer string containing request headers only
-     * @param ?string $remoteSocketUri
-     * @param ?string $localSocketUri
-     * @return ServerRequestInterface
-     * @throws \InvalidArgumentException
-     * @internal
+     * @inheritDoc
      */
     public function parseRequest($headers, $remoteSocketUri, $localSocketUri)
     {
@@ -219,14 +215,7 @@ class RequestHeaderParser extends EventEmitter
             $serverParams['SERVER_PORT'] = $localParts['port'];
         }
 
-        $request = new ServerRequest(
-            $start['method'],
-            $uri,
-            $fields,
-            null,
-            $start['version'],
-            $serverParams
-        );
+        $request = $this->createRequest($start['method'], $uri, $fields, $start['version'], $serverParams);
 
         // only assign request target if it is not in origin-form (happy path for most normal requests)
         if ($start['target'][0] !== '/') {
@@ -274,4 +263,20 @@ class RequestHeaderParser extends EventEmitter
 
         return $request;
     }
+
+	/**
+	 * Create PSR7 request
+	 *
+	 * @param string $method
+	 * @param string|UriInterface $uri
+	 * @param array $headers
+	 * @param string $version
+	 * @param array $serverParams
+	 *
+	 * @return ServerRequestInterface
+	 */
+	protected function createRequest($method, $uri, $headers, $version, $serverParams)
+	{
+		return new ServerRequest($method, $uri, $headers, null, $version, $serverParams);
+	}
 }
