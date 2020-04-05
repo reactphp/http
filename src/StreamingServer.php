@@ -107,7 +107,7 @@ final class StreamingServer extends EventEmitter
         }
 
         $this->callback = $requestHandler;
-	    $this->parser = $this->createParser();
+        $this->parser = $this->createParser();
 
         $that = $this;
         $this->parser->on('headers', function (ServerRequestInterface $request, ConnectionInterface $conn) use ($that) {
