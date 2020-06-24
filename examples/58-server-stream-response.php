@@ -10,7 +10,7 @@ require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
 
-$server = new Server(function (ServerRequestInterface $request) use ($loop) {
+$server = new Server($loop, function (ServerRequestInterface $request) use ($loop) {
     if ($request->getMethod() !== 'GET' || $request->getUri()->getPath() !== '/') {
         return new Response(404);
     }

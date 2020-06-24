@@ -11,7 +11,7 @@ require __DIR__ . '/../vendor/autoload.php';
 $loop = Factory::create();
 
 $count = 0;
-$server = new Server(function (ServerRequestInterface $request) use (&$count) {
+$server = new Server($loop, function (ServerRequestInterface $request) use (&$count) {
     return new Promise(function ($resolve, $reject) use (&$count) {
         $count++;
 

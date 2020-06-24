@@ -124,7 +124,7 @@ HTML;
 
 // Note how this example explicitly uses the advanced `StreamingRequestMiddleware` to apply
 // custom request buffering limits below before running our request handler.
-$server = new Server(array(
+$server = new Server($loop, array(
     new StreamingRequestMiddleware(),
     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers, queue otherwise
     new RequestBodyBufferMiddleware(8 * 1024 * 1024), // 8 MiB max, ignore body otherwise

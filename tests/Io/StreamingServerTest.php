@@ -4,6 +4,7 @@ namespace React\Tests\Http\Io;
 
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Io\StreamingServer;
+use React\EventLoop\Factory;
 use React\Http\Response;
 use React\Promise\Promise;
 use React\Stream\ThroughStream;
@@ -46,7 +47,7 @@ class StreamingServerTest extends TestCase
 
     public function testRequestEventWillNotBeEmittedForIncompleteHeaders()
     {
-        $server = new StreamingServer($this->expectCallableNever());
+        $server = new StreamingServer(Factory::create(), $this->expectCallableNever());
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -58,7 +59,7 @@ class StreamingServerTest extends TestCase
 
     public function testRequestEventIsEmitted()
     {
-        $server = new StreamingServer($this->expectCallableOnce());
+        $server = new StreamingServer(Factory::create(), $this->expectCallableOnce());
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -73,7 +74,7 @@ class StreamingServerTest extends TestCase
     public function testRequestEventIsEmittedForArrayCallable()
     {
         $this->called = null;
-        $server = new StreamingServer(array($this, 'helperCallableOnce'));
+        $server = new StreamingServer(Factory::create(), array($this, 'helperCallableOnce'));
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -93,7 +94,7 @@ class StreamingServerTest extends TestCase
     {
         $i = 0;
         $requestAssertion = null;
-        $server = new StreamingServer(function (ServerRequestInterface $request) use (&$i, &$requestAssertion) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$i, &$requestAssertion) {
             $i++;
             $requestAssertion = $request;
         });
@@ -126,7 +127,7 @@ class StreamingServerTest extends TestCase
     {
         $i = 0;
         $requestAssertion = null;
-        $server = new StreamingServer(array(function (ServerRequestInterface $request) use (&$i, &$requestAssertion) {
+        $server = new StreamingServer(Factory::create(), array(function (ServerRequestInterface $request) use (&$i, &$requestAssertion) {
             $i++;
             $requestAssertion = $request;
         }));
@@ -158,7 +159,7 @@ class StreamingServerTest extends TestCase
     public function testRequestGetWithHostAndCustomPort()
     {
         $requestAssertion = null;
-        $server = new StreamingServer(function (ServerRequestInterface $request) use (&$requestAssertion) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
         });
 
@@ -180,7 +181,7 @@ class StreamingServerTest extends TestCase
     public function testRequestGetWithHostAndHttpsPort()
     {
         $requestAssertion = null;
-        $server = new StreamingServer(function (ServerRequestInterface $request) use (&$requestAssertion) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
         });
 
@@ -202,7 +203,7 @@ class StreamingServerTest extends TestCase
     public function testRequestGetWithHostAndDefaultPortWillBeIgnored()
     {
         $requestAssertion = null;
-        $server = new StreamingServer(function (ServerRequestInterface $request) use (&$requestAssertion) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
         });
 
@@ -224,7 +225,7 @@ class StreamingServerTest extends TestCase
     public function testRequestOptionsAsterisk()
     {
         $requestAssertion = null;
-        $server = new StreamingServer(function (ServerRequestInterface $request) use (&$requestAssertion) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
         });
 
@@ -244,7 +245,7 @@ class StreamingServerTest extends TestCase
 
     public function testRequestNonOptionsWithAsteriskRequestTargetWillReject()
     {
-        $server = new StreamingServer($this->expectCallableNever());
+        $server = new StreamingServer(Factory::create(), $this->expectCallableNever());
         $server->on('error', $this->expectCallableOnce());
 
         $server->listen($this->socket);
@@ -257,7 +258,7 @@ class StreamingServerTest extends TestCase
     public function testRequestConnectAuthorityForm()
     {
         $requestAssertion = null;
-        $server = new StreamingServer(function (ServerRequestInterface $request) use (&$requestAssertion) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
         });
 
@@ -279,7 +280,7 @@ class StreamingServerTest extends TestCase
     public function testRequestConnectWithoutHostWillBeAdded()
     {
         $requestAssertion = null;
-        $server = new StreamingServer(function (ServerRequestInterface $request) use (&$requestAssertion) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
         });
 
@@ -301,7 +302,7 @@ class StreamingServerTest extends TestCase
     public function testRequestConnectAuthorityFormWithDefaultPortWillBeIgnored()
     {
         $requestAssertion = null;
-        $server = new StreamingServer(function (ServerRequestInterface $request) use (&$requestAssertion) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
         });
 
@@ -323,7 +324,7 @@ class StreamingServerTest extends TestCase
     public function testRequestConnectAuthorityFormNonMatchingHostWillBeOverwritten()
     {
         $requestAssertion = null;
-        $server = new StreamingServer(function (ServerRequestInterface $request) use (&$requestAssertion) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
         });
 
@@ -344,7 +345,7 @@ class StreamingServerTest extends TestCase
 
     public function testRequestConnectOriginFormRequestTargetWillReject()
     {
-        $server = new StreamingServer($this->expectCallableNever());
+        $server = new StreamingServer(Factory::create(), $this->expectCallableNever());
         $server->on('error', $this->expectCallableOnce());
 
         $server->listen($this->socket);
@@ -356,7 +357,7 @@ class StreamingServerTest extends TestCase
 
     public function testRequestNonConnectWithAuthorityRequestTargetWillReject()
     {
-        $server = new StreamingServer($this->expectCallableNever());
+        $server = new StreamingServer(Factory::create(), $this->expectCallableNever());
         $server->on('error', $this->expectCallableOnce());
 
         $server->listen($this->socket);
@@ -370,7 +371,7 @@ class StreamingServerTest extends TestCase
     {
         $requestAssertion = null;
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use (&$requestAssertion) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
         });
 
@@ -396,7 +397,7 @@ class StreamingServerTest extends TestCase
     {
         $requestAssertion = null;
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use (&$requestAssertion) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
         });
 
@@ -418,7 +419,7 @@ class StreamingServerTest extends TestCase
     {
         $requestAssertion = null;
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use (&$requestAssertion) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
         });
 
@@ -440,7 +441,7 @@ class StreamingServerTest extends TestCase
     {
         $requestAssertion = null;
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use (&$requestAssertion) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
         });
 
@@ -462,7 +463,7 @@ class StreamingServerTest extends TestCase
     {
         $requestAssertion = null;
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use (&$requestAssertion) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
         });
 
@@ -484,7 +485,7 @@ class StreamingServerTest extends TestCase
     {
         $requestAssertion = null;
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use (&$requestAssertion) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$requestAssertion) {
             $requestAssertion = $request;
         });
 
@@ -504,7 +505,7 @@ class StreamingServerTest extends TestCase
 
     public function testRequestPauseWillBeForwardedToConnection()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             $request->getBody()->pause();
         });
 
@@ -524,7 +525,7 @@ class StreamingServerTest extends TestCase
 
     public function testRequestResumeWillBeForwardedToConnection()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             $request->getBody()->resume();
         });
 
@@ -544,7 +545,7 @@ class StreamingServerTest extends TestCase
 
     public function testRequestCloseWillNotCloseConnection()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             $request->getBody()->close();
         });
 
@@ -559,7 +560,7 @@ class StreamingServerTest extends TestCase
 
     public function testRequestPauseAfterCloseWillNotBeForwarded()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             $request->getBody()->close();
             $request->getBody()->pause();
         });
@@ -576,7 +577,7 @@ class StreamingServerTest extends TestCase
 
     public function testRequestResumeAfterCloseWillNotBeForwarded()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             $request->getBody()->close();
             $request->getBody()->resume();
         });
@@ -595,7 +596,7 @@ class StreamingServerTest extends TestCase
     {
         $never = $this->expectCallableNever();
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($never) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($never) {
             $request->getBody()->on('data', $never);
         });
 
@@ -610,7 +611,7 @@ class StreamingServerTest extends TestCase
     {
         $once = $this->expectCallableOnceWith('incomplete');
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($once) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($once) {
             $request->getBody()->on('data', $once);
         });
 
@@ -630,7 +631,7 @@ class StreamingServerTest extends TestCase
     {
         $once = $this->expectCallableOnceWith('incomplete');
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($once) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($once) {
             $request->getBody()->on('data', $once);
         });
 
@@ -651,7 +652,7 @@ class StreamingServerTest extends TestCase
 
     public function testResponseContainsPoweredByHeader()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             return new Response();
         });
 
@@ -681,7 +682,7 @@ class StreamingServerTest extends TestCase
     {
         $never = $this->expectCallableNever();
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($never) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($never) {
             return new Promise(function () { }, $never);
         });
 
@@ -711,7 +712,7 @@ class StreamingServerTest extends TestCase
     {
         $once = $this->expectCallableOnce();
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($once) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($once) {
             return new Promise(function () { }, $once);
         });
 
@@ -743,7 +744,7 @@ class StreamingServerTest extends TestCase
         $stream = new ThroughStream();
         $stream->close();
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($stream) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($stream) {
             return new Response(
                 200,
                 array(),
@@ -778,7 +779,7 @@ class StreamingServerTest extends TestCase
     {
         $stream = new ThroughStream();
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($stream) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($stream) {
             return new Response(
                 200,
                 array(),
@@ -816,7 +817,7 @@ class StreamingServerTest extends TestCase
         $stream = new ThroughStream();
         $stream->close();
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($stream) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($stream) {
             return new Response(
                 200,
                 array(),
@@ -852,7 +853,7 @@ class StreamingServerTest extends TestCase
         $stream = new ThroughStream();
         $stream->on('close', $this->expectCallableOnce());
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($stream) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($stream) {
             return new Response(
                 200,
                 array(),
@@ -907,7 +908,7 @@ class StreamingServerTest extends TestCase
         $stream = new ThroughStream();
         $stream->on('close', $this->expectCallableOnce());
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($stream) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($stream) {
             return new Response(
                 200,
                 array(),
@@ -925,7 +926,7 @@ class StreamingServerTest extends TestCase
 
     public function testResponseUpgradeInResponseCanBeUsedToAdvertisePossibleUpgrade()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             return new Response(
                 200,
                 array(
@@ -961,7 +962,7 @@ class StreamingServerTest extends TestCase
 
     public function testResponseUpgradeWishInRequestCanBeIgnoredByReturningNormalResponse()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             return new Response(
                 200,
                 array(
@@ -996,7 +997,7 @@ class StreamingServerTest extends TestCase
 
     public function testResponseUpgradeSwitchingProtocolIncludesConnectionUpgradeHeaderWithoutContentLength()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             return new Response(
                 101,
                 array(
@@ -1036,7 +1037,7 @@ class StreamingServerTest extends TestCase
     {
         $stream = new ThroughStream();
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($stream) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($stream) {
             return new Response(
                 101,
                 array(
@@ -1077,7 +1078,7 @@ class StreamingServerTest extends TestCase
     {
         $stream = new ThroughStream();
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($stream) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($stream) {
             return new Response(
                 200,
                 array(),
@@ -1115,7 +1116,7 @@ class StreamingServerTest extends TestCase
     {
         $stream = new ThroughStream();
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($stream) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($stream) {
             return new Response(
                 200,
                 array(),
@@ -1134,7 +1135,7 @@ class StreamingServerTest extends TestCase
 
     public function testResponseContainsSameRequestProtocolVersionAndChunkedBodyForHttp11()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             return new Response(
                 200,
                 array(),
@@ -1167,7 +1168,7 @@ class StreamingServerTest extends TestCase
 
     public function testResponseContainsSameRequestProtocolVersionAndRawBodyForHttp10()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             return new Response(
                 200,
                 array(),
@@ -1201,7 +1202,7 @@ class StreamingServerTest extends TestCase
 
     public function testResponseContainsNoResponseBodyForHeadRequest()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             return new Response(
                 200,
                 array(),
@@ -1233,7 +1234,7 @@ class StreamingServerTest extends TestCase
 
     public function testResponseContainsNoResponseBodyAndNoContentLengthForNoContentStatus()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             return new Response(
                 204,
                 array(),
@@ -1266,7 +1267,7 @@ class StreamingServerTest extends TestCase
 
     public function testResponseContainsNoResponseBodyForNotModifiedStatus()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             return new Response(
                 304,
                 array(),
@@ -1300,7 +1301,7 @@ class StreamingServerTest extends TestCase
     public function testRequestInvalidHttpProtocolVersionWillEmitErrorAndSendErrorResponse()
     {
         $error = null;
-        $server = new StreamingServer($this->expectCallableNever());
+        $server = new StreamingServer(Factory::create(), $this->expectCallableNever());
         $server->on('error', function ($message) use (&$error) {
             $error = $message;
         });
@@ -1334,7 +1335,7 @@ class StreamingServerTest extends TestCase
     public function testRequestOverflowWillEmitErrorAndSendErrorResponse()
     {
         $error = null;
-        $server = new StreamingServer($this->expectCallableNever());
+        $server = new StreamingServer(Factory::create(), $this->expectCallableNever());
         $server->on('error', function ($message) use (&$error) {
             $error = $message;
         });
@@ -1368,7 +1369,7 @@ class StreamingServerTest extends TestCase
     public function testRequestInvalidWillEmitErrorAndSendErrorResponse()
     {
         $error = null;
-        $server = new StreamingServer($this->expectCallableNever());
+        $server = new StreamingServer(Factory::create(), $this->expectCallableNever());
         $server->on('error', function ($message) use (&$error) {
             $error = $message;
         });
@@ -1405,7 +1406,7 @@ class StreamingServerTest extends TestCase
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
             $request->getBody()->on('data', $dataEvent);
             $request->getBody()->on('end', $endEvent);
             $request->getBody()->on('close', $closeEvent);
@@ -1433,7 +1434,7 @@ class StreamingServerTest extends TestCase
         $errorEvent = $this->expectCallableNever();
         $requestValidation = null;
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent, &$requestValidation) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent, &$requestValidation) {
             $request->getBody()->on('data', $dataEvent);
             $request->getBody()->on('end', $endEvent);
             $request->getBody()->on('close', $closeEvent);
@@ -1464,7 +1465,7 @@ class StreamingServerTest extends TestCase
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
             $request->getBody()->on('data', $dataEvent);
             $request->getBody()->on('end', $endEvent);
             $request->getBody()->on('close', $closeEvent);
@@ -1493,7 +1494,7 @@ class StreamingServerTest extends TestCase
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
             $request->getBody()->on('data', $dataEvent);
             $request->getBody()->on('end', $endEvent);
             $request->getBody()->on('close', $closeEvent);
@@ -1521,7 +1522,7 @@ class StreamingServerTest extends TestCase
         $errorEvent = $this->expectCallableNever();
         $requestValidation = null;
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent, &$requestValidation) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent, &$requestValidation) {
             $request->getBody()->on('data', $dataEvent);
             $request->getBody()->on('end', $endEvent);
             $request->getBody()->on('close', $closeEvent);
@@ -1551,7 +1552,7 @@ class StreamingServerTest extends TestCase
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
             $request->getBody()->on('data', $dataEvent);
             $request->getBody()->on('end', $endEvent);
             $request->getBody()->on('close', $closeEvent);
@@ -1578,7 +1579,7 @@ class StreamingServerTest extends TestCase
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
             $request->getBody()->on('data', $dataEvent);
             $request->getBody()->on('end', $endEvent);
             $request->getBody()->on('close', $closeEvent);
@@ -1609,7 +1610,7 @@ class StreamingServerTest extends TestCase
         $errorEvent = $this->expectCallableNever();
 
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
             $request->getBody()->on('data', $dataEvent);
             $request->getBody()->on('end', $endEvent);
             $request->getBody()->on('close', $closeEvent);
@@ -1641,7 +1642,7 @@ class StreamingServerTest extends TestCase
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
             $request->getBody()->on('data', $dataEvent);
             $request->getBody()->on('end', $endEvent);
             $request->getBody()->on('close', $closeEvent);
@@ -1667,7 +1668,7 @@ class StreamingServerTest extends TestCase
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
             $request->getBody()->on('data', $dataEvent);
             $request->getBody()->on('end', $endEvent);
             $request->getBody()->on('close', $closeEvent);
@@ -1694,7 +1695,7 @@ class StreamingServerTest extends TestCase
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
             $request->getBody()->on('data', $dataEvent);
             $request->getBody()->on('end', $endEvent);
             $request->getBody()->on('close', $closeEvent);
@@ -1720,7 +1721,7 @@ class StreamingServerTest extends TestCase
     public function testRequestInvalidChunkHeaderTooLongWillEmitErrorOnRequestStream()
     {
         $errorEvent = $this->expectCallableOnceWith($this->isInstanceOf('Exception'));
-        $server = new StreamingServer(function ($request) use ($errorEvent){
+        $server = new StreamingServer(Factory::create(), function ($request) use ($errorEvent){
             $request->getBody()->on('error', $errorEvent);
             return \React\Promise\resolve(new Response());
         });
@@ -1745,7 +1746,7 @@ class StreamingServerTest extends TestCase
     public function testRequestInvalidChunkBodyTooLongWillEmitErrorOnRequestStream()
     {
         $errorEvent = $this->expectCallableOnceWith($this->isInstanceOf('Exception'));
-        $server = new StreamingServer(function ($request) use ($errorEvent){
+        $server = new StreamingServer(Factory::create(), function ($request) use ($errorEvent){
             $request->getBody()->on('error', $errorEvent);
         });
 
@@ -1767,7 +1768,7 @@ class StreamingServerTest extends TestCase
     public function testRequestUnexpectedEndOfRequestWithChunkedTransferConnectionWillEmitErrorOnRequestStream()
     {
         $errorEvent = $this->expectCallableOnceWith($this->isInstanceOf('Exception'));
-        $server = new StreamingServer(function ($request) use ($errorEvent){
+        $server = new StreamingServer(Factory::create(), function ($request) use ($errorEvent){
             $request->getBody()->on('error', $errorEvent);
         });
 
@@ -1790,7 +1791,7 @@ class StreamingServerTest extends TestCase
     public function testRequestInvalidChunkHeaderWillEmitErrorOnRequestStream()
     {
         $errorEvent = $this->expectCallableOnceWith($this->isInstanceOf('Exception'));
-        $server = new StreamingServer(function ($request) use ($errorEvent){
+        $server = new StreamingServer(Factory::create(), function ($request) use ($errorEvent){
             $request->getBody()->on('error', $errorEvent);
         });
 
@@ -1812,7 +1813,7 @@ class StreamingServerTest extends TestCase
     public function testRequestUnexpectedEndOfRequestWithContentLengthWillEmitErrorOnRequestStream()
     {
         $errorEvent = $this->expectCallableOnceWith($this->isInstanceOf('Exception'));
-        $server = new StreamingServer(function ($request) use ($errorEvent){
+        $server = new StreamingServer(Factory::create(), function ($request) use ($errorEvent){
             $request->getBody()->on('error', $errorEvent);
         });
 
@@ -1839,7 +1840,7 @@ class StreamingServerTest extends TestCase
         $endEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server = new StreamingServer(function ($request) use ($dataEvent, $closeEvent, $endEvent, $errorEvent){
+        $server = new StreamingServer(Factory::create(), function ($request) use ($dataEvent, $closeEvent, $endEvent, $errorEvent){
             $request->getBody()->on('data', $dataEvent);
             $request->getBody()->on('close', $closeEvent);
             $request->getBody()->on('end', $endEvent);
@@ -1863,7 +1864,7 @@ class StreamingServerTest extends TestCase
         $closeEvent = $this->expectCallableOnce();
         $errorEvent = $this->expectCallableNever();
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($dataEvent, $endEvent, $closeEvent, $errorEvent) {
             $request->getBody()->on('data', $dataEvent);
             $request->getBody()->on('end', $endEvent);
             $request->getBody()->on('close', $closeEvent);
@@ -1882,7 +1883,7 @@ class StreamingServerTest extends TestCase
     public function testResponseWithBodyStreamWillUseChunkedTransferEncodingByDefault()
     {
         $stream = new ThroughStream();
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($stream) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($stream) {
             return new Response(
                 200,
                 array(),
@@ -1916,7 +1917,7 @@ class StreamingServerTest extends TestCase
 
     public function testResponseWithBodyStringWillOverwriteExplicitContentLengthAndTransferEncoding()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             return new Response(
                 200,
                 array(
@@ -1957,7 +1958,7 @@ class StreamingServerTest extends TestCase
         $body->expects($this->once())->method('getSize')->willReturn(null);
         $body->expects($this->once())->method('__toString')->willReturn('body');
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($body) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($body) {
             return new Response(
                 200,
                 array(),
@@ -1994,7 +1995,7 @@ class StreamingServerTest extends TestCase
         $body->expects($this->once())->method('getSize')->willReturn(null);
         $body->expects($this->once())->method('__toString')->willReturn('body');
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($body) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($body) {
             return new Response(
                 200,
                 array(),
@@ -2028,7 +2029,7 @@ class StreamingServerTest extends TestCase
     public function testResponseWithCustomTransferEncodingWillBeIgnoredAndUseChunkedTransferEncodingInstead()
     {
         $stream = new ThroughStream();
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($stream) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($stream) {
             return new Response(
                 200,
                 array(
@@ -2065,7 +2066,7 @@ class StreamingServerTest extends TestCase
 
     public function testResponseWithoutExplicitDateHeaderWillAddCurrentDate()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             return new Response();
         });
 
@@ -2095,7 +2096,7 @@ class StreamingServerTest extends TestCase
 
     public function testResponseWIthCustomDateHeaderOverwritesDefault()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             return new Response(
                 200,
                 array("Date" => "Tue, 15 Nov 1994 08:12:31 GMT")
@@ -2128,7 +2129,7 @@ class StreamingServerTest extends TestCase
 
     public function testResponseWithEmptyDateHeaderRemovesDateHeader()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             return new Response(
                 200,
                 array('Date' => '')
@@ -2161,7 +2162,7 @@ class StreamingServerTest extends TestCase
 
     public function testResponseCanContainMultipleCookieHeaders()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             return new Response(
                 200,
                 array(
@@ -2199,7 +2200,7 @@ class StreamingServerTest extends TestCase
 
     public function testReponseWithExpectContinueRequestContainsContinueWithLaterResponse()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             return new Response();
         });
 
@@ -2231,7 +2232,7 @@ class StreamingServerTest extends TestCase
 
     public function testResponseWithExpectContinueRequestWontSendContinueForHttp10()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             return new Response();
         });
 
@@ -2262,14 +2263,14 @@ class StreamingServerTest extends TestCase
     public function testInvalidCallbackFunctionLeadsToException()
     {
         $this->setExpectedException('InvalidArgumentException');
-        $server = new StreamingServer('invalid');
+        $server = new StreamingServer(Factory::create(), 'invalid');
     }
 
     public function testResponseBodyStreamWillStreamDataWithChunkedTransferEncoding()
     {
         $input = new ThroughStream();
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($input) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($input) {
             return new Response(
                 200,
                 array(),
@@ -2308,7 +2309,7 @@ class StreamingServerTest extends TestCase
     {
         $input = new ThroughStream();
 
-        $server = new StreamingServer(function (ServerRequestInterface $request) use ($input) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($input) {
             return new Response(
                 200,
                 array('Content-Length' => 5),
@@ -2346,7 +2347,7 @@ class StreamingServerTest extends TestCase
 
     public function testResponseWithResponsePromise()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             return \React\Promise\resolve(new Response());
         });
 
@@ -2374,7 +2375,7 @@ class StreamingServerTest extends TestCase
 
     public function testResponseReturnInvalidTypeWillResultInError()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             return "invalid";
         });
 
@@ -2408,7 +2409,7 @@ class StreamingServerTest extends TestCase
 
     public function testResponseResolveWrongTypeInPromiseWillResultInError()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             return \React\Promise\resolve("invalid");
         });
 
@@ -2436,7 +2437,7 @@ class StreamingServerTest extends TestCase
 
     public function testResponseRejectedPromiseWillResultInErrorMessage()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             return new Promise(function ($resolve, $reject) {
                 $reject(new \Exception());
             });
@@ -2467,7 +2468,7 @@ class StreamingServerTest extends TestCase
 
     public function testResponseExceptionInCallbackWillResultInErrorMessage()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             return new Promise(function ($resolve, $reject) {
                 throw new \Exception('Bad call');
             });
@@ -2498,7 +2499,7 @@ class StreamingServerTest extends TestCase
 
     public function testResponseWithContentLengthHeaderForStringBodyOverwritesTransferEncoding()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             return new Response(
                 200,
                 array('Transfer-Encoding' => 'chunked'),
@@ -2534,7 +2535,7 @@ class StreamingServerTest extends TestCase
 
     public function testResponseWillBeHandled()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             return new Response();
         });
 
@@ -2562,7 +2563,7 @@ class StreamingServerTest extends TestCase
 
     public function testResponseExceptionThrowInCallBackFunctionWillResultInErrorMessage()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             throw new \Exception('hello');
         });
 
@@ -2600,7 +2601,7 @@ class StreamingServerTest extends TestCase
      */
     public function testResponseThrowableThrowInCallBackFunctionWillResultInErrorMessage()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             throw new \Error('hello');
         });
 
@@ -2643,7 +2644,7 @@ class StreamingServerTest extends TestCase
 
     public function testResponseRejectOfNonExceptionWillResultInErrorMessage()
     {
-        $server = new StreamingServer(function (ServerRequestInterface $request) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             return new Promise(function ($resolve, $reject) {
                 $reject('Invalid type');
             });
@@ -2680,7 +2681,7 @@ class StreamingServerTest extends TestCase
     public function testRequestServerRequestParams()
     {
         $requestValidation = null;
-        $server = new StreamingServer(function (ServerRequestInterface $request) use (&$requestValidation) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$requestValidation) {
             $requestValidation = $request;
         });
 
@@ -2714,7 +2715,7 @@ class StreamingServerTest extends TestCase
     public function testRequestQueryParametersWillBeAddedToRequest()
     {
         $requestValidation = null;
-        $server = new StreamingServer(function (ServerRequestInterface $request) use (&$requestValidation) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$requestValidation) {
             $requestValidation = $request;
         });
 
@@ -2734,7 +2735,7 @@ class StreamingServerTest extends TestCase
     public function testRequestCookieWillBeAddedToServerRequest()
     {
         $requestValidation = null;
-        $server = new StreamingServer(function (ServerRequestInterface $request) use (&$requestValidation) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$requestValidation) {
             $requestValidation = $request;
         });
 
@@ -2755,7 +2756,7 @@ class StreamingServerTest extends TestCase
     public function testRequestInvalidMultipleCookiesWontBeAddedToServerRequest()
     {
         $requestValidation = null;
-        $server = new StreamingServer(function (ServerRequestInterface $request) use (&$requestValidation) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$requestValidation) {
             $requestValidation = $request;
         });
 
@@ -2776,7 +2777,7 @@ class StreamingServerTest extends TestCase
     public function testRequestCookieWithSeparatorWillBeAddedToServerRequest()
     {
         $requestValidation = null;
-        $server = new StreamingServer(function (ServerRequestInterface $request) use (&$requestValidation) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$requestValidation) {
             $requestValidation = $request;
         });
 
@@ -2795,7 +2796,7 @@ class StreamingServerTest extends TestCase
 
     public function testRequestCookieWithCommaValueWillBeAddedToServerRequest() {
         $requestValidation = null;
-        $server = new StreamingServer(function (ServerRequestInterface $request) use (&$requestValidation) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$requestValidation) {
             $requestValidation = $request;
         });
 

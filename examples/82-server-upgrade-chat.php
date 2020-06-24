@@ -38,7 +38,7 @@ $chat = new ThroughStream();
 // Note how this example uses the `Server` without the `StreamingRequestMiddleware`.
 // The initial incoming request does not contain a body and we upgrade to a
 // stream object below.
-$server = new Server(function (ServerRequestInterface $request) use ($loop, $chat) {
+$server = new Server($loop, function (ServerRequestInterface $request) use ($loop, $chat) {
     if ($request->getHeaderLine('Upgrade') !== 'chat' || $request->getProtocolVersion() === '1.0') {
         return new Response(
             426,

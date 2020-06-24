@@ -15,7 +15,7 @@ require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
 
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new Server($loop, function (ServerRequestInterface $request) {
     if ($request->getHeaderLine('Content-Type') !== 'application/json') {
         return new Response(
             415, // Unsupported Media Type

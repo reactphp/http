@@ -19,7 +19,7 @@ $connector = new Connector($loop);
 // Unlike the plain HTTP proxy, the CONNECT method does not contain a body
 // and we establish an end-to-end connection over the stream object, so this
 // doesn't have to store any payload data in memory at all.
-$server = new Server(function (ServerRequestInterface $request) use ($connector) {
+$server = new Server($loop, function (ServerRequestInterface $request) use ($connector) {
     if ($request->getMethod() !== 'CONNECT') {
         return new Response(
             405,

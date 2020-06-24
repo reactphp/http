@@ -101,7 +101,7 @@ This is an HTTP server which responds with `Hello World!` to every request.
 ```php
 $loop = React\EventLoop\Factory::create();
 
-$server = new React\Http\Server(function (Psr\Http\Message\ServerRequestInterface $request) {
+$server = new React\Http\Server($loop, function (Psr\Http\Message\ServerRequestInterface $request) {
     return new React\Http\Response(
         200,
         array(
@@ -714,7 +714,7 @@ the constructor and will be invoked with the respective [request](#server-reques
 object and expects a [response](#response) object in return:
 
 ```php
-$server = new React\Http\Server(function (Psr\Http\Message\ServerRequestInterface $request) {
+$server = new React\Http\Server($loop, function (Psr\Http\Message\ServerRequestInterface $request) {
     return new React\Http\Response(
         200,
         array(
@@ -742,7 +742,7 @@ chapter. In its most simple form, you can attach this to a
 to start a plaintext HTTP server like this:
 
 ```php
-$server = new React\Http\Server($handler);
+$server = new React\Http\Server($loop, $handler);
 
 $socket = new React\Socket\Server('0.0.0.0:8080', $loop);
 $server->listen($socket);
@@ -803,7 +803,7 @@ to explicitly configure the total number of requests that can be handled at
 once like this:
 
 ```php
-$server = new React\Http\Server(array(
+$server = new React\Http\Server($loop, array(
     new React\Http\Middleware\StreamingRequestMiddleware(),
     new React\Http\Middleware\LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new React\Http\Middleware\RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
@@ -822,7 +822,7 @@ also use a streaming approach where only small chunks of data have to be kept
 in memory:
 
 ```php
-$server = new React\Http\Server(array(
+$server = new React\Http\Server($loop, array(
     new React\Http\Middleware\StreamingRequestMiddleware(),
     $handler
 ));
@@ -851,7 +851,7 @@ messages. In its most common form, you can attach this to a
 order to start a plaintext HTTP server like this:
 
 ```php
-$server = new React\Http\Server($handler);
+$server = new React\Http\Server($loop, $handler);
 
 $socket = new React\Socket\Server('0.0.0.0:8080', $loop);
 $server->listen($socket);
@@ -877,7 +877,7 @@ using a secure TLS listen address, a certificate file and optional
 `passphrase` like this:
 
 ```php
-$server = new React\Http\Server($handler);
+$server = new React\Http\Server($loop, $handler);
 
 $socket = new React\Socket\Server('tls://0.0.0.0:8443', $loop, array(
     'local_cert' => __DIR__ . '/localhost.pem'
@@ -902,7 +902,7 @@ which in turn extends the
 and will be passed to the callback function like this.
 
  ```php 
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new Server($loop, function (ServerRequestInterface $request) {
     $body = "The method of the request is: " . $request->getMethod();
     $body .= "The requested path is: " . $request->getUri()->getPath();
 
@@ -945,7 +945,7 @@ The following parameters are currently available:
   Set to 'on' if the request used HTTPS, otherwise it won't be set
 
 ```php 
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new Server($loop, function (ServerRequestInterface $request) {
     $body = "Your IP is: " . $request->getServerParams()['REMOTE_ADDR'];
 
     return new Response(
@@ -970,7 +970,7 @@ The `getQueryParams(): array` method can be used to get the query parameters
 similiar to the `$_GET` variable.
 
 ```php
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new Server($loop, function (ServerRequestInterface $request) {
     $queryParams = $request->getQueryParams();
 
     $body = 'The query parameter "foo" is not set. Click the following link ';
@@ -1024,7 +1024,7 @@ By default, this method will only return parsed data for requests using
 request headers (commonly used for `POST` requests for HTML form submission data).
 
 ```php
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new Server($loop, function (ServerRequestInterface $request) {
     $name = $request->getParsedBody()['name'] ?? 'anonymous';
 
     return new Response(
@@ -1048,7 +1048,7 @@ an XML (`Content-Type: application/xml`) request body (which is commonly used fo
 `POST`, `PUT` or `PATCH` requests in JSON-based or RESTful/RESTish APIs).
 
 ```php
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new Server($loop, function (ServerRequestInterface $request) {
     $data = json_decode((string)$request->getBody());
     $name = $data->name ?? 'anonymous';
 
@@ -1071,7 +1071,7 @@ This array will only be filled when using the `Content-Type: multipart/form-data
 request header (commonly used for `POST` requests for HTML file uploads).
 
 ```php
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new Server($loop, function (ServerRequestInterface $request) {
     $files = $request->getUploadedFiles();
     $name = isset($files['avatar']) ? $files['avatar']->getClientFilename() : 'nothing';
 
@@ -1141,7 +1141,7 @@ The ReactPHP `ReadableStreamInterface` gives you access to the incoming
 request body as the individual chunks arrive:
 
 ```php
-$server = new React\Http\Server(array(
+$server = new React\Http\Server($loop, array(
     new React\Http\Middleware\StreamingRequestMiddleware(),
     function (Psr\Http\Message\ServerRequestInterface $request) {
         $body = $request->getBody();
@@ -1214,7 +1214,7 @@ This method operates on the streaming request body, i.e. the request body size
 may be unknown (`null`) when using `Transfer-Encoding: chunked` for HTTP/1.1 requests.
 
 ```php 
-$server = new React\Http\Server(array(
+$server = new React\Http\Server($loop, array(
     new React\Http\Middleware\StreamingRequestMiddleware(),
     function (Psr\Http\Message\ServerRequestInterface $request) {
         $size = $request->getBody()->getSize();
@@ -1287,7 +1287,7 @@ The `getCookieParams(): string[]` method can be used to
 get all cookies sent with the current request.
 
 ```php 
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new Server($loop, function (ServerRequestInterface $request) {
     $key = 'react\php';
 
     if (isset($request->getCookieParams()[$key])) {
@@ -1359,7 +1359,7 @@ but feel free to use any implemantation of the
 `PSR-7 ResponseInterface` you prefer.
 
 ```php 
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new Server($loop, function (ServerRequestInterface $request) {
     return new Response(
         200,
         array(
@@ -1382,7 +1382,7 @@ To prevent this you SHOULD use a
 This example shows how such a long-term action could look like:
 
 ```php
-$server = new Server(function (ServerRequestInterface $request) use ($loop) {
+$server = new Server($loop, function (ServerRequestInterface $request) use ($loop) {
     return new Promise(function ($resolve, $reject) use ($loop) {
         $loop->addTimer(1.5, function() use ($resolve) {
             $response = new Response(
@@ -1419,7 +1419,7 @@ Note that other implementations of the `PSR-7 ResponseInterface` likely
 only support strings.
 
 ```php
-$server = new Server(function (ServerRequestInterface $request) use ($loop) {
+$server = new Server($loop, function (ServerRequestInterface $request) use ($loop) {
     $stream = new ThroughStream();
 
     $timer = $loop->addPeriodicTimer(0.5, function () use ($stream) {
@@ -1510,7 +1510,7 @@ added automatically. This is the most common use case, for example when using
 a `string` response body like this:
 
 ```php 
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new Server($loop, function (ServerRequestInterface $request) {
     return new Response(
         200,
         array(
@@ -1529,7 +1529,7 @@ response messages will contain the plain response body. If you know the length
 of your streaming response body, you MAY want to specify it explicitly like this:
 
 ```php
-$server = new Server(function (ServerRequestInterface $request) use ($loop) {
+$server = new Server($loop, function (ServerRequestInterface $request) use ($loop) {
     $stream = new ThroughStream();
 
     $loop->addTimer(2.0, function () use ($stream) {
@@ -1608,7 +1608,7 @@ A `Date` header will be automatically added with the system date and time if non
 You can add a custom `Date` header yourself like this:
 
 ```php
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new Server($loop, function (ServerRequestInterface $request) {
     return new Response(
         200,
         array(
@@ -1622,7 +1622,7 @@ If you don't have a appropriate clock to rely on, you should
 unset this header with an empty string:
 
 ```php
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new Server($loop, function (ServerRequestInterface $request) {
     return new Response(
         200,
         array(
@@ -1636,7 +1636,7 @@ Note that it will automatically assume a `X-Powered-By: react/alpha` header
 unless your specify a custom `X-Powered-By` header yourself:
 
 ```php
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new Server($loop, function (ServerRequestInterface $request) {
     return new Response(
         200,
         array(
@@ -1650,7 +1650,7 @@ If you do not want to send this header at all, you can use an empty string as
 value like this:
 
 ```php
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new Server($loop, function (ServerRequestInterface $request) {
     return new Response(
         200,
         array(
@@ -1723,7 +1723,7 @@ The following example adds a middleware request handler that adds the current ti
 header (`Request-Time`) and a final request handler that always returns a 200 code without a body: 
 
 ```php
-$server = new Server(array(
+$server = new Server($loop, array(
     function (ServerRequestInterface $request, callable $next) {
         $request = $request->withHeader('Request-Time', time());
         return $next($request);
@@ -1747,7 +1747,7 @@ In order to simplify handling both paths, you can simply wrap this in a
 [`Promise\resolve()`](https://reactphp.org/promise/#resolve) call like this:
 
 ```php
-$server = new Server(array(
+$server = new Server($loop, array(
     function (ServerRequestInterface $request, callable $next) {
         $promise = React\Promise\resolve($next($request));
         return $promise->then(function (ResponseInterface $response) {
@@ -1769,7 +1769,7 @@ handling logic (or logging etc.) by wrapping this in a
 [`Promise`](https://reactphp.org/promise/#promise) like this:
 
 ```php
-$server = new Server(array(
+$server = new Server($loop, array(
     function (ServerRequestInterface $request, callable $next) {
         $promise = new React\Promise\Promise(function ($resolve) use ($next, $request) {
             $resolve($next($request));
@@ -2404,7 +2404,7 @@ The following example shows how this middleware can be used to ensure no more
 than 10 handlers will be invoked at once:
 
 ```php
-$server = new Server(array(
+$server = new Server($loop, array(
     new LimitConcurrentRequestsMiddleware(10),
     $handler
 ));
@@ -2415,7 +2415,7 @@ Similarly, this middleware is often used in combination with the
 to limit the total number of requests that can be buffered at once:
 
 ```php
-$server = new Server(array(
+$server = new Server($loop, array(
     new StreamingRequestMiddleware(),
     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
@@ -2429,7 +2429,7 @@ that can be buffered at once and then ensure the actual request handler only
 processes one request after another without any concurrency:
 
 ```php
-$server = new Server(array(
+$server = new Server($loop, array(
     new StreamingRequestMiddleware(),
     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
@@ -2482,7 +2482,7 @@ the total number of concurrent requests.
 Usage:
 
 ```php
-$server = new Server(array(
+$server = new Server($loop, array(
     new StreamingRequestMiddleware(),
     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
@@ -2542,7 +2542,7 @@ $handler = function (ServerRequestInterface $request) {
     );
 };
 
-$server = new Server(array(
+$server = new Server($loop, array(
     new StreamingRequestMiddleware(),
     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB

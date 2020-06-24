@@ -87,7 +87,7 @@ class ChunkRepeater extends EventEmitter implements ReadableStreamInterface
     }
 }
 
-$server = new Server(function (ServerRequestInterface $request) use ($loop) {
+$server = new Server($loop, function (ServerRequestInterface $request) use ($loop) {
     switch ($request->getUri()->getPath()) {
         case '/':
             return new Response(
