@@ -127,10 +127,10 @@ class StreamingServerTest extends TestCase
     {
         $i = 0;
         $requestAssertion = null;
-        $server = new StreamingServer(Factory::create(), array(function (ServerRequestInterface $request) use (&$i, &$requestAssertion) {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$i, &$requestAssertion) {
             $i++;
             $requestAssertion = $request;
-        }));
+        });
 
         $this->connection
             ->expects($this->any())

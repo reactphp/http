@@ -52,11 +52,12 @@ class FunctionalServerTest extends TestCase
         $loop = Factory::create();
         $connector = new Connector($loop);
 
-        $server = new Server($loop, array(
+        $server = new Server(
+            $loop,
             function () {
                 return new Response(404);
-            },
-        ));
+            }
+        );
 
         $socket = new Socket(0, $loop);
         $server->listen($socket);
@@ -479,12 +480,13 @@ class FunctionalServerTest extends TestCase
         $connector = new Connector($loop);
 
         $once = $this->expectCallableOnce();
-        $server = new Server($loop, array(
+        $server = new Server(
+            $loop,
             new StreamingRequestMiddleware(),
             function (RequestInterface $request) use ($once) {
                 $request->getBody()->on('close', $once);
             }
-        ));
+        );
 
         $socket = new Socket(0, $loop);
         $server->listen($socket);
@@ -509,12 +511,13 @@ class FunctionalServerTest extends TestCase
 
         $stream = new ThroughStream();
 
-        $server = new Server($loop, array(
+        $server = new Server(
+            $loop,
             new StreamingRequestMiddleware(),
             function (RequestInterface $request) use ($stream) {
                 return new Response(200, array(), $stream);
             }
-        ));
+        );
 
         $socket = new Socket(0, $loop);
         $server->listen($socket);
@@ -757,7 +760,8 @@ class FunctionalServerTest extends TestCase
         $loop = Factory::create();
         $connector = new Connector($loop);
 
-        $server = new Server($loop, array(
+        $server = new Server(
+            $loop,
             new LimitConcurrentRequestsMiddleware(5),
             new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
             function (ServerRequestInterface $request, $next) use ($loop) {
@@ -770,7 +774,7 @@ class FunctionalServerTest extends TestCase
             function (ServerRequestInterface $request) {
                 return new Response(200, array(), (string)strlen((string)$request->getBody()));
             }
-        ));
+        );
 
         $socket = new Socket(0, $loop);
         $server->listen($socket);

@@ -95,18 +95,16 @@ final class StreamingServer extends EventEmitter
      * See also [listen()](#listen) for more details.
      *
      * @param LoopInterface $loop
-     * @param callable|callable[] $requestHandler
+     * @param callable $requestHandler
      * @see self::listen()
      */
     public function __construct(LoopInterface $loop, $requestHandler)
     {
-        $this->loop = $loop;
-
-        if (!\is_callable($requestHandler) && !\is_array($requestHandler)) {
+        if (!\is_callable($requestHandler)) {
             throw new \InvalidArgumentException('Invalid request handler given');
-        } elseif (!\is_callable($requestHandler)) {
-            $requestHandler = new MiddlewareRunner($requestHandler);
         }
+
+        $this->loop = $loop;
 
         $this->callback = $requestHandler;
         $this->parser = new RequestHeaderParser();

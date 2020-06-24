@@ -88,7 +88,8 @@ final class ServerTest extends TestCase
     public function testSimpleRequestWithMiddlewareArrayProcessesMiddlewareStack()
     {
         $called = null;
-        $server = new Server(Factory::create(), array(
+        $server = new Server(
+            Factory::create(),
             function (ServerRequestInterface $request, $next) use (&$called) {
                 $called = 'before';
                 $ret = $next($request->withHeader('Demo', 'ok'));
@@ -99,7 +100,7 @@ final class ServerTest extends TestCase
             function (ServerRequestInterface $request) use (&$called) {
                 $called .= $request->getHeaderLine('Demo');
             }
-        ));
+        );
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -161,12 +162,13 @@ final class ServerTest extends TestCase
     public function testServerWithStreamingRequestMiddlewareReceivesStreamingRequest()
     {
         $streaming = null;
-        $server = new Server(Factory::create(), array(
+        $server = new Server(
+            Factory::create(),
             new StreamingRequestMiddleware(),
             function (ServerRequestInterface $request) use (&$streaming) {
                 $streaming = $request->getBody() instanceof ReadableStreamInterface;
             }
-        ));
+        );
 
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
