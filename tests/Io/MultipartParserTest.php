@@ -66,6 +66,39 @@ final class MultipartParserTest extends TestCase
         );
     }
 
+    public function testPostWithQuotationMarkEncapsulatedBoundary()
+    {
+        $boundary = "---------------------------5844729766471062541057622570";
+
+        $data  = "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"users[one]\"\r\n";
+        $data .= "\r\n";
+        $data .= "single\r\n";
+        $data .= "--$boundary\r\n";
+        $data .= "Content-Disposition: form-data; name=\"users[two]\"\r\n";
+        $data .= "\r\n";
+        $data .= "second\r\n";
+        $data .= "--$boundary--\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/form-data; boundary="' . $boundary . '"',
+        ), $data, 1.1);
+
+        $parser = new MultipartParser();
+        $parsedRequest = $parser->parse($request);
+
+        $this->assertEmpty($parsedRequest->getUploadedFiles());
+        $this->assertSame(
+            array(
+                'users' => array(
+                    'one' => 'single',
+                    'two' => 'second',
+                ),
+            ),
+            $parsedRequest->getParsedBody()
+        );
+    }
+
     public function testPostStringOverwritesMap()
     {
         $boundary = "---------------------------5844729766471062541057622570";

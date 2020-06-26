@@ -93,7 +93,7 @@ final class MultipartParser
     public function parse(ServerRequestInterface $request)
     {
         $contentType = $request->getHeaderLine('content-type');
-        if(!\preg_match('/boundary="?(.*)"?$/', $contentType, $matches)) {
+        if(!\preg_match('/boundary="?(.*?)"?$/', $contentType, $matches)) {
             return $request;
         }
 
