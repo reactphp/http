@@ -278,7 +278,7 @@ final class MultipartParser
     private function getParameterFromHeader(array $header, $parameter)
     {
         foreach ($header as $part) {
-            if (\preg_match('/' . $parameter . '="?(.*)"$/', $part, $matches)) {
+            if (\preg_match('/' . $parameter . '="?(.*?)"?$/', $part, $matches)) {
                 return $matches[1];
             }
         }
