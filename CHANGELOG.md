@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.6 (2020-01-12)
+
+*   Fix parsing Cookie request header with comma in its values (#352 by @fiskie)
+*   Add .gitattributes to exclude dev files from exports (#353 by @reedy)
+*   Avoid unneeded warning when decoding invalid data on PHP 7.4 (#357 by @WyriHaximus)
+
 ## 0.8.5 (2019-10-29)
 
 *   Internal refactorings and optimizations to improve request parsing performance.
