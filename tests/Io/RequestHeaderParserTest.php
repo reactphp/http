@@ -715,6 +715,10 @@ class RequestHeaderParserTest extends TestCase
 
     public function testServerParamsWontBeSetOnMissingUrls()
     {
+        if (defined('HHVM_VERSION')) {
+            $this->markTestSkipped('Not supported on HHVM');
+        }
+
         $request = null;
 
         $parser = new RequestHeaderParser();
