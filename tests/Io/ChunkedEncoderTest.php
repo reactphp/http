@@ -11,7 +11,10 @@ class ChunkedEncoderTest extends TestCase
     private $input;
     private $chunkedStream;
 
-    public function setUp()
+    /**
+     * @before
+     */
+    public function setUpChunkedStream()
     {
         $this->input = new ThroughStream();
         $this->chunkedStream = new ChunkedEncoder($this->input);

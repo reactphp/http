@@ -9,7 +9,10 @@ class ServerRequestTest extends TestCase
 {
     private $request;
 
-    public function setUp()
+    /**
+     * @before
+     */
+    public function setUpRequest()
     {
         $this->request = new ServerRequest('GET', 'http://localhost');
     }

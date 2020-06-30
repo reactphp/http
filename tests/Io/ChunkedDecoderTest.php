@@ -8,7 +8,11 @@ use React\Tests\Http\TestCase;
 
 class ChunkedDecoderTest extends TestCase
 {
-    public function setUp()
+
+    /**
+     * @before
+     */
+    public function setUpParser()
     {
         $this->input = new ThroughStream();
         $this->parser = new ChunkedDecoder($this->input);

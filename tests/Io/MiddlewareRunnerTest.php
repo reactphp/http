@@ -18,16 +18,13 @@ use React\Promise\PromiseInterface;
 
 final class MiddlewareRunnerTest extends TestCase
 {
-    /**
-     * @expectedException RuntimeException
-     * @expectedExceptionMessage No middleware to run
-     */
     public function testEmptyMiddlewareStackThrowsException()
     {
         $request = new ServerRequest('GET', 'https://example.com/');
         $middlewares = array();
         $middlewareStack = new MiddlewareRunner($middlewares);
 
+        $this->setExpectedException('RuntimeException', 'No middleware to run');
         $middlewareStack($request);
     }
 
@@ -68,10 +65,6 @@ final class MiddlewareRunnerTest extends TestCase
         $this->assertEquals(1, $args);
     }
 
-    /**
-     * @expectedException RuntimeException
-     * @expectedExceptionMessage hello
-     */
     public function testThrowsIfHandlerThrowsException()
     {
         $middleware = new MiddlewareRunner(array(
@@ -82,13 +75,12 @@ final class MiddlewareRunnerTest extends TestCase
 
         $request = new ServerRequest('GET', 'http://example.com/');
 
+        $this->setExpectedException('RuntimeException', 'hello');
         $middleware($request);
     }
 
     /**
      * @requires PHP 7
-     * @expectedException Throwable
-     * @expectedExceptionMessage hello
      */
     public function testThrowsIfHandlerThrowsThrowable()
     {
@@ -100,6 +92,7 @@ final class MiddlewareRunnerTest extends TestCase
 
         $request = new ServerRequest('GET', 'http://example.com/');
 
+        $this->setExpectedException('Throwable', 'hello');
         $middleware($request);
     }
 

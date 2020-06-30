@@ -221,9 +221,6 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
         $this->assertSame('', $exposedResponse->getBody()->getContents());
     }
 
-    /**
-     * @expectedException RuntimeException
-     */
     public function testBufferingErrorThrows()
     {
         $loop = Factory::create();
@@ -246,6 +243,7 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
 
         $stream->emit('error', array(new \RuntimeException()));
 
+        $this->setExpectedException('RuntimeException');
         Block\await($promise, $loop);
     }
 

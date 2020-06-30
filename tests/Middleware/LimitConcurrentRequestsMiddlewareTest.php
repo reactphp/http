@@ -107,14 +107,11 @@ final class LimitConcurrentRequestsMiddlewareTest extends TestCase
         $this->assertSame($response, $ret);
     }
 
-    /**
-     * @expectedException RuntimeException
-     * @expectedExceptionMessage demo
-     */
     public function testThrowsExceptionDirectlyFromMiddlewareWhenBelowLimit()
     {
         $middleware = new LimitConcurrentRequestsMiddleware(1);
 
+        $this->setExpectedException('RuntimeException', 'demo');
         $middleware(new ServerRequest('GET', 'https://example.com/'), function () {
             throw new \RuntimeException('demo');
         });
@@ -122,13 +119,12 @@ final class LimitConcurrentRequestsMiddlewareTest extends TestCase
 
     /**
      * @requires PHP 7
-     * @expectedException Error
-     * @expectedExceptionMessage demo
      */
     public function testThrowsErrorDirectlyFromMiddlewareWhenBelowLimit()
     {
         $middleware = new LimitConcurrentRequestsMiddleware(1);
 
+        $this->setExpectedException('Error', 'demo');
         $middleware(new ServerRequest('GET', 'https://example.com/'), function () {
             throw new \Error('demo');
         });

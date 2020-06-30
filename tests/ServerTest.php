@@ -14,7 +14,10 @@ final class ServerTest extends TestCase
     private $connection;
     private $socket;
 
-    public function setUp()
+    /**
+     * @before
+     */
+    public function setUpConnectionMockAndSocket()
     {
         $this->connection = $this->getMockBuilder('React\Socket\Connection')
             ->disableOriginalConstructor()
@@ -40,11 +43,9 @@ final class ServerTest extends TestCase
         $this->socket = new SocketServerStub();
     }
 
-    /**
-     * @expectedException InvalidArgumentException
-     */
     public function testInvalidCallbackFunctionLeadsToException()
     {
+        $this->setExpectedException('InvalidArgumentException');
         new Server('invalid');
     }
 

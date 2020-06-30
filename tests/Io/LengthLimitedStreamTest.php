@@ -11,7 +11,10 @@ class LengthLimitedStreamTest extends TestCase
     private $input;
     private $stream;
 
-    public function setUp()
+    /**
+     * @before
+     */
+    public function setUpInput()
     {
         $this->input = new ThroughStream();
     }

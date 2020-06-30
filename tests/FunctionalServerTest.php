@@ -40,8 +40,8 @@ class FunctionalServerTest extends TestCase
 
         $response = Block\await($result, $loop, 1.0);
 
-        $this->assertContains("HTTP/1.0 200 OK", $response);
-        $this->assertContains('http://' . noScheme($socket->getAddress()) . '/', $response);
+        $this->assertContainsString("HTTP/1.0 200 OK", $response);
+        $this->assertContainsString('http://' . noScheme($socket->getAddress()) . '/', $response);
 
         $socket->close();
     }
@@ -68,7 +68,7 @@ class FunctionalServerTest extends TestCase
 
         $response = Block\await($result, $loop, 1.0);
 
-        $this->assertContains("HTTP/1.0 404 Not Found", $response);
+        $this->assertContainsString("HTTP/1.0 404 Not Found", $response);
 
         $socket->close();
     }
@@ -93,8 +93,8 @@ class FunctionalServerTest extends TestCase
 
         $response = Block\await($result, $loop, 1.0);
 
-        $this->assertContains("HTTP/1.0 200 OK", $response);
-        $this->assertContains('http://' . noScheme($socket->getAddress()) . '/', $response);
+        $this->assertContainsString("HTTP/1.0 200 OK", $response);
+        $this->assertContainsString('http://' . noScheme($socket->getAddress()) . '/', $response);
 
         $socket->close();
     }
@@ -119,8 +119,8 @@ class FunctionalServerTest extends TestCase
 
         $response = Block\await($result, $loop, 1.0);
 
-        $this->assertContains("HTTP/1.0 200 OK", $response);
-        $this->assertContains('http://localhost:1000/', $response);
+        $this->assertContainsString("HTTP/1.0 200 OK", $response);
+        $this->assertContainsString('http://localhost:1000/', $response);
 
         $socket->close();
     }
@@ -154,8 +154,8 @@ class FunctionalServerTest extends TestCase
 
         $response = Block\await($result, $loop, 1.0);
 
-        $this->assertContains("HTTP/1.0 200 OK", $response);
-        $this->assertContains('https://' . noScheme($socket->getAddress()) . '/', $response);
+        $this->assertContainsString("HTTP/1.0 200 OK", $response);
+        $this->assertContainsString('https://' . noScheme($socket->getAddress()) . '/', $response);
 
         $socket->close();
     }
@@ -194,8 +194,8 @@ class FunctionalServerTest extends TestCase
 
         $response = Block\await($result, $loop, 1.0);
 
-        $this->assertContains("HTTP/1.0 200 OK", $response);
-        $this->assertContains("\r\nContent-Length: 33000\r\n", $response);
+        $this->assertContainsString("HTTP/1.0 200 OK", $response);
+        $this->assertContainsString("\r\nContent-Length: 33000\r\n", $response);
         $this->assertStringEndsWith("\r\n". str_repeat('.', 33000), $response);
 
         $socket->close();
@@ -230,8 +230,8 @@ class FunctionalServerTest extends TestCase
 
         $response = Block\await($result, $loop, 1.0);
 
-        $this->assertContains("HTTP/1.0 200 OK", $response);
-        $this->assertContains('https://' . noScheme($socket->getAddress()) . '/', $response);
+        $this->assertContainsString("HTTP/1.0 200 OK", $response);
+        $this->assertContainsString('https://' . noScheme($socket->getAddress()) . '/', $response);
 
         $socket->close();
     }
@@ -260,8 +260,8 @@ class FunctionalServerTest extends TestCase
 
         $response = Block\await($result, $loop, 1.0);
 
-        $this->assertContains("HTTP/1.0 200 OK", $response);
-        $this->assertContains('http://127.0.0.1/', $response);
+        $this->assertContainsString("HTTP/1.0 200 OK", $response);
+        $this->assertContainsString('http://127.0.0.1/', $response);
 
         $socket->close();
     }
@@ -290,8 +290,8 @@ class FunctionalServerTest extends TestCase
 
         $response = Block\await($result, $loop, 1.0);
 
-        $this->assertContains("HTTP/1.0 200 OK", $response);
-        $this->assertContains('http://127.0.0.1/', $response);
+        $this->assertContainsString("HTTP/1.0 200 OK", $response);
+        $this->assertContainsString('http://127.0.0.1/', $response);
 
         $socket->close();
     }
@@ -329,8 +329,8 @@ class FunctionalServerTest extends TestCase
 
         $response = Block\await($result, $loop, 1.0);
 
-        $this->assertContains("HTTP/1.0 200 OK", $response);
-        $this->assertContains('https://127.0.0.1/', $response);
+        $this->assertContainsString("HTTP/1.0 200 OK", $response);
+        $this->assertContainsString('https://127.0.0.1/', $response);
 
         $socket->close();
     }
@@ -368,8 +368,8 @@ class FunctionalServerTest extends TestCase
 
         $response = Block\await($result, $loop, 1.0);
 
-        $this->assertContains("HTTP/1.0 200 OK", $response);
-        $this->assertContains('https://127.0.0.1/', $response);
+        $this->assertContainsString("HTTP/1.0 200 OK", $response);
+        $this->assertContainsString('https://127.0.0.1/', $response);
 
         $socket->close();
     }
@@ -398,8 +398,8 @@ class FunctionalServerTest extends TestCase
 
         $response = Block\await($result, $loop, 1.0);
 
-        $this->assertContains("HTTP/1.0 200 OK", $response);
-        $this->assertContains('http://127.0.0.1:443/', $response);
+        $this->assertContainsString("HTTP/1.0 200 OK", $response);
+        $this->assertContainsString('http://127.0.0.1:443/', $response);
 
         $socket->close();
     }
@@ -437,8 +437,8 @@ class FunctionalServerTest extends TestCase
 
         $response = Block\await($result, $loop, 1.0);
 
-        $this->assertContains("HTTP/1.0 200 OK", $response);
-        $this->assertContains('https://127.0.0.1:80/', $response);
+        $this->assertContainsString("HTTP/1.0 200 OK", $response);
+        $this->assertContainsString('https://127.0.0.1:80/', $response);
 
         $socket->close();
     }
@@ -784,7 +784,7 @@ class FunctionalServerTest extends TestCase
         $responses = Block\await(Promise\all($result), $loop, 1.0);
 
         foreach ($responses as $response) {
-            $this->assertContains("HTTP/1.0 200 OK", $response, $response);
+            $this->assertContainsString("HTTP/1.0 200 OK", $response, $response);
             $this->assertTrue(substr($response, -4) == 1024, $response);
         }
 
