@@ -3,13 +3,13 @@
 namespace React\Tests\Http\Io;
 
 use Clue\React\Block;
+use React\Http\Client\Client as HttpClient;
+use React\Http\Client\RequestData;
 use React\Http\Io\Sender;
 use React\Http\Message\ReadableBodyStream;
-use React\Tests\Http\TestCase;
-use React\HttpClient\Client as HttpClient;
-use React\HttpClient\RequestData;
 use React\Promise;
 use React\Stream\ThroughStream;
+use React\Tests\Http\TestCase;
 use RingCentral\Psr7\Request;
 
 class SenderTest extends TestCase
@@ -63,13 +63,13 @@ class SenderTest extends TestCase
 
     public function testSendPostWillAutomaticallySendContentLengthHeader()
     {
-        $client = $this->getMockBuilder('React\HttpClient\Client')->disableOriginalConstructor()->getMock();
+        $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
         $client->expects($this->once())->method('request')->with(
             'POST',
             'http://www.google.com/',
             array('Host' => 'www.google.com', 'Content-Length' => '5'),
             '1.1'
-        )->willReturn($this->getMockBuilder('React\HttpClient\Request')->disableOriginalConstructor()->getMock());
+        )->willReturn($this->getMockBuilder('React\Http\Client\Request')->disableOriginalConstructor()->getMock());
 
         $sender = new Sender($client, $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
 
@@ -79,13 +79,13 @@ class SenderTest extends TestCase
 
     public function testSendPostWillAutomaticallySendContentLengthZeroHeaderForEmptyRequestBody()
     {
-        $client = $this->getMockBuilder('React\HttpClient\Client')->disableOriginalConstructor()->getMock();
+        $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
         $client->expects($this->once())->method('request')->with(
             'POST',
             'http://www.google.com/',
             array('Host' => 'www.google.com', 'Content-Length' => '0'),
             '1.1'
-        )->willReturn($this->getMockBuilder('React\HttpClient\Request')->disableOriginalConstructor()->getMock());
+        )->willReturn($this->getMockBuilder('React\Http\Client\Request')->disableOriginalConstructor()->getMock());
 
         $sender = new Sender($client, $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
 
@@ -95,10 +95,10 @@ class SenderTest extends TestCase
 
     public function testSendPostStreamWillAutomaticallySendTransferEncodingChunked()
     {
-        $outgoing = $this->getMockBuilder('React\HttpClient\Request')->disableOriginalConstructor()->getMock();
+        $outgoing = $this->getMockBuilder('React\Http\Client\Request')->disableOriginalConstructor()->getMock();
         $outgoing->expects($this->once())->method('write')->with("");
 
-        $client = $this->getMockBuilder('React\HttpClient\Client')->disableOriginalConstructor()->getMock();
+        $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
         $client->expects($this->once())->method('request')->with(
             'POST',
             'http://www.google.com/',
@@ -115,11 +115,11 @@ class SenderTest extends TestCase
 
     public function testSendPostStreamWillAutomaticallyPipeChunkEncodeBodyForWriteAndRespectRequestThrottling()
     {
-        $outgoing = $this->getMockBuilder('React\HttpClient\Request')->disableOriginalConstructor()->getMock();
+        $outgoing = $this->getMockBuilder('React\Http\Client\Request')->disableOriginalConstructor()->getMock();
         $outgoing->expects($this->once())->method('isWritable')->willReturn(true);
         $outgoing->expects($this->exactly(2))->method('write')->withConsecutive(array(""), array("5\r\nhello\r\n"))->willReturn(false);
 
-        $client = $this->getMockBuilder('React\HttpClient\Client')->disableOriginalConstructor()->getMock();
+        $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
         $client->expects($this->once())->method('request')->willReturn($outgoing);
 
         $sender = new Sender($client, $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
@@ -134,12 +134,12 @@ class SenderTest extends TestCase
 
     public function testSendPostStreamWillAutomaticallyPipeChunkEncodeBodyForEnd()
     {
-        $outgoing = $this->getMockBuilder('React\HttpClient\Request')->disableOriginalConstructor()->getMock();
+        $outgoing = $this->getMockBuilder('React\Http\Client\Request')->disableOriginalConstructor()->getMock();
         $outgoing->expects($this->once())->method('isWritable')->willReturn(true);
         $outgoing->expects($this->exactly(2))->method('write')->withConsecutive(array(""), array("0\r\n\r\n"))->willReturn(false);
         $outgoing->expects($this->once())->method('end')->with(null);
 
-        $client = $this->getMockBuilder('React\HttpClient\Client')->disableOriginalConstructor()->getMock();
+        $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
         $client->expects($this->once())->method('request')->willReturn($outgoing);
 
         $sender = new Sender($client, $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
@@ -153,13 +153,13 @@ class SenderTest extends TestCase
 
     public function testSendPostStreamWillRejectWhenRequestBodyEmitsErrorEvent()
     {
-        $outgoing = $this->getMockBuilder('React\HttpClient\Request')->disableOriginalConstructor()->getMock();
+        $outgoing = $this->getMockBuilder('React\Http\Client\Request')->disableOriginalConstructor()->getMock();
         $outgoing->expects($this->once())->method('isWritable')->willReturn(true);
         $outgoing->expects($this->once())->method('write')->with("")->willReturn(false);
         $outgoing->expects($this->never())->method('end');
         $outgoing->expects($this->once())->method('close');
 
-        $client = $this->getMockBuilder('React\HttpClient\Client')->disableOriginalConstructor()->getMock();
+        $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
         $client->expects($this->once())->method('request')->willReturn($outgoing);
 
         $sender = new Sender($client, $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
@@ -183,13 +183,13 @@ class SenderTest extends TestCase
 
     public function testSendPostStreamWillRejectWhenRequestBodyClosesWithoutEnd()
     {
-        $outgoing = $this->getMockBuilder('React\HttpClient\Request')->disableOriginalConstructor()->getMock();
+        $outgoing = $this->getMockBuilder('React\Http\Client\Request')->disableOriginalConstructor()->getMock();
         $outgoing->expects($this->once())->method('isWritable')->willReturn(true);
         $outgoing->expects($this->once())->method('write')->with("")->willReturn(false);
         $outgoing->expects($this->never())->method('end');
         $outgoing->expects($this->once())->method('close');
 
-        $client = $this->getMockBuilder('React\HttpClient\Client')->disableOriginalConstructor()->getMock();
+        $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
         $client->expects($this->once())->method('request')->willReturn($outgoing);
 
         $sender = new Sender($client, $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
@@ -211,13 +211,13 @@ class SenderTest extends TestCase
 
     public function testSendPostStreamWillNotRejectWhenRequestBodyClosesAfterEnd()
     {
-        $outgoing = $this->getMockBuilder('React\HttpClient\Request')->disableOriginalConstructor()->getMock();
+        $outgoing = $this->getMockBuilder('React\Http\Client\Request')->disableOriginalConstructor()->getMock();
         $outgoing->expects($this->once())->method('isWritable')->willReturn(true);
         $outgoing->expects($this->exactly(2))->method('write')->withConsecutive(array(""), array("0\r\n\r\n"))->willReturn(false);
         $outgoing->expects($this->once())->method('end');
         $outgoing->expects($this->never())->method('close');
 
-        $client = $this->getMockBuilder('React\HttpClient\Client')->disableOriginalConstructor()->getMock();
+        $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
         $client->expects($this->once())->method('request')->willReturn($outgoing);
 
         $sender = new Sender($client, $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
@@ -239,13 +239,13 @@ class SenderTest extends TestCase
 
     public function testSendPostStreamWithExplicitContentLengthWillSendHeaderAsIs()
     {
-        $client = $this->getMockBuilder('React\HttpClient\Client')->disableOriginalConstructor()->getMock();
+        $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
         $client->expects($this->once())->method('request')->with(
             'POST',
             'http://www.google.com/',
             array('Host' => 'www.google.com', 'Content-Length' => '100'),
             '1.1'
-        )->willReturn($this->getMockBuilder('React\HttpClient\Request')->disableOriginalConstructor()->getMock());
+        )->willReturn($this->getMockBuilder('React\Http\Client\Request')->disableOriginalConstructor()->getMock());
 
         $sender = new Sender($client, $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
 
@@ -256,13 +256,13 @@ class SenderTest extends TestCase
 
     public function testSendGetWillNotPassContentLengthHeaderForEmptyRequestBody()
     {
-        $client = $this->getMockBuilder('React\HttpClient\Client')->disableOriginalConstructor()->getMock();
+        $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
         $client->expects($this->once())->method('request')->with(
             'GET',
             'http://www.google.com/',
             array('Host' => 'www.google.com'),
             '1.1'
-        )->willReturn($this->getMockBuilder('React\HttpClient\Request')->disableOriginalConstructor()->getMock());
+        )->willReturn($this->getMockBuilder('React\Http\Client\Request')->disableOriginalConstructor()->getMock());
 
         $sender = new Sender($client, $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
 
@@ -272,13 +272,13 @@ class SenderTest extends TestCase
 
     public function testSendCustomMethodWillNotPassContentLengthHeaderForEmptyRequestBody()
     {
-        $client = $this->getMockBuilder('React\HttpClient\Client')->disableOriginalConstructor()->getMock();
+        $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
         $client->expects($this->once())->method('request')->with(
             'CUSTOM',
             'http://www.google.com/',
             array('Host' => 'www.google.com'),
             '1.1'
-        )->willReturn($this->getMockBuilder('React\HttpClient\Request')->disableOriginalConstructor()->getMock());
+        )->willReturn($this->getMockBuilder('React\Http\Client\Request')->disableOriginalConstructor()->getMock());
 
         $sender = new Sender($client, $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
 
@@ -288,13 +288,13 @@ class SenderTest extends TestCase
 
     public function testSendCustomMethodWithExplicitContentLengthZeroWillBePassedAsIs()
     {
-        $client = $this->getMockBuilder('React\HttpClient\Client')->disableOriginalConstructor()->getMock();
+        $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
         $client->expects($this->once())->method('request')->with(
             'CUSTOM',
             'http://www.google.com/',
             array('Host' => 'www.google.com', 'Content-Length' => '0'),
             '1.1'
-        )->willReturn($this->getMockBuilder('React\HttpClient\Request')->disableOriginalConstructor()->getMock());
+        )->willReturn($this->getMockBuilder('React\Http\Client\Request')->disableOriginalConstructor()->getMock());
 
         $sender = new Sender($client, $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
 
@@ -370,7 +370,7 @@ class SenderTest extends TestCase
      */
     public function testRequestProtocolVersion(Request $Request, $method, $uri, $headers, $protocolVersion)
     {
-        $http = $this->getMockBuilder('React\HttpClient\Client')
+        $http = $this->getMockBuilder('React\Http\Client\Client')
                     ->setMethods(array(
                         'request',
                     ))
@@ -378,7 +378,7 @@ class SenderTest extends TestCase
                         $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock(),
                     ))->getMock();
 
-        $request = $this->getMockBuilder('React\HttpClient\Request')
+        $request = $this->getMockBuilder('React\Http\Client\Request')
                         ->setMethods(array())
                         ->setConstructorArgs(array(
                             $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock(),
