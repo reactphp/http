@@ -120,19 +120,6 @@ class BrowserTest extends TestCase
         $this->browser->requestStreaming('GET', 'http://example.com/');
     }
 
-    public function testSubmitSendsPostRequest()
-    {
-        $that = $this;
-        $this->sender->expects($this->once())->method('send')->with($this->callback(function (RequestInterface $request) use ($that) {
-            $that->assertEquals('POST', $request->getMethod());
-            $that->assertEquals('application/x-www-form-urlencoded', $request->getHeaderLine('Content-Type'));
-            $that->assertEquals('', (string)$request->getBody());
-            return true;
-        }))->willReturn(new Promise(function () { }));
-
-        $this->browser->submit('http://example.com/', array());
-    }
-
     public function testWithTimeoutTrueSetsDefaultTimeoutOption()
     {
         $this->sender->expects($this->once())->method('withOptions')->with(array('timeout' => null))->willReturnSelf();
@@ -356,7 +343,7 @@ class BrowserTest extends TestCase
 
     public function testWithoutBaseFollowedByGetRequestTriesToSendIncompleteRequestUrl()
     {
-        $this->browser = $this->browser->withBase('http://example.com')->withoutBase();
+        $this->browser = $this->browser->withBase('http://example.com')->withBase(null);
 
         $that = $this;
         $this->sender->expects($this->once())->method('send')->with($this->callback(function (RequestInterface $request) use ($that) {
@@ -378,19 +365,6 @@ class BrowserTest extends TestCase
         }))->willReturn(new Promise(function () { }));
 
         $this->browser->get('http://example.com/');
-    }
-
-    public function testWithProtocolVersionFollowedBySubmitRequestSendsRequestWithProtocolVersion()
-    {
-        $this->browser = $this->browser->withProtocolVersion('1.0');
-
-        $that = $this;
-        $this->sender->expects($this->once())->method('send')->with($this->callback(function (RequestInterface $request) use ($that) {
-            $that->assertEquals('1.0', $request->getProtocolVersion());
-            return true;
-        }))->willReturn(new Promise(function () { }));
-
-        $this->browser->submit('http://example.com/', array());
     }
 
     public function testWithProtocolVersionInvalidThrows()

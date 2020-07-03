@@ -180,9 +180,9 @@ class FunctionalBrowserTest extends TestCase
         Block\await($promise, $this->loop);
     }
 
-    public function testCancelSendWithPromiseFollowerWillRejectRequest()
+    public function testCancelRequestWithPromiseFollowerWillRejectRequest()
     {
-        $promise = $this->browser->send(new Request('GET', $this->base . 'get'))->then(function () {
+        $promise = $this->browser->request('GET', $this->base . 'get')->then(function () {
             var_dump('noop');
         });
         $promise->cancel();
@@ -455,7 +455,7 @@ class FunctionalBrowserTest extends TestCase
 
     public function testReceiveStreamChunkedForHttp11()
     {
-        $response = Block\await($this->browser->send(new Request('GET', $this->base . 'stream/1', array(), null, '1.1')), $this->loop);
+        $response = Block\await($this->browser->request('GET', $this->base . 'stream/1'), $this->loop);
 
         $this->assertEquals('1.1', $response->getProtocolVersion());
 
@@ -600,15 +600,6 @@ class FunctionalBrowserTest extends TestCase
         $this->assertEquals('5', $response->getHeaderLine('Content-Length'));
     }
 
-    public function testRequestGetReceivesBufferedResponseEvenWhenStreamingOptionHasBeenTurnedOn()
-    {
-        $response = Block\await(
-            $this->browser->withOptions(array('streaming' => true))->request('GET', $this->base . 'get'),
-            $this->loop
-        );
-        $this->assertEquals('hello', (string)$response->getBody());
-    }
-
     public function testRequestStreamingGetReceivesStreamingResponseBody()
     {
         $buffer = Block\await(
@@ -619,16 +610,6 @@ class FunctionalBrowserTest extends TestCase
         );
 
         $this->assertEquals('hello', $buffer);
-    }
-
-    public function testRequestStreamingGetReceivesStreamingResponseEvenWhenStreamingOptionHasBeenTurnedOff()
-    {
-        $response = Block\await(
-            $this->browser->withOptions(array('streaming' => false))->requestStreaming('GET', $this->base . 'get'),
-            $this->loop
-        );
-        $this->assertInstanceOf('React\Stream\ReadableStreamInterface', $response->getBody());
-        $this->assertEquals('', (string)$response->getBody());
     }
 
     public function testRequestStreamingGetReceivesStreamingResponseBodyEvenWhenResponseBufferExceeded()

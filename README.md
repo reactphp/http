@@ -52,16 +52,12 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
         * [delete()](#delete)
         * [request()](#request)
         * [requestStreaming()](#requeststreaming)
-        * [~~submit()~~](#submit)
-        * [~~send()~~](#send)
         * [withTimeout()](#withtimeout)
         * [withFollowRedirects()](#withfollowredirects)
         * [withRejectErrorResponse()](#withrejecterrorresponse)
         * [withBase()](#withbase)
         * [withProtocolVersion()](#withprotocolversion)
         * [withResponseBuffer()](#withresponsebuffer)
-        * [~~withOptions()~~](#withoptions)
-        * [~~withoutBase()~~](#withoutbase)
     * [React\Http\Middleware](#reacthttpmiddleware)
         * [StreamingRequestMiddleware](#streamingrequestmiddleware)
         * [LimitConcurrentRequestsMiddleware](#limitconcurrentrequestsmiddleware)
@@ -69,7 +65,6 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
         * [RequestBodyParserMiddleware](#requestbodyparsermiddleware)
     * [ResponseInterface](#responseinterface)
     * [RequestInterface](#requestinterface)
-    * [UriInterface](#uriinterface)
     * [ResponseException](#responseexception)
 * [Install](#install)
 * [Tests](#tests)
@@ -117,8 +112,6 @@ See also the [examples](examples).
 ## Client Usage
 
 ### Request methods
-
-<a id="methods"></a><!-- legacy fragment id -->
 
 Most importantly, this project provides a [`Browser`](#browser) object that
 offers several methods that resemble the HTTP protocol methods:
@@ -450,8 +443,6 @@ more details.
 
 ### Streaming response
 
-<a id="streaming"></a><!-- legacy fragment id -->
-
 All of the above examples assume you want to store the whole response body in memory.
 This is easy to get started and works reasonably well for smaller responses.
 
@@ -557,10 +548,6 @@ $stream->on('data', function ($data) {
 ```
 
 See also the [`requestStreaming()`](#requeststreaming) method for more details.
-
-> Legacy info: Legacy versions prior to v2.9.0 used the legacy
-  [`streaming` option](#withoptions). This option is now deprecated but otherwise
-  continues to show the exact same behavior.
 
 ### Streaming request
 
@@ -1105,8 +1092,6 @@ header or when using `Transfer-Encoding: chunked` for HTTP/1.1 requests.
 
 #### Streaming incoming request
 
-<a id="streaming-request"></a><!-- legacy fragment id -->
-
 If you're using the advanced [`StreamingRequestMiddleware`](#streamingrequestmiddleware),
 the request object will be processed once the request headers have been received.
 This means that this happens irrespective of (i.e. *before*) receiving the
@@ -1412,8 +1397,6 @@ allocated in this case (if applicable).
 If a promise is resolved after the client closes, it will simply be ignored.
 
 #### Streaming outgoing response
-
-<a id="streaming-response"></a><!-- legacy fragment id -->
 
 The `Response` class in this project supports to add an instance which implements the
 [ReactPHP ReadableStreamInterface](https://github.com/reactphp/stream#readablestreaminterface)
@@ -1859,7 +1842,7 @@ $browser = new React\Http\Browser($loop, $connector);
 
 #### get()
 
-The `get(string|UriInterface $url, array $headers = array()): PromiseInterface<ResponseInterface>` method can be used to
+The `get(string $url, array $headers = array()): PromiseInterface<ResponseInterface>` method can be used to
 send an HTTP GET request.
 
 ```php
@@ -1870,13 +1853,9 @@ $browser->get($url)->then(function (Psr\Http\Message\ResponseInterface $response
 
 See also [example 01](examples/01-google.php).
 
-> For BC reasons, this method accepts the `$url` as either a `string`
-  value or as an `UriInterface`. It's recommended to explicitly cast any
-  objects implementing `UriInterface` to `string`.
-
 #### post()
 
-The `post(string|UriInterface $url, array $headers = array(), string|ReadableStreamInterface $contents = ''): PromiseInterface<ResponseInterface>` method can be used to
+The `post(string $url, array $headers = array(), string|ReadableStreamInterface $contents = ''): PromiseInterface<ResponseInterface>` method can be used to
 send an HTTP POST request.
 
 ```php
@@ -1925,13 +1904,9 @@ $loop->addTimer(1.0, function () use ($body) {
 $browser->post($url, array('Content-Length' => '11'), $body);
 ```
 
-> For BC reasons, this method accepts the `$url` as either a `string`
-  value or as an `UriInterface`. It's recommended to explicitly cast any
-  objects implementing `UriInterface` to `string`.
-
 #### head()
 
-The `head(string|UriInterface $url, array $headers = array()): PromiseInterface<ResponseInterface>` method can be used to
+The `head(string $url, array $headers = array()): PromiseInterface<ResponseInterface>` method can be used to
 send an HTTP HEAD request.
 
 ```php
@@ -1940,13 +1915,9 @@ $browser->head($url)->then(function (Psr\Http\Message\ResponseInterface $respons
 });
 ```
 
-> For BC reasons, this method accepts the `$url` as either a `string`
-  value or as an `UriInterface`. It's recommended to explicitly cast any
-  objects implementing `UriInterface` to `string`.
-
 #### patch()
 
-The `patch(string|UriInterface $url, array $headers = array(), string|ReadableStreamInterface $contents = ''): PromiseInterface<ResponseInterface>` method can be used to
+The `patch(string $url, array $headers = array(), string|ReadableStreamInterface $contents = ''): PromiseInterface<ResponseInterface>` method can be used to
 send an HTTP PATCH request.
 
 ```php
@@ -1976,13 +1947,9 @@ $loop->addTimer(1.0, function () use ($body) {
 $browser->patch($url, array('Content-Length' => '11'), $body);
 ```
 
-> For BC reasons, this method accepts the `$url` as either a `string`
-  value or as an `UriInterface`. It's recommended to explicitly cast any
-  objects implementing `UriInterface` to `string`.
-
 #### put()
 
-The `put(string|UriInterface $url, array $headers = array()): PromiseInterface<ResponseInterface>` method can be used to
+The `put(string $url, array $headers = array()): PromiseInterface<ResponseInterface>` method can be used to
 send an HTTP PUT request.
 
 ```php
@@ -2014,13 +1981,9 @@ $loop->addTimer(1.0, function () use ($body) {
 $browser->put($url, array('Content-Length' => '11'), $body);
 ```
 
-> For BC reasons, this method accepts the `$url` as either a `string`
-  value or as an `UriInterface`. It's recommended to explicitly cast any
-  objects implementing `UriInterface` to `string`.
-
 #### delete()
 
-The `delete(string|UriInterface $url, array $headers = array()): PromiseInterface<ResponseInterface>` method can be used to
+The `delete(string $url, array $headers = array()): PromiseInterface<ResponseInterface>` method can be used to
 send an HTTP DELETE request.
 
 ```php
@@ -2028,10 +1991,6 @@ $browser->delete($url)->then(function (Psr\Http\Message\ResponseInterface $respo
     var_dump((string)$response->getBody());
 });
 ```
-
-> For BC reasons, this method accepts the `$url` as either a `string`
-  value or as an `UriInterface`. It's recommended to explicitly cast any
-  objects implementing `UriInterface` to `string`.
 
 #### request()
 
@@ -2069,12 +2028,6 @@ $loop->addTimer(1.0, function () use ($body) {
 
 $browser->request('POST', $url, array('Content-Length' => '11'), $body);
 ```
-
-> Note that this method is available as of v2.9.0 and always buffers the
-  response body before resolving.
-  It does not respect the deprecated [`streaming` option](#withoptions).
-  If you want to stream the response body, you can use the
-  [`requestStreaming()`](#requeststreaming) method instead.
 
 #### requestStreaming()
 
@@ -2137,55 +2090,6 @@ $loop->addTimer(1.0, function () use ($body) {
 
 $browser->requestStreaming('POST', $url, array('Content-Length' => '11'), $body);
 ```
-
-> Note that this method is available as of v2.9.0 and always resolves the
-  response without buffering the response body.
-  It does not respect the deprecated [`streaming` option](#withoptions).
-  If you want to buffer the response body, use can use the
-  [`request()`](#request) method instead.
-
-#### ~~submit()~~
-
-> Deprecated since v2.9.0, see [`post()`](#post) instead.
-
-The deprecated `submit(string|UriInterface $url, array $fields, array $headers = array(), string $method = 'POST'): PromiseInterface<ResponseInterface>` method can be used to
-submit an array of field values similar to submitting a form (`application/x-www-form-urlencoded`).
-
-```php
-// deprecated: see post() instead
-$browser->submit($url, array('user' => 'test', 'password' => 'secret'));
-```
-
-> For BC reasons, this method accepts the `$url` as either a `string`
-  value or as an `UriInterface`. It's recommended to explicitly cast any
-  objects implementing `UriInterface` to `string`.
-
-#### ~~send()~~
-
-> Deprecated since v2.9.0, see [`request()`](#request) instead.
-
-The deprecated `send(RequestInterface $request): PromiseInterface<ResponseInterface>` method can be used to
-send an arbitrary instance implementing the [`RequestInterface`](#requestinterface) (PSR-7).
-
-The preferred way to send an HTTP request is by using the above
-[request methods](#request-methods), for example the [`get()`](#get)
-method to send an HTTP `GET` request.
-
-As an alternative, if you want to use a custom HTTP request method, you
-can use this method:
-
-```php
-$request = new Request('OPTIONS', $url);
-
-// deprecated: see request() instead
-$browser->send($request)->then(…);
-```
-
-This method will automatically add a matching `Content-Length` request
-header if the size of the outgoing request body is known and non-empty.
-For an empty request body, if will only include a `Content-Length: 0`
-request header if the request method usually expects a request body (only
-applies to `POST`, `PUT` and `PATCH`).
 
 #### withTimeout()
 
@@ -2313,7 +2217,7 @@ given setting applied.
 
 #### withBase()
 
-The `withBase(string|null|UriInterface $baseUrl): Browser` method can be used to
+The `withBase(string|null $baseUrl): Browser` method can be used to
 change the base URL used to resolve relative URLs to.
 
 If you configure a base URL, any requests to relative URLs will be
@@ -2345,14 +2249,6 @@ This method will throw an `InvalidArgumentException` if the given
 
 Notice that the [`Browser`](#browser) is an immutable object, i.e. the `withBase()` method
 actually returns a *new* [`Browser`](#browser) instance with the given base URL applied.
-
-> For BC reasons, this method accepts the `$baseUrl` as either a `string`
-  value or as an `UriInterface`. It's recommended to explicitly cast any
-  objects implementing `UriInterface` to `string`.
-
-> Changelog: As of v2.9.0 this method accepts a `null` value to reset the
-  base URL. Earlier versions had to use the deprecated `withoutBase()`
-  method to reset the base URL.
 
 #### withProtocolVersion()
 
@@ -2414,54 +2310,6 @@ this maximum buffer size setting has no effect on streaming responses.
 Notice that the [`Browser`](#browser) is an immutable object, i.e. this
 method actually returns a *new* [`Browser`](#browser) instance with the
 given setting applied.
-
-#### ~~withOptions()~~
-
-> Deprecated since v2.9.0, see [`withTimeout()`](#withtimeout), [`withFollowRedirects()`](#withfollowredirects)
-  and [`withRejectErrorResponse()`](#withrejecterrorresponse) instead.
-
-The deprecated `withOptions(array $options): Browser` method can be used to
-change the options to use:
-
-The [`Browser`](#browser) class exposes several options for the handling of
-HTTP transactions. These options resemble some of PHP's
-[HTTP context options](https://www.php.net/manual/en/context.http.php) and
-can be controlled via the following API (and their defaults):
-
-```php
-// deprecated
-$newBrowser = $browser->withOptions(array(
-    'timeout' => null, // see withTimeout() instead
-    'followRedirects' => true, // see withFollowRedirects() instead
-    'maxRedirects' => 10, // see withFollowRedirects() instead
-    'obeySuccessCode' => true, // see withRejectErrorResponse() instead
-    'streaming' => false, // deprecated, see requestStreaming() instead
-));
-```
-
-See also [timeouts](#timeouts), [redirects](#redirects) and
-[streaming](#streaming-response) for more details.
-
-Notice that the [`Browser`](#browser) is an immutable object, i.e. this
-method actually returns a *new* [`Browser`](#browser) instance with the
-options applied.
-
-#### ~~withoutBase()~~
-
-> Deprecated since v2.9.0, see [`withBase()`](#withbase) instead.
-
-The deprecated `withoutBase(): Browser` method can be used to
-remove the base URL.
-
-```php
-// deprecated: see withBase() instead
-$newBrowser = $browser->withoutBase();
-```
-
-Notice that the [`Browser`](#browser) is an immutable object, i.e. the `withoutBase()` method
-actually returns a *new* [`Browser`](#browser) instance without any base URL applied.
-
-See also [`withBase()`](#withbase).
 
 ### React\Http\Middleware
 
@@ -2768,18 +2616,6 @@ This is a standard interface defined in
 [`RequestInterface` definition](https://www.php-fig.org/psr/psr-7/#3-2-psr-http-message-requestinterface)
 which in turn extends the
 [`MessageInterface` definition](https://www.php-fig.org/psr/psr-7/#3-1-psr-http-message-messageinterface).
-
-### UriInterface
-
-The `Psr\Http\Message\UriInterface` represents an absolute or relative URI (aka URL).
-
-This is a standard interface defined in
-[PSR-7: HTTP message interfaces](https://www.php-fig.org/psr/psr-7/), see its
-[`UriInterface` definition](https://www.php-fig.org/psr/psr-7/#3-5-psr-http-message-uriinterface).
-
-> For BC reasons, the request methods accept the URL as either a `string`
-  value or as an `UriInterface`. It's recommended to explicitly cast any
-  objects implementing `UriInterface` to `string`.
 
 ### ResponseException
 

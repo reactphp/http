@@ -75,12 +75,8 @@ class Browser
      *
      * See also [example 01](../examples/01-google.php).
      *
-     * > For BC reasons, this method accepts the `$url` as either a `string`
-     *   value or as an `UriInterface`. It's recommended to explicitly cast any
-     *   objects implementing `UriInterface` to `string`.
-     *
-     * @param string|UriInterface $url URL for the request.
-     * @param array               $headers
+     * @param string $url     URL for the request.
+     * @param array  $headers
      * @return PromiseInterface<ResponseInterface>
      */
     public function get($url, array $headers = array())
@@ -137,11 +133,7 @@ class Browser
      * $browser->post($url, array('Content-Length' => '11'), $body);
      * ```
      *
-     * > For BC reasons, this method accepts the `$url` as either a `string`
-     *   value or as an `UriInterface`. It's recommended to explicitly cast any
-     *   objects implementing `UriInterface` to `string`.
-     *
-     * @param string|UriInterface            $url     URL for the request.
+     * @param string                         $url      URL for the request.
      * @param array                          $headers
      * @param string|ReadableStreamInterface $contents
      * @return PromiseInterface<ResponseInterface>
@@ -160,12 +152,8 @@ class Browser
      * });
      * ```
      *
-     * > For BC reasons, this method accepts the `$url` as either a `string`
-     *   value or as an `UriInterface`. It's recommended to explicitly cast any
-     *   objects implementing `UriInterface` to `string`.
-     *
-     * @param string|UriInterface $url     URL for the request.
-     * @param array               $headers
+     * @param string $url     URL for the request.
+     * @param array  $headers
      * @return PromiseInterface<ResponseInterface>
      */
     public function head($url, array $headers = array())
@@ -203,11 +191,7 @@ class Browser
      * $browser->patch($url, array('Content-Length' => '11'), $body);
      * ```
      *
-     * > For BC reasons, this method accepts the `$url` as either a `string`
-     *   value or as an `UriInterface`. It's recommended to explicitly cast any
-     *   objects implementing `UriInterface` to `string`.
-     *
-     * @param string|UriInterface            $url     URL for the request.
+     * @param string                         $url      URL for the request.
      * @param array                          $headers
      * @param string|ReadableStreamInterface $contents
      * @return PromiseInterface<ResponseInterface>
@@ -249,11 +233,7 @@ class Browser
      * $browser->put($url, array('Content-Length' => '11'), $body);
      * ```
      *
-     * > For BC reasons, this method accepts the `$url` as either a `string`
-     *   value or as an `UriInterface`. It's recommended to explicitly cast any
-     *   objects implementing `UriInterface` to `string`.
-     *
-     * @param string|UriInterface            $url     URL for the request.
+     * @param string                         $url      URL for the request.
      * @param array                          $headers
      * @param string|ReadableStreamInterface $contents
      * @return PromiseInterface<ResponseInterface>
@@ -272,11 +252,7 @@ class Browser
      * });
      * ```
      *
-     * > For BC reasons, this method accepts the `$url` as either a `string`
-     *   value or as an `UriInterface`. It's recommended to explicitly cast any
-     *   objects implementing `UriInterface` to `string`.
-     *
-     * @param string|UriInterface            $url     URL for the request.
+     * @param string                         $url      URL for the request.
      * @param array                          $headers
      * @param string|ReadableStreamInterface $contents
      * @return PromiseInterface<ResponseInterface>
@@ -321,18 +297,11 @@ class Browser
      * $browser->request('POST', $url, array('Content-Length' => '11'), $body);
      * ```
      *
-     * > Note that this method is available as of v2.9.0 and always buffers the
-     *   response body before resolving.
-     *   It does not respect the deprecated [`streaming` option](#withoptions).
-     *   If you want to stream the response body, you can use the
-     *   [`requestStreaming()`](#requeststreaming) method instead.
-     *
      * @param string                         $method   HTTP request method, e.g. GET/HEAD/POST etc.
      * @param string                         $url      URL for the request
      * @param array                          $headers  Additional request headers
      * @param string|ReadableStreamInterface $body     HTTP request body contents
      * @return PromiseInterface<ResponseInterface,Exception>
-     * @since 2.9.0
      */
     public function request($method, $url, array $headers = array(), $body = '')
     {
@@ -399,91 +368,15 @@ class Browser
      * $browser->requestStreaming('POST', $url, array('Content-Length' => '11'), $body);
      * ```
      *
-     * > Note that this method is available as of v2.9.0 and always resolves the
-     *   response without buffering the response body.
-     *   It does not respect the deprecated [`streaming` option](#withoptions).
-     *   If you want to buffer the response body, use can use the
-     *   [`request()`](#request) method instead.
-     *
      * @param string                         $method   HTTP request method, e.g. GET/HEAD/POST etc.
      * @param string                         $url      URL for the request
      * @param array                          $headers  Additional request headers
      * @param string|ReadableStreamInterface $body     HTTP request body contents
      * @return PromiseInterface<ResponseInterface,Exception>
-     * @since 2.9.0
      */
     public function requestStreaming($method, $url, $headers = array(), $contents = '')
     {
         return $this->withOptions(array('streaming' => true))->requestMayBeStreaming($method, $url, $headers, $contents);
-    }
-
-    /**
-     * [Deprecated] Submits an array of field values similar to submitting a form (`application/x-www-form-urlencoded`).
-     *
-     * ```php
-     * // deprecated: see post() instead
-     * $browser->submit($url, array('user' => 'test', 'password' => 'secret'));
-     * ```
-     *
-     * This method will automatically add a matching `Content-Length` request
-     * header for the encoded length of the given `$fields`.
-     *
-     * > For BC reasons, this method accepts the `$url` as either a `string`
-     *   value or as an `UriInterface`. It's recommended to explicitly cast any
-     *   objects implementing `UriInterface` to `string`.
-     *
-     * @param string|UriInterface $url     URL for the request.
-     * @param array               $fields
-     * @param array               $headers
-     * @param string              $method
-     * @return PromiseInterface<ResponseInterface>
-     * @deprecated 2.9.0 See self::post() instead.
-     * @see self::post()
-     */
-    public function submit($url, array $fields, $headers = array(), $method = 'POST')
-    {
-        $headers['Content-Type'] = 'application/x-www-form-urlencoded';
-        $contents = http_build_query($fields);
-
-        return $this->requestMayBeStreaming($method, $url, $headers, $contents);
-    }
-
-    /**
-     * [Deprecated] Sends an arbitrary instance implementing the [`RequestInterface`](#requestinterface) (PSR-7).
-     *
-     * The preferred way to send an HTTP request is by using the above
-     * [request methods](#request-methods), for example the [`get()`](#get)
-     * method to send an HTTP `GET` request.
-     *
-     * As an alternative, if you want to use a custom HTTP request method, you
-     * can use this method:
-     *
-     * ```php
-     * $request = new Request('OPTIONS', $url);
-     *
-     * // deprecated: see request() instead
-     * $browser->send($request)->then(…);
-     * ```
-     *
-     * This method will automatically add a matching `Content-Length` request
-     * header if the size of the outgoing request body is known and non-empty.
-     * For an empty request body, if will only include a `Content-Length: 0`
-     * request header if the request method usually expects a request body (only
-     * applies to `POST`, `PUT` and `PATCH`).
-     *
-     * @param RequestInterface $request
-     * @return PromiseInterface<ResponseInterface>
-     * @deprecated 2.9.0 See self::request() instead.
-     * @see self::request()
-     */
-    public function send(RequestInterface $request)
-    {
-        if ($this->baseUrl !== null) {
-            // ensure we're actually below the base URL
-            $request = $request->withUri($this->messageFactory->expandBase($request->getUri(), $this->baseUrl));
-        }
-
-        return $this->transaction->send($request);
     }
 
     /**
@@ -676,15 +569,7 @@ class Browser
      * Notice that the [`Browser`](#browser) is an immutable object, i.e. the `withBase()` method
      * actually returns a *new* [`Browser`](#browser) instance with the given base URL applied.
      *
-     * > For BC reasons, this method accepts the `$baseUrl` as either a `string`
-     *   value or as an `UriInterface`. It's recommended to explicitly cast any
-     *   objects implementing `UriInterface` to `string`.
-     *
-     * > Changelog: As of v2.9.0 this method accepts a `null` value to reset the
-     *   base URL. Earlier versions had to use the deprecated `withoutBase()`
-     *   method to reset the base URL.
-     *
-     * @param string|null|UriInterface $baseUrl absolute base URL
+     * @param string|null $baseUrl absolute base URL
      * @return self
      * @throws InvalidArgumentException if the given $baseUrl is not a valid absolute URL
      * @see self::withoutBase()
@@ -730,7 +615,6 @@ class Browser
      * @param string $protocolVersion HTTP protocol version to use, must be one of "1.1" or "1.0"
      * @return self
      * @throws InvalidArgumentException
-     * @since 2.8.0
      */
     public function withProtocolVersion($protocolVersion)
     {
@@ -791,7 +675,7 @@ class Browser
     }
 
     /**
-     * [Deprecated] Changes the [options](#options) to use:
+     * Changes the [options](#options) to use:
      *
      * The [`Browser`](#browser) class exposes several options for the handling of
      * HTTP transactions. These options resemble some of PHP's
@@ -818,39 +702,16 @@ class Browser
      *
      * @param array $options
      * @return self
-     * @deprecated 2.9.0 See self::withTimeout(), self::withFollowRedirects() and self::withRejectErrorResponse() instead.
      * @see self::withTimeout()
      * @see self::withFollowRedirects()
      * @see self::withRejectErrorResponse()
      */
-    public function withOptions(array $options)
+    private function withOptions(array $options)
     {
         $browser = clone $this;
         $browser->transaction = $this->transaction->withOptions($options);
 
         return $browser;
-    }
-
-    /**
-     * [Deprecated] Removes the base URL.
-     *
-     * ```php
-     * // deprecated: see withBase() instead
-     * $newBrowser = $browser->withoutBase();
-     * ```
-     *
-     * Notice that the [`Browser`](#browser) is an immutable object, i.e. the `withoutBase()` method
-     * actually returns a *new* [`Browser`](#browser) instance without any base URL applied.
-     *
-     * See also [`withBase()`](#withbase).
-     *
-     * @return self
-     * @deprecated 2.9.0 See self::withBase() instead.
-     * @see self::withBase()
-     */
-    public function withoutBase()
-    {
-        return $this->withBase(null);
     }
 
     /**
@@ -862,6 +723,12 @@ class Browser
      */
     private function requestMayBeStreaming($method, $url, array $headers = array(), $contents = '')
     {
-        return $this->send($this->messageFactory->request($method, $url, $headers, $contents, $this->protocolVersion));
+        $request = $this->messageFactory->request($method, $url, $headers, $contents, $this->protocolVersion);
+        if ($this->baseUrl !== null) {
+            // ensure we're actually below the base URL
+            $request = $request->withUri($this->messageFactory->expandBase($request->getUri(), $this->baseUrl));
+        }
+
+        return $this->transaction->send($request);
     }
 }
