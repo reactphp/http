@@ -20,23 +20,21 @@ class UploadedFileTest extends TestCase
 
     /**
      * @dataProvider failtyErrorProvider
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Invalid error code, must be an UPLOAD_ERR_* constant
      */
     public function testFailtyError($error)
     {
         $stream = new BufferStream();
+
+        $this->setExpectedException('InvalidArgumentException', 'Invalid error code, must be an UPLOAD_ERR_* constant');
         new UploadedFile($stream, 0, $error, 'foo.bar', 'foo/bar');
     }
 
-    /**
-     * @expectedException \RuntimeException
-     * @expectedExceptionMessage Not implemented
-     */
     public function testNoMoveFile()
     {
         $stream = new BufferStream();
         $uploadedFile = new UploadedFile($stream, 0, UPLOAD_ERR_OK, 'foo.bar', 'foo/bar');
+
+        $this->setExpectedException('RuntimeException', 'Not implemented');
         $uploadedFile->moveTo('bar.foo');
     }
 
@@ -51,14 +49,12 @@ class UploadedFileTest extends TestCase
         self::assertSame('foo/bar',     $uploadedFile->getClientMediaType());
     }
 
-    /**
-     * @expectedException \RuntimeException
-     * @expectedExceptionMessage Cannot retrieve stream due to upload error
-     */
     public function testGetStreamOnFailedUpload()
     {
         $stream = new BufferStream();
         $uploadedFile = new UploadedFile($stream, 0, UPLOAD_ERR_NO_FILE, 'foo.bar', 'foo/bar');
+
+        $this->setExpectedException('RuntimeException', 'Cannot retrieve stream due to upload error');
         $uploadedFile->getStream();
     }
 }

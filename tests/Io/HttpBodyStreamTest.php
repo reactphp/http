@@ -11,7 +11,10 @@ class HttpBodyStreamTest extends TestCase
     private $input;
     private $bodyStream;
 
-    public function setUp()
+    /**
+     * @before
+     */
+    public function setUpBodyStream()
     {
         $this->input = new ThroughStream();
         $this->bodyStream = new HttpBodyStream($this->input, null);
@@ -102,19 +105,15 @@ class HttpBodyStreamTest extends TestCase
         $this->assertEquals(5, $stream->getSize());
     }
 
-    /**
-     * @expectedException BadMethodCallException
-     */
     public function testTell()
     {
+        $this->setExpectedException('BadMethodCallException');
         $this->bodyStream->tell();
     }
 
-    /**
-     * @expectedException BadMethodCallException
-     */
     public function testEof()
     {
+        $this->setExpectedException('BadMethodCallException');
         $this->bodyStream->eof();
     }
 
@@ -123,19 +122,15 @@ class HttpBodyStreamTest extends TestCase
         $this->assertFalse($this->bodyStream->isSeekable());
     }
 
-    /**
-     * @expectedException BadMethodCallException
-     */
     public function testWrite()
     {
+        $this->setExpectedException('BadMethodCallException');
         $this->bodyStream->write('');
     }
 
-    /**
-     * @expectedException BadMethodCallException
-     */
     public function testRead()
     {
+        $this->setExpectedException('BadMethodCallException');
         $this->bodyStream->read('');
     }
 
@@ -154,19 +149,15 @@ class HttpBodyStreamTest extends TestCase
         $this->assertTrue($this->bodyStream->isReadable());
     }
 
-    /**
-     * @expectedException BadMethodCallException
-     */
     public function testSeek()
     {
+        $this->setExpectedException('BadMethodCallException');
         $this->bodyStream->seek('');
     }
 
-    /**
-     * @expectedException BadMethodCallException
-     */
     public function testRewind()
     {
+        $this->setExpectedException('BadMethodCallException');
         $this->bodyStream->rewind();
     }
 

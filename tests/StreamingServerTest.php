@@ -13,7 +13,10 @@ class StreamingServerTest extends TestCase
     private $connection;
     private $socket;
 
-    public function setUp()
+    /**
+     * @before
+     */
+    public function setUpConnectionMockAndSocket()
     {
         $this->connection = $this->getMockBuilder('React\Socket\Connection')
             ->disableOriginalConstructor()
@@ -669,7 +672,7 @@ class StreamingServerTest extends TestCase
         $data = $this->createGetRequest();
         $this->connection->emit('data', array($data));
 
-        $this->assertContains("\r\nX-Powered-By: React/alpha\r\n", $buffer);
+        $this->assertContainsString("\r\nX-Powered-By: React/alpha\r\n", $buffer);
     }
 
     public function testResponsePendingPromiseWillNotSendAnything()
@@ -1156,8 +1159,8 @@ class StreamingServerTest extends TestCase
         $data = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n";
         $this->connection->emit('data', array($data));
 
-        $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
-        $this->assertContains("bye", $buffer);
+        $this->assertContainsString("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertContainsString("bye", $buffer);
     }
 
     public function testResponseContainsSameRequestProtocolVersionAndRawBodyForHttp10()
@@ -1189,9 +1192,9 @@ class StreamingServerTest extends TestCase
         $data = "GET / HTTP/1.0\r\n\r\n";
         $this->connection->emit('data', array($data));
 
-        $this->assertContains("HTTP/1.0 200 OK\r\n", $buffer);
-        $this->assertContains("\r\n\r\n", $buffer);
-        $this->assertContains("bye", $buffer);
+        $this->assertContainsString("HTTP/1.0 200 OK\r\n", $buffer);
+        $this->assertContainsString("\r\n\r\n", $buffer);
+        $this->assertContainsString("bye", $buffer);
     }
 
     public function testResponseContainsNoResponseBodyForHeadRequest()
@@ -1222,8 +1225,8 @@ class StreamingServerTest extends TestCase
         $data = "HEAD / HTTP/1.1\r\nHost: localhost\r\n\r\n";
         $this->connection->emit('data', array($data));
 
-        $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
-        $this->assertNotContains("bye", $buffer);
+        $this->assertContainsString("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertNotContainsString("bye", $buffer);
     }
 
     public function testResponseContainsNoResponseBodyAndNoContentLengthForNoContentStatus()
@@ -1254,9 +1257,9 @@ class StreamingServerTest extends TestCase
         $data = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n";
         $this->connection->emit('data', array($data));
 
-        $this->assertContains("HTTP/1.1 204 No Content\r\n", $buffer);
-        $this->assertNotContains("\r\n\Content-Length: 3\r\n", $buffer);
-        $this->assertNotContains("bye", $buffer);
+        $this->assertContainsString("HTTP/1.1 204 No Content\r\n", $buffer);
+        $this->assertNotContainsString("\r\n\Content-Length: 3\r\n", $buffer);
+        $this->assertNotContainsString("bye", $buffer);
     }
 
     public function testResponseContainsNoResponseBodyForNotModifiedStatus()
@@ -1287,9 +1290,9 @@ class StreamingServerTest extends TestCase
         $data = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n";
         $this->connection->emit('data', array($data));
 
-        $this->assertContains("HTTP/1.1 304 Not Modified\r\n", $buffer);
-        $this->assertContains("\r\nContent-Length: 3\r\n", $buffer);
-        $this->assertNotContains("bye", $buffer);
+        $this->assertContainsString("HTTP/1.1 304 Not Modified\r\n", $buffer);
+        $this->assertContainsString("\r\nContent-Length: 3\r\n", $buffer);
+        $this->assertNotContainsString("bye", $buffer);
     }
 
     public function testRequestInvalidHttpProtocolVersionWillEmitErrorAndSendErrorResponse()
@@ -1321,9 +1324,9 @@ class StreamingServerTest extends TestCase
 
         $this->assertInstanceOf('InvalidArgumentException', $error);
 
-        $this->assertContains("HTTP/1.1 505 HTTP Version not supported\r\n", $buffer);
-        $this->assertContains("\r\n\r\n", $buffer);
-        $this->assertContains("Error 505: HTTP Version not supported", $buffer);
+        $this->assertContainsString("HTTP/1.1 505 HTTP Version not supported\r\n", $buffer);
+        $this->assertContainsString("\r\n\r\n", $buffer);
+        $this->assertContainsString("Error 505: HTTP Version not supported", $buffer);
     }
 
     public function testRequestOverflowWillEmitErrorAndSendErrorResponse()
@@ -1356,8 +1359,8 @@ class StreamingServerTest extends TestCase
 
         $this->assertInstanceOf('OverflowException', $error);
 
-        $this->assertContains("HTTP/1.1 431 Request Header Fields Too Large\r\n", $buffer);
-        $this->assertContains("\r\n\r\nError 431: Request Header Fields Too Large", $buffer);
+        $this->assertContainsString("HTTP/1.1 431 Request Header Fields Too Large\r\n", $buffer);
+        $this->assertContainsString("\r\n\r\nError 431: Request Header Fields Too Large", $buffer);
     }
 
     public function testRequestInvalidWillEmitErrorAndSendErrorResponse()
@@ -1389,8 +1392,8 @@ class StreamingServerTest extends TestCase
 
         $this->assertInstanceOf('InvalidArgumentException', $error);
 
-        $this->assertContains("HTTP/1.1 400 Bad Request\r\n", $buffer);
-        $this->assertContains("\r\n\r\nError 400: Bad Request", $buffer);
+        $this->assertContainsString("HTTP/1.1 400 Bad Request\r\n", $buffer);
+        $this->assertContainsString("\r\n\r\nError 400: Bad Request", $buffer);
     }
 
     public function testRequestContentLengthBodyDataWillEmitDataEventOnRequestStream()
@@ -1905,8 +1908,8 @@ class StreamingServerTest extends TestCase
         $this->connection->emit('data', array($data));
         $stream->emit('data', array('hello'));
 
-        $this->assertContains("Transfer-Encoding: chunked", $buffer);
-        $this->assertContains("hello", $buffer);
+        $this->assertContainsString("Transfer-Encoding: chunked", $buffer);
+        $this->assertContainsString("hello", $buffer);
     }
 
     public function testResponseWithBodyStringWillOverwriteExplicitContentLengthAndTransferEncoding()
@@ -1941,9 +1944,9 @@ class StreamingServerTest extends TestCase
 
         $this->connection->emit('data', array($data));
 
-        $this->assertNotContains("Transfer-Encoding: chunked", $buffer);
-        $this->assertContains("Content-Length: 5", $buffer);
-        $this->assertContains("hello", $buffer);
+        $this->assertNotContainsString("Transfer-Encoding: chunked", $buffer);
+        $this->assertContainsString("Content-Length: 5", $buffer);
+        $this->assertContainsString("hello", $buffer);
     }
 
     public function testResponseContainsResponseBodyWithTransferEncodingChunkedForBodyWithUnknownSize()
@@ -1978,9 +1981,9 @@ class StreamingServerTest extends TestCase
         $data = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n";
         $this->connection->emit('data', array($data));
 
-        $this->assertContains("Transfer-Encoding: chunked", $buffer);
-        $this->assertNotContains("Content-Length:", $buffer);
-        $this->assertContains("body", $buffer);
+        $this->assertContainsString("Transfer-Encoding: chunked", $buffer);
+        $this->assertNotContainsString("Content-Length:", $buffer);
+        $this->assertContainsString("body", $buffer);
     }
 
     public function testResponseContainsResponseBodyWithPlainBodyWithUnknownSizeForLegacyHttp10()
@@ -2015,9 +2018,9 @@ class StreamingServerTest extends TestCase
         $data = "GET / HTTP/1.0\r\nHost: localhost\r\n\r\n";
         $this->connection->emit('data', array($data));
 
-        $this->assertNotContains("Transfer-Encoding: chunked", $buffer);
-        $this->assertNotContains("Content-Length:", $buffer);
-        $this->assertContains("body", $buffer);
+        $this->assertNotContainsString("Transfer-Encoding: chunked", $buffer);
+        $this->assertNotContainsString("Content-Length:", $buffer);
+        $this->assertContainsString("body", $buffer);
     }
 
     public function testResponseWithCustomTransferEncodingWillBeIgnoredAndUseChunkedTransferEncodingInstead()
@@ -2053,9 +2056,9 @@ class StreamingServerTest extends TestCase
         $this->connection->emit('data', array($data));
         $stream->emit('data', array('hello'));
 
-        $this->assertContains('Transfer-Encoding: chunked', $buffer);
-        $this->assertNotContains('Transfer-Encoding: custom', $buffer);
-        $this->assertContains("5\r\nhello\r\n", $buffer);
+        $this->assertContainsString('Transfer-Encoding: chunked', $buffer);
+        $this->assertNotContainsString('Transfer-Encoding: custom', $buffer);
+        $this->assertContainsString("5\r\nhello\r\n", $buffer);
     }
 
     public function testResponseWithoutExplicitDateHeaderWillAddCurrentDate()
@@ -2083,9 +2086,9 @@ class StreamingServerTest extends TestCase
 
         $this->connection->emit('data', array($data));
 
-        $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
-        $this->assertContains("Date:", $buffer);
-        $this->assertContains("\r\n\r\n", $buffer);
+        $this->assertContainsString("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertContainsString("Date:", $buffer);
+        $this->assertContainsString("\r\n\r\n", $buffer);
     }
 
     public function testResponseWIthCustomDateHeaderOverwritesDefault()
@@ -2116,9 +2119,9 @@ class StreamingServerTest extends TestCase
 
         $this->connection->emit('data', array($data));
 
-        $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
-        $this->assertContains("Date: Tue, 15 Nov 1994 08:12:31 GMT\r\n", $buffer);
-        $this->assertContains("\r\n\r\n", $buffer);
+        $this->assertContainsString("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertContainsString("Date: Tue, 15 Nov 1994 08:12:31 GMT\r\n", $buffer);
+        $this->assertContainsString("\r\n\r\n", $buffer);
     }
 
     public function testResponseWithEmptyDateHeaderRemovesDateHeader()
@@ -2149,9 +2152,9 @@ class StreamingServerTest extends TestCase
 
         $this->connection->emit('data', array($data));
 
-        $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
-        $this->assertNotContains("Date:", $buffer);
-        $this->assertContains("\r\n\r\n", $buffer);
+        $this->assertContainsString("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertNotContainsString("Date:", $buffer);
+        $this->assertContainsString("\r\n\r\n", $buffer);
     }
 
     public function testResponseCanContainMultipleCookieHeaders()
@@ -2220,8 +2223,8 @@ class StreamingServerTest extends TestCase
         $data .= "\r\n";
 
         $this->connection->emit('data', array($data));
-        $this->assertContains("HTTP/1.1 100 Continue\r\n", $buffer);
-        $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertContainsString("HTTP/1.1 100 Continue\r\n", $buffer);
+        $this->assertContainsString("HTTP/1.1 200 OK\r\n", $buffer);
     }
 
     public function testResponseWithExpectContinueRequestWontSendContinueForHttp10()
@@ -2250,15 +2253,13 @@ class StreamingServerTest extends TestCase
         $data .= "\r\n";
 
         $this->connection->emit('data', array($data));
-        $this->assertContains("HTTP/1.0 200 OK\r\n", $buffer);
-        $this->assertNotContains("HTTP/1.1 100 Continue\r\n\r\n", $buffer);
+        $this->assertContainsString("HTTP/1.0 200 OK\r\n", $buffer);
+        $this->assertNotContainsString("HTTP/1.1 100 Continue\r\n\r\n", $buffer);
     }
 
-    /**
-     * @expectedException InvalidArgumentException
-     */
     public function testInvalidCallbackFunctionLeadsToException()
     {
+        $this->setExpectedException('InvalidArgumentException');
         $server = new StreamingServer('invalid');
     }
 
@@ -2295,10 +2296,10 @@ class StreamingServerTest extends TestCase
         $input->emit('data', array('1'));
         $input->emit('data', array('23'));
 
-        $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
-        $this->assertContains("\r\n\r\n", $buffer);
-        $this->assertContains("1\r\n1\r\n", $buffer);
-        $this->assertContains("2\r\n23\r\n", $buffer);
+        $this->assertContainsString("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertContainsString("\r\n\r\n", $buffer);
+        $this->assertContainsString("1\r\n1\r\n", $buffer);
+        $this->assertContainsString("2\r\n23\r\n", $buffer);
     }
 
     public function testResponseBodyStreamWithContentLengthWillStreamTillLengthWithoutTransferEncoding()
@@ -2334,11 +2335,11 @@ class StreamingServerTest extends TestCase
         $input->emit('data', array('hel'));
         $input->emit('data', array('lo'));
 
-        $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
-        $this->assertContains("Content-Length: 5\r\n", $buffer);
-        $this->assertNotContains("Transfer-Encoding", $buffer);
-        $this->assertContains("\r\n\r\n", $buffer);
-        $this->assertContains("hello", $buffer);
+        $this->assertContainsString("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertContainsString("Content-Length: 5\r\n", $buffer);
+        $this->assertNotContainsString("Transfer-Encoding", $buffer);
+        $this->assertContainsString("\r\n\r\n", $buffer);
+        $this->assertContainsString("hello", $buffer);
     }
 
     public function testResponseWithResponsePromise()
@@ -2365,8 +2366,8 @@ class StreamingServerTest extends TestCase
         $data = $this->createGetRequest();
 
         $this->connection->emit('data', array($data));
-        $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
-        $this->assertContains("\r\n\r\n", $buffer);
+        $this->assertContainsString("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertContainsString("\r\n\r\n", $buffer);
     }
 
     public function testResponseReturnInvalidTypeWillResultInError()
@@ -2399,7 +2400,7 @@ class StreamingServerTest extends TestCase
 
         $this->connection->emit('data', array($data));
 
-        $this->assertContains("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
+        $this->assertContainsString("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
         $this->assertInstanceOf('RuntimeException', $exception);
     }
 
@@ -2428,7 +2429,7 @@ class StreamingServerTest extends TestCase
 
         $this->connection->emit('data', array($data));
 
-        $this->assertContains("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
+        $this->assertContainsString("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
     }
 
     public function testResponseRejectedPromiseWillResultInErrorMessage()
@@ -2459,7 +2460,7 @@ class StreamingServerTest extends TestCase
 
         $this->connection->emit('data', array($data));
 
-        $this->assertContains("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
+        $this->assertContainsString("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
     }
 
     public function testResponseExceptionInCallbackWillResultInErrorMessage()
@@ -2490,7 +2491,7 @@ class StreamingServerTest extends TestCase
 
         $this->connection->emit('data', array($data));
 
-        $this->assertContains("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
+        $this->assertContainsString("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
     }
 
     public function testResponseWithContentLengthHeaderForStringBodyOverwritesTransferEncoding()
@@ -2522,11 +2523,11 @@ class StreamingServerTest extends TestCase
 
         $this->connection->emit('data', array($data));
 
-        $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
-        $this->assertContains("Content-Length: 5\r\n", $buffer);
-        $this->assertContains("hello", $buffer);
+        $this->assertContainsString("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertContainsString("Content-Length: 5\r\n", $buffer);
+        $this->assertContainsString("hello", $buffer);
 
-        $this->assertNotContains("Transfer-Encoding", $buffer);
+        $this->assertNotContainsString("Transfer-Encoding", $buffer);
     }
 
     public function testResponseWillBeHandled()
@@ -2554,7 +2555,7 @@ class StreamingServerTest extends TestCase
 
         $this->connection->emit('data', array($data));
 
-        $this->assertContains("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertContainsString("HTTP/1.1 200 OK\r\n", $buffer);
     }
 
     public function testResponseExceptionThrowInCallBackFunctionWillResultInErrorMessage()
@@ -2588,7 +2589,7 @@ class StreamingServerTest extends TestCase
         $this->connection->emit('data', array($data));
 
         $this->assertInstanceOf('RuntimeException', $exception);
-        $this->assertContains("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
+        $this->assertContainsString("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
         $this->assertEquals('hello', $exception->getPrevious()->getMessage());
     }
 
@@ -2634,7 +2635,7 @@ class StreamingServerTest extends TestCase
         }
 
         $this->assertInstanceOf('RuntimeException', $exception);
-        $this->assertContains("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
+        $this->assertContainsString("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
         $this->assertEquals('hello', $exception->getPrevious()->getMessage());
     }
 
@@ -2670,7 +2671,7 @@ class StreamingServerTest extends TestCase
 
         $this->connection->emit('data', array($data));
 
-        $this->assertContains("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
+        $this->assertContainsString("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
         $this->assertInstanceOf('RuntimeException', $exception);
     }
 

@@ -68,10 +68,10 @@ class IniUtilTest extends TestCase
 
     /**
      * @dataProvider provideInvalidInputIniSizeToBytes
-     * @expectedException InvalidArgumentException
      */
     public function testInvalidInputIniSizeToBytes($input)
     {
+        $this->setExpectedException('InvalidArgumentException');
         IniUtil::iniSizeToBytes($input);
     }
 }

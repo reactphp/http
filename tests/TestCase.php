@@ -63,8 +63,52 @@ class TestCase extends BaseTestCase
 
     protected function createCallableMock()
     {
-        return $this
-            ->getMockBuilder('React\Tests\Http\CallableStub')
-            ->getMock();
+        if (method_exists('PHPUnit\Framework\MockObject\MockBuilder', 'addMethods')) {
+            // PHPUnit 10+
+            return $this->getMockBuilder('stdClass')->addMethods(array('__invoke'))->getMock();
+        } else {
+            // legacy PHPUnit 4 - PHPUnit 9
+            return $this->getMockBuilder('stdClass')->setMethods(array('__invoke'))->getMock();
+        }
     }
+
+    public function assertContainsString($needle, $haystack)
+    {
+        if (method_exists($this, 'assertStringContainsString')) {
+            // PHPUnit 7.5+
+            $this->assertStringContainsString($needle, $haystack);
+        } else {
+            // legacy PHPUnit 4 - PHPUnit 7.5
+            $this->assertContains($needle, $haystack);
+        }
+    }
+
+    public function assertNotContainsString($needle, $haystack)
+    {
+        if (method_exists($this, 'assertStringNotContainsString')) {
+            // PHPUnit 7.5+
+            $this->assertStringNotContainsString($needle, $haystack);
+        } else {
+            // legacy PHPUnit 4 - PHPUnit 7.5
+            $this->assertNotContains($needle, $haystack);
+        }
+    }
+
+    public function setExpectedException($exception, $exceptionMessage = '', $exceptionCode = null)
+    {
+        if (method_exists($this, 'expectException')) {
+            // PHPUnit 5+
+            $this->expectException($exception);
+            if ($exceptionMessage !== '') {
+                $this->expectExceptionMessage($exceptionMessage);
+            }
+            if ($exceptionCode !== null) {
+                $this->expectExceptionCode($exceptionCode);
+            }
+        } else {
+            // legacy PHPUnit 4
+            parent::setExpectedException($exception, $exceptionMessage, $exceptionCode);
+        }
+    }
+
 }
