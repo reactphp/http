@@ -17,7 +17,7 @@ use React\Stream\WritableStreamInterface;
 class ChunkedEncoder extends EventEmitter implements ReadableStreamInterface
 {
     private $input;
-    private $closed;
+    private $closed = false;
 
     public function __construct(ReadableStreamInterface $input)
     {
@@ -46,9 +46,7 @@ class ChunkedEncoder extends EventEmitter implements ReadableStreamInterface
 
     public function pipe(WritableStreamInterface $dest, array $options = array())
     {
-        Util::pipe($this, $dest, $options);
-
-        return $dest;
+        return Util::pipe($this, $dest, $options);
     }
 
     public function close()
@@ -67,13 +65,11 @@ class ChunkedEncoder extends EventEmitter implements ReadableStreamInterface
     /** @internal */
     public function handleData($data)
     {
-        if ($data === '') {
-            return;
+        if ($data !== '') {
+            $this->emit('data', array(
+                \dechex(\strlen($data)) . "\r\n" . $data . "\r\n"
+            ));
         }
-
-        $completeChunk = $this->createChunk($data);
-
-        $this->emit('data', array($completeChunk));
     }
 
     /** @internal */
@@ -93,18 +89,4 @@ class ChunkedEncoder extends EventEmitter implements ReadableStreamInterface
             $this->close();
         }
     }
-
-    /**
-     * @param string $data - string to be transformed in an valid
-     *                       HTTP encoded chunk string
-     * @return string
-     */
-    private function createChunk($data)
-    {
-        $byteSize = \dechex(\strlen($data));
-        $chunkBeginning = $byteSize . "\r\n";
-
-        return $chunkBeginning . $data . "\r\n";
-    }
-
 }
