@@ -127,7 +127,9 @@ final class Server extends EventEmitter
         }
 
         $middleware = array();
-        $middleware[] = new LimitConcurrentRequestsMiddleware($this->getConcurrentRequestsLimit());
+        $middleware[] = new LimitConcurrentRequestsMiddleware(
+            $this->getConcurrentRequestsLimit(\ini_get('memory_limit'), \ini_get('post_max_size'))
+        );
         $middleware[] = new RequestBodyBufferMiddleware();
         // Checking for an empty string because that is what a boolean
         // false is returned as by ini_get depending on the PHP version.
@@ -162,17 +164,22 @@ final class Server extends EventEmitter
     }
 
     /**
+     * @param string $memory_limit
+     * @param string $post_max_size
      * @return int
-     * @codeCoverageIgnore
      */
-    private function getConcurrentRequestsLimit()
+    private function getConcurrentRequestsLimit($memory_limit, $post_max_size)
     {
-        if (\ini_get('memory_limit') == -1) {
+        if ($memory_limit == -1) {
             return self::MAXIMUM_CONCURRENT_REQUESTS;
         }
 
-        $availableMemory = IniUtil::iniSizeToBytes(\ini_get('memory_limit')) / 4;
-        $concurrentRequests = \ceil($availableMemory / IniUtil::iniSizeToBytes(\ini_get('post_max_size')));
+        if ($post_max_size == 0) {
+            return 1;
+        }
+
+        $availableMemory = IniUtil::iniSizeToBytes($memory_limit) / 4;
+        $concurrentRequests = (int) \ceil($availableMemory / IniUtil::iniSizeToBytes($post_max_size));
 
         if ($concurrentRequests >= self::MAXIMUM_CONCURRENT_REQUESTS) {
             return self::MAXIMUM_CONCURRENT_REQUESTS;
