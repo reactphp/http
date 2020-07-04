@@ -53,6 +53,11 @@ class IniUtilTest extends TestCase
         $this->assertEquals($output, IniUtil::iniSizeToBytes($input));
     }
 
+    public function testIniSizeToBytesWithInvalidSuffixReturnsNumberWithoutSuffix()
+    {
+        $this->assertEquals('2', IniUtil::iniSizeToBytes('2x'));
+    }
+
     public function provideInvalidInputIniSizeToBytes()
     {
         return array(

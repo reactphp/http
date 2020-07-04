@@ -183,4 +183,48 @@ final class ServerTest extends TestCase
 
         return $data;
     }
+
+    public function provideIniSettingsForConcurrency()
+    {
+        return array(
+            'default settings' => array(
+                '128M',
+                '8M',
+                4
+            ),
+            'unlimited memory_limit limited to maximum concurrency' => array(
+                '-1',
+                '8M',
+                100
+            ),
+            'unlimited post_max_size' => array(
+                '128M',
+                '0',
+                1
+            ),
+            'small post_max_size limited to maximum concurrency' => array(
+                '128M',
+                '1k',
+                100
+            )
+        );
+    }
+
+    /**
+     * @param string $memory_limit
+     * @param string $post_max_size
+     * @param int    $expectedConcurrency
+     * @dataProvider provideIniSettingsForConcurrency
+     */
+    public function testServerConcurrency($memory_limit, $post_max_size, $expectedConcurrency)
+    {
+        $server = new Server(function () { });
+
+        $ref = new \ReflectionMethod($server, 'getConcurrentRequestsLimit');
+        $ref->setAccessible(true);
+
+        $value = $ref->invoke($server, $memory_limit, $post_max_size);
+
+        $this->assertEquals($expectedConcurrency, $value);
+    }
 }
