@@ -1,10 +1,26 @@
 # Changelog
 
+## 0.8.7 (2020-07-05)
+
+*   Fix: Fix parsing multipart request body with quoted header parameters (dot net).
+    (#363 by @ebimmel)
+
+*   Fix: Fix calculating concurrency when `post_max_size` ini is unlimited.
+    (#365 by @clue)
+
+*   Improve test suite to run tests on PHPUnit 9 and clean up test suite.
+    (#364 by @SimonFrings)
+
 ## 0.8.6 (2020-01-12)
 
-*   Fix parsing Cookie request header with comma in its values (#352 by @fiskie)
-*   Add .gitattributes to exclude dev files from exports (#353 by @reedy)
-*   Avoid unneeded warning when decoding invalid data on PHP 7.4 (#357 by @WyriHaximus)
+*   Fix: Fix parsing `Cookie` request header with comma in its values.
+    (#352 by @fiskie)
+
+*   Fix: Avoid unneeded warning when decoding invalid data on PHP 7.4.
+    (#357 by @WyriHaximus)
+
+*   Add .gitattributes to exclude dev files from exports.
+    (#353 by @reedy)
 
 ## 0.8.5 (2019-10-29)
 
