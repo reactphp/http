@@ -5,6 +5,7 @@ namespace React\Http;
 use Evenement\EventEmitter;
 use React\Http\Io\IniUtil;
 use React\Http\Middleware\LimitConcurrentRequestsMiddleware;
+use React\Http\Middleware\StreamingRequestMiddleware;
 use React\Http\Middleware\RequestBodyBufferMiddleware;
 use React\Http\Middleware\RequestBodyParserMiddleware;
 use React\Socket\ServerInterface;
@@ -126,19 +127,29 @@ final class Server extends EventEmitter
             throw new \InvalidArgumentException('Invalid request handler given');
         }
 
+        $streaming = false;
+        foreach ((array) $requestHandler as $handler) {
+            if ($handler instanceof StreamingRequestMiddleware) {
+                $streaming = true;
+                break;
+            }
+        }
+
         $middleware = array();
-        $middleware[] = new LimitConcurrentRequestsMiddleware(
-            $this->getConcurrentRequestsLimit(\ini_get('memory_limit'), \ini_get('post_max_size'))
-        );
-        $middleware[] = new RequestBodyBufferMiddleware();
-        // Checking for an empty string because that is what a boolean
-        // false is returned as by ini_get depending on the PHP version.
-        // @link http://php.net/manual/en/ini.core.php#ini.enable-post-data-reading
-        // @link http://php.net/manual/en/function.ini-get.php#refsect1-function.ini-get-notes
-        // @link https://3v4l.org/qJtsa
-        $enablePostDataReading = \ini_get('enable_post_data_reading');
-        if ($enablePostDataReading !== '') {
-            $middleware[] = new RequestBodyParserMiddleware();
+        if (!$streaming) {
+            $middleware[] = new LimitConcurrentRequestsMiddleware(
+                $this->getConcurrentRequestsLimit(\ini_get('memory_limit'), \ini_get('post_max_size'))
+            );
+            $middleware[] = new RequestBodyBufferMiddleware();
+            // Checking for an empty string because that is what a boolean
+            // false is returned as by ini_get depending on the PHP version.
+            // @link http://php.net/manual/en/ini.core.php#ini.enable-post-data-reading
+            // @link http://php.net/manual/en/function.ini-get.php#refsect1-function.ini-get-notes
+            // @link https://3v4l.org/qJtsa
+            $enablePostDataReading = \ini_get('enable_post_data_reading');
+            if ($enablePostDataReading !== '') {
+                $middleware[] = new RequestBodyParserMiddleware();
+            }
         }
 
         if (\is_callable($requestHandler)) {

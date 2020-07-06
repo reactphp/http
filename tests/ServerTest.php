@@ -8,6 +8,8 @@ use Psr\Http\Message\ServerRequestInterface;
 use React\Promise\Deferred;
 use Clue\React\Block;
 use React\Promise;
+use React\Http\Middleware\StreamingRequestMiddleware;
+use React\Stream\ReadableStreamInterface;
 
 final class ServerTest extends TestCase
 {
@@ -140,6 +142,37 @@ final class ServerTest extends TestCase
         $this->assertSame('hello.txt', $files['file']->getClientFilename());
         $this->assertSame('text/plain', $files['file']->getClientMediaType());
         $this->assertSame("hello\r\n", (string)$files['file']->getStream());
+    }
+
+    public function testServerReceivesBufferedRequestByDefault()
+    {
+        $streaming = null;
+        $server = new Server(function (ServerRequestInterface $request) use (&$streaming) {
+            $streaming = $request->getBody() instanceof ReadableStreamInterface;
+        });
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+        $this->connection->emit('data', array("GET / HTTP/1.0\r\n\r\n"));
+
+        $this->assertEquals(false, $streaming);
+    }
+
+    public function testServerWithStreamingRequestMiddlewareReceivesStreamingRequest()
+    {
+        $streaming = null;
+        $server = new Server(array(
+            new StreamingRequestMiddleware(),
+            function (ServerRequestInterface $request) use (&$streaming) {
+                $streaming = $request->getBody() instanceof ReadableStreamInterface;
+            }
+        ));
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+        $this->connection->emit('data', array("GET / HTTP/1.0\r\n\r\n"));
+
+        $this->assertEquals(true, $streaming);
     }
 
     public function testForwardErrors()
