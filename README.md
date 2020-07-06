@@ -8,28 +8,32 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
 
 * [Quickstart example](#quickstart-example)
 * [Usage](#usage)
-  * [Server](#server)
-  * [StreamingServer](#streamingserver)
-  * [listen()](#listen)
-  * [Request](#request)
-    * [Request parameters](#request-parameters)
-    * [Query parameters](#query-parameters)
-    * [Request body](#request-body)
-    * [Streaming request](#streaming-request)
-    * [Request method](#request-method)
-    * [Cookie parameters](#cookie-parameters)
-    * [Invalid request](#invalid-request)
-  * [Response](#response)
-    * [Deferred response](#deferred-response)
-    * [Streaming response](#streaming-response)
-    * [Response length](#response-length)
-    * [Invalid response](#invalid-response)
-    * [Default response headers](#default-response-headers)
-  * [Middleware](#middleware)
-    * [LimitConcurrentRequestsMiddleware](#limitconcurrentrequestsmiddleware)
-    * [RequestBodyBufferMiddleware](#requestbodybuffermiddleware)
-    * [RequestBodyParserMiddleware](#requestbodyparsermiddleware)
-    * [Third-Party Middleware](#third-party-middleware)
+    * [Server](#server)
+    * [StreamingServer](#streamingserver)
+    * [listen()](#listen)
+    * [Request](#request)
+        * [Request parameters](#request-parameters)
+        * [Query parameters](#query-parameters)
+        * [Request body](#request-body)
+        * [Streaming request](#streaming-request)
+        * [Request method](#request-method)
+        * [Cookie parameters](#cookie-parameters)
+        * [Invalid request](#invalid-request)
+    * [Response](#response)
+        * [Deferred response](#deferred-response)
+        * [Streaming response](#streaming-response)
+        * [Response length](#response-length)
+        * [Invalid response](#invalid-response)
+        * [Default response headers](#default-response-headers)
+    * [Middleware](#middleware)
+        * [Custom middleware](#custom-middleware)
+        * [Third-Party Middleware](#third-party-middleware)
+* [API](#api)
+    * [React\Http\Middleware](#reacthttpmiddleware)
+        * [StreamingRequestMiddleware](#streamingrequestmiddleware)
+        * [LimitConcurrentRequestsMiddleware](#limitconcurrentrequestsmiddleware)
+        * [RequestBodyBufferMiddleware](#requestbodybuffermiddleware)
+        * [RequestBodyParserMiddleware](#requestbodyparsermiddleware)
 * [Install](#install)
 * [Tests](#tests)
 * [License](#license)
@@ -1046,6 +1050,8 @@ Many common use cases involve validating, processing, manipulating the incoming
 HTTP request before passing it to the final business logic request handler.
 As such, this project supports the concept of middleware request handlers.
 
+#### Custom middleware
+
 A middleware request handler is expected to adhere the following rules:
 
 * It is a valid `callable`.
@@ -1159,6 +1165,39 @@ $server = new Server(array(
     }
 ));
 ```
+
+#### Third-Party Middleware
+
+While this project does provide the means to *use* middleware implementations
+(see above), it does not aim to *define* how middleware implementations should
+look like. We realize that there's a vivid ecosystem of middleware
+implementations and ongoing effort to standardize interfaces between these with
+[PSR-15](https://www.php-fig.org/psr/psr-15/) (HTTP Server Request Handlers)
+and support this goal.
+As such, this project only bundles a few middleware implementations that are
+required to match PHP's request behavior (see
+[middleware implementations](#react-http-middleware)) and otherwise actively
+encourages third-party middleware implementations.
+
+While we would love to support PSR-15 directly in `react/http`, we understand
+that this interface does not specifically target async APIs and as such does
+not take advantage of promises for [deferred responses](#deferred-response).
+The gist of this is that where PSR-15 enforces a `ResponseInterface` return
+value, we also accept a `PromiseInterface<ResponseInterface>`.
+As such, we suggest using the external
+[PSR-15 middleware adapter](https://github.com/friends-of-reactphp/http-middleware-psr15-adapter)
+that uses on the fly monkey patching of these return values which makes using
+most PSR-15 middleware possible with this package without any changes required.
+
+Other than that, you can also use the above [middleware definition](#middleware)
+to create custom middleware. A non-exhaustive list of third-party middleware can
+be found at the [middleware wiki](https://github.com/reactphp/reactphp/wiki/Users#http-middleware).
+If you build or know a custom middleware, make sure to let the world know and
+feel free to add it to this list.
+
+## API
+
+### React\Http\Middleware
 
 #### LimitConcurrentRequestsMiddleware
 
@@ -1381,34 +1420,6 @@ new RequestBodyParserMiddleware(10 * 1024, 100); // 100 files with 10 KiB each
   is left up to higher-level implementations.
   If you want to respect this setting, you have to check its value and
   effectively avoid using this middleware entirely.
-
-#### Third-Party Middleware
-
-While this project does provide the means to *use* middleware implementations
-(see above), it does not aim to *define* how middleware implementations should
-look like. We realize that there's a vivid ecosystem of middleware
-implementations and ongoing effort to standardize interfaces between these with
-[PSR-15](https://www.php-fig.org/psr/psr-15/) (HTTP Server Request Handlers)
-and support this goal.
-As such, this project only bundles a few middleware implementations that are
-required to match PHP's request behavior (see above) and otherwise actively
-encourages third-party middleware implementations.
-
-While we would love to support PSR-15 directy in `react/http`, we understand
-that this interface does not specifically target async APIs and as such does
-not take advantage of promises for [deferred responses](#deferred-response).
-The gist of this is that where PSR-15 enforces a `ResponseInterface` return
-value, we also accept a `PromiseInterface<ResponseInterface>`.
-As such, we suggest using the external
-[PSR-15 middleware adapter](https://github.com/friends-of-reactphp/http-middleware-psr15-adapter)
-that uses on the fly monkey patching of these return values which makes using
-most PSR-15 middleware possible with this package without any changes required.
-
-Other than that, you can also use the above [middleware definition](#middleware)
-to create custom middleware. A non-exhaustive list of third-party middleware can
-be found at the [middleware wiki](https://github.com/reactphp/http/wiki/Middleware).
-If you build or know a custom middleware, make sure to let the world know and
-feel free to add it to this list.
 
 ## Install
 
