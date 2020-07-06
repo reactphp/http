@@ -10,10 +10,10 @@ require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
 
-// Note how this example uses the `Server` instead of `StreamingServer`.
+// Note how this example uses the `Server` without the `StreamingRequestMiddleware`.
 // This means that this proxy buffers the whole request before "processing" it.
 // As such, this is store-and-forward proxy. This could also use the advanced
-// `StreamingServer` to forward the incoming request as it comes in.
+// `StreamingRequestMiddleware` to forward the incoming request as it comes in.
 $server = new Server(function (RequestInterface $request) {
     if (strpos($request->getRequestTarget(), '://') === false) {
         return new Response(

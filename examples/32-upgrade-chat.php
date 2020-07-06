@@ -35,7 +35,7 @@ $loop = Factory::create();
 // this means that any Upgraded data will simply be sent back to the client
 $chat = new ThroughStream();
 
-// Note how this example uses the `Server` instead of `StreamingServer`.
+// Note how this example uses the `Server` without the `StreamingRequestMiddleware`.
 // The initial incoming request does not contain a body and we upgrade to a
 // stream object below.
 $server = new Server(function (ServerRequestInterface $request) use ($loop, $chat) {

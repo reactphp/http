@@ -10,8 +10,6 @@ require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
 
-// Note how this example still uses `Server` instead of `StreamingServer`.
-// The `StreamingServer` is only required for streaming *incoming* requests.
 $server = new Server(function (ServerRequestInterface $request) use ($loop) {
     if ($request->getMethod() !== 'GET' || $request->getUri()->getPath() !== '/') {
         return new Response(404);

@@ -1,18 +1,11 @@
 <?php
 
-namespace React\Http;
+namespace React\Http\Io;
 
 use Evenement\EventEmitter;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use React\Http\Io\ChunkedDecoder;
-use React\Http\Io\ChunkedEncoder;
-use React\Http\Io\CloseProtectionStream;
-use React\Http\Io\HttpBodyStream;
-use React\Http\Io\LengthLimitedStream;
-use React\Http\Io\MiddlewareRunner;
-use React\Http\Io\RequestHeaderParser;
-use React\Http\Io\ServerRequest;
+use React\Http\Response;
 use React\Promise;
 use React\Promise\CancellablePromiseInterface;
 use React\Promise\PromiseInterface;
@@ -22,7 +15,7 @@ use React\Stream\ReadableStreamInterface;
 use React\Stream\WritableStreamInterface;
 
 /**
- * The advanced `StreamingServer` class is responsible for handling incoming connections and then
+ * The internal `StreamingServer` class is responsible for handling incoming connections and then
  * processing each incoming HTTP request.
  *
  * Unlike the [`Server`](#server) class, it does not buffer and parse the incoming
@@ -80,9 +73,11 @@ use React\Stream\WritableStreamInterface;
  * handler function may not be fully compatible with PSR-7. See also
  * [streaming request](#streaming-request) below for more details.
  *
+ * @see \React\Http\Server
  * @see Request
  * @see Response
  * @see self::listen()
+ * @internal
  */
 final class StreamingServer extends EventEmitter
 {
@@ -131,44 +126,8 @@ final class StreamingServer extends EventEmitter
     /**
      * Starts listening for HTTP requests on the given socket server instance
      *
-     * The server needs to be attached to an instance of
-     * `React\Socket\ServerInterface` which emits underlying streaming
-     * connections in order to then parse incoming data as HTTP.
-     * For each request, it executes the callback function passed to the
-     * constructor with the respective [request](#request) object and expects
-     * a respective [response](#response) object in return.
-     *
-     * You can attach this to a
-     * [`React\Socket\Server`](https://github.com/reactphp/socket#server)
-     * in order to start a plaintext HTTP server like this:
-     *
-     * ```php
-     * $server = new StreamingServer($handler);
-     *
-     * $socket = new React\Socket\Server(8080, $loop);
-     * $server->listen($socket);
-     * ```
-     *
-     * See also [example #1](examples) for more details.
-     *
-     * Similarly, you can also attach this to a
-     * [`React\Socket\SecureServer`](https://github.com/reactphp/socket#secureserver)
-     * in order to start a secure HTTPS server like this:
-     *
-     * ```php
-     * $server = new StreamingServer($handler);
-     *
-     * $socket = new React\Socket\Server(8080, $loop);
-     * $socket = new React\Socket\SecureServer($socket, $loop, array(
-     *     'local_cert' => __DIR__ . '/localhost.pem'
-     * ));
-     *
-     * $server->listen($socket);
-     * ```
-     *
-     * See also [example #11](examples) for more details.
-     *
      * @param ServerInterface $socket
+     * @see \React\Http\Server::listen()
      */
     public function listen(ServerInterface $socket)
     {

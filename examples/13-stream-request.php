@@ -1,50 +1,52 @@
 <?php
 
-use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
-use React\Http\Response;
-use React\Http\StreamingServer;
-use React\Promise\Promise;
 
 require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
 
-// Note how this example uses the advanced `StreamingServer` to allow streaming
+// Note how this example uses the advanced `StreamingRequestMiddleware` to allow streaming
 // the incoming HTTP request. This very simple example merely counts the size
 // of the streaming body, it does not otherwise buffer its contents in memory.
-$server = new StreamingServer(function (ServerRequestInterface $request) {
-    return new Promise(function ($resolve, $reject) use ($request) {
-        $contentLength = 0;
-        $requestBody = $request->getBody();
-        $requestBody->on('data', function ($data) use (&$contentLength) {
-            $contentLength += strlen($data);
-        });
+$server = new React\Http\Server(array(
+    new React\Http\Middleware\StreamingRequestMiddleware(),
+    function (Psr\Http\Message\ServerRequestInterface $request) {
+        $body = $request->getBody();
+        assert($body instanceof Psr\Http\Message\StreamInterface);
+        assert($body instanceof React\Stream\ReadableStreamInterface);
 
-        $requestBody->on('end', function () use ($resolve, &$contentLength){
-            $response = new Response(
-                200,
-                array(
-                    'Content-Type' => 'text/plain'
-                ),
-                "The length of the submitted request body is: " . $contentLength
-            );
-            $resolve($response);
-        });
+        return new React\Promise\Promise(function ($resolve, $reject) use ($body) {
+            $bytes = 0;
+            $body->on('data', function ($data) use (&$bytes) {
+                $bytes += strlen($data);
+            });
 
-        // an error occures e.g. on invalid chunked encoded data or an unexpected 'end' event
-        $requestBody->on('error', function (\Exception $exception) use ($resolve, &$contentLength) {
-            $response = new Response(
-                400,
-                array(
-                    'Content-Type' => 'text/plain'
-                ),
-                "An error occured while reading at length: " . $contentLength
-            );
-            $resolve($response);
+            $body->on('end', function () use ($resolve, &$bytes){
+                $resolve(new React\Http\Response(
+                    200,
+                    array(
+                        'Content-Type' => 'text/plain'
+                    ),
+                    "Received $bytes bytes\n"
+                ));
+            });
+
+            // an error occures e.g. on invalid chunked encoded data or an unexpected 'end' event
+            $body->on('error', function (\Exception $exception) use ($resolve, &$bytes) {
+                $resolve(new React\Http\Response(
+                    400,
+                    array(
+                        'Content-Type' => 'text/plain'
+                    ),
+                    "Encountered error after $bytes bytes: {$exception->getMessage()}\n"
+                ));
+            });
         });
-    });
-});
+    }
+));
+
+$server->on('error', 'printf');
 
 $socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
 $server->listen($socket);

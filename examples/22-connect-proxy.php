@@ -12,7 +12,7 @@ require __DIR__ . '/../vendor/autoload.php';
 $loop = Factory::create();
 $connector = new Connector($loop);
 
-// Note how this example uses the `Server` instead of `StreamingServer`.
+// Note how this example uses the `Server` without the `StreamingRequestMiddleware`.
 // Unlike the plain HTTP proxy, the CONNECT method does not contain a body
 // and we establish an end-to-end connection over the stream object, so this
 // doesn't have to store any payload data in memory at all.

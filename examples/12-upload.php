@@ -13,8 +13,9 @@ use React\EventLoop\Factory;
 use React\Http\Middleware\LimitConcurrentRequestsMiddleware;
 use React\Http\Middleware\RequestBodyBufferMiddleware;
 use React\Http\Middleware\RequestBodyParserMiddleware;
+use React\Http\Middleware\StreamingRequestMiddleware;
 use React\Http\Response;
-use React\Http\StreamingServer;
+use React\Http\Server;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -121,9 +122,10 @@ HTML;
     );
 };
 
-// Note how this example explicitly uses the advanced `StreamingServer` to apply
+// Note how this example explicitly uses the advanced `StreamingRequestMiddleware` to apply
 // custom request buffering limits below before running our request handler.
-$server = new StreamingServer(array(
+$server = new Server(array(
+    new StreamingRequestMiddleware(),
     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers, queue otherwise
     new RequestBodyBufferMiddleware(8 * 1024 * 1024), // 8 MiB max, ignore body otherwise
     new RequestBodyParserMiddleware(100 * 1024, 1), // 1 file with 100 KiB max, reject upload otherwise
