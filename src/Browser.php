@@ -73,7 +73,7 @@ class Browser
      * });
      * ```
      *
-     * See also [example 01](../examples/01-google.php).
+     * See also [GET request client example](../examples/01-client-get-request.php).
      *
      * @param string $url     URL for the request.
      * @param array  $headers
@@ -99,7 +99,7 @@ class Browser
      * });
      * ```
      *
-     * See also [example 04](../examples/04-post-json.php).
+     * See also [POST JSON client example](../examples/04-client-post-json.php).
      *
      * This method is also commonly used to submit HTML form data:
      *
@@ -216,7 +216,7 @@ class Browser
      * });
      * ```
      *
-     * See also [example 05](../examples/05-put-xml.php).
+     * See also [PUT XML client example](../examples/05-client-put-xml.php).
      *
      * This method will automatically add a matching `Content-Length` request
      * header if the outgoing request body is a `string`. If you're using a

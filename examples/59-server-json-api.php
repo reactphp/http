@@ -3,7 +3,7 @@
 // Simple JSON-based HTTP API example as a base to build RESTful/RESTish APIs
 // Launch demo and use your favorite CLI tool to test API requests
 //
-// $ php examples/09-json-api.php 8080
+// $ php examples/59-server-json-api.php 8080
 // $ curl -v http://localhost:8080/ -H 'Content-Type: application/json' -d '{"name":"Alice"}'
 
 use Psr\Http\Message\ServerRequestInterface;

@@ -1,5 +1,8 @@
 <?php
 
+// $ php examples/71-server-http-proxy.php 8080
+// $ curl -v --proxy http://localhost:8080 http://reactphp.org/
+
 use Psr\Http\Message\RequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Response;

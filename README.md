@@ -1,8 +1,18 @@
-# Http
+# HTTP
 
 [![Build Status](https://travis-ci.org/reactphp/http.svg?branch=master)](https://travis-ci.org/reactphp/http)
 
-Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](https://reactphp.org/).
+Event-driven, streaming HTTP client and server implementation for [ReactPHP](https://reactphp.org/).
+
+This HTTP library provides re-usable implementations for an HTTP client and
+server based on ReactPHP's [`Socket`](https://github.com/reactphp/socket) and
+[`EventLoop`](https://github.com/reactphp/event-loop) components.
+Its client component allows you to send any number of async HTTP/HTTPS requests
+concurrently.
+Its server component allows you to build plaintext HTTP and secure HTTPS servers
+that accept incoming HTTP requests from HTTP clients (such as web browsers).
+This library provides async, streaming means for all of this, so you can handle
+multiple concurrent HTTP requests without blocking.
 
 **Table of contents**
 
@@ -91,8 +101,8 @@ This is an HTTP server which responds with `Hello World!` to every request.
 ```php
 $loop = React\EventLoop\Factory::create();
 
-$server = new Server(function (ServerRequestInterface $request) {
-    return new Response(
+$server = new React\Http\Server(function (Psr\Http\Message\ServerRequestInterface $request) {
+    return new React\Http\Response(
         200,
         array(
             'Content-Type' => 'text/plain'
@@ -107,7 +117,7 @@ $server->listen($socket);
 $loop->run();
 ```
 
-See also the [examples](examples).
+See also the [examples](examples/).
 
 ## Client Usage
 
@@ -487,8 +497,8 @@ $browser->requestStreaming('GET', $url)->then(function (Psr\Http\Message\Respons
 });
 ```
 
-See also the [stream download example](examples/91-benchmark-download.php) and
-the [stream forwarding example](examples/21-stream-forwarding.php).
+See also the [stream download benchmark example](examples/91-client-benchmark-download.php) and
+the [stream forwarding example](examples/21-client-request-streaming-to-stdout.php).
 
 You can invoke the following methods on the message body:
 
@@ -607,7 +617,7 @@ $connector = new React\Socket\Connector($loop, array(
 $browser = new React\Http\Browser($loop, $connector);
 ```
 
-See also the [HTTP CONNECT proxy example](examples/11-http-proxy.php).
+See also the [HTTP CONNECT proxy example](examples/11-http-connect-proxy.php).
 
 ### SOCKS proxy
 
@@ -738,7 +748,8 @@ $socket = new React\Socket\Server('0.0.0.0:8080', $loop);
 $server->listen($socket);
 ```
 
-See also the [`listen()`](#listen) method and the [first example](../examples/)
+See also the [`listen()`](#listen) method and the
+[hello world server example](examples/51-server-hello-world.php)
 for more details.
 
 By default, the `Server` buffers and parses the complete incoming HTTP
@@ -846,7 +857,8 @@ $socket = new React\Socket\Server('0.0.0.0:8080', $loop);
 $server->listen($socket);
 ```
 
-See also [example #1](examples) for more details.
+See also [hello world server example](examples/51-server-hello-world.php)
+for more details.
 
 This example will start listening for HTTP requests on the alternative
 HTTP port `8080` on all interfaces (publicly). As an alternative, it is
@@ -873,7 +885,8 @@ $socket = new React\Socket\Server('tls://0.0.0.0:8443', $loop, array(
 $server->listen($socket);
 ```
 
-See also [example #11](examples) for more details.
+See also [hello world HTTPS example](examples/61-server-hello-world-https.php)
+for more details.
 
 ### Server Request
 
@@ -945,7 +958,7 @@ $server = new Server(function (ServerRequestInterface $request) {
 });
 ```
 
-See also [example #3](examples).
+See also [whatsmyip server example](examples/53-server-whatsmyip.php).
 
 > Advanced: Note that address parameters will not be set if you're listening on
   a Unix domain socket (UDS) path as this protocol lacks the concept of
@@ -983,7 +996,7 @@ Use [`htmlentities`](https://www.php.net/manual/en/function.htmlentities.php)
 like in this example to prevent
 [Cross-Site Scripting (abbreviated as XSS)](https://en.wikipedia.org/wiki/Cross-site_scripting).
 
-See also [example #4](examples).
+See also [server query parameters example](examples/54-server-query-parameter.php).
 
 #### Request body
 
@@ -1022,7 +1035,7 @@ $server = new Server(function (ServerRequestInterface $request) {
 });
 ```
 
-See also [example #12](examples) for more details.
+See also [form upload example](examples/62-server-form-upload.php) for more details.
 
 The `getBody(): StreamInterface` method can be used to
 get the raw data from this request body, similar to
@@ -1047,7 +1060,7 @@ $server = new Server(function (ServerRequestInterface $request) {
 });
 ```
 
-See also [example #9](examples) for more details.
+See also [JSON API server example](examples/59-server-json-api.php) for more details.
 
 The `getUploadedFiles(): array` method can be used to
 get the uploaded files in this request, similar to
@@ -1070,7 +1083,7 @@ $server = new Server(function (ServerRequestInterface $request) {
 });
 ```
 
-See also [example #12](examples) for more details.
+See also [form upload server example](examples/62-server-form-upload.php) for more details.
 
 The `getSize(): ?int` method can be used to
 get the size of the request body, similar to PHP's `$_SERVER['CONTENT_LENGTH']` variable.
@@ -1169,7 +1182,7 @@ $server = new React\Http\Server(array(
 The above example simply counts the number of bytes received in the request body.
 This can be used as a skeleton for buffering or processing the request body.
 
-See also [example #13](examples) for more details.
+See also [streaming request server example](examples/63-server-streaming-request.php) for more details.
 
 The `data` event will be emitted whenever new data is available on the request
 body stream.
@@ -1307,7 +1320,7 @@ non-alphanumeric characters.
 This encoding is also used internally when decoding the name and value of cookies
 (which is in line with other implementations, such as PHP's cookie functions).
 
-See also [example #5](examples) for more details.
+See also [cookie server example](examples/55-server-cookie-handling.php) for more details.
 
 #### Invalid request
 
@@ -1467,7 +1480,7 @@ in this case (if applicable).
   to look into using [Ratchet](http://socketo.me/) instead.
   If you want to handle a custom protocol, you will likely want to look into the
   [HTTP specs](https://tools.ietf.org/html/rfc7230#section-6.7) and also see
-  [examples #31 and #32](examples) for more details.
+  [examples #81 and #82](examples/) for more details.
   In particular, the `101` (Switching Protocols) response code MUST NOT be used
   unless you send an `Upgrade` response header value that is also present in
   the corresponding HTTP/1.1 `Upgrade` request header value.
@@ -1488,7 +1501,7 @@ in this case (if applicable).
   requests, one may still be present. Normal request body processing applies
   here and the connection will only turn to "tunneling mode" after the request
   body has been processed (which should be empty in most cases).
-  See also [example #22](examples) for more details.
+  See also [HTTP CONNECT server example](examples/72-server-http-connect-proxy.php) for more details.
 
 #### Response length
 
@@ -1851,7 +1864,7 @@ $browser->get($url)->then(function (Psr\Http\Message\ResponseInterface $response
 });
 ```
 
-See also [example 01](examples/01-google.php).
+See also [GET request client example](examples/01-client-get-request.php).
 
 #### post()
 
@@ -1870,7 +1883,7 @@ $browser->post(
 });
 ```
 
-See also [example 04](examples/04-post-json.php).
+See also [POST JSON client example](examples/04-client-post-json.php).
 
 This method is also commonly used to submit HTML form data:
 
@@ -1964,7 +1977,7 @@ $browser->put(
 });
 ```
 
-See also [example 05](examples/05-put-xml.php).
+See also [PUT XML client example](examples/05-client-put-xml.php).
 
 This method will automatically add a matching `Content-Length` request
 header if the outgoing request body is a `string`. If you're using a
@@ -2538,7 +2551,7 @@ $server = new Server(array(
 ));
 ```
 
-See also [example #12](examples) for more details.
+See also [form upload server example](examples/62-server-form-upload.php) for more details.
 
 By default, this middleware respects the
 [`upload_max_filesize`](https://www.php.net/manual/en/ini.core.php#ini.upload-max-filesize)

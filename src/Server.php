@@ -55,7 +55,8 @@ use React\Socket\ServerInterface;
  * $server->listen($socket);
  * ```
  *
- * See also the [`listen()`](#listen) method and the [first example](../examples/)
+ * See also the [`listen()`](#listen) method and
+ * [hello world server example](../examples/51-server-hello-world.php)
  * for more details.
  *
  * By default, the `Server` buffers and parses the complete incoming HTTP
@@ -229,7 +230,8 @@ final class Server extends EventEmitter
      * $server->listen($socket);
      * ```
      *
-     * See also [example #1](examples) for more details.
+     * See also [hello world server example](../examples/51-server-hello-world.php)
+     * for more details.
      *
      * This example will start listening for HTTP requests on the alternative
      * HTTP port `8080` on all interfaces (publicly). As an alternative, it is
@@ -256,7 +258,8 @@ final class Server extends EventEmitter
      * $server->listen($socket);
      * ```
      *
-     * See also [example #11](examples) for more details.
+     * See also [hello world HTTPS example](../examples/61-server-hello-world-https.php)
+     * for more details.
      *
      * @param ServerInterface $socket
      */

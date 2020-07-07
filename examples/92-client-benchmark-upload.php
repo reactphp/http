@@ -1,16 +1,15 @@
 <?php
 
 // a) simple 1 MB upload benchmark against public HTTP endpoint
-// $ php examples/92-benchmark-upload.php http://httpbin.org/post 1
+// $ php examples/92-client-benchmark-upload.php http://httpbin.org/post 1
 //
 // b) local 10 GB upload benchmark against localhost address to avoid network overhead
 //
-// b1) first run example HTTP server, e.g. from react/http
-// $ cd workspace/reactphp-http
-// $ php examples/13-stream-request.php 8080
+// b1) first run example HTTP server:
+// $ php examples/63-server-streaming-request.php 8080
 //
 // b2) run HTTP client sending a 10 GB upload
-// $ php examples/92-benchmark-upload.php http://localhost:8080/ 10000
+// $ php examples/92-client-benchmark-upload.php http://localhost:8080/ 10000
 
 use React\Http\Browser;
 use Evenement\EventEmitter;

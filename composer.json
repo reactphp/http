@@ -1,7 +1,7 @@
 {
     "name": "react/http",
-    "description": "Event-driven, streaming plaintext HTTP and secure HTTPS server for ReactPHP",
-    "keywords": ["event-driven", "streaming", "HTTP", "HTTPS", "server", "ReactPHP"],
+    "description": "Event-driven, streaming HTTP client and server implementation for ReactPHP",
+    "keywords": ["HTTP client", "HTTP server", "HTTP", "HTTPS", "event-driven", "streaming", "client", "server", "PSR-7", "async", "ReactPHP"],
     "license": "MIT",
     "require": {
         "php": ">=5.3.0",

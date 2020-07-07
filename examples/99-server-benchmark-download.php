@@ -1,10 +1,11 @@
 <?php
 
-// $ php examples/99-benchmark-download.php 8080
+// $ php examples/99-server-benchmark-download.php 8080
 // $ curl http://localhost:8080/10g.bin > /dev/null
 // $ wget http://localhost:8080/10g.bin -O /dev/null
 // $ ab -n10 -c10 http://localhost:8080/1g.bin
-// $ docker run -it --rm --net=host jordi/ab ab -n10 -c10 http://localhost:8080/1g.bin
+// $ docker run -it --rm --net=host jordi/ab -n100000 -c10 http://localhost:8080/
+// $ docker run -it --rm --net=host jordi/ab -n10 -c10 http://localhost:8080/1g.bin
 
 use Evenement\EventEmitter;
 use Psr\Http\Message\ServerRequestInterface;
@@ -118,7 +119,7 @@ $server = new Server(function (ServerRequestInterface $request) use ($loop) {
     );
 });
 
-$socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
+$socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop, array('tcp' => array('backlog' => 511)));
 $server->listen($socket);
 
 echo 'Listening on ' . str_replace('tcp:', 'http:', $socket->getAddress()) . PHP_EOL;

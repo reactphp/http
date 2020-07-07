@@ -1,16 +1,15 @@
 <?php
 
 // a) simple download benchmark against public HTTP endpoint:
-// $ php examples/91-benchmark-download.php http://httpbin.org/get
+// $ php examples/91-client-benchmark-download.php http://httpbin.org/get
 
 // b) local 10 GB download benchmark against localhost address to avoid network overhead
 //
-// b1) first run example HTTP server, e.g. from react/http:
-// $ cd workspace/reactphp-http
-// $ php examples/99-benchmark-download.php 8080
+// b1) first run example HTTP server:
+// $ php examples/99-server-benchmark-download.php 8080
 //
 // b2) run HTTP client receiving a 10 GB download:
-// $ php examples/91-benchmark-download.php http://localhost:8080/10g.bin
+// $ php examples/91-client-benchmark-download.php http://localhost:8080/10g.bin
 
 use React\Http\Browser;
 use Psr\Http\Message\ResponseInterface;
