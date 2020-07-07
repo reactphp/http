@@ -10,7 +10,7 @@ Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](ht
 * [Usage](#usage)
     * [Server](#server)
     * [listen()](#listen)
-    * [Request](#request)
+    * [Server Request](#server-request)
         * [Request parameters](#request-parameters)
         * [Query parameters](#query-parameters)
         * [Request body](#request-body)
@@ -71,7 +71,7 @@ processing each incoming HTTP request.
 
 When a complete HTTP request has been received, it will invoke the given
 request handler function. This request handler function needs to be passed to
-the constructor and will be invoked with the respective [request](#request)
+the constructor and will be invoked with the respective [request](#server-request)
 object and expects a [response](#response) object in return:
 
 ```php
@@ -88,7 +88,7 @@ $server = new React\Http\Server(function (Psr\Http\Message\ServerRequestInterfac
 
 Each incoming HTTP request message is always represented by the
 [PSR-7 `ServerRequestInterface`](https://www.php-fig.org/psr/psr-7/#321-psrhttpmessageserverrequestinterface),
-see also following [request](#request) chapter for more details.
+see also following [request](#server-request) chapter for more details.
 
 Each outgoing HTTP response message is always represented by the
 [PSR-7 `ResponseInterface`](https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface),
@@ -115,7 +115,7 @@ for more details.
 By default, the `Server` buffers and parses the complete incoming HTTP
 request in memory. It will invoke the given request handler function when the
 complete request headers and request body has been received. This means the
-[request](#request) object passed to your request handler function will be
+[request](#server-request) object passed to your request handler function will be
 fully compatible with PSR-7 (http-message). This provides sane defaults for
 80% of the use cases and is the recommended way to use this library unless
 you're sure you know what you're doing.
@@ -190,7 +190,7 @@ $server = new React\Http\Server(array(
 
 In this case, it will invoke the request handler function once the HTTP
 request headers have been received, i.e. before receiving the potentially
-much larger HTTP request body. This means the [request](#request) passed to
+much larger HTTP request body. This means the [request](#server-request) passed to
 your request handler function may not be fully compatible with PSR-7. This is
 specifically designed to help with more advanced use cases where you want to
 have full control over consuming the incoming HTTP request body and
@@ -246,7 +246,7 @@ $server->listen($socket);
 
 See also [example #11](examples) for more details.
 
-### Request
+### Server Request
 
 As seen above, the [`Server`](#server) class is responsible for handling
 incoming connections and then processing each incoming HTTP request.
