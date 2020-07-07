@@ -27,7 +27,7 @@ require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
 
-// Note how this example uses the `Server` instead of `StreamingServer`.
+// Note how this example uses the `Server` without the `StreamingRequestMiddleware`.
 // The initial incoming request does not contain a body and we upgrade to a
 // stream object below.
 $server = new Server(function (ServerRequestInterface $request) use ($loop) {

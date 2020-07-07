@@ -1,12 +1,14 @@
 <?php
 
-namespace React\Tests\Http;
+namespace React\Tests\Http\Io;
 
 use Psr\Http\Message\ServerRequestInterface;
+use React\Http\Io\StreamingServer;
 use React\Http\Response;
-use React\Http\StreamingServer;
 use React\Promise\Promise;
 use React\Stream\ThroughStream;
+use React\Tests\Http\SocketServerStub;
+use React\Tests\Http\TestCase;
 
 class StreamingServerTest extends TestCase
 {

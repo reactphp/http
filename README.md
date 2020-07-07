@@ -4,32 +4,35 @@
 
 Event-driven, streaming plaintext HTTP and secure HTTPS server for [ReactPHP](https://reactphp.org/).
 
-**Table of Contents**
+**Table of contents**
 
 * [Quickstart example](#quickstart-example)
 * [Usage](#usage)
-  * [Server](#server)
-  * [StreamingServer](#streamingserver)
-  * [listen()](#listen)
-  * [Request](#request)
-    * [Request parameters](#request-parameters)
-    * [Query parameters](#query-parameters)
-    * [Request body](#request-body)
-    * [Streaming request](#streaming-request)
-    * [Request method](#request-method)
-    * [Cookie parameters](#cookie-parameters)
-    * [Invalid request](#invalid-request)
-  * [Response](#response)
-    * [Deferred response](#deferred-response)
-    * [Streaming response](#streaming-response)
-    * [Response length](#response-length)
-    * [Invalid response](#invalid-response)
-    * [Default response headers](#default-response-headers)
-  * [Middleware](#middleware)
-    * [LimitConcurrentRequestsMiddleware](#limitconcurrentrequestsmiddleware)
-    * [RequestBodyBufferMiddleware](#requestbodybuffermiddleware)
-    * [RequestBodyParserMiddleware](#requestbodyparsermiddleware)
-    * [Third-Party Middleware](#third-party-middleware)
+    * [Server](#server)
+    * [listen()](#listen)
+    * [Request](#request)
+        * [Request parameters](#request-parameters)
+        * [Query parameters](#query-parameters)
+        * [Request body](#request-body)
+        * [Streaming incoming request](#streaming-incoming-request)
+        * [Request method](#request-method)
+        * [Cookie parameters](#cookie-parameters)
+        * [Invalid request](#invalid-request)
+    * [Response](#response)
+        * [Deferred response](#deferred-response)
+        * [Streaming outgoing response](#streaming-outgoing-response)
+        * [Response length](#response-length)
+        * [Invalid response](#invalid-response)
+        * [Default response headers](#default-response-headers)
+    * [Middleware](#middleware)
+        * [Custom middleware](#custom-middleware)
+        * [Third-Party Middleware](#third-party-middleware)
+* [API](#api)
+    * [React\Http\Middleware](#reacthttpmiddleware)
+        * [StreamingRequestMiddleware](#streamingrequestmiddleware)
+        * [LimitConcurrentRequestsMiddleware](#limitconcurrentrequestsmiddleware)
+        * [RequestBodyBufferMiddleware](#requestbodybuffermiddleware)
+        * [RequestBodyParserMiddleware](#requestbodyparsermiddleware)
 * [Install](#install)
 * [Tests](#tests)
 * [License](#license)
@@ -66,15 +69,14 @@ See also the [examples](examples).
 The `Server` class is responsible for handling incoming connections and then
 processing each incoming HTTP request.
 
-It buffers and parses the complete incoming HTTP request in memory. Once the
-complete request has been received, it will invoke the request handler function.
-This request handler function needs to be passed to the constructor and will be
-invoked with the respective [request](#request) object and expects a
-[response](#response) object in return:
+When a complete HTTP request has been received, it will invoke the given
+request handler function. This request handler function needs to be passed to
+the constructor and will be invoked with the respective [request](#request)
+object and expects a [response](#response) object in return:
 
 ```php
-$server = new Server(function (ServerRequestInterface $request) {
-    return new Response(
+$server = new React\Http\Server(function (Psr\Http\Message\ServerRequestInterface $request) {
+    return new React\Http\Response(
         200,
         array(
             'Content-Type' => 'text/plain'
@@ -87,35 +89,36 @@ $server = new Server(function (ServerRequestInterface $request) {
 Each incoming HTTP request message is always represented by the
 [PSR-7 `ServerRequestInterface`](https://www.php-fig.org/psr/psr-7/#321-psrhttpmessageserverrequestinterface),
 see also following [request](#request) chapter for more details.
+
 Each outgoing HTTP response message is always represented by the
 [PSR-7 `ResponseInterface`](https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface),
 see also following [response](#response) chapter for more details.
 
-In order to process any connections, the server needs to be attached to an
-instance of `React\Socket\ServerInterface` through the [`listen()`](#listen) method
-as described in the following chapter. In its most simple form, you can attach
-this to a [`React\Socket\Server`](https://github.com/reactphp/socket#server)
-in order to start a plaintext HTTP server like this:
+In order to start listening for any incoming connections, the `Server` needs
+to be attached to an instance of
+[`React\Socket\ServerInterface`](https://github.com/reactphp/socket#serverinterface)
+through the [`listen()`](#listen) method as described in the following
+chapter. In its most simple form, you can attach this to a
+[`React\Socket\Server`](https://github.com/reactphp/socket#server) in order
+to start a plaintext HTTP server like this:
 
 ```php
-$server = new Server($handler);
+$server = new React\Http\Server($handler);
 
 $socket = new React\Socket\Server('0.0.0.0:8080', $loop);
 $server->listen($socket);
 ```
 
-See also the [`listen()`](#listen) method and the [first example](examples) for more details.
+See also the [`listen()`](#listen) method and the [first example](../examples/)
+for more details.
 
-The `Server` class is built as a facade around the underlying
-[`StreamingServer`](#streamingserver) to provide sane defaults for 80% of the
-use cases and is the recommended way to use this library unless you're sure
-you know what you're doing.
-
-Unlike the underlying [`StreamingServer`](#streamingserver), this class
-buffers and parses the complete incoming HTTP request in memory. Once the
-complete request has been received, it will invoke the request handler
-function. This means the [request](#request) passed to your request handler
-function will be fully compatible with PSR-7.
+By default, the `Server` buffers and parses the complete incoming HTTP
+request in memory. It will invoke the given request handler function when the
+complete request headers and request body has been received. This means the
+[request](#request) object passed to your request handler function will be
+fully compatible with PSR-7 (http-message). This provides sane defaults for
+80% of the use cases and is the recommended way to use this library unless
+you're sure you know what you're doing.
 
 On the other hand, buffering complete HTTP requests in memory until they can
 be processed by your request handler function means that this class has to
@@ -137,9 +140,9 @@ upload_max_filesize 2M
 max_file_uploads 20
 ```
 
-In particular, the `post_max_size` setting limits how much memory a single HTTP
-request is allowed to consume while buffering its request body. On top of
-this, this class will try to avoid consuming more than 1/4 of your
+In particular, the `post_max_size` setting limits how much memory a single
+HTTP request is allowed to consume while buffering its request body. On top
+of this, this class will try to avoid consuming more than 1/4 of your
 `memory_limit` for buffering multiple concurrent HTTP requests. As such, with
 the above default settings of `128M` max, it will try to consume no more than
 `32M` for buffering multiple concurrent HTTP requests. As a consequence, it
@@ -147,116 +150,93 @@ will limit the concurrency to 4 HTTP requests with the above defaults.
 
 It is imperative that you assign reasonable values to your PHP ini settings.
 It is usually recommended to either reduce the memory a single request is
-allowed to take (set `post_max_size 1M` or less) or to increase the total memory
-limit to allow for more concurrent requests (set `memory_limit 512M` or more).
-Failure to do so means that this class may have to disable concurrency and
-only handle one request at a time.
+allowed to take (set `post_max_size 1M` or less) or to increase the total
+memory limit to allow for more concurrent requests (set `memory_limit 512M`
+or more). Failure to do so means that this class may have to disable
+concurrency and only handle one request at a time.
 
-Internally, this class automatically assigns these limits to the
-[middleware](#middleware) request handlers as described below. For more
-advanced use cases, you may also use the advanced
-[`StreamingServer`](#streamingserver) and assign these middleware request
-handlers yourself as described in the following chapters.
-
-### StreamingServer
-
-The advanced `StreamingServer` class is responsible for handling incoming connections and then
-processing each incoming HTTP request.
-
-Unlike the [`Server`](#server) class, it does not buffer and parse the incoming
-HTTP request body by default. This means that the request handler will be
-invoked with a streaming request body. Once the request headers have been
-received, it will invoke the request handler function. This request handler
-function needs to be passed to the constructor and will be invoked with the
-respective [request](#request) object and expects a [response](#response)
-object in return:
+As an alternative to the above buffering defaults, you can also configure
+the `Server` explicitly to override these defaults. You can use the
+[`LimitConcurrentRequestsMiddleware`](#limitconcurrentrequestsmiddleware) and
+[`RequestBodyBufferMiddleware`](#requestbodybuffermiddleware) (see below)
+to explicitly configure the total number of requests that can be handled at
+once like this:
 
 ```php
-$server = new StreamingServer(function (ServerRequestInterface $request) {
-    return new Response(
-        200,
-        array(
-            'Content-Type' => 'text/plain'
-        ),
-        "Hello World!\n"
-    );
-});
+$server = new React\Http\Server(array(
+    new React\Http\Middleware\StreamingRequestMiddleware(),
+    new React\Http\Middleware\LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
+    new React\Http\Middleware\RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
+    new React\Http\Middleware\RequestBodyParserMiddleware(),
+    $handler
+));
 ```
 
-Each incoming HTTP request message is always represented by the
-[PSR-7 `ServerRequestInterface`](https://www.php-fig.org/psr/psr-7/#321-psrhttpmessageserverrequestinterface),
-see also following [request](#request) chapter for more details.
-Each outgoing HTTP response message is always represented by the
-[PSR-7 `ResponseInterface`](https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface),
-see also following [response](#response) chapter for more details.
+> Internally, this class automatically assigns these middleware handlers
+  automatically when no [`StreamingRequestMiddleware`](#streamingrequestmiddleware)
+  is given. Accordingly, you can use this example to override all default
+  settings to implement custom limits.
 
-In order to process any connections, the server needs to be attached to an
-instance of `React\Socket\ServerInterface` through the [`listen()`](#listen) method
-as described in the following chapter. In its most simple form, you can attach
-this to a [`React\Socket\Server`](https://github.com/reactphp/socket#server)
-in order to start a plaintext HTTP server like this:
+As an alternative to buffering the complete request body in memory, you can
+also use a streaming approach where only small chunks of data have to be kept
+in memory:
 
 ```php
-$server = new StreamingServer($handler);
-
-$socket = new React\Socket\Server('0.0.0.0:8080', $loop);
-$server->listen($socket);
+$server = new React\Http\Server(array(
+    new React\Http\Middleware\StreamingRequestMiddleware(),
+    $handler
+));
 ```
 
-See also the [`listen()`](#listen) method and the [first example](examples) for more details.
-
-The `StreamingServer` class is considered advanced usage and unless you know
-what you're doing, you're recommended to use the [`Server`](#server) class
-instead. The `StreamingServer` class is specifically designed to help with
-more advanced use cases where you want to have full control over consuming
-the incoming HTTP request body and concurrency settings.
-
-In particular, this class does not buffer and parse the incoming HTTP request
-in memory. It will invoke the request handler function once the HTTP request
-headers have been received, i.e. before receiving the potentially much larger
-HTTP request body. This means the [request](#request) passed to your request
-handler function may not be fully compatible with PSR-7. See also
-[streaming request](#streaming-request) below for more details.
+In this case, it will invoke the request handler function once the HTTP
+request headers have been received, i.e. before receiving the potentially
+much larger HTTP request body. This means the [request](#request) passed to
+your request handler function may not be fully compatible with PSR-7. This is
+specifically designed to help with more advanced use cases where you want to
+have full control over consuming the incoming HTTP request body and
+concurrency settings. See also [streaming incoming request](#streaming-incoming-request)
+below for more details.
 
 ### listen()
 
 The `listen(React\Socket\ServerInterface $socket): void` method can be used to
-start processing connections from the given socket server.
+start listening for HTTP requests on the given socket server instance.
+
 The given [`React\Socket\ServerInterface`](https://github.com/reactphp/socket#serverinterface)
-is responsible for emitting the underlying streaming connections.
-This HTTP server needs to be attached to it in order to process any connections
-and pase incoming streaming data as incoming HTTP request messages.
-In its most common form, you can attach this to a
-[`React\Socket\Server`](https://github.com/reactphp/socket#server)
-in order to start a plaintext HTTP server like this:
+is responsible for emitting the underlying streaming connections. This
+HTTP server needs to be attached to it in order to process any
+connections and pase incoming streaming data as incoming HTTP request
+messages. In its most common form, you can attach this to a
+[`React\Socket\Server`](https://github.com/reactphp/socket#server) in
+order to start a plaintext HTTP server like this:
 
 ```php
-$server = new Server($handler);
-// or
-$server = new StreamingServer($handler);
+$server = new React\Http\Server($handler);
 
 $socket = new React\Socket\Server('0.0.0.0:8080', $loop);
 $server->listen($socket);
 ```
 
-This example will start listening for HTTP requests on the alternative HTTP port
-`8080` on all interfaces (publicly). As an alternative, it is very common to use
-a reverse proxy and let this HTTP server listen on the localhost (loopback)
-interface only by using the listen address `127.0.0.1:8080` instead. This way, you
-host your application(s) on the default HTTP port `80` and only route specific
-requests to this HTTP server.
+See also [example #1](examples) for more details.
+
+This example will start listening for HTTP requests on the alternative
+HTTP port `8080` on all interfaces (publicly). As an alternative, it is
+very common to use a reverse proxy and let this HTTP server listen on the
+localhost (loopback) interface only by using the listen address
+`127.0.0.1:8080` instead. This way, you host your application(s) on the
+default HTTP port `80` and only route specific requests to this HTTP
+server.
 
 Likewise, it's usually recommended to use a reverse proxy setup to accept
-secure HTTPS requests on default HTTPS port `443` (TLS termination) and only
-route plaintext requests to this HTTP server. As an alternative, you can also
-accept secure HTTPS requests with this HTTP server by attaching this to a
-[`React\Socket\Server`](https://github.com/reactphp/socket#server) using a
-secure TLS listen address, a certificate file and optional `passphrase` like this:
+secure HTTPS requests on default HTTPS port `443` (TLS termination) and
+only route plaintext requests to this HTTP server. As an alternative, you
+can also accept secure HTTPS requests with this HTTP server by attaching
+this to a [`React\Socket\Server`](https://github.com/reactphp/socket#server)
+using a secure TLS listen address, a certificate file and optional
+`passphrase` like this:
 
 ```php
-$server = new Server($handler);
-// or
-$server = new StreamingServer($handler);
+$server = new React\Http\Server($handler);
 
 $socket = new React\Socket\Server('tls://0.0.0.0:8443', $loop, array(
     'local_cert' => __DIR__ . '/localhost.pem'
@@ -268,9 +248,8 @@ See also [example #11](examples) for more details.
 
 ### Request
 
-As seen above, the [`Server`](#server) and [`StreamingServer`](#streamingserver)
-classes are responsible for handling incoming connections and then processing
-each incoming HTTP request.
+As seen above, the [`Server`](#server) class is responsible for handling
+incoming connections and then processing each incoming HTTP request.
 
 The request object will be processed once the request has
 been received by the client.
@@ -379,13 +358,14 @@ See also [example #4](examples).
 
 #### Request body
 
-If you're using the [`Server`](#server), then the request object will be
-buffered and parsed in memory and contains the full request body.
-This includes the parsed request body and any file uploads.
+By default, the [`Server`](#server) will buffer and parse the full request body
+in memory. This means the given request object includes the parsed request body
+and any file uploads.
 
-> If you're using the advanced [`StreamingServer`](#streamingserver) class, jump
-  to the next chapter to learn more about how to process a
-  [streaming request](#streaming-request).
+> As an alternative to the default buffering logic, you can also use the
+  [`StreamingRequestMiddleware`](#streamingrequestmiddleware). Jump to the next
+  chapter to learn more about how to process a
+  [streaming incoming request](#streaming-incoming-request).
 
 As stated above, each incoming HTTP request is always represented by the
 [PSR-7 `ServerRequestInterface`](https://www.php-fig.org/psr/psr-7/#321-psrhttpmessageserverrequestinterface).
@@ -481,15 +461,17 @@ header or when using `Transfer-Encoding: chunked` for HTTP/1.1 requests.
   intermediary `HTTP/1.1 100 Continue` response to the client. This ensures you
   will receive the request body without a delay as expected.
 
-#### Streaming request
+#### Streaming incoming request
 
-If you're using the advanced [`StreamingServer`](#streamingserver), the
-request object will be processed once the request headers have been received.
+<a id="streaming-request"></a><!-- legacy fragment id -->
+
+If you're using the advanced [`StreamingRequestMiddleware`](#streamingrequestmiddleware),
+the request object will be processed once the request headers have been received.
 This means that this happens irrespective of (i.e. *before*) receiving the
 (potentially much larger) request body.
 
-> If you're using the [`Server`](#server) class, jump to the previous chapter
-  to learn more about how to process a buffered [request body](#request-body).
+> Note that this is non-standard behavior considered advanced usage. Jump to the
+  previous chapter to learn more about how to process a buffered [request body](#request-body).
 
 While this may be uncommon in the PHP ecosystem, this is actually a very powerful
 approach that gives you several advantages not otherwise possible:
@@ -519,37 +501,42 @@ The ReactPHP `ReadableStreamInterface` gives you access to the incoming
 request body as the individual chunks arrive:
 
 ```php
-$server = new StreamingServer(function (ServerRequestInterface $request) {
-    return new Promise(function ($resolve, $reject) use ($request) {
-        $contentLength = 0;
-        $request->getBody()->on('data', function ($data) use (&$contentLength) {
-            $contentLength += strlen($data);
-        });
+$server = new React\Http\Server(array(
+    new React\Http\Middleware\StreamingRequestMiddleware(),
+    function (Psr\Http\Message\ServerRequestInterface $request) {
+        $body = $request->getBody();
+        assert($body instanceof Psr\Http\Message\StreamInterface);
+        assert($body instanceof React\Stream\ReadableStreamInterface);
 
-        $request->getBody()->on('end', function () use ($resolve, &$contentLength){
-            $response = new Response(
-                200,
-                array(
-                    'Content-Type' => 'text/plain'
-                ),
-                "The length of the submitted request body is: " . $contentLength
-            );
-            $resolve($response);
-        });
+        return new React\Promise\Promise(function ($resolve, $reject) use ($body) {
+            $bytes = 0;
+            $body->on('data', function ($data) use (&$bytes) {
+                $bytes += strlen($data);
+            });
 
-        // an error occures e.g. on invalid chunked encoded data or an unexpected 'end' event
-        $request->getBody()->on('error', function (\Exception $exception) use ($resolve, &$contentLength) {
-            $response = new Response(
-                400,
-                array(
-                    'Content-Type' => 'text/plain'
-                ),
-                "An error occured while reading at length: " . $contentLength
-            );
-            $resolve($response);
+            $body->on('end', function () use ($resolve, &$bytes){
+                $resolve(new React\Http\Response(
+                    200,
+                    array(
+                        'Content-Type' => 'text/plain'
+                    ),
+                    "Received $bytes bytes\n"
+                ));
+            });
+
+            // an error occures e.g. on invalid chunked encoded data or an unexpected 'end' event
+            $body->on('error', function (\Exception $exception) use ($resolve, &$bytes) {
+                $resolve(new React\Http\Response(
+                    400,
+                    array(
+                        'Content-Type' => 'text/plain'
+                    ),
+                    "Encountered error after $bytes bytes: {$exception->getMessage()}\n"
+                ));
+            });
         });
-    });
-});
+    }
+));
 ```
 
 The above example simply counts the number of bytes received in the request body.
@@ -587,32 +574,35 @@ This method operates on the streaming request body, i.e. the request body size
 may be unknown (`null`) when using `Transfer-Encoding: chunked` for HTTP/1.1 requests.
 
 ```php 
-$server = new StreamingServer(function (ServerRequestInterface $request) {
-    $size = $request->getBody()->getSize();
-    if ($size === null) {
-        $body = 'The request does not contain an explicit length.';
-        $body .= 'This example does not accept chunked transfer encoding.';
+$server = new React\Http\Server(array(
+    new React\Http\Middleware\StreamingRequestMiddleware(),
+    function (Psr\Http\Message\ServerRequestInterface $request) {
+        $size = $request->getBody()->getSize();
+        if ($size === null) {
+            $body = 'The request does not contain an explicit length.';
+            $body .= 'This example does not accept chunked transfer encoding.';
 
-        return new Response(
-            411,
+            return new React\Http\Response(
+                411,
+                array(
+                    'Content-Type' => 'text/plain'
+                ),
+                $body
+            );
+        }
+
+        return new React\Http\Response(
+            200,
             array(
                 'Content-Type' => 'text/plain'
             ),
-            $body
+            "Request body size: " . $size . " bytes\n"
         );
     }
-
-    return new Response(
-        200,
-        array(
-            'Content-Type' => 'text/plain'
-        ),
-        "Request body size: " . $size . " bytes\n"
-    );
-});
+));
 ```
 
-> Note: The `StreamingServer` automatically takes care of handling requests with the
+> Note: The `Server` automatically takes care of handling requests with the
   additional `Expect: 100-continue` request header. When HTTP/1.1 clients want to
   send a bigger request body, they MAY send only the request headers with an
   additional `Expect: 100-continue` request header and wait before sending the actual
@@ -694,8 +684,8 @@ See also [example #5](examples) for more details.
 
 #### Invalid request
 
-The `Server` and `StreamingServer` classes support both HTTP/1.1 and HTTP/1.0 request
-messages. If a client sends an invalid request message, uses an invalid HTTP
+The `Server` class supports both HTTP/1.1 and HTTP/1.0 request messages.
+If a client sends an invalid request message, uses an invalid HTTP
 protocol version or sends an invalid `Transfer-Encoding` request header value,
 the server will automatically send a `400` (Bad Request) HTTP error response
 to the client and close the connection.
@@ -714,10 +704,9 @@ valid response object from your request handler function. See also
 
 ### Response
 
-The callback function passed to the constructor of the [`Server`](#server) or
-advanced [`StreamingServer`](#server) is responsible for processing the request
-and returning a response, which will be delivered to the client.
-This function MUST return an instance implementing
+The callback function passed to the constructor of the [`Server`](#server) is
+responsible for processing the request and returning a response, which will be
+delivered to the client. This function MUST return an instance implementing
 [PSR-7 ResponseInterface](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#33-psrhttpmessageresponseinterface)
 object or a 
 [ReactPHP Promise](https://github.com/reactphp/promise#reactpromise)
@@ -780,7 +769,9 @@ The promise cancellation handler can be used to clean up any pending resources
 allocated in this case (if applicable).
 If a promise is resolved after the client closes, it will simply be ignored.
 
-#### Streaming response
+#### Streaming outgoing response
+
+<a id="streaming-response"></a><!-- legacy fragment id -->
 
 The `Response` class in this project supports to add an instance which implements the
 [ReactPHP ReadableStreamInterface](https://github.com/reactphp/stream#readablestreaminterface)
@@ -893,7 +884,7 @@ $server = new Server(function (ServerRequestInterface $request) {
 ```
 
 If the response body size is unknown, a `Content-Length` response header can not
-be added automatically. When using a [streaming response](#streaming-response)
+be added automatically. When using a [streaming outgoing response](#streaming-outgoing-response)
 without an explicit `Content-Length` response header, outgoing HTTP/1.1 response
 messages will automatically use `Transfer-Encoding: chunked` while legacy HTTP/1.0
 response messages will contain the plain response body. If you know the length
@@ -955,8 +946,8 @@ $server->on('error', function (Exception $e) {
 Note that the server will also emit an `error` event if the client sends an
 invalid HTTP request that never reaches your request handler function. See
 also [invalid request](#invalid-request) for more details.
-Additionally, a [streaming request](#streaming-request) body can also emit
-an `error` event on the request body.
+Additionally, a [streaming incoming request](#streaming-incoming-request) body
+can also emit an `error` event on the request body.
 
 The server will only send a very generic `500` (Interval Server Error) HTTP
 error response without any further details to the client if an unhandled
@@ -969,9 +960,11 @@ create your own HTTP response message instead.
 
 #### Default response headers
 
-After the return in the callback function the response will be processed by the
-[`Server`](#server) or [`StreamingServer`](#streamingserver) respectively.
-They will add the protocol version of the request, so you don't have to.
+When a response is returned from the request handler function, it will be
+processed by the [`Server`](#server) and then sent back to the client.
+
+The `Server` will automatically add the protocol version of the request, so you
+don't have to.
 
 A `Date` header will be automatically added with the system date and time if none is given.
 You can add a custom `Date` header yourself like this:
@@ -1037,14 +1030,15 @@ passed explicitly.
 
 ### Middleware
 
-As documented above, the [`Server`](#server) and advanced
-[`StreamingServer`](#streamingserver) accept a single
-request handler argument that is responsible for processing an incoming
-HTTP request and then creating and returning an outgoing HTTP response.
+As documented above, the [`Server`](#server) accepts a single request handler
+argument that is responsible for processing an incoming HTTP request and then
+creating and returning an outgoing HTTP response.
 
 Many common use cases involve validating, processing, manipulating the incoming
 HTTP request before passing it to the final business logic request handler.
 As such, this project supports the concept of middleware request handlers.
+
+#### Custom middleware
 
 A middleware request handler is expected to adhere the following rules:
 
@@ -1086,8 +1080,7 @@ required to match PHP's request behavior (see below) and otherwise actively
 encourages [Third-Party Middleware](#third-party-middleware) implementations.
 
 In order to use middleware request handlers, simply pass an array with all
-callables as defined above to the [`Server`](#server) or
-[`StreamingServer`](#streamingserver) respectively.
+callables as defined above to the [`Server`](#server).
 The following example adds a middleware request handler that adds the current time to the request as a 
 header (`Request-Time`) and a final request handler that always returns a 200 code without a body: 
 
@@ -1160,6 +1153,97 @@ $server = new Server(array(
 ));
 ```
 
+#### Third-Party Middleware
+
+While this project does provide the means to *use* middleware implementations
+(see above), it does not aim to *define* how middleware implementations should
+look like. We realize that there's a vivid ecosystem of middleware
+implementations and ongoing effort to standardize interfaces between these with
+[PSR-15](https://www.php-fig.org/psr/psr-15/) (HTTP Server Request Handlers)
+and support this goal.
+As such, this project only bundles a few middleware implementations that are
+required to match PHP's request behavior (see
+[middleware implementations](#react-http-middleware)) and otherwise actively
+encourages third-party middleware implementations.
+
+While we would love to support PSR-15 directly in `react/http`, we understand
+that this interface does not specifically target async APIs and as such does
+not take advantage of promises for [deferred responses](#deferred-response).
+The gist of this is that where PSR-15 enforces a `ResponseInterface` return
+value, we also accept a `PromiseInterface<ResponseInterface>`.
+As such, we suggest using the external
+[PSR-15 middleware adapter](https://github.com/friends-of-reactphp/http-middleware-psr15-adapter)
+that uses on the fly monkey patching of these return values which makes using
+most PSR-15 middleware possible with this package without any changes required.
+
+Other than that, you can also use the above [middleware definition](#middleware)
+to create custom middleware. A non-exhaustive list of third-party middleware can
+be found at the [middleware wiki](https://github.com/reactphp/reactphp/wiki/Users#http-middleware).
+If you build or know a custom middleware, make sure to let the world know and
+feel free to add it to this list.
+
+## API
+
+### React\Http\Middleware
+
+#### StreamingRequestMiddleware
+
+The `StreamingRequestMiddleware` can be used to
+process incoming requests with a streaming request body (without buffering).
+
+This allows you to process requests of any size without buffering the request
+body in memory. Instead, it will represent the request body as a
+[`ReadableStreamInterface`](https://github.com/reactphp/stream#readablestreaminterface)
+that emit chunks of incoming data as it is received:
+
+```php
+$server = new React\Http\Server(array(
+    new React\Http\Middleware\StreamingRequestMiddleware(),
+    function (Psr\Http\Message\ServerRequestInterface $request) {
+        $body = $request->getBody();
+        assert($body instanceof Psr\Http\Message\StreamInterface);
+        assert($body instanceof React\Stream\ReadableStreamInterface);
+
+        return new React\Promise\Promise(function ($resolve) use ($body) {
+            $bytes = 0;
+            $body->on('data', function ($chunk) use (&$bytes) {
+                $bytes += \count($chunk);
+            });
+            $body->on('close', function () use (&$bytes, $resolve) {
+                $resolve(new React\Http\Response(
+                    200,
+                    [],
+                    "Received $bytes bytes\n"
+                ));
+            });
+        });
+    }
+));
+```
+
+See also [streaming incoming request](#streaming-incoming-request)
+for more details.
+
+Additionally, this middleware can be used in combination with the
+[`LimitConcurrentRequestsMiddleware`](#limitconcurrentrequestsmiddleware) and
+[`RequestBodyBufferMiddleware`](#requestbodybuffermiddleware) (see below)
+to explicitly configure the total number of requests that can be handled at
+once:
+
+```php
+$server = new React\Http\Server(array(
+    new React\Http\Middleware\StreamingRequestMiddleware(),
+    new React\Http\Middleware\LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
+    new React\Http\Middleware\RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
+    new React\Http\Middleware\RequestBodyParserMiddleware(),
+    $handler
+));
+```
+
+> Internally, this class is used as a "marker" to not trigger the default
+  request buffering behavior in the `Server`. It does not implement any logic
+  on its own.
+
 #### LimitConcurrentRequestsMiddleware
 
 The `LimitConcurrentRequestsMiddleware` can be used to
@@ -1191,7 +1275,8 @@ Similarly, this middleware is often used in combination with the
 to limit the total number of requests that can be buffered at once:
 
 ```php
-$server = new StreamingServer(array(
+$server = new Server(array(
+    new StreamingRequestMiddleware(),
     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
     new RequestBodyParserMiddleware(),
@@ -1204,7 +1289,8 @@ that can be buffered at once and then ensure the actual request handler only
 processes one request after another without any concurrency:
 
 ```php
-$server = new StreamingServer(array(
+$server = new Server(array(
+    new StreamingRequestMiddleware(),
     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
     new RequestBodyParserMiddleware(),
@@ -1256,7 +1342,8 @@ the total number of concurrent requests.
 Usage:
 
 ```php
-$server = new StreamingServer(array(
+$server = new Server(array(
+    new StreamingRequestMiddleware(),
     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
     function (ServerRequestInterface $request) {
@@ -1315,7 +1402,8 @@ $handler = function (ServerRequestInterface $request) {
     );
 };
 
-$server = new StreamingServer(array((
+$server = new Server(array(
+    new StreamingRequestMiddleware(),
     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
     new RequestBodyParserMiddleware(),
@@ -1381,34 +1469,6 @@ new RequestBodyParserMiddleware(10 * 1024, 100); // 100 files with 10 KiB each
   is left up to higher-level implementations.
   If you want to respect this setting, you have to check its value and
   effectively avoid using this middleware entirely.
-
-#### Third-Party Middleware
-
-While this project does provide the means to *use* middleware implementations
-(see above), it does not aim to *define* how middleware implementations should
-look like. We realize that there's a vivid ecosystem of middleware
-implementations and ongoing effort to standardize interfaces between these with
-[PSR-15](https://www.php-fig.org/psr/psr-15/) (HTTP Server Request Handlers)
-and support this goal.
-As such, this project only bundles a few middleware implementations that are
-required to match PHP's request behavior (see above) and otherwise actively
-encourages third-party middleware implementations.
-
-While we would love to support PSR-15 directy in `react/http`, we understand
-that this interface does not specifically target async APIs and as such does
-not take advantage of promises for [deferred responses](#deferred-response).
-The gist of this is that where PSR-15 enforces a `ResponseInterface` return
-value, we also accept a `PromiseInterface<ResponseInterface>`.
-As such, we suggest using the external
-[PSR-15 middleware adapter](https://github.com/friends-of-reactphp/http-middleware-psr15-adapter)
-that uses on the fly monkey patching of these return values which makes using
-most PSR-15 middleware possible with this package without any changes required.
-
-Other than that, you can also use the above [middleware definition](#middleware)
-to create custom middleware. A non-exhaustive list of third-party middleware can
-be found at the [middleware wiki](https://github.com/reactphp/http/wiki/Middleware).
-If you build or know a custom middleware, make sure to let the world know and
-feel free to add it to this list.
 
 ## Install
 
