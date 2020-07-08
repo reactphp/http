@@ -34,15 +34,25 @@ use Psr\Http\Message\StreamInterface;
  */
 class Response extends Psr7Response
 {
+    /**
+     * @param int                                            $status  HTTP status code (e.g. 200/404)
+     * @param array<string,string|string[]>                  $headers additional response headers
+     * @param string|ReadableStreamInterface|StreamInterface $body    response body
+     * @param string                                         $version HTTP protocol version (e.g. 1.1/1.0)
+     * @param ?string                                        $reason  custom HTTP response phrase
+     * @throws \InvalidArgumentException for an invalid body
+     */
     public function __construct(
         $status = 200,
         array $headers = array(),
-        $body = null,
+        $body = '',
         $version = '1.1',
         $reason = null
     ) {
-        if ($body instanceof ReadableStreamInterface) {
+        if ($body instanceof ReadableStreamInterface && !$body instanceof StreamInterface) {
             $body = new HttpBodyStream($body, null);
+        } elseif (!\is_string($body) && !$body instanceof StreamInterface) {
+            throw new \InvalidArgumentException('Invalid response body given');
         }
 
         parent::__construct(
