@@ -3,6 +3,7 @@
 namespace React\Http;
 
 use Evenement\EventEmitter;
+use React\EventLoop\LoopInterface;
 use React\Http\Io\IniUtil;
 use React\Http\Io\StreamingServer;
 use React\Http\Middleware\LimitConcurrentRequestsMiddleware;
@@ -164,10 +165,11 @@ final class Server extends EventEmitter
      * connections in order to then parse incoming data as HTTP.
      * See also [listen()](#listen) for more details.
      *
+     * @param LoopInterface $loop
      * @param callable|callable[] $requestHandler
      * @see self::listen()
      */
-    public function __construct($requestHandler)
+    public function __construct(LoopInterface $loop, $requestHandler)
     {
         if (!\is_callable($requestHandler) && !\is_array($requestHandler)) {
             throw new \InvalidArgumentException('Invalid request handler given');
@@ -204,7 +206,7 @@ final class Server extends EventEmitter
             $middleware = \array_merge($middleware, $requestHandler);
         }
 
-        $this->streamingServer = new StreamingServer($middleware);
+        $this->streamingServer = new StreamingServer($loop, $middleware);
 
         $that = $this;
         $this->streamingServer->on('error', function ($error) use ($that) {

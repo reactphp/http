@@ -9,7 +9,7 @@ require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
 
-$server = new Server(function (ServerRequestInterface $request) {
+$server = new Server($loop, function (ServerRequestInterface $request) {
     return new Response(
         200,
         array(

@@ -10,7 +10,7 @@ require __DIR__ . '/../vendor/autoload.php';
 $loop = Factory::create();
 
 $counter = 0;
-$server = new Server(function (ServerRequestInterface $request) use (&$counter) {
+$server = new Server($loop, function (ServerRequestInterface $request) use (&$counter) {
     return new Response(
         200,
         array(

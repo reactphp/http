@@ -5,6 +5,7 @@ namespace React\Http\Io;
 use Evenement\EventEmitter;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use React\EventLoop\LoopInterface;
 use React\Http\Response;
 use React\Promise;
 use React\Promise\CancellablePromiseInterface;
@@ -83,6 +84,7 @@ final class StreamingServer extends EventEmitter
 {
     private $callback;
     private $parser;
+    private $loop;
 
     /**
      * Creates an HTTP server that invokes the given callback for each incoming HTTP request
@@ -92,11 +94,14 @@ final class StreamingServer extends EventEmitter
      * connections in order to then parse incoming data as HTTP.
      * See also [listen()](#listen) for more details.
      *
+     * @param LoopInterface $loop
      * @param callable|callable[] $requestHandler
      * @see self::listen()
      */
-    public function __construct($requestHandler)
+    public function __construct(LoopInterface $loop, $requestHandler)
     {
+        $this->loop = $loop;
+
         if (!\is_callable($requestHandler) && !\is_array($requestHandler)) {
             throw new \InvalidArgumentException('Invalid request handler given');
         } elseif (!\is_callable($requestHandler)) {
