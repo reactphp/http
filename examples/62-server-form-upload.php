@@ -3,7 +3,7 @@
 // Simple HTML form with file upload
 // Launch demo and use your favorite browser or CLI tool to test form submissions
 //
-// $ php examples/12-upload.php 8080
+// $ php examples/62-server-form-upload.php 8080
 // $ curl --form name=test --form age=30 http://localhost:8080/
 // $ curl --form name=hi --form avatar=@avatar.png http://localhost:8080/
 

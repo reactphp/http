@@ -22,7 +22,7 @@ class ChunkedEncoderTest extends TestCase
 
     public function testChunked()
     {
-        $this->chunkedStream->on('data', $this->expectCallableOnce(array("5\r\nhello\r\n")));
+        $this->chunkedStream->on('data', $this->expectCallableOnceWith("5\r\nhello\r\n"));
         $this->input->emit('data', array('hello'));
     }
 
@@ -34,7 +34,7 @@ class ChunkedEncoderTest extends TestCase
 
     public function testBiggerStringToCheckHexValue()
     {
-        $this->chunkedStream->on('data', $this->expectCallableOnce(array("1a\r\nabcdefghijklmnopqrstuvwxyz\r\n")));
+        $this->chunkedStream->on('data', $this->expectCallableOnceWith("1a\r\nabcdefghijklmnopqrstuvwxyz\r\n"));
         $this->input->emit('data', array('abcdefghijklmnopqrstuvwxyz'));
     }
 
