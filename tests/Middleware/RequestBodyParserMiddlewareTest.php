@@ -3,7 +3,7 @@
 namespace React\Tests\Http\Middleware;
 
 use Psr\Http\Message\ServerRequestInterface;
-use React\Http\Io\ServerRequest;
+use React\Http\Message\ServerRequest;
 use React\Http\Middleware\RequestBodyParserMiddleware;
 use React\Tests\Http\TestCase;
 

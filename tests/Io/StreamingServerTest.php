@@ -3,8 +3,8 @@
 namespace React\Tests\Http\Io;
 
 use Psr\Http\Message\ServerRequestInterface;
-use React\Http\Io\StreamingServer;
 use React\EventLoop\Factory;
+use React\Http\Io\StreamingServer;
 use React\Http\Message\Response;
 use React\Promise\Promise;
 use React\Stream\ThroughStream;

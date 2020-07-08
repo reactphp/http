@@ -1,8 +1,8 @@
 <?php
 
-namespace React\Tests\Http\Io;
+namespace React\Tests\Http\Message;
 
-use React\Http\Io\ServerRequest;
+use React\Http\Message\ServerRequest;
 use React\Tests\Http\TestCase;
 
 class ServerRequestTest extends TestCase

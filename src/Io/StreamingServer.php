@@ -7,6 +7,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\LoopInterface;
 use React\Http\Message\Response;
+use React\Http\Message\ServerRequest;
 use React\Promise;
 use React\Promise\CancellablePromiseInterface;
 use React\Promise\PromiseInterface;
