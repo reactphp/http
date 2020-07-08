@@ -19,11 +19,11 @@ use React\Socket\ServerInterface;
  * When a complete HTTP request has been received, it will invoke the given
  * request handler function. This request handler function needs to be passed to
  * the constructor and will be invoked with the respective [request](#server-request)
- * object and expects a [response](#response) object in return:
+ * object and expects a [response](#server-response) object in return:
  *
  * ```php
  * $server = new React\Http\Server(function (Psr\Http\Message\ServerRequestInterface $request) {
- *     return new React\Http\Response(
+ *     return new React\Http\Message\Response(
  *         200,
  *         array(
  *             'Content-Type' => 'text/plain'
@@ -39,7 +39,7 @@ use React\Socket\ServerInterface;
  *
  * Each outgoing HTTP response message is always represented by the
  * [PSR-7 `ResponseInterface`](https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface),
- * see also following [response](#response) chapter for more details.
+ * see also following [response](#server-response) chapter for more details.
  *
  * In order to start listening for any incoming connections, the `Server` needs
  * to be attached to an instance of

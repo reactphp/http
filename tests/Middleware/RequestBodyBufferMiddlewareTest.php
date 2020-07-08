@@ -8,7 +8,7 @@ use React\EventLoop\Factory;
 use React\Http\Io\HttpBodyStream;
 use React\Http\Io\ServerRequest;
 use React\Http\Middleware\RequestBodyBufferMiddleware;
-use React\Http\Response;
+use React\Http\Message\Response;
 use React\Stream\ThroughStream;
 use React\Tests\Http\TestCase;
 use RingCentral\Psr7\BufferStream;

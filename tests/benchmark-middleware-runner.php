@@ -3,7 +3,7 @@
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Io\MiddlewareRunner;
 use React\Http\Io\ServerRequest;
-use React\Http\Response;
+use React\Http\Message\Response;
 
 const ITERATIONS = 5000;
 const MIDDLEWARE_COUNT = 512;

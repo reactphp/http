@@ -2,7 +2,7 @@
 
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
-use React\Http\Response;
+use React\Http\Message\Response;
 use React\Http\Server;
 use React\Stream\ThroughStream;
 

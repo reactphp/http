@@ -21,7 +21,7 @@ Hint: try this with multiple connections :)
 
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
-use React\Http\Response;
+use React\Http\Message\Response;
 use React\Http\Server;
 use React\Stream\CompositeStream;
 use React\Stream\ThroughStream;

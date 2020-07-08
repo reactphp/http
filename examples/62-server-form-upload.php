@@ -10,11 +10,11 @@
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\UploadedFileInterface;
 use React\EventLoop\Factory;
+use React\Http\Message\Response;
 use React\Http\Middleware\LimitConcurrentRequestsMiddleware;
 use React\Http\Middleware\RequestBodyBufferMiddleware;
 use React\Http\Middleware\RequestBodyParserMiddleware;
 use React\Http\Middleware\StreamingRequestMiddleware;
-use React\Http\Response;
 use React\Http\Server;
 
 require __DIR__ . '/../vendor/autoload.php';

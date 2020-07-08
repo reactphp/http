@@ -6,7 +6,7 @@ use Evenement\EventEmitter;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\LoopInterface;
-use React\Http\Response;
+use React\Http\Message\Response;
 use React\Promise;
 use React\Promise\CancellablePromiseInterface;
 use React\Promise\PromiseInterface;
@@ -75,8 +75,7 @@ use React\Stream\WritableStreamInterface;
  * [streaming request](#streaming-request) below for more details.
  *
  * @see \React\Http\Server
- * @see Request
- * @see Response
+ * @see \React\Http\Message\Response
  * @see self::listen()
  * @internal
  */

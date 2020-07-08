@@ -11,7 +11,7 @@ use React\Promise\Promise;
 use React\Stream\ThroughStream;
 use React\Tests\Http\TestCase;
 use React\Promise\PromiseInterface;
-use React\Http\Response;
+use React\Http\Message\Response;
 
 final class LimitConcurrentRequestsMiddlewareTest extends TestCase
 {

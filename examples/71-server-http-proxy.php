@@ -5,7 +5,7 @@
 
 use Psr\Http\Message\RequestInterface;
 use React\EventLoop\Factory;
-use React\Http\Response;
+use React\Http\Message\Response;
 use React\Http\Server;
 use RingCentral\Psr7;
 

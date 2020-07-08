@@ -1,9 +1,10 @@
 <?php
 
-namespace React\Tests\Http;
+namespace React\Tests\Http\Message;
 
-use React\Http\Response;
+use React\Http\Message\Response;
 use React\Stream\ThroughStream;
+use React\Tests\Http\TestCase;
 
 class ResponseTest extends TestCase
 {
