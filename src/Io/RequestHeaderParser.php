@@ -224,7 +224,7 @@ class RequestHeaderParser extends EventEmitter
             $start['method'],
             $uri,
             $fields,
-            null,
+            '',
             $start['version'],
             $serverParams
         );

@@ -2,7 +2,9 @@
 
 namespace React\Tests\Http\Message;
 
+use React\Http\Io\HttpBodyStream;
 use React\Http\Message\ServerRequest;
+use React\Stream\ThroughStream;
 use React\Tests\Http\TestCase;
 
 class ServerRequestTest extends TestCase
@@ -262,5 +264,102 @@ class ServerRequestTest extends TestCase
 
         $cookies = $this->request->getCookieParams();
         $this->assertEquals(array('hello' => 'world', 'react' => 'php'), $cookies);
+    }
+
+    public function testConstructWithStringRequestBodyReturnsStringBodyWithAutomaticSize()
+    {
+        $request = new ServerRequest(
+            'GET',
+            'http://localhost',
+            array(),
+            'foo'
+        );
+
+        $body = $request->getBody();
+        $this->assertSame(3, $body->getSize());
+        $this->assertEquals('foo', (string) $body);
+    }
+
+    public function testConstructWithHttpBodyStreamReturnsBodyAsIs()
+    {
+        $request = new ServerRequest(
+            'GET',
+            'http://localhost',
+            array(),
+            $body = new HttpBodyStream(new ThroughStream(), 100)
+        );
+
+        $this->assertSame($body, $request->getBody());
+    }
+
+    public function testConstructWithStreamingRequestBodyReturnsBodyWhichImplementsReadableStreamInterfaceWithSizeZeroDefault()
+    {
+        $request = new ServerRequest(
+            'GET',
+            'http://localhost',
+            array(),
+            new ThroughStream()
+        );
+
+        $body = $request->getBody();
+        $this->assertInstanceOf('Psr\Http\Message\StreamInterface', $body);
+        $this->assertInstanceOf('React\Stream\ReadableStreamInterface', $body);
+        $this->assertSame(0, $body->getSize());
+    }
+
+    public function testConstructWithStreamingRequestBodyReturnsBodyWithSizeFromContentLengthHeader()
+    {
+        $request = new ServerRequest(
+            'GET',
+            'http://localhost',
+            array(
+                'Content-Length' => 100
+            ),
+            new ThroughStream()
+        );
+
+        $body = $request->getBody();
+        $this->assertInstanceOf('Psr\Http\Message\StreamInterface', $body);
+        $this->assertInstanceOf('React\Stream\ReadableStreamInterface', $body);
+        $this->assertSame(100, $body->getSize());
+    }
+
+    public function testConstructWithStreamingRequestBodyReturnsBodyWithSizeUnknownForTransferEncodingChunked()
+    {
+        $request = new ServerRequest(
+            'GET',
+            'http://localhost',
+            array(
+                'Transfer-Encoding' => 'Chunked'
+            ),
+            new ThroughStream()
+        );
+
+        $body = $request->getBody();
+        $this->assertInstanceOf('Psr\Http\Message\StreamInterface', $body);
+        $this->assertInstanceOf('React\Stream\ReadableStreamInterface', $body);
+        $this->assertNull($body->getSize());
+    }
+
+    public function testConstructWithFloatRequestBodyThrows()
+    {
+        $this->setExpectedException('InvalidArgumentException');
+        new ServerRequest(
+            'GET',
+            'http://localhost',
+            array(),
+            1.0
+        );
+    }
+
+    public function testConstructWithResourceRequestBodyThrows()
+    {
+        $this->setExpectedException('InvalidArgumentException');
+        new ServerRequest(
+            'GET',
+            'http://localhost',
+            array(),
+            tmpfile()
+        );
     }
 }
