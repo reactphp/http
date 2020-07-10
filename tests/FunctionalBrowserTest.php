@@ -32,7 +32,7 @@ class FunctionalBrowserTest extends TestCase
         $this->loop = $loop = Factory::create();
         $this->browser = new Browser($this->loop);
 
-        $server = new Server($this->loop, array(new StreamingRequestMiddleware(), function (ServerRequestInterface $request) use ($loop) {
+        $server = new Server($this->loop, new StreamingRequestMiddleware(), function (ServerRequestInterface $request) use ($loop) {
             $path = $request->getUri()->getPath();
 
             $headers = array();
@@ -132,7 +132,7 @@ class FunctionalBrowserTest extends TestCase
             }
 
             var_dump($path);
-        }));
+        });
         $socket = new \React\Socket\Server(0, $this->loop);
         $server->listen($socket);
 
@@ -527,9 +527,9 @@ class FunctionalBrowserTest extends TestCase
      */
     public function testPostStreamWillStartSendingRequestEvenWhenBodyDoesNotEmitData()
     {
-        $server = new Server($this->loop, array(new StreamingRequestMiddleware(), function (ServerRequestInterface $request) {
+        $server = new Server($this->loop, new StreamingRequestMiddleware(), function (ServerRequestInterface $request) {
             return new Response(200);
-        }));
+        });
         $socket = new \React\Socket\Server(0, $this->loop);
         $server->listen($socket);
 

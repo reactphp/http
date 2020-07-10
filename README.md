@@ -803,13 +803,14 @@ to explicitly configure the total number of requests that can be handled at
 once like this:
 
 ```php
-$server = new React\Http\Server($loop, array(
+$server = new React\Http\Server(
+    $loop,
     new React\Http\Middleware\StreamingRequestMiddleware(),
     new React\Http\Middleware\LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new React\Http\Middleware\RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
     new React\Http\Middleware\RequestBodyParserMiddleware(),
     $handler
-));
+);
 ```
 
 > Internally, this class automatically assigns these middleware handlers
@@ -822,10 +823,11 @@ also use a streaming approach where only small chunks of data have to be kept
 in memory:
 
 ```php
-$server = new React\Http\Server($loop, array(
+$server = new React\Http\Server(
+    $loop,
     new React\Http\Middleware\StreamingRequestMiddleware(),
     $handler
-));
+);
 ```
 
 In this case, it will invoke the request handler function once the HTTP
@@ -1141,7 +1143,8 @@ The ReactPHP `ReadableStreamInterface` gives you access to the incoming
 request body as the individual chunks arrive:
 
 ```php
-$server = new React\Http\Server($loop, array(
+$server = new React\Http\Server(
+    $loop,
     new React\Http\Middleware\StreamingRequestMiddleware(),
     function (Psr\Http\Message\ServerRequestInterface $request) {
         $body = $request->getBody();
@@ -1176,7 +1179,7 @@ $server = new React\Http\Server($loop, array(
             });
         });
     }
-));
+);
 ```
 
 The above example simply counts the number of bytes received in the request body.
@@ -1214,7 +1217,8 @@ This method operates on the streaming request body, i.e. the request body size
 may be unknown (`null`) when using `Transfer-Encoding: chunked` for HTTP/1.1 requests.
 
 ```php 
-$server = new React\Http\Server($loop, array(
+$server = new React\Http\Server(
+    $loop,
     new React\Http\Middleware\StreamingRequestMiddleware(),
     function (Psr\Http\Message\ServerRequestInterface $request) {
         $size = $request->getBody()->getSize();
@@ -1239,7 +1243,7 @@ $server = new React\Http\Server($loop, array(
             "Request body size: " . $size . " bytes\n"
         );
     }
-));
+);
 ```
 
 > Note: The `Server` automatically takes care of handling requests with the
@@ -1723,7 +1727,8 @@ The following example adds a middleware request handler that adds the current ti
 header (`Request-Time`) and a final request handler that always returns a 200 code without a body: 
 
 ```php
-$server = new Server($loop, array(
+$server = new Server(
+    $loop,
     function (ServerRequestInterface $request, callable $next) {
         $request = $request->withHeader('Request-Time', time());
         return $next($request);
@@ -1731,7 +1736,7 @@ $server = new Server($loop, array(
     function (ServerRequestInterface $request) {
         return new Response(200);
     }
-));
+);
 ```
 
 > Note how the middleware request handler and the final request handler have a
@@ -1747,7 +1752,8 @@ In order to simplify handling both paths, you can simply wrap this in a
 [`Promise\resolve()`](https://reactphp.org/promise/#resolve) call like this:
 
 ```php
-$server = new Server($loop, array(
+$server = new Server(
+    $loop,
     function (ServerRequestInterface $request, callable $next) {
         $promise = React\Promise\resolve($next($request));
         return $promise->then(function (ResponseInterface $response) {
@@ -1757,7 +1763,7 @@ $server = new Server($loop, array(
     function (ServerRequestInterface $request) {
         return new Response(200);
     }
-));
+);
 ```
 
 Note that the `$next` middleware request handler may also throw an
@@ -1769,7 +1775,8 @@ handling logic (or logging etc.) by wrapping this in a
 [`Promise`](https://reactphp.org/promise/#promise) like this:
 
 ```php
-$server = new Server($loop, array(
+$server = new Server(
+    $loop,
     function (ServerRequestInterface $request, callable $next) {
         $promise = new React\Promise\Promise(function ($resolve) use ($next, $request) {
             $resolve($next($request));
@@ -1788,7 +1795,7 @@ $server = new Server($loop, array(
         }
         return new Response(200);
     }
-));
+);
 ```
 
 #### Third-Party Middleware
@@ -2404,10 +2411,11 @@ The following example shows how this middleware can be used to ensure no more
 than 10 handlers will be invoked at once:
 
 ```php
-$server = new Server($loop, array(
+$server = new Server(
+    $loop,
     new LimitConcurrentRequestsMiddleware(10),
     $handler
-));
+);
 ```
 
 Similarly, this middleware is often used in combination with the
@@ -2415,13 +2423,14 @@ Similarly, this middleware is often used in combination with the
 to limit the total number of requests that can be buffered at once:
 
 ```php
-$server = new Server($loop, array(
+$server = new Server(
+    $loop,
     new StreamingRequestMiddleware(),
     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
     new RequestBodyParserMiddleware(),
     $handler
-));
+);
 ```
 
 More sophisticated examples include limiting the total number of requests
@@ -2429,14 +2438,15 @@ that can be buffered at once and then ensure the actual request handler only
 processes one request after another without any concurrency:
 
 ```php
-$server = new Server($loop, array(
+$server = new Server(
+    $loop,
     new StreamingRequestMiddleware(),
     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
     new RequestBodyParserMiddleware(),
     new LimitConcurrentRequestsMiddleware(1), // only execute 1 handler (no concurrency)
     $handler
-));
+);
 ```
 
 #### RequestBodyBufferMiddleware
@@ -2482,7 +2492,8 @@ the total number of concurrent requests.
 Usage:
 
 ```php
-$server = new Server($loop, array(
+$server = new Server(
+    $loop,
     new StreamingRequestMiddleware(),
     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
@@ -2490,7 +2501,7 @@ $server = new Server($loop, array(
         // The body from $request->getBody() is now fully available without the need to stream it 
         return new Response(200);
     },
-));
+);
 ```
 
 #### RequestBodyParserMiddleware
@@ -2542,13 +2553,14 @@ $handler = function (ServerRequestInterface $request) {
     );
 };
 
-$server = new Server($loop, array(
+$server = new Server(
+    $loop,
     new StreamingRequestMiddleware(),
     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
     new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
     new RequestBodyParserMiddleware(),
     $handler
-));
+);
 ```
 
 See also [form upload server example](examples/62-server-form-upload.php) for more details.

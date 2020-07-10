@@ -124,13 +124,14 @@ HTML;
 
 // Note how this example explicitly uses the advanced `StreamingRequestMiddleware` to apply
 // custom request buffering limits below before running our request handler.
-$server = new Server($loop, array(
+$server = new Server(
+    $loop,
     new StreamingRequestMiddleware(),
     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers, queue otherwise
     new RequestBodyBufferMiddleware(8 * 1024 * 1024), // 8 MiB max, ignore body otherwise
     new RequestBodyParserMiddleware(100 * 1024, 1), // 1 file with 100 KiB max, reject upload otherwise
     $handler
-));
+);
 
 $socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
 $server->listen($socket);

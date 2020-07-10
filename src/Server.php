@@ -5,6 +5,7 @@ namespace React\Http;
 use Evenement\EventEmitter;
 use React\EventLoop\LoopInterface;
 use React\Http\Io\IniUtil;
+use React\Http\Io\MiddlewareRunner;
 use React\Http\Io\StreamingServer;
 use React\Http\Middleware\LimitConcurrentRequestsMiddleware;
 use React\Http\Middleware\StreamingRequestMiddleware;
@@ -166,17 +167,20 @@ final class Server extends EventEmitter
      * See also [listen()](#listen) for more details.
      *
      * @param LoopInterface $loop
-     * @param callable|callable[] $requestHandler
+     * @param callable[] ...$requestHandler
      * @see self::listen()
      */
-    public function __construct(LoopInterface $loop, $requestHandler)
+    public function __construct(LoopInterface $loop)
     {
-        if (!\is_callable($requestHandler) && !\is_array($requestHandler)) {
+        $requestHandlers = \func_get_args();
+        \array_shift($requestHandlers);
+        $requestHandlersCount = \count($requestHandlers);
+        if ($requestHandlersCount === 0 || \count(\array_filter($requestHandlers, 'is_callable')) < $requestHandlersCount) {
             throw new \InvalidArgumentException('Invalid request handler given');
         }
 
         $streaming = false;
-        foreach ((array) $requestHandler as $handler) {
+        foreach ((array) $requestHandlers as $handler) {
             if ($handler instanceof StreamingRequestMiddleware) {
                 $streaming = true;
                 break;
@@ -200,13 +204,9 @@ final class Server extends EventEmitter
             }
         }
 
-        if (\is_callable($requestHandler)) {
-            $middleware[] = $requestHandler;
-        } else {
-            $middleware = \array_merge($middleware, $requestHandler);
-        }
+        $middleware = \array_merge($middleware, $requestHandlers);
 
-        $this->streamingServer = new StreamingServer($loop, $middleware);
+        $this->streamingServer = new StreamingServer($loop, new MiddlewareRunner($middleware));
 
         $that = $this;
         $this->streamingServer->on('error', function ($error) use ($that) {
