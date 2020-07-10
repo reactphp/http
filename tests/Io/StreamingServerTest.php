@@ -650,7 +650,7 @@ class StreamingServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
-    public function testResponseContainsPoweredByHeader()
+    public function testResponseContainsServerHeader()
     {
         $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
             return new Response();
@@ -675,7 +675,7 @@ class StreamingServerTest extends TestCase
         $data = $this->createGetRequest();
         $this->connection->emit('data', array($data));
 
-        $this->assertContainsString("\r\nX-Powered-By: React/alpha\r\n", $buffer);
+        $this->assertContainsString("\r\nServer: ReactPHP/1\r\n", $buffer);
     }
 
     public function testResponsePendingPromiseWillNotSendAnything()
@@ -931,7 +931,7 @@ class StreamingServerTest extends TestCase
                 200,
                 array(
                     'date' => '',
-                    'x-powered-by' => '',
+                    'server' => '',
                     'Upgrade' => 'demo'
                 ),
                 'foo'
@@ -967,7 +967,7 @@ class StreamingServerTest extends TestCase
                 200,
                 array(
                     'date' => '',
-                    'x-powered-by' => ''
+                    'server' => ''
                 ),
                 'foo'
             );
@@ -1002,7 +1002,7 @@ class StreamingServerTest extends TestCase
                 101,
                 array(
                     'date' => '',
-                    'x-powered-by' => '',
+                    'server' => '',
                     'Upgrade' => 'demo'
                 ),
                 'foo'
@@ -1042,7 +1042,7 @@ class StreamingServerTest extends TestCase
                 101,
                 array(
                     'date' => '',
-                    'x-powered-by' => '',
+                    'server' => '',
                     'Upgrade' => 'demo'
                 ),
                 $stream
@@ -2171,7 +2171,7 @@ class StreamingServerTest extends TestCase
                         'session=abc'
                     ),
                     'Date' => '',
-                    'X-Powered-By' => ''
+                    'Server' => ''
                 )
             );
         });
