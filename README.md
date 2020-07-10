@@ -1866,6 +1866,8 @@ $connector = new React\Socket\Connector($loop, array(
 $browser = new React\Http\Browser($loop, $connector);
 ```
 
+> Note that the browser class is final and shouldn't be extended, it is likely to be marked final in a future release.
+
 #### get()
 
 The `get(string $url, array $headers = array()): PromiseInterface<ResponseInterface>` method can be used to
