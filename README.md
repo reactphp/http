@@ -773,7 +773,8 @@ their respective default values:
 
 ```
 memory_limit 128M
-post_max_size 8M
+post_max_size 8M // capped at 64K
+
 enable_post_data_reading 1
 max_input_nesting_level 64
 max_input_vars 1000
@@ -784,22 +785,30 @@ max_file_uploads 20
 ```
 
 In particular, the `post_max_size` setting limits how much memory a single
-HTTP request is allowed to consume while buffering its request body. On top
-of this, this class will try to avoid consuming more than 1/4 of your
+HTTP request is allowed to consume while buffering its request body. This
+needs to be limited because the server can process a large number of requests
+concurrently, so the server may potentially consume a large amount of memory
+otherwise. To support higher concurrency by default, this value is capped
+at `64K`. If you assign a higher value, it will only allow `64K` by default.
+If a request exceeds this limit, its request body will be ignored and it will
+be processed like a request with no request body at all. See below for
+explicit configuration to override this setting.
+
+By default, this class will try to avoid consuming more than half of your
 `memory_limit` for buffering multiple concurrent HTTP requests. As such, with
 the above default settings of `128M` max, it will try to consume no more than
-`32M` for buffering multiple concurrent HTTP requests. As a consequence, it
-will limit the concurrency to 4 HTTP requests with the above defaults.
+`64M` for buffering multiple concurrent HTTP requests. As a consequence, it
+will limit the concurrency to `1024` HTTP requests with the above defaults.
 
 It is imperative that you assign reasonable values to your PHP ini settings.
-It is usually recommended to either reduce the memory a single request is
-allowed to take (set `post_max_size 1M` or less) or to increase the total
-memory limit to allow for more concurrent requests (set `memory_limit 512M`
-or more). Failure to do so means that this class may have to disable
-concurrency and only handle one request at a time.
+It is usually recommended to not support buffering incoming HTTP requests
+with a large HTTP request body (e.g. large file uploads). If you want to
+increase this buffer size, you will have to also increase the total memory
+limit to allow for more concurrent requests (set `memory_limit 512M` or more)
+or explicitly limit concurrency.
 
-As an alternative to the above buffering defaults, you can also configure
-the `Server` explicitly to override these defaults. You can use the
+In order to override the above buffering defaults, you can configure the
+`Server` explicitly. You can use the
 [`LimitConcurrentRequestsMiddleware`](#limitconcurrentrequestsmiddleware) and
 [`RequestBodyBufferMiddleware`](#requestbodybuffermiddleware) (see below)
 to explicitly configure the total number of requests that can be handled at
@@ -815,6 +824,12 @@ $server = new React\Http\Server(
     $handler
 );
 ```
+
+In this example, we allow processing up to 100 concurrent requests at once
+and each request can buffer up to `2M`. This means you may have to keep a
+maximum of `200M` of memory for incoming request body buffers. Accordingly,
+you need to adjust the `memory_limit` ini setting to allow for these buffers
+plus your actual application logic memory requirements (think `512M` or more).
 
 > Internally, this class automatically assigns these middleware handlers
   automatically when no [`StreamingRequestMiddleware`](#streamingrequestmiddleware)
