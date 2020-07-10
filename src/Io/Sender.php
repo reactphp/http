@@ -2,7 +2,6 @@
 
 namespace React\Http\Io;
 
-use React\Http\Message\MessageFactory;
 use Psr\Http\Message\RequestInterface;
 use React\EventLoop\LoopInterface;
 use React\Http\Client\Client as HttpClient;

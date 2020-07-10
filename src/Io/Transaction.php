@@ -2,12 +2,11 @@
 
 namespace React\Http\Io;
 
-use React\Http\Message\ResponseException;
-use React\Http\Message\MessageFactory;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
 use React\EventLoop\LoopInterface;
+use React\Http\Message\ResponseException;
 use React\Promise\Deferred;
 use React\Promise\PromiseInterface;
 use React\Stream\ReadableStreamInterface;

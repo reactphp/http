@@ -5,8 +5,8 @@ namespace React\Tests\Http\Io;
 use Clue\React\Block;
 use React\Http\Client\Client as HttpClient;
 use React\Http\Client\RequestData;
+use React\Http\Io\ReadableBodyStream;
 use React\Http\Io\Sender;
-use React\Http\Message\ReadableBodyStream;
 use React\Promise;
 use React\Stream\ThroughStream;
 use React\Tests\Http\TestCase;
@@ -26,7 +26,7 @@ class SenderTest extends TestCase
 
     public function testCreateFromLoop()
     {
-        $sender = Sender::createFromLoop($this->loop, null, $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
+        $sender = Sender::createFromLoop($this->loop, null, $this->getMockBuilder('React\Http\Io\MessageFactory')->getMock());
 
         $this->assertInstanceOf('React\Http\Io\Sender', $sender);
     }
@@ -36,7 +36,7 @@ class SenderTest extends TestCase
         $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
         $connector->expects($this->never())->method('connect');
 
-        $sender = new Sender(new HttpClient($this->loop, $connector), $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
+        $sender = new Sender(new HttpClient($this->loop, $connector), $this->getMockBuilder('React\Http\Io\MessageFactory')->getMock());
 
         $request = new Request('GET', 'www.google.com');
 
@@ -51,7 +51,7 @@ class SenderTest extends TestCase
         $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
         $connector->expects($this->once())->method('connect')->willReturn(Promise\reject(new \RuntimeException('Rejected')));
 
-        $sender = new Sender(new HttpClient($this->loop, $connector), $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
+        $sender = new Sender(new HttpClient($this->loop, $connector), $this->getMockBuilder('React\Http\Io\MessageFactory')->getMock());
 
         $request = new Request('GET', 'http://www.google.com/');
 
@@ -71,7 +71,7 @@ class SenderTest extends TestCase
             '1.1'
         )->willReturn($this->getMockBuilder('React\Http\Client\Request')->disableOriginalConstructor()->getMock());
 
-        $sender = new Sender($client, $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
+        $sender = new Sender($client, $this->getMockBuilder('React\Http\Io\MessageFactory')->getMock());
 
         $request = new Request('POST', 'http://www.google.com/', array(), 'hello');
         $sender->send($request);
@@ -87,7 +87,7 @@ class SenderTest extends TestCase
             '1.1'
         )->willReturn($this->getMockBuilder('React\Http\Client\Request')->disableOriginalConstructor()->getMock());
 
-        $sender = new Sender($client, $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
+        $sender = new Sender($client, $this->getMockBuilder('React\Http\Io\MessageFactory')->getMock());
 
         $request = new Request('POST', 'http://www.google.com/', array(), '');
         $sender->send($request);
@@ -106,7 +106,7 @@ class SenderTest extends TestCase
             '1.1'
         )->willReturn($outgoing);
 
-        $sender = new Sender($client, $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
+        $sender = new Sender($client, $this->getMockBuilder('React\Http\Io\MessageFactory')->getMock());
 
         $stream = new ThroughStream();
         $request = new Request('POST', 'http://www.google.com/', array(), new ReadableBodyStream($stream));
@@ -122,7 +122,7 @@ class SenderTest extends TestCase
         $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
         $client->expects($this->once())->method('request')->willReturn($outgoing);
 
-        $sender = new Sender($client, $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
+        $sender = new Sender($client, $this->getMockBuilder('React\Http\Io\MessageFactory')->getMock());
 
         $stream = new ThroughStream();
         $request = new Request('POST', 'http://www.google.com/', array(), new ReadableBodyStream($stream));
@@ -142,7 +142,7 @@ class SenderTest extends TestCase
         $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
         $client->expects($this->once())->method('request')->willReturn($outgoing);
 
-        $sender = new Sender($client, $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
+        $sender = new Sender($client, $this->getMockBuilder('React\Http\Io\MessageFactory')->getMock());
 
         $stream = new ThroughStream();
         $request = new Request('POST', 'http://www.google.com/', array(), new ReadableBodyStream($stream));
@@ -162,7 +162,7 @@ class SenderTest extends TestCase
         $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
         $client->expects($this->once())->method('request')->willReturn($outgoing);
 
-        $sender = new Sender($client, $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
+        $sender = new Sender($client, $this->getMockBuilder('React\Http\Io\MessageFactory')->getMock());
 
         $expected = new \RuntimeException();
         $stream = new ThroughStream();
@@ -192,7 +192,7 @@ class SenderTest extends TestCase
         $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
         $client->expects($this->once())->method('request')->willReturn($outgoing);
 
-        $sender = new Sender($client, $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
+        $sender = new Sender($client, $this->getMockBuilder('React\Http\Io\MessageFactory')->getMock());
 
         $stream = new ThroughStream();
         $request = new Request('POST', 'http://www.google.com/', array(), new ReadableBodyStream($stream));
@@ -220,7 +220,7 @@ class SenderTest extends TestCase
         $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
         $client->expects($this->once())->method('request')->willReturn($outgoing);
 
-        $sender = new Sender($client, $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
+        $sender = new Sender($client, $this->getMockBuilder('React\Http\Io\MessageFactory')->getMock());
 
         $stream = new ThroughStream();
         $request = new Request('POST', 'http://www.google.com/', array(), new ReadableBodyStream($stream));
@@ -247,7 +247,7 @@ class SenderTest extends TestCase
             '1.1'
         )->willReturn($this->getMockBuilder('React\Http\Client\Request')->disableOriginalConstructor()->getMock());
 
-        $sender = new Sender($client, $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
+        $sender = new Sender($client, $this->getMockBuilder('React\Http\Io\MessageFactory')->getMock());
 
         $stream = new ThroughStream();
         $request = new Request('POST', 'http://www.google.com/', array('Content-Length' => '100'), new ReadableBodyStream($stream));
@@ -264,7 +264,7 @@ class SenderTest extends TestCase
             '1.1'
         )->willReturn($this->getMockBuilder('React\Http\Client\Request')->disableOriginalConstructor()->getMock());
 
-        $sender = new Sender($client, $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
+        $sender = new Sender($client, $this->getMockBuilder('React\Http\Io\MessageFactory')->getMock());
 
         $request = new Request('GET', 'http://www.google.com/');
         $sender->send($request);
@@ -280,7 +280,7 @@ class SenderTest extends TestCase
             '1.1'
         )->willReturn($this->getMockBuilder('React\Http\Client\Request')->disableOriginalConstructor()->getMock());
 
-        $sender = new Sender($client, $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
+        $sender = new Sender($client, $this->getMockBuilder('React\Http\Io\MessageFactory')->getMock());
 
         $request = new Request('CUSTOM', 'http://www.google.com/');
         $sender->send($request);
@@ -296,7 +296,7 @@ class SenderTest extends TestCase
             '1.1'
         )->willReturn($this->getMockBuilder('React\Http\Client\Request')->disableOriginalConstructor()->getMock());
 
-        $sender = new Sender($client, $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
+        $sender = new Sender($client, $this->getMockBuilder('React\Http\Io\MessageFactory')->getMock());
 
         $request = new Request('CUSTOM', 'http://www.google.com/', array('Content-Length' => '0'));
         $sender->send($request);
@@ -311,7 +311,7 @@ class SenderTest extends TestCase
         $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
         $connector->expects($this->once())->method('connect')->willReturn($promise);
 
-        $sender = new Sender(new HttpClient($this->loop, $connector), $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
+        $sender = new Sender(new HttpClient($this->loop, $connector), $this->getMockBuilder('React\Http\Io\MessageFactory')->getMock());
 
         $request = new Request('GET', 'http://www.google.com/');
 
@@ -330,7 +330,7 @@ class SenderTest extends TestCase
         $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
         $connector->expects($this->once())->method('connect')->willReturn(Promise\resolve($connection));
 
-        $sender = new Sender(new HttpClient($this->loop, $connector), $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
+        $sender = new Sender(new HttpClient($this->loop, $connector), $this->getMockBuilder('React\Http\Io\MessageFactory')->getMock());
 
         $request = new Request('GET', 'http://www.google.com/');
 
@@ -387,7 +387,7 @@ class SenderTest extends TestCase
 
         $http->expects($this->once())->method('request')->with($method, $uri, $headers, $protocolVersion)->willReturn($request);
 
-        $sender = new Sender($http, $this->getMockBuilder('React\Http\Message\MessageFactory')->getMock());
+        $sender = new Sender($http, $this->getMockBuilder('React\Http\Io\MessageFactory')->getMock());
         $sender->send($Request);
     }
 }

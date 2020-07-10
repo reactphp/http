@@ -4,9 +4,9 @@ namespace React\Http;
 
 use Psr\Http\Message\ResponseInterface;
 use React\EventLoop\LoopInterface;
+use React\Http\Io\MessageFactory;
 use React\Http\Io\Sender;
 use React\Http\Io\Transaction;
-use React\Http\Message\MessageFactory;
 use React\Promise\PromiseInterface;
 use React\Socket\ConnectorInterface;
 use React\Stream\ReadableStreamInterface;

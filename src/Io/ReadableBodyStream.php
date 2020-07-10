@@ -1,6 +1,6 @@
 <?php
 
-namespace React\Http\Message;
+namespace React\Http\Io;
 
 use Evenement\EventEmitter;
 use Psr\Http\Message\StreamInterface;

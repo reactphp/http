@@ -71,12 +71,12 @@ multiple concurrent HTTP requests without blocking.
     * [React\Http\Message](#reacthttpmessage)
         * [Response](#response)
         * [ServerRequest](#serverrequest)
+        * [ResponseException](#responseexception)
     * [React\Http\Middleware](#reacthttpmiddleware)
         * [StreamingRequestMiddleware](#streamingrequestmiddleware)
         * [LimitConcurrentRequestsMiddleware](#limitconcurrentrequestsmiddleware)
         * [RequestBodyBufferMiddleware](#requestbodybuffermiddleware)
         * [RequestBodyParserMiddleware](#requestbodyparsermiddleware)
-    * [ResponseException](#responseexception)
 * [Install](#install)
 * [Tests](#tests)
 * [License](#license)
@@ -2418,6 +2418,19 @@ application reacts to certain HTTP requests.
   request message and only adds required server methods. This base class is
   considered an implementation detail that may change in the future.
 
+#### ResponseException
+
+The `React\Http\Message\ResponseException` is an `Exception` sub-class that will be used to reject
+a request promise if the remote server returns a non-success status code
+(anything but 2xx or 3xx).
+You can control this behavior via the [`withRejectErrorResponse()` method](#withrejecterrorresponse).
+
+The `getCode(): int` method can be used to
+return the HTTP response status code.
+
+The `getResponse(): ResponseInterface` method can be used to
+access its underlying response object.
+
 ### React\Http\Middleware
 
 #### StreamingRequestMiddleware
@@ -2709,19 +2722,6 @@ new React\Http\Middleware\RequestBodyParserMiddleware(10 * 1024, 100); // 100 fi
   is left up to higher-level implementations.
   If you want to respect this setting, you have to check its value and
   effectively avoid using this middleware entirely.
-
-### ResponseException
-
-The `React\Http\Message\ResponseException` is an `Exception` sub-class that will be used to reject
-a request promise if the remote server returns a non-success status code
-(anything but 2xx or 3xx).
-You can control this behavior via the [`withRejectErrorResponse()` method](#withrejecterrorresponse).
-
-The `getCode(): int` method can be used to
-return the HTTP response status code.
-
-The `getResponse(): ResponseInterface` method can be used to
-access its underlying response object.
 
 ## Install
 
