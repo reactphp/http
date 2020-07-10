@@ -14,7 +14,7 @@ use React\Http\Middleware\RequestBodyParserMiddleware;
 use React\Socket\ServerInterface;
 
 /**
- * The `Server` class is responsible for handling incoming connections and then
+ * The `React\Http\Server` class is responsible for handling incoming connections and then
  * processing each incoming HTTP request.
  *
  * When a complete HTTP request has been received, it will invoke the given
@@ -292,9 +292,9 @@ final class Server extends EventEmitter
      *
      * @param ServerInterface $socket
      */
-    public function listen(ServerInterface $server)
+    public function listen(ServerInterface $socket)
     {
-        $this->streamingServer->listen($server);
+        $this->streamingServer->listen($socket);
     }
 
     /**
