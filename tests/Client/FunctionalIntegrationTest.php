@@ -101,6 +101,10 @@ class FunctionalIntegrationTest extends TestCase
     /** @group internet */
     public function testPostDataReturnsData()
     {
+        if (defined('HHVM_VERSION')) {
+            $this->markTestSkipped('Not supported on HHVM');
+        }
+
         $loop = Factory::create();
         $client = new Client($loop);
 
@@ -130,6 +134,10 @@ class FunctionalIntegrationTest extends TestCase
     /** @group internet */
     public function testPostJsonReturnsData()
     {
+        if (defined('HHVM_VERSION')) {
+            $this->markTestSkipped('Not supported on HHVM');
+        }
+
         $loop = Factory::create();
         $client = new Client($loop);
 
