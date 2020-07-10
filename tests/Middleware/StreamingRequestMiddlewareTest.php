@@ -3,8 +3,8 @@
 namespace React\Tests\Http\Middleware;
 
 use React\Http\Middleware\StreamingRequestMiddleware;
-use React\Http\Io\ServerRequest;
-use React\Http\Response;
+use React\Http\Message\Response;
+use React\Http\Message\ServerRequest;
 use React\Tests\Http\TestCase;
 
 class StreamingRequestMiddlewareTest extends TestCase

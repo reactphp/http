@@ -4,14 +4,14 @@ namespace React\Tests\Http\Middleware;
 
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Io\HttpBodyStream;
-use React\Http\Io\ServerRequest;
+use React\Http\Message\Response;
+use React\Http\Message\ServerRequest;
 use React\Http\Middleware\LimitConcurrentRequestsMiddleware;
 use React\Promise\Deferred;
 use React\Promise\Promise;
+use React\Promise\PromiseInterface;
 use React\Stream\ThroughStream;
 use React\Tests\Http\TestCase;
-use React\Promise\PromiseInterface;
-use React\Http\Response;
 
 final class LimitConcurrentRequestsMiddlewareTest extends TestCase
 {

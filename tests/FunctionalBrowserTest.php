@@ -9,7 +9,7 @@ use React\EventLoop\Factory;
 use React\Http\Browser;
 use React\Http\Message\ResponseException;
 use React\Http\Middleware\StreamingRequestMiddleware;
-use React\Http\Response;
+use React\Http\Message\Response;
 use React\Http\Server;
 use React\Promise\Promise;
 use React\Promise\Stream;

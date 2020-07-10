@@ -43,7 +43,7 @@ multiple concurrent HTTP requests without blocking.
         * [Request method](#request-method)
         * [Cookie parameters](#cookie-parameters)
         * [Invalid request](#invalid-request)
-    * [Response](#response)
+    * [Server Response](#server-response)
         * [Deferred response](#deferred-response)
         * [Streaming outgoing response](#streaming-outgoing-response)
         * [Response length](#response-length)
@@ -68,6 +68,9 @@ multiple concurrent HTTP requests without blocking.
         * [withBase()](#withbase)
         * [withProtocolVersion()](#withprotocolversion)
         * [withResponseBuffer()](#withresponsebuffer)
+    * [React\Http\Message](#reacthttpmessage)
+        * [Response](#response)
+        * [ServerRequest](#serverrequest)
     * [React\Http\Middleware](#reacthttpmiddleware)
         * [StreamingRequestMiddleware](#streamingrequestmiddleware)
         * [LimitConcurrentRequestsMiddleware](#limitconcurrentrequestsmiddleware)
@@ -102,7 +105,7 @@ This is an HTTP server which responds with `Hello World!` to every request.
 $loop = React\EventLoop\Factory::create();
 
 $server = new React\Http\Server($loop, function (Psr\Http\Message\ServerRequestInterface $request) {
-    return new React\Http\Response(
+    return new React\Http\Message\Response(
         200,
         array(
             'Content-Type' => 'text/plain'
@@ -711,11 +714,11 @@ processing each incoming HTTP request.
 When a complete HTTP request has been received, it will invoke the given
 request handler function. This request handler function needs to be passed to
 the constructor and will be invoked with the respective [request](#server-request)
-object and expects a [response](#response) object in return:
+object and expects a [response](#server-response) object in return:
 
 ```php
 $server = new React\Http\Server($loop, function (Psr\Http\Message\ServerRequestInterface $request) {
-    return new React\Http\Response(
+    return new React\Http\Message\Response(
         200,
         array(
             'Content-Type' => 'text/plain'
@@ -731,7 +734,7 @@ see also following [request](#server-request) chapter for more details.
 
 Each outgoing HTTP response message is always represented by the
 [PSR-7 `ResponseInterface`](https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface),
-see also following [response](#response) chapter for more details.
+see also following [response](#server-response) chapter for more details.
 
 In order to start listening for any incoming connections, the `Server` needs
 to be attached to an instance of
@@ -1158,7 +1161,7 @@ $server = new React\Http\Server(
             });
 
             $body->on('end', function () use ($resolve, &$bytes){
-                $resolve(new React\Http\Response(
+                $resolve(new React\Http\Message\Response(
                     200,
                     array(
                         'Content-Type' => 'text/plain'
@@ -1169,7 +1172,7 @@ $server = new React\Http\Server(
 
             // an error occures e.g. on invalid chunked encoded data or an unexpected 'end' event
             $body->on('error', function (\Exception $exception) use ($resolve, &$bytes) {
-                $resolve(new React\Http\Response(
+                $resolve(new React\Http\Message\Response(
                     400,
                     array(
                         'Content-Type' => 'text/plain'
@@ -1226,7 +1229,7 @@ $server = new React\Http\Server(
             $body = 'The request does not contain an explicit length.';
             $body .= 'This example does not accept chunked transfer encoding.';
 
-            return new React\Http\Response(
+            return new React\Http\Message\Response(
                 411,
                 array(
                     'Content-Type' => 'text/plain'
@@ -1235,7 +1238,7 @@ $server = new React\Http\Server(
             );
         }
 
-        return new React\Http\Response(
+        return new React\Http\Message\Response(
             200,
             array(
                 'Content-Type' => 'text/plain'
@@ -1346,25 +1349,24 @@ Note that the server will also emit an `error` event if you do not return a
 valid response object from your request handler function. See also
 [invalid response](#invalid-response) for more details.
 
-### Response
+### Server Response
 
 The callback function passed to the constructor of the [`Server`](#server) is
 responsible for processing the request and returning a response, which will be
-delivered to the client. This function MUST return an instance implementing
-[PSR-7 ResponseInterface](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#33-psrhttpmessageresponseinterface)
-object or a 
-[ReactPHP Promise](https://github.com/reactphp/promise#reactpromise)
-which will resolve a `PSR-7 ResponseInterface` object.
+delivered to the client.
 
-You will find a `Response` class
-which implements the `PSR-7 ResponseInterface` in this project.
-We use instantiation of this class in our projects,
-but feel free to use any implemantation of the 
-`PSR-7 ResponseInterface` you prefer.
+This function MUST return an instance implementing
+[PSR-7 `ResponseInterface`](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#33-psrhttpmessageresponseinterface)
+object or a 
+[ReactPHP Promise](https://github.com/reactphp/promise)
+which resolves with a PSR-7 `ResponseInterface` object.
+
+This projects ships a [`Response` class](#response) which implements the PSR-7
+`ResponseInterface`. In its most simple form, you can use it like this:
 
 ```php 
-$server = new Server($loop, function (ServerRequestInterface $request) {
-    return new Response(
+$server = new React\Http\Server($loop, function (ServerRequestInterface $request) {
+    return new React\Http\Message\Response(
         200,
         array(
             'Content-Type' => 'text/plain'
@@ -1373,6 +1375,10 @@ $server = new Server($loop, function (ServerRequestInterface $request) {
     );
 });
 ```
+
+We use this [`Response` class](#response) throughout our project examples, but
+feel free to use any other implementation of the PSR-7 `ResponseInterface`.
+See also the [`Response` class](#response) for more details.
 
 #### Deferred response
 
@@ -2331,6 +2337,53 @@ Notice that the [`Browser`](#browser) is an immutable object, i.e. this
 method actually returns a *new* [`Browser`](#browser) instance with the
 given setting applied.
 
+### React\Http\Message
+
+#### Response
+
+The `Response` class can be used to
+represent an outgoing server response message.
+
+```php
+$response = new React\Http\Message\Response(
+    200,
+    array(
+        'Content-Type' => 'text/html'
+    ),
+    "<html>Hello world!</html>\n"
+);
+```
+
+This class implements the
+[PSR-7 `ResponseInterface`](https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface)
+which in turn extends the
+[PSR-7 `MessageInterface`](https://www.php-fig.org/psr/psr-7/#31-psrhttpmessagemessageinterface).
+
+> Internally, this class extends the underlying `\RingCentral\Psr7\Response`
+  class. The only difference is that this class will accept implemenations
+  of ReactPHPs `ReadableStreamInterface` for the `$body` argument. This base
+  class is considered an implementation detail that may change in the future.
+
+#### ServerRequest
+
+The `ServerRequest` class can be used to
+respresent an incoming server request message.
+
+This class implements the
+[PSR-7 `ServerRequestInterface`](https://www.php-fig.org/psr/psr-7/#321-psrhttpmessageserverrequestinterface)
+which extends the
+[PSR-7 `RequestInterface`](https://www.php-fig.org/psr/psr-7/#32-psrhttpmessagerequestinterface)
+which in turn extends the
+[PSR-7 `MessageInterface`](https://www.php-fig.org/psr/psr-7/#31-psrhttpmessagemessageinterface).
+
+This is mostly used internally to represent each incoming request message.
+Likewise, you can also use this class in test cases to test how your web
+application reacts to certain HTTP requests.
+
+> Internally, this implementation builds on top of an existing outgoing
+  request message and only adds required server methods. This base class is
+  considered an implementation detail that may change in the future.
+
 ### React\Http\Middleware
 
 #### StreamingRequestMiddleware
@@ -2357,7 +2410,7 @@ $server = new React\Http\Server(array(
                 $bytes += \count($chunk);
             });
             $body->on('close', function () use (&$bytes, $resolve) {
-                $resolve(new React\Http\Response(
+                $resolve(new React\Http\Message\Response(
                     200,
                     [],
                     "Received $bytes bytes\n"

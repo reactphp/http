@@ -5,7 +5,7 @@ namespace React\Tests\Http;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Middleware\LimitConcurrentRequestsMiddleware;
 use React\Http\Middleware\RequestBodyBufferMiddleware;
-use React\Http\Response;
+use React\Http\Message\Response;
 use React\Http\Server;
 use React\Socket\Server as Socket;
 use React\EventLoop\Factory;

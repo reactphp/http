@@ -4,6 +4,7 @@ namespace React\Http\Io;
 
 use Evenement\EventEmitter;
 use Psr\Http\Message\ServerRequestInterface;
+use React\Http\Message\ServerRequest;
 use React\Socket\ConnectionInterface;
 use Exception;
 
@@ -223,7 +224,7 @@ class RequestHeaderParser extends EventEmitter
             $start['method'],
             $uri,
             $fields,
-            null,
+            '',
             $start['version'],
             $serverParams
         );

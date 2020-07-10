@@ -2,8 +2,8 @@
 
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Io\MiddlewareRunner;
-use React\Http\Io\ServerRequest;
-use React\Http\Response;
+use React\Http\Message\Response;
+use React\Http\Message\ServerRequest;
 
 const ITERATIONS = 5000;
 const MIDDLEWARE_COUNT = 512;
@@ -17,7 +17,7 @@ $middlewareList = array();
 for ($i = 0; $i < MIDDLEWARE_COUNT; $i++) {
     $middlewareList[] = $middleware;
 }
-$middlewareList[] = function (ServerRequestInterface $request, $next) {
+$middlewareList[] = function (ServerRequestInterface $request) {
     return new Response(545);
 };
 $middlewareRunner = new MiddlewareRunner($middlewareList);

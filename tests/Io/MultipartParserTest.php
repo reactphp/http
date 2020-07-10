@@ -3,7 +3,7 @@
 namespace React\Tests\Http\Io\Middleware;
 
 use React\Http\Io\MultipartParser;
-use React\Http\Io\ServerRequest;
+use React\Http\Message\ServerRequest;
 use React\Tests\Http\TestCase;
 
 final class MultipartParserTest extends TestCase

@@ -3,18 +3,18 @@
 namespace React\Tests\Http\Io;
 
 use Clue\React\Block;
+use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Io\MiddlewareRunner;
-use React\Http\Io\ServerRequest;
+use React\Http\Message\ServerRequest;
 use React\Promise;
+use React\Promise\CancellablePromiseInterface;
+use React\Promise\PromiseInterface;
 use React\Tests\Http\Middleware\ProcessStack;
 use React\Tests\Http\TestCase;
 use RingCentral\Psr7\Response;
-use Psr\Http\Message\RequestInterface;
-use React\Promise\CancellablePromiseInterface;
-use React\Promise\PromiseInterface;
 
 final class MiddlewareRunnerTest extends TestCase
 {
