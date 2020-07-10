@@ -76,8 +76,6 @@ multiple concurrent HTTP requests without blocking.
         * [LimitConcurrentRequestsMiddleware](#limitconcurrentrequestsmiddleware)
         * [RequestBodyBufferMiddleware](#requestbodybuffermiddleware)
         * [RequestBodyParserMiddleware](#requestbodyparsermiddleware)
-    * [ResponseInterface](#responseinterface)
-    * [RequestInterface](#requestinterface)
     * [ResponseException](#responseexception)
 * [Install](#install)
 * [Tests](#tests)
@@ -160,14 +158,16 @@ method. If you want to use any other or even custom HTTP request method, you can
 use the [`request()`](#request) method.
 
 Each of the above methods supports async operation and either *fulfills* with a
-[`ResponseInterface`](#responseinterface) or *rejects* with an `Exception`.
+[PSR-7 `ResponseInterface`](https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface)
+or *rejects* with an `Exception`.
 Please see the following chapter about [promises](#promises) for more details.
 
 ### Promises
 
 Sending requests is async (non-blocking), so you can actually send multiple
 requests in parallel.
-The `Browser` will respond to each request with a [`ResponseInterface`](#responseinterface)
+The `Browser` will respond to each request with a
+[PSR-7 `ResponseInterface`](https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface)
 message, the order is not guaranteed.
 Sending requests uses a [Promise](https://github.com/reactphp/promise)-based
 interface that makes it easy to react to when an HTTP request is completed
@@ -474,11 +474,12 @@ the response body in small chunks as data is received and forwards this data
 through [ReactPHP's Stream API](https://github.com/reactphp/stream). This works
 for (any number of) responses of arbitrary sizes.
 
-This means it resolves with a normal [`ResponseInterface`](#responseinterface),
+This means it resolves with a normal
+[PSR-7 `ResponseInterface`](https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface),
 which can be used to access the response message parameters as usual.
 You can access the message body as usual, however it now also
-implements ReactPHP's [`ReadableStreamInterface`](https://github.com/reactphp/stream#readablestreaminterface)
-as well as parts of the PSR-7's [`StreamInterface`](https://www.php-fig.org/psr/psr-7/#3-4-psr-http-message-streaminterface).
+implements [ReactPHP's `ReadableStreamInterface`](https://github.com/reactphp/stream#readablestreaminterface)
+as well as parts of the [PSR-7 `StreamInterface`](https://www.php-fig.org/psr/psr-7/#34-psrhttpmessagestreaminterface).
 
 ```php
 $browser->requestStreaming('GET', $url)->then(function (Psr\Http\Message\ResponseInterface $response) {
@@ -568,7 +569,7 @@ Besides streaming the response body, you can also stream the request body.
 This can be useful if you want to send big POST requests (uploading files etc.)
 or process many outgoing streams at once.
 Instead of passing the body as a string, you can simply pass an instance
-implementing ReactPHP's [`ReadableStreamInterface`](https://github.com/reactphp/stream#readablestreaminterface)
+implementing [ReactPHP's `ReadableStreamInterface`](https://github.com/reactphp/stream#readablestreaminterface)
 to the [request methods](#request-methods) like this:
 
 ```php
@@ -620,7 +621,7 @@ $connector = new React\Socket\Connector($loop, array(
 $browser = new React\Http\Browser($loop, $connector);
 ```
 
-See also the [HTTP CONNECT proxy example](examples/11-http-connect-proxy.php).
+See also the [HTTP CONNECT proxy example](examples/11-client-http-connect-proxy.php).
 
 ### SOCKS proxy
 
@@ -647,7 +648,7 @@ $connector = new React\Socket\Connector($loop, array(
 $browser = new React\Http\Browser($loop, $connector);
 ```
 
-See also the [SOCKS proxy example](examples/12-socks-proxy.php).
+See also the [SOCKS proxy example](examples/12-client-socks-proxy.php).
 
 ### SSH proxy
 
@@ -676,7 +677,7 @@ $connector = new React\Socket\Connector($loop, array(
 $browser = new React\Http\Browser($loop, $connector);
 ```
 
-See also the [SSH proxy example](examples/13-ssh-proxy.php).
+See also the [SSH proxy example](examples/13-client-ssh-proxy.php).
 
 ### Unix domain sockets
 
@@ -701,7 +702,7 @@ $client->get('http://localhost/info')->then(function (Psr\Http\Message\ResponseI
 });
 ```
 
-See also the [Unix Domain Sockets (UDS) example](examples/14-unix-domain-sockets.php).
+See also the [Unix Domain Sockets (UDS) example](examples/14-client-unix-domain-sockets.php).
 
 
 ## Server Usage
@@ -916,9 +917,9 @@ incoming connections and then processing each incoming HTTP request.
 The request object will be processed once the request has
 been received by the client.
 This request object implements the
-[PSR-7 ServerRequestInterface](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#321-psrhttpmessageserverrequestinterface)
+[PSR-7 `ServerRequestInterface`](https://www.php-fig.org/psr/psr-7/#321-psrhttpmessageserverrequestinterface)
 which in turn extends the
-[PSR-7 RequestInterface](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#32-psrhttpmessagerequestinterface)
+[PSR-7 `RequestInterface`](https://www.php-fig.org/psr/psr-7/#32-psrhttpmessagerequestinterface)
 and will be passed to the callback function like this.
 
  ```php 
@@ -937,9 +938,9 @@ $server = new Server($loop, function (ServerRequestInterface $request) {
 ```
 
 For more details about the request object, also check out the documentation of
-[PSR-7 ServerRequestInterface](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#321-psrhttpmessageserverrequestinterface)
+[PSR-7 `ServerRequestInterface`](https://www.php-fig.org/psr/psr-7/#321-psrhttpmessageserverrequestinterface)
 and
-[PSR-7 RequestInterface](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#32-psrhttpmessagerequestinterface).
+[PSR-7 `RequestInterface`](https://www.php-fig.org/psr/psr-7/#32-psrhttpmessagerequestinterface).
 
 #### Request parameters
 
@@ -1149,16 +1150,19 @@ access the request body stream.
 In the streaming mode, this method returns a stream instance that implements both the
 [PSR-7 `StreamInterface`](https://www.php-fig.org/psr/psr-7/#34-psrhttpmessagestreaminterface)
 and the [ReactPHP `ReadableStreamInterface`](https://github.com/reactphp/stream#readablestreaminterface).
-However, most of the PSR-7 `StreamInterface` methods have been
-designed under the assumption of being in control of a synchronous request body.
+However, most of the
+[PSR-7 `StreamInterface`](https://www.php-fig.org/psr/psr-7/#34-psrhttpmessagestreaminterface)
+methods have been designed under the assumption of being in control of a
+synchronous request body.
 Given that this does not apply to this server, the following
-PSR-7 `StreamInterface` methods are not used and SHOULD NOT be called:
+[PSR-7 `StreamInterface`](https://www.php-fig.org/psr/psr-7/#34-psrhttpmessagestreaminterface)
+methods are not used and SHOULD NOT be called:
 `tell()`, `eof()`, `seek()`, `rewind()`, `write()` and `read()`.
 If this is an issue for your use case and/or you want to access uploaded files,
 it's highly recommended to use a buffered [request body](#request-body) or use the
 [`RequestBodyBufferMiddleware`](#requestbodybuffermiddleware) instead.
-The ReactPHP `ReadableStreamInterface` gives you access to the incoming
-request body as the individual chunks arrive:
+The [ReactPHP `ReadableStreamInterface`](https://github.com/reactphp/stream#readablestreaminterface)
+gives you access to the incoming request body as the individual chunks arrive:
 
 ```php
 $server = new React\Http\Server(
@@ -1223,7 +1227,7 @@ A response message can still be sent (unless the connection is already closed).
 A `close` event will be emitted after an `error` or `end` event.
 
 For more details about the request body stream, check out the documentation of
-[ReactPHP ReadableStreamInterface](https://github.com/reactphp/stream#readablestreaminterface).
+[ReactPHP `ReadableStreamInterface`](https://github.com/reactphp/stream#readablestreaminterface).
 
 The `getSize(): ?int` method can be used to
 get the size of the request body, similar to PHP's `$_SERVER['CONTENT_LENGTH']` variable.
@@ -1371,13 +1375,14 @@ responsible for processing the request and returning a response, which will be
 delivered to the client.
 
 This function MUST return an instance implementing
-[PSR-7 `ResponseInterface`](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#33-psrhttpmessageresponseinterface)
+[PSR-7 `ResponseInterface`](https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface)
 object or a 
 [ReactPHP Promise](https://github.com/reactphp/promise)
-which resolves with a PSR-7 `ResponseInterface` object.
+which resolves with a [PSR-7 `ResponseInterface`](https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface) object.
 
-This projects ships a [`Response` class](#response) which implements the PSR-7
-`ResponseInterface`. In its most simple form, you can use it like this:
+This projects ships a [`Response` class](#response) which implements the
+[PSR-7 `ResponseInterface`](https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface).
+In its most simple form, you can use it like this:
 
 ```php 
 $server = new React\Http\Server($loop, function (ServerRequestInterface $request) {
@@ -1392,7 +1397,8 @@ $server = new React\Http\Server($loop, function (ServerRequestInterface $request
 ```
 
 We use this [`Response` class](#response) throughout our project examples, but
-feel free to use any other implementation of the PSR-7 `ResponseInterface`.
+feel free to use any other implementation of the
+[PSR-7 `ResponseInterface`](https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface).
 See also the [`Response` class](#response) for more details.
 
 #### Deferred response
@@ -1437,11 +1443,12 @@ If a promise is resolved after the client closes, it will simply be ignored.
 #### Streaming outgoing response
 
 The `Response` class in this project supports to add an instance which implements the
-[ReactPHP ReadableStreamInterface](https://github.com/reactphp/stream#readablestreaminterface)
+[ReactPHP `ReadableStreamInterface`](https://github.com/reactphp/stream#readablestreaminterface)
 for the response body.
 So you are able stream data directly into the response body.
-Note that other implementations of the `PSR-7 ResponseInterface` likely
-only support strings.
+Note that other implementations of the
+[PSR-7 `ResponseInterface`](https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface)
+may only support strings.
 
 ```php
 $server = new Server($loop, function (ServerRequestInterface $request) use ($loop) {
@@ -1494,8 +1501,9 @@ in this case (if applicable).
   writable side of the stream.
   This can be avoided by either rejecting all requests with the `CONNECT`
   method (which is what most *normal* origin HTTP servers would likely do) or
-  or ensuring that only ever an instance of `ReadableStreamInterface` is
-  used.
+  or ensuring that only ever an instance of
+  [ReactPHP's `ReadableStreamInterface`](https://github.com/reactphp/stream#readablestreaminterface)
+  is used.
 >
 > The `101` (Switching Protocols) response code is useful for the more advanced
   `Upgrade` requests, such as upgrading to the WebSocket protocol or
@@ -1711,13 +1719,17 @@ As such, this project supports the concept of middleware request handlers.
 A middleware request handler is expected to adhere the following rules:
 
 * It is a valid `callable`.
-* It accepts `ServerRequestInterface` as first argument and an optional
-  `callable` as second argument.
+* It accepts an instance implementing
+  [PSR-7 `ServerRequestInterface`](https://www.php-fig.org/psr/psr-7/#321-psrhttpmessageserverrequestinterface)
+  as first argument and an optional `callable` as second argument.
 * It returns either:
-  * An instance implementing `ResponseInterface` for direct consumption.
+  * An instance implementing
+    [PSR-7 `ResponseInterface`](https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface)
+    for direct consumption.
   * Any promise which can be consumed by
     [`Promise\resolve()`](https://reactphp.org/promise/#resolve) resolving to a
-  `ResponseInterface` for deferred consumption.
+    [PSR-7 `ResponseInterface`](https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface)
+    for deferred consumption.
   * It MAY throw an `Exception` (or return a rejected promise) in order to
     signal an error condition and abort the chain.
 * It calls `$next($request)` to continue processing the next middleware
@@ -1772,8 +1784,8 @@ $server = new Server(
 Similarly, you can use the result of the `$next` middleware request handler
 function to modify the outgoing response.
 Note that as per the above documentation, the `$next` middleware request handler may return a
-`ResponseInterface` directly or one wrapped in a promise for deferred
-resolution.
+[PSR-7 `ResponseInterface`](https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface)
+directly or one wrapped in a promise for deferred resolution.
 In order to simplify handling both paths, you can simply wrap this in a
 [`Promise\resolve()`](https://reactphp.org/promise/#resolve) call like this:
 
@@ -1840,8 +1852,9 @@ encourages third-party middleware implementations.
 While we would love to support PSR-15 directly in `react/http`, we understand
 that this interface does not specifically target async APIs and as such does
 not take advantage of promises for [deferred responses](#deferred-response).
-The gist of this is that where PSR-15 enforces a `ResponseInterface` return
-value, we also accept a `PromiseInterface<ResponseInterface>`.
+The gist of this is that where PSR-15 enforces a
+[PSR-7 `ResponseInterface`](https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface)
+return value, we also accept a `PromiseInterface<ResponseInterface>`.
 As such, we suggest using the external
 [PSR-15 middleware adapter](https://github.com/friends-of-reactphp/http-middleware-psr15-adapter)
 that uses on the fly monkey patching of these return values which makes using
@@ -2116,7 +2129,7 @@ $browser->requestStreaming('GET', $url)->then(function (Psr\Http\Message\Respons
 });
 ```
 
-See also [`ReadableStreamInterface`](https://github.com/reactphp/stream#readablestreaminterface)
+See also [ReactPHP's `ReadableStreamInterface`](https://github.com/reactphp/stream#readablestreaminterface)
 and the [streaming response](#streaming-response) for more details,
 examples and possible use-cases.
 
@@ -2381,10 +2394,9 @@ This class implements the
 which in turn extends the
 [PSR-7 `MessageInterface`](https://www.php-fig.org/psr/psr-7/#31-psrhttpmessagemessageinterface).
 
-> Internally, this class extends the underlying `\RingCentral\Psr7\Response`
-  class. The only difference is that this class will accept implemenations
-  of ReactPHPs `ReadableStreamInterface` for the `$body` argument. This base
-  class is considered an implementation detail that may change in the future.
+> Internally, this implementation builds on top of an existing incoming
+  response message and only adds required streaming support. This base class is
+  considered an implementation detail that may change in the future.
 
 #### ServerRequest
 
@@ -2593,7 +2605,8 @@ Instead of relying on these superglobals, you can use the
 `$request->getParsedBody()` and `$request->getUploadedFiles()` methods
 as defined by PSR-7.
 
-Accordingly, each file upload will be represented as instance implementing [`UploadedFileInterface`](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-7-http-message.md#36-psrhttpmessageuploadedfileinterface).
+Accordingly, each file upload will be represented as instance implementing the
+[PSR-7 `UploadedFileInterface`](https://www.php-fig.org/psr/psr-7/#36-psrhttpmessageuploadedfileinterface).
 Due to its blocking nature, the `moveTo()` method is not available and throws
 a `RuntimeException` instead.
 You can use `$contents = (string)$file->getStream();` to access the file
@@ -2697,26 +2710,6 @@ new RequestBodyParserMiddleware(10 * 1024, 100); // 100 files with 10 KiB each
   If you want to respect this setting, you have to check its value and
   effectively avoid using this middleware entirely.
 
-### ResponseInterface
-
-The `Psr\Http\Message\ResponseInterface` represents the incoming response received from the [`Browser`](#browser).
-
-This is a standard interface defined in
-[PSR-7: HTTP message interfaces](https://www.php-fig.org/psr/psr-7/), see its
-[`ResponseInterface` definition](https://www.php-fig.org/psr/psr-7/#3-3-psr-http-message-responseinterface)
-which in turn extends the
-[`MessageInterface` definition](https://www.php-fig.org/psr/psr-7/#3-1-psr-http-message-messageinterface).
-
-### RequestInterface
-
-The `Psr\Http\Message\RequestInterface` represents the outgoing request to be sent via the [`Browser`](#browser).
-
-This is a standard interface defined in
-[PSR-7: HTTP message interfaces](https://www.php-fig.org/psr/psr-7/), see its
-[`RequestInterface` definition](https://www.php-fig.org/psr/psr-7/#3-2-psr-http-message-requestinterface)
-which in turn extends the
-[`MessageInterface` definition](https://www.php-fig.org/psr/psr-7/#3-1-psr-http-message-messageinterface).
-
 ### ResponseException
 
 The `ResponseException` is an `Exception` sub-class that will be used to reject
@@ -2728,7 +2721,7 @@ The `getCode(): int` method can be used to
 return the HTTP response status code.
 
 The `getResponse(): ResponseInterface` method can be used to
-access its underlying [`ResponseInterface`](#responseinterface) object.
+access its underlying response object.
 
 ## Install
 

@@ -32,7 +32,7 @@ final class ResponseException extends RuntimeException
     }
 
     /**
-     * Access its underlying [`ResponseInterface`](#responseinterface) object.
+     * Access its underlying response object.
      *
      * @return ResponseInterface
      */
