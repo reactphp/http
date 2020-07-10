@@ -29,7 +29,7 @@ use RingCentral\Psr7\Request;
  *
  * @see ServerRequestInterface
  */
-class ServerRequest extends Request implements ServerRequestInterface
+final class ServerRequest extends Request implements ServerRequestInterface
 {
     private $attributes = array();
 
