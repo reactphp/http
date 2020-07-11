@@ -25,10 +25,9 @@ use Psr\Http\Message\StreamInterface;
  * which in turn extends the
  * [PSR-7 `MessageInterface`](https://www.php-fig.org/psr/psr-7/#31-psrhttpmessagemessageinterface).
  *
- * > Internally, this class extends the underlying `\RingCentral\Psr7\Response`
- *   class. The only difference is that this class will accept implemenations
- *   of ReactPHPs `ReadableStreamInterface` for the `$body` argument. This base
- *   class is considered an implementation detail that may change in the future.
+ * > Internally, this implementation builds on top of an existing incoming
+ *   response message and only adds required streaming support. This base class is
+ *   considered an implementation detail that may change in the future.
  *
  * @see \Psr\Http\Message\ResponseInterface
  */

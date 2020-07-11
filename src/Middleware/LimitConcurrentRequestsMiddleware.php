@@ -29,10 +29,10 @@ use React\Stream\ReadableStreamInterface;
  * than 10 handlers will be invoked at once:
  *
  * ```php
- * $server = new Server(
+ * $server = new React\Http\Server(
  *     $loop,
- *     new StreamingRequestMiddleware(),
- *     new LimitConcurrentRequestsMiddleware(10),
+ *     new React\Http\Middleware\StreamingRequestMiddleware(),
+ *     new React\Http\Middleware\LimitConcurrentRequestsMiddleware(10),
  *     $handler
  * );
  * ```
@@ -42,12 +42,12 @@ use React\Stream\ReadableStreamInterface;
  * to limit the total number of requests that can be buffered at once:
  *
  * ```php
- * $server = new Server(
+ * $server = new React\Http\Server(
  *     $loop,
- *     new StreamingRequestMiddleware(),
- *     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
- *     new RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
- *     new RequestBodyParserMiddleware(),
+ *     new React\Http\Middleware\StreamingRequestMiddleware(),
+ *     new React\Http\Middleware\LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
+ *     new React\Http\Middleware\RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
+ *     new React\Http\Middleware\RequestBodyParserMiddleware(),
  *     $handler
  * );
  * ```
@@ -57,13 +57,13 @@ use React\Stream\ReadableStreamInterface;
  * processes one request after another without any concurrency:
  *
  * ```php
- * $server = new Server(
+ * $server = new React\Http\Server(
  *     $loop,
- *     new StreamingRequestMiddleware(),
- *     new LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
- *     new RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
- *     new RequestBodyParserMiddleware(),
- *     new LimitConcurrentRequestsMiddleware(1), // only execute 1 handler (no concurrency)
+ *     new React\Http\Middleware\StreamingRequestMiddleware(),
+ *     new React\Http\Middleware\LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
+ *     new React\Http\Middleware\RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
+ *     new React\Http\Middleware\RequestBodyParserMiddleware(),
+ *     new React\Http\Middleware\LimitConcurrentRequestsMiddleware(1), // only execute 1 handler (no concurrency)
  *     $handler
  * );
  * ```

@@ -3,16 +3,16 @@
 namespace React\Tests\Http\Io;
 
 use Clue\React\Block;
-use React\Http\Io\Transaction;
-use React\Http\Message\MessageFactory;
-use React\Http\Message\ResponseException;
-use React\Tests\Http\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Http\Message\RequestInterface;
+use React\Http\Io\MessageFactory;
+use React\Http\Io\Transaction;
+use React\Http\Message\ResponseException;
 use React\EventLoop\Factory;
 use React\Promise;
 use React\Promise\Deferred;
 use React\Stream\ThroughStream;
+use React\Tests\Http\TestCase;
 use RingCentral\Psr7\Response;
 
 class TransactionTest extends TestCase

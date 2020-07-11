@@ -1,8 +1,8 @@
 <?php
 
-namespace React\Tests\Http\Message;
+namespace React\Tests\Http\Io;
 
-use React\Http\Message\ReadableBodyStream;
+use React\Http\Io\ReadableBodyStream;
 use React\Tests\Http\TestCase;
 use React\Stream\ThroughStream;
 

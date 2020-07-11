@@ -1,8 +1,8 @@
 <?php
 
-namespace React\Tests\Http\Message;
+namespace React\Tests\Http\Io;
 
-use React\Http\Message\MessageFactory;
+use React\Http\Io\MessageFactory;
 use PHPUnit\Framework\TestCase;
 
 class MessageFactoryTest extends TestCase

@@ -6,7 +6,7 @@ use RuntimeException;
 use Psr\Http\Message\ResponseInterface;
 
 /**
- * The `ResponseException` is an `Exception` sub-class that will be used to reject
+ * The `React\Http\Message\ResponseException` is an `Exception` sub-class that will be used to reject
  * a request promise if the remote server returns a non-success status code
  * (anything but 2xx or 3xx).
  * You can control this behavior via the [`withRejectErrorResponse()` method](#withrejecterrorresponse).
@@ -32,7 +32,7 @@ final class ResponseException extends RuntimeException
     }
 
     /**
-     * Access its underlying [`ResponseInterface`](#responseinterface) object.
+     * Access its underlying response object.
      *
      * @return ResponseInterface
      */

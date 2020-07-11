@@ -2,16 +2,15 @@
 
 namespace React\Http;
 
+use Psr\Http\Message\ResponseInterface;
+use React\EventLoop\LoopInterface;
+use React\Http\Io\MessageFactory;
 use React\Http\Io\Sender;
 use React\Http\Io\Transaction;
-use React\Http\Message\MessageFactory;
-use InvalidArgumentException;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\UriInterface;
-use React\EventLoop\LoopInterface;
 use React\Promise\PromiseInterface;
 use React\Socket\ConnectorInterface;
 use React\Stream\ReadableStreamInterface;
+use InvalidArgumentException;
 
 /**
  * @final This class is final and shouldn't be extended as it is likely to be marked final in a future relase.
@@ -719,7 +718,7 @@ class Browser
 
     /**
      * @param string                         $method
-     * @param string|UriInterface            $url
+     * @param string                         $url
      * @param array                          $headers
      * @param string|ReadableStreamInterface $contents
      * @return PromiseInterface<ResponseInterface,Exception>
