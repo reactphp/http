@@ -1,5 +1,104 @@
 # Changelog
 
+## 1.0.0 (2020-07-11)
+
+A major new feature release, see [**release announcement**](https://clue.engineering/2020/announcing-reactphp-http).
+
+*   First stable LTS release, now following [SemVer](https://semver.org/).
+    We'd like to emphasize that this component is production ready and battle-tested.
+    We plan to support all long-term support (LTS) releases for at least 24 months,
+    so you have a rock-solid foundation to build on top of.
+
+This update involves some major new features and a number of BC breaks due to
+some necessary API cleanup. We've tried hard to avoid BC breaks where possible
+and minimize impact otherwise. We expect that most consumers of this package
+will be affected by BC breaks, but updating should take no longer than a few
+minutes. See below for more details:
+
+*   Feature: Add async HTTP client implementation.
+    (#368 by @clue)
+
+    ```php
+    $browser = new React\Http\Browser($loop);
+    $browser->get($url)->then(function (Psr\Http\Message\ResponseInterface $response) {
+        echo $response->getBody();
+    });
+    ```
+
+    The code has been imported as-is from [clue/reactphp-buzz v2.9.0](https://github.com/clue/reactphp-buzz),
+    with only minor changes to the namespace and we otherwise leave all the existing APIs unchanged.
+    Upgrading from [clue/reactphp-buzz v2.9.0](https://github.com/clue/reactphp-buzz)
+    to this release should be a matter of updating some namespace references only:
+
+    ```php
+    // old
+    $browser = new Clue\React\Buzz\Browser($loop);
+
+    // new
+    $browser = new React\Http\Browser($loop);
+    ```
+
+*   Feature / BC break: Add `LoopInterface` as required first constructor argument to `Server` and
+    change `Server` to accept variadic middleware handlers instead of `array`.
+    (#361 and #362 by @WyriHaximus)
+
+    ```php
+    // old
+    $server = new React\Http\Server($handler);
+    $server = new React\Http\Server([$middleware, $handler]);
+
+    // new
+    $server = new React\Http\Server($loop, $handler);
+    $server = new React\Http\Server($loop, $middleware, $handler);
+    ```
+
+*   Feature / BC break: Move `Response` class to `React\Http\Message\Response` and
+    expose `ServerRequest` class to `React\Http\Message\ServerRequest`.
+    (#370 by @clue)
+    
+    ```php
+    // old
+    $response = new React\Http\Response(200, [], 'Hello!');
+
+    // new
+    $response = new React\Http\Message\Response(200, [], 'Hello!');
+    ```
+
+*   Feature / BC break: Add `StreamingRequestMiddleware` to stream incoming requests, mark `StreamingServer` as internal.
+    (#367 by @clue)
+
+    ```php
+    // old: advanced StreamingServer is now internal only
+    $server = new React\Http\StreamingServer($handler);
+
+    // new: use StreamingRequestMiddleware instead of StreamingServer
+    $server = new React\Http\Server(
+         $loop,
+         new React\Http\Middleware\StreamingRequestMiddleware(),
+         $handler
+    );
+    ```
+
+*   Feature / BC break: Improve default concurrency to 1024 requests and cap default request buffer at 64K.
+    (#371 by @clue)
+
+    This improves default concurrency to 1024 requests and caps the default request buffer at 64K.
+    The previous defaults resulted in just 4 concurrent requests with a request buffer of 8M.
+    See [`Server`](../README.md#server) for details on how to override these defaults.
+
+*   Feature: Expose ReactPHP in `User-Agent` client-side request header and in `Server` server-side response header.
+    (#374 by @clue)
+
+*   Mark all classes as `final` to discourage inheriting from it.
+    (#373 by @WyriHaximus)
+
+*   Improve documentation and use fully-qualified class names throughout the documentation and
+    add ReactPHP core team as authors to `composer.json` and license file.
+    (#366 and #369 by @WyriHaximus and #375 by @clue)
+
+*   Improve test suite and support skipping all online tests with `--exclude-group internet`.
+    (#372 by @clue)
+
 ## 0.8.7 (2020-07-05)
 
 *   Fix: Fix parsing multipart request body with quoted header parameters (dot net).
