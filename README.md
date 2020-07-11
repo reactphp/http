@@ -1626,29 +1626,57 @@ create your own HTTP response message instead.
 When a response is returned from the request handler function, it will be
 processed by the [`Server`](#server) and then sent back to the client.
 
-The `Server` will automatically add the protocol version of the request, so you
-don't have to.
-
-A `Date` header will be automatically added with the system date and time if none is given.
-You can add a custom `Date` header yourself like this:
+A `Server: ReactPHP/1` response header will be added automatically. You can add
+a custom `Server` response header like this:
 
 ```php
-$server = new Server($loop, function (ServerRequestInterface $request) {
-    return new Response(
+$server = new React\Http\Server($loop, function (ServerRequestInterface $request) {
+    return new React\Http\Message\Response(
         200,
         array(
-            'Date' => date('D, d M Y H:i:s T')
+            'Server' => 'PHP/3'
         )
     );
 });
 ```
 
-If you don't have a appropriate clock to rely on, you should
-unset this header with an empty string:
+If you do not want to send this `Sever` response header at all (such as when you
+don't want to expose the underlying server software), you can use an empty
+string value like this:
 
 ```php
-$server = new Server($loop, function (ServerRequestInterface $request) {
-    return new Response(
+$server = new React\Http\Server($loop, function (ServerRequestInterface $request) {
+    return new React\Http\Message\Response(
+        200,
+        array(
+            'Server' => ''
+        )
+    );
+});
+```
+
+A `Date` response header will be added automatically with the current system
+date and time if none is given. You can add a custom `Date` response header
+like this:
+
+```php
+$server = new React\Http\Server($loop, function (ServerRequestInterface $request) {
+    return new React\Http\Message\Response(
+        200,
+        array(
+            'Date' => gmdate('D, d M Y H:i:s \G\M\T')
+        )
+    );
+});
+```
+
+If you do not want to send this `Date` response header at all (such as when you
+don't have an appropriate clock to rely on), you can use an empty string value
+like this:
+
+```php
+$server = new React\Http\Server($loop, function (ServerRequestInterface $request) {
+    return new React\Http\Message\Response(
         200,
         array(
             'Date' => ''
@@ -1657,33 +1685,10 @@ $server = new Server($loop, function (ServerRequestInterface $request) {
 });
 ```
 
-Note that it will automatically assume a `X-Powered-By: react/alpha` header
-unless your specify a custom `X-Powered-By` header yourself:
-
-```php
-$server = new Server($loop, function (ServerRequestInterface $request) {
-    return new Response(
-        200,
-        array(
-            'X-Powered-By' => 'PHP 3'
-        )
-    );
-});
-```
-
-If you do not want to send this header at all, you can use an empty string as
-value like this:
-
-```php
-$server = new Server($loop, function (ServerRequestInterface $request) {
-    return new Response(
-        200,
-        array(
-            'X-Powered-By' => ''
-        )
-    );
-});
-```
+The `Server` class will automatically add the protocol version of the request,
+so you don't have to. For instance, if the client sends the request using the
+HTTP/1.1 protocol version, the response message will also use the same protocol
+version, no matter what version is returned from the request handler function.
 
 Note that persistent connections (`Connection: keep-alive`) are currently
 not supported.

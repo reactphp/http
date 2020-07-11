@@ -244,11 +244,11 @@ final class StreamingServer extends EventEmitter
         $version = $request->getProtocolVersion();
         $response = $response->withProtocolVersion($version);
 
-        // assign default "X-Powered-By" header automatically
-        if (!$response->hasHeader('X-Powered-By')) {
-            $response = $response->withHeader('X-Powered-By', 'React/alpha');
-        } elseif ($response->getHeaderLine('X-Powered-By') === ''){
-            $response = $response->withoutHeader('X-Powered-By');
+        // assign default "Server" header automatically
+        if (!$response->hasHeader('Server')) {
+            $response = $response->withHeader('Server', 'ReactPHP/1');
+        } elseif ($response->getHeaderLine('Server') === ''){
+            $response = $response->withoutHeader('Server');
         }
 
         // assign default "Date" header from current time automatically
