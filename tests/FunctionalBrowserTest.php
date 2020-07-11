@@ -351,25 +351,25 @@ class FunctionalBrowserTest extends TestCase
     }
 
     /**
-     * @group online
+     * @group internet
      * @doesNotPerformAssertions
      */
     public function testCanAccessHttps()
     {
-        if (!function_exists('stream_socket_enable_crypto')) {
-            $this->markTestSkipped('Not supported on your platform (outdated HHVM?)');
+        if (defined('HHVM_VERSION')) {
+            $this->markTestSkipped('Not supported on HHVM');
         }
 
         Block\await($this->browser->get('https://www.google.com/'), $this->loop);
     }
 
     /**
-     * @group online
+     * @group internet
      */
     public function testVerifyPeerEnabledForBadSslRejects()
     {
-        if (!function_exists('stream_socket_enable_crypto')) {
-            $this->markTestSkipped('Not supported on your platform (outdated HHVM?)');
+        if (defined('HHVM_VERSION')) {
+            $this->markTestSkipped('Not supported on HHVM');
         }
 
         $connector = new Connector($this->loop, array(
@@ -385,13 +385,13 @@ class FunctionalBrowserTest extends TestCase
     }
 
     /**
-     * @group online
+     * @group internet
      * @doesNotPerformAssertions
      */
     public function testVerifyPeerDisabledForBadSslResolves()
     {
-        if (!function_exists('stream_socket_enable_crypto')) {
-            $this->markTestSkipped('Not supported on your platform (outdated HHVM?)');
+        if (defined('HHVM_VERSION')) {
+            $this->markTestSkipped('Not supported on HHVM');
         }
 
         $connector = new Connector($this->loop, array(
@@ -406,7 +406,7 @@ class FunctionalBrowserTest extends TestCase
     }
 
     /**
-     * @group online
+     * @group internet
      */
     public function testInvalidPort()
     {

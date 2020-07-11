@@ -340,9 +340,6 @@ class RequestHeaderParserTest extends TestCase
         $this->assertSame('Unable to parse invalid request-line', $error->getMessage());
     }
 
-    /**
-     * @group a
-     */
     public function testInvalidMalformedRequestHeadersThrowsParseException()
     {
         $error = null;
@@ -362,9 +359,6 @@ class RequestHeaderParserTest extends TestCase
         $this->assertSame('Unable to parse invalid request header fields', $error->getMessage());
     }
 
-    /**
-     * @group a
-     */
     public function testInvalidMalformedRequestHeadersWhitespaceThrowsParseException()
     {
         $error = null;
