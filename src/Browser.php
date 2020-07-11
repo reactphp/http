@@ -13,6 +13,9 @@ use React\Promise\PromiseInterface;
 use React\Socket\ConnectorInterface;
 use React\Stream\ReadableStreamInterface;
 
+/**
+ * @final This class is final and shouldn't be extended as it is likely to be marked final in a future relase.
+ */
 class Browser
 {
     private $transaction;

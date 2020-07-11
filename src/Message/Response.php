@@ -32,7 +32,7 @@ use Psr\Http\Message\StreamInterface;
  *
  * @see \Psr\Http\Message\ResponseInterface
  */
-class Response extends Psr7Response
+final class Response extends Psr7Response
 {
     /**
      * @param int                                            $status  HTTP status code (e.g. 200/404)

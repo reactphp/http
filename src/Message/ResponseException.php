@@ -14,7 +14,7 @@ use Psr\Http\Message\ResponseInterface;
  * The `getCode(): int` method can be used to
  * return the HTTP response status code.
  */
-class ResponseException extends RuntimeException
+final class ResponseException extends RuntimeException
 {
     private $response;
 
