@@ -29,7 +29,7 @@ use React\Stream\WritableStreamInterface;
  * object in return:
  *
  * ```php
- * $server = new StreamingServer(function (ServerRequestInterface $request) {
+ * $server = new StreamingServer($loop, function (ServerRequestInterface $request) {
  *     return new Response(
  *         200,
  *         array(
@@ -54,7 +54,7 @@ use React\Stream\WritableStreamInterface;
  * in order to start a plaintext HTTP server like this:
  *
  * ```php
- * $server = new StreamingServer($handler);
+ * $server = new StreamingServer($loop, $handler);
  *
  * $socket = new React\Socket\Server('0.0.0.0:8080', $loop);
  * $server->listen($socket);

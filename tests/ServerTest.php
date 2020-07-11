@@ -10,6 +10,7 @@ use Clue\React\Block;
 use React\Promise;
 use React\Http\Middleware\StreamingRequestMiddleware;
 use React\Stream\ReadableStreamInterface;
+use React\Http\Io\IniUtil;
 
 final class ServerTest extends TestCase
 {
@@ -224,23 +225,18 @@ final class ServerTest extends TestCase
         return array(
             'default settings' => array(
                 '128M',
-                '8M',
-                4
+                '64K', // 8M capped at maximum
+                1024
             ),
-            'unlimited memory_limit limited to maximum concurrency' => array(
+            'unlimited memory_limit has no concurrency limit' => array(
                 '-1',
                 '8M',
-                100
+                null
             ),
-            'unlimited post_max_size' => array(
-                '128M',
-                '0',
-                1
-            ),
-            'small post_max_size limited to maximum concurrency' => array(
+            'small post_max_size results in high concurrency' => array(
                 '128M',
                 '1k',
-                100
+                65536
             )
         );
     }
@@ -248,7 +244,7 @@ final class ServerTest extends TestCase
     /**
      * @param string $memory_limit
      * @param string $post_max_size
-     * @param int    $expectedConcurrency
+     * @param ?int   $expectedConcurrency
      * @dataProvider provideIniSettingsForConcurrency
      */
     public function testServerConcurrency($memory_limit, $post_max_size, $expectedConcurrency)
@@ -261,5 +257,101 @@ final class ServerTest extends TestCase
         $value = $ref->invoke($server, $memory_limit, $post_max_size);
 
         $this->assertEquals($expectedConcurrency, $value);
+    }
+
+    public function testServerGetPostMaxSizeReturnsSizeFromGivenIniSetting()
+    {
+        $server = new Server(Factory::create(), function () { });
+
+        $ref = new \ReflectionMethod($server, 'getMaxRequestSize');
+        $ref->setAccessible(true);
+
+        $value = $ref->invoke($server, '1k');
+
+        $this->assertEquals(1024, $value);
+    }
+
+    public function testServerGetPostMaxSizeReturnsSizeCappedFromGivenIniSetting()
+    {
+        $server = new Server(Factory::create(), function () { });
+
+        $ref = new \ReflectionMethod($server, 'getMaxRequestSize');
+        $ref->setAccessible(true);
+
+        $value = $ref->invoke($server, '1M');
+
+        $this->assertEquals(64 * 1024, $value);
+    }
+
+    public function testServerGetPostMaxSizeFromIniIsCapped()
+    {
+        if (IniUtil::iniSizeToBytes(ini_get('post_max_size')) < 64 * 1024) {
+            $this->markTestSkipped();
+        }
+
+        $server = new Server(Factory::create(), function () { });
+
+        $ref = new \ReflectionMethod($server, 'getMaxRequestSize');
+        $ref->setAccessible(true);
+
+        $value = $ref->invoke($server);
+
+        $this->assertEquals(64 * 1024, $value);
+    }
+
+    public function testConstructServerWithUnlimitedMemoryLimitDoesNotLimitConcurrency()
+    {
+        $old = ini_get('memory_limit');
+        ini_set('memory_limit', '-1');
+
+        $server = new Server(Factory::create(), function () { });
+
+        ini_set('memory_limit', $old);
+
+        $ref = new \ReflectionProperty($server, 'streamingServer');
+        $ref->setAccessible(true);
+
+        $streamingServer = $ref->getValue($server);
+
+        $ref = new \ReflectionProperty($streamingServer, 'callback');
+        $ref->setAccessible(true);
+
+        $middlewareRunner = $ref->getValue($streamingServer);
+
+        $ref = new \ReflectionProperty($middlewareRunner, 'middleware');
+        $ref->setAccessible(true);
+
+        $middleware = $ref->getValue($middlewareRunner);
+
+        $this->assertTrue(is_array($middleware));
+        $this->assertInstanceOf('React\Http\Middleware\RequestBodyBufferMiddleware', $middleware[0]);
+    }
+
+    public function testConstructServerWithMemoryLimitDoesLimitConcurrency()
+    {
+        $old = ini_get('memory_limit');
+        ini_set('memory_limit', '100M');
+
+        $server = new Server(Factory::create(), function () { });
+
+        ini_set('memory_limit', $old);
+
+        $ref = new \ReflectionProperty($server, 'streamingServer');
+        $ref->setAccessible(true);
+
+        $streamingServer = $ref->getValue($server);
+
+        $ref = new \ReflectionProperty($streamingServer, 'callback');
+        $ref->setAccessible(true);
+
+        $middlewareRunner = $ref->getValue($streamingServer);
+
+        $ref = new \ReflectionProperty($middlewareRunner, 'middleware');
+        $ref->setAccessible(true);
+
+        $middleware = $ref->getValue($middlewareRunner);
+
+        $this->assertTrue(is_array($middleware));
+        $this->assertInstanceOf('React\Http\Middleware\LimitConcurrentRequestsMiddleware', $middleware[0]);
     }
 }

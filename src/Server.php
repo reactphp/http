@@ -23,7 +23,7 @@ use React\Socket\ServerInterface;
  * object and expects a [response](#server-response) object in return:
  *
  * ```php
- * $server = new React\Http\Server(function (Psr\Http\Message\ServerRequestInterface $request) {
+ * $server = new React\Http\Server($loop, function (Psr\Http\Message\ServerRequestInterface $request) {
  *     return new React\Http\Message\Response(
  *         200,
  *         array(
@@ -51,7 +51,7 @@ use React\Socket\ServerInterface;
  * to start a plaintext HTTP server like this:
  *
  * ```php
- * $server = new React\Http\Server($handler);
+ * $server = new React\Http\Server($loop, $handler);
  *
  * $socket = new React\Socket\Server('0.0.0.0:8080', $loop);
  * $server->listen($socket);
@@ -79,7 +79,8 @@ use React\Socket\ServerInterface;
  *
  * ```
  * memory_limit 128M
- * post_max_size 8M
+ * post_max_size 8M // capped at 64K
+ *
  * enable_post_data_reading 1
  * max_input_nesting_level 64
  * max_input_vars 1000
@@ -90,29 +91,38 @@ use React\Socket\ServerInterface;
  * ```
  *
  * In particular, the `post_max_size` setting limits how much memory a single
- * HTTP request is allowed to consume while buffering its request body. On top
- * of this, this class will try to avoid consuming more than 1/4 of your
+ * HTTP request is allowed to consume while buffering its request body. This
+ * needs to be limited because the server can process a large number of requests
+ * concurrently, so the server may potentially consume a large amount of memory
+ * otherwise. To support higher concurrency by default, this value is capped
+ * at `64K`. If you assign a higher value, it will only allow `64K` by default.
+ * If a request exceeds this limit, its request body will be ignored and it will
+ * be processed like a request with no request body at all. See below for
+ * explicit configuration to override this setting.
+ *
+ * By default, this class will try to avoid consuming more than half of your
  * `memory_limit` for buffering multiple concurrent HTTP requests. As such, with
  * the above default settings of `128M` max, it will try to consume no more than
- * `32M` for buffering multiple concurrent HTTP requests. As a consequence, it
- * will limit the concurrency to 4 HTTP requests with the above defaults.
+ * `64M` for buffering multiple concurrent HTTP requests. As a consequence, it
+ * will limit the concurrency to `1024` HTTP requests with the above defaults.
  *
  * It is imperative that you assign reasonable values to your PHP ini settings.
- * It is usually recommended to either reduce the memory a single request is
- * allowed to take (set `post_max_size 1M` or less) or to increase the total
- * memory limit to allow for more concurrent requests (set `memory_limit 512M`
- * or more). Failure to do so means that this class may have to disable
- * concurrency and only handle one request at a time.
+ * It is usually recommended to not support buffering incoming HTTP requests
+ * with a large HTTP request body (e.g. large file uploads). If you want to
+ * increase this buffer size, you will have to also increase the total memory
+ * limit to allow for more concurrent requests (set `memory_limit 512M` or more)
+ * or explicitly limit concurrency.
  *
- * As an alternative to the above buffering defaults, you can also configure
- * the `Server` explicitly to override these defaults. You can use the
+ * In order to override the above buffering defaults, you can configure the
+ * `Server` explicitly. You can use the
  * [`LimitConcurrentRequestsMiddleware`](#limitconcurrentrequestsmiddleware) and
  * [`RequestBodyBufferMiddleware`](#requestbodybuffermiddleware) (see below)
  * to explicitly configure the total number of requests that can be handled at
  * once like this:
  *
  * ```php
- * $server = new React\Http\Server(array(
+ * $server = new React\Http\Server(
+ *     $loop,
  *     new React\Http\Middleware\StreamingRequestMiddleware(),
  *     new React\Http\Middleware\LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
  *     new React\Http\Middleware\RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
@@ -120,6 +130,12 @@ use React\Socket\ServerInterface;
  *     $handler
  * ));
  * ```
+ *
+ * In this example, we allow processing up to 100 concurrent requests at once
+ * and each request can buffer up to `2M`. This means you may have to keep a
+ * maximum of `200M` of memory for incoming request body buffers. Accordingly,
+ * you need to adjust the `memory_limit` ini setting to allow for these buffers
+ * plus your actual application logic memory requirements (think `512M` or more).
  *
  * > Internally, this class automatically assigns these middleware handlers
  *   automatically when no [`StreamingRequestMiddleware`](#streamingrequestmiddleware)
@@ -131,10 +147,11 @@ use React\Socket\ServerInterface;
  * in memory:
  *
  * ```php
- * $server = new React\Http\Server(array(
+ * $server = new React\Http\Server(
+ *     $loop,
  *     new React\Http\Middleware\StreamingRequestMiddleware(),
  *     $handler
- * ));
+ * );
  * ```
  *
  * In this case, it will invoke the request handler function once the HTTP
@@ -149,9 +166,17 @@ use React\Socket\ServerInterface;
 final class Server extends EventEmitter
 {
     /**
+     * The maximum buffer size used for each request.
+     *
+     * This needs to be limited because the server can process a large number of
+     * requests concurrently, so the server may potentially consume a large
+     * amount of memory otherwise.
+     *
+     * See `RequestBodyBufferMiddleware` to override this setting.
+     *
      * @internal
      */
-    const MAXIMUM_CONCURRENT_REQUESTS = 100;
+    const MAXIMUM_BUFFER_SIZE = 65536; // 64 KiB
 
     /**
      * @var StreamingServer
@@ -189,10 +214,12 @@ final class Server extends EventEmitter
 
         $middleware = array();
         if (!$streaming) {
-            $middleware[] = new LimitConcurrentRequestsMiddleware(
-                $this->getConcurrentRequestsLimit(\ini_get('memory_limit'), \ini_get('post_max_size'))
-            );
-            $middleware[] = new RequestBodyBufferMiddleware();
+            $maxSize = $this->getMaxRequestSize();
+            $concurrency = $this->getConcurrentRequestsLimit(\ini_get('memory_limit'), $maxSize);
+            if ($concurrency !== null) {
+                $middleware[] = new LimitConcurrentRequestsMiddleware($concurrency);
+            }
+            $middleware[] = new RequestBodyBufferMiddleware($maxSize);
             // Checking for an empty string because that is what a boolean
             // false is returned as by ini_get depending on the PHP version.
             // @link http://php.net/manual/en/ini.core.php#ini.enable-post-data-reading
@@ -226,7 +253,7 @@ final class Server extends EventEmitter
      * order to start a plaintext HTTP server like this:
      *
      * ```php
-     * $server = new React\Http\Server($handler);
+     * $server = new React\Http\Server($loop, $handler);
      *
      * $socket = new React\Socket\Server(8080, $loop);
      * $server->listen($socket);
@@ -252,7 +279,7 @@ final class Server extends EventEmitter
      * `passphrase` like this:
      *
      * ```php
-     * $server = new React\Http\Server($handler);
+     * $server = new React\Http\Server($loop, $handler);
      *
      * $socket = new React\Socket\Server('tls://0.0.0.0:8443', $loop, array(
      *     'local_cert' => __DIR__ . '/localhost.pem'
@@ -273,25 +300,28 @@ final class Server extends EventEmitter
     /**
      * @param string $memory_limit
      * @param string $post_max_size
-     * @return int
+     * @return ?int
      */
     private function getConcurrentRequestsLimit($memory_limit, $post_max_size)
     {
         if ($memory_limit == -1) {
-            return self::MAXIMUM_CONCURRENT_REQUESTS;
+            return null;
         }
 
-        if ($post_max_size == 0) {
-            return 1;
-        }
-
-        $availableMemory = IniUtil::iniSizeToBytes($memory_limit) / 4;
+        $availableMemory = IniUtil::iniSizeToBytes($memory_limit) / 2;
         $concurrentRequests = (int) \ceil($availableMemory / IniUtil::iniSizeToBytes($post_max_size));
 
-        if ($concurrentRequests >= self::MAXIMUM_CONCURRENT_REQUESTS) {
-            return self::MAXIMUM_CONCURRENT_REQUESTS;
-        }
-
         return $concurrentRequests;
+    }
+
+    /**
+     * @param ?string $post_max_size
+     * @return int
+     */
+    private function getMaxRequestSize($post_max_size = null)
+    {
+        $maxSize = IniUtil::iniSizeToBytes($post_max_size === null ? \ini_get('post_max_size') : $post_max_size);
+
+        return ($maxSize === 0 || $maxSize >= self::MAXIMUM_BUFFER_SIZE) ? self::MAXIMUM_BUFFER_SIZE : $maxSize;
     }
 }
