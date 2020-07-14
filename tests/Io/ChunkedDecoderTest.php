@@ -8,7 +8,6 @@ use React\Tests\Http\TestCase;
 
 class ChunkedDecoderTest extends TestCase
 {
-
     /**
      * @before
      */
@@ -100,7 +99,6 @@ class ChunkedDecoderTest extends TestCase
         $this->parser->on('close', $this->expectCallableNever());
         $this->parser->on('end', $this->expectCallableNever());#
         $this->parser->on('error', $this->expectCallableNever());
-
 
         $this->input->emit('data', array("4"));
         $this->input->emit('data', array("\r\nwelt\r\n"));
@@ -421,6 +419,36 @@ class ChunkedDecoderTest extends TestCase
         $this->parser->on('close', $this->expectCallableOnce());
 
         $this->input->emit('data', array("0000\r\n\r\n"));
+    }
+
+    public function testAdditionalWhitespaceInEndChunkWillBeIgnored()
+    {
+        $this->parser->on('data', $this->expectCallableNever());
+        $this->parser->on('error', $this->expectCallableNever());
+        $this->parser->on('end', $this->expectCallableOnce());
+        $this->parser->on('close', $this->expectCallableOnce());
+
+        $this->input->emit('data', array(" 0 \r\n\r\n"));
+    }
+
+    public function testEndChunkWithTrailersWillBeIgnored()
+    {
+        $this->parser->on('data', $this->expectCallableNever());
+        $this->parser->on('error', $this->expectCallableNever());
+        $this->parser->on('end', $this->expectCallableOnce());
+        $this->parser->on('close', $this->expectCallableOnce());
+
+        $this->input->emit('data', array("0\r\nFoo: bar\r\n\r\n"));
+    }
+
+    public function testEndChunkWithMultipleTrailersWillBeIgnored()
+    {
+        $this->parser->on('data', $this->expectCallableNever());
+        $this->parser->on('error', $this->expectCallableNever());
+        $this->parser->on('end', $this->expectCallableOnce());
+        $this->parser->on('close', $this->expectCallableOnce());
+
+        $this->input->emit('data', array("0\r\nFoo: a\r\nBar: b\r\nBaz: c\r\n\r\n"));
     }
 
     public function testLeadingZerosInInvalidChunk()
