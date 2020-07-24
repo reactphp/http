@@ -223,35 +223,30 @@ class BrowserTest extends TestCase
                 'http://example.com/base/another',
                 'http://example.com/base/another',
             ),
-            'slash returns added slash' => array(
+            'slash returns base without path' => array(
                 'http://example.com/base',
                 '/',
-                'http://example.com/base/',
-            ),
-            'slash does not add duplicate slash if base already ends with slash' => array(
-                'http://example.com/base/',
-                '/',
-                'http://example.com/base/',
+                'http://example.com/',
             ),
             'relative is added behind base' => array(
                 'http://example.com/base/',
                 'test',
                 'http://example.com/base/test',
             ),
-            'relative with slash is added behind base without duplicate slashes' => array(
-                'http://example.com/base/',
-                '/test',
-                'http://example.com/base/test',
-            ),
-            'relative is added behind base with automatic slash inbetween' => array(
+            'relative is added behind base without path' => array(
                 'http://example.com/base',
                 'test',
-                'http://example.com/base/test',
+                'http://example.com/test',
             ),
-            'relative with slash is added behind base' => array(
+            'relative level up is added behind parent path' => array(
+                'http://example.com/base/foo/',
+                '../bar',
+                'http://example.com/base/bar',
+            ),
+            'absolute with slash is added behind base without path' => array(
                 'http://example.com/base',
                 '/test',
-                'http://example.com/base/test',
+                'http://example.com/test',
             ),
             'query string is added behind base' => array(
                 'http://example.com/base',
@@ -263,10 +258,10 @@ class BrowserTest extends TestCase
                 '?key=value',
                 'http://example.com/base/?key=value',
             ),
-            'query string with slash is added behind base' => array(
+            'query string with slash is added behind base without path' => array(
                 'http://example.com/base',
                 '/?key=value',
-                'http://example.com/base/?key=value',
+                'http://example.com/?key=value',
             ),
             'absolute with query string below base is returned as-is' => array(
                 'http://example.com/base',

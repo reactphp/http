@@ -2282,16 +2282,16 @@ The `withBase(string|null $baseUrl): Browser` method can be used to
 change the base URL used to resolve relative URLs to.
 
 If you configure a base URL, any requests to relative URLs will be
-processed by first prepending this absolute base URL. Note that this
-merely prepends the base URL and does *not* resolve any relative path
-references (like `../` etc.). This is mostly useful for (RESTful) API
-calls where all endpoints (URLs) are located under a common base URL.
+processed by first resolving this relative to the given absolute base
+URL. This supports resolving relative path references (like `../` etc.).
+This is particularly useful for (RESTful) API calls where all endpoints
+(URLs) are located under a common base URL.
 
 ```php
-$browser = $browser->withBase('http://api.example.com/v3');
+$browser = $browser->withBase('http://api.example.com/v3/');
 
-// will request http://api.example.com/v3/example
-$browser->get('/example')->then(…);
+// will request http://api.example.com/v3/users
+$browser->get('users')->then(…);
 ```
 
 You can pass in a `null` base URL to return a new instance that does not
