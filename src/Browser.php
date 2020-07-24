@@ -585,7 +585,7 @@ class Browser
             return $browser;
         }
 
-        $browser->baseUrl = $this->messageFactory->uri($baseUrl);
+        $browser->baseUrl = new Uri($baseUrl);
         if (!\in_array($browser->baseUrl->getScheme(), array('http', 'https')) || $browser->baseUrl->getHost() === '') {
             throw new \InvalidArgumentException('Base URL must be absolute');
         }

@@ -5,6 +5,7 @@ namespace React\Http\Io;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
+use RingCentral\Psr7\Uri;
 use React\EventLoop\LoopInterface;
 use React\Http\Message\ResponseException;
 use React\Promise\Deferred;
@@ -246,7 +247,7 @@ class Transaction
     private function onResponseRedirect(ResponseInterface $response, RequestInterface $request, Deferred $deferred)
     {
         // resolve location relative to last request URI
-        $location = $this->messageFactory->uriRelative($request->getUri(), $response->getHeaderLine('Location'));
+        $location = Uri::resolve($request->getUri(), $response->getHeaderLine('Location'));
 
         $request = $this->makeRedirectRequest($request, $location);
         $this->progress('redirect', array($request));

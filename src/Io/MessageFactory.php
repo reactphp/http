@@ -6,7 +6,6 @@ use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
 use RingCentral\Psr7\Request;
 use RingCentral\Psr7\Response;
-use RingCentral\Psr7\Uri;
 use React\Stream\ReadableStreamInterface;
 
 /**
@@ -75,28 +74,5 @@ class MessageFactory
         }
 
         return \RingCentral\Psr7\stream_for($body);
-    }
-
-    /**
-     * Creates a new instance of UriInterface for the given URI string
-     *
-     * @param string $uri
-     * @return UriInterface
-     */
-    public function uri($uri)
-    {
-        return new Uri($uri);
-    }
-
-    /**
-     * Creates a new instance of UriInterface for the given URI string relative to the given base URI
-     *
-     * @param UriInterface $base
-     * @param string       $uri
-     * @return UriInterface
-     */
-    public function uriRelative(UriInterface $base, $uri)
-    {
-        return Uri::resolve($base, $uri);
     }
 }
