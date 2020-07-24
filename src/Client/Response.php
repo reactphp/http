@@ -3,7 +3,6 @@
 namespace React\Http\Client;
 
 use Evenement\EventEmitter;
-use React\Http\Io\ChunkedDecoder;
 use React\Stream\ReadableStreamInterface;
 use React\Stream\Util;
 use React\Stream\WritableStreamInterface;
@@ -32,11 +31,6 @@ class Response extends EventEmitter implements ReadableStreamInterface
         $this->code = $code;
         $this->reasonPhrase = $reasonPhrase;
         $this->headers = $headers;
-
-        if (strtolower($this->getHeaderLine('Transfer-Encoding')) === 'chunked') {
-            $this->stream = new ChunkedDecoder($stream);
-            $this->removeHeader('Transfer-Encoding');
-        }
 
         $this->stream->on('data', array($this, 'handleData'));
         $this->stream->on('error', array($this, 'handleError'));
@@ -67,16 +61,6 @@ class Response extends EventEmitter implements ReadableStreamInterface
     public function getHeaders()
     {
         return $this->headers;
-    }
-
-    private function removeHeader($name)
-    {
-        foreach ($this->headers as $key => $value) {
-            if (strcasecmp($name, $key) === 0) {
-                unset($this->headers[$key]);
-                break;
-            }
-        }
     }
 
     private function getHeader($name)

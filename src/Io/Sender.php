@@ -110,9 +110,12 @@ class Sender
 
         $requestStream->on('response', function (ResponseStream $responseStream) use ($deferred, $request) {
             $length = null;
+            $body = $responseStream;
             $code = $responseStream->getCode();
             if ($request->getMethod() === 'HEAD' || ($code >= 100 && $code < 200) || $code == 204 || $code == 304) {
                 $length = 0;
+            } elseif (\strtolower($responseStream->getHeaderLine('Transfer-Encoding')) === 'chunked') {
+                $body = new ChunkedDecoder($body);
             } elseif ($responseStream->hasHeader('Content-Length')) {
                 $length = (int) $responseStream->getHeaderLine('Content-Length');
             }
@@ -121,7 +124,7 @@ class Sender
             $deferred->resolve(new Response(
                 $responseStream->getCode(),
                 $responseStream->getHeaders(),
-                new ReadableBodyStream($responseStream, $length),
+                new ReadableBodyStream($body, $length),
                 $responseStream->getVersion(),
                 $responseStream->getReasonPhrase()
             ));

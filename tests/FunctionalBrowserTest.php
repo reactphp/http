@@ -462,7 +462,7 @@ class FunctionalBrowserTest extends TestCase
         $this->assertEquals('hello world', $data['data']);
     }
 
-    public function testReceiveStreamUntilConnectionsEndsForHttp10()
+    public function testRequestStreamReturnsResponseBodyUntilConnectionsEndsForHttp10()
     {
         $response = Block\await($this->browser->withProtocolVersion('1.0')->get($this->base . 'stream/1'), $this->loop);
 
@@ -473,19 +473,45 @@ class FunctionalBrowserTest extends TestCase
         $this->assertStringEndsWith('}', (string) $response->getBody());
     }
 
-    public function testReceiveStreamChunkedForHttp11()
+    public function testRequestStreamReturnsResponseWithTransferEncodingChunkedAndResponseBodyDecodedForHttp11()
     {
-        $response = Block\await($this->browser->request('GET', $this->base . 'stream/1'), $this->loop);
+        $response = Block\await($this->browser->get($this->base . 'stream/1'), $this->loop);
 
         $this->assertEquals('1.1', $response->getProtocolVersion());
 
-        // underlying http-client automatically decodes and doesn't expose header
-        // @link https://github.com/reactphp/http-client/pull/58
-        // $this->assertEquals('chunked', $response->getHeaderLine('Transfer-Encoding'));
-        $this->assertFalse($response->hasHeader('Transfer-Encoding'));
+        $this->assertEquals('chunked', $response->getHeaderLine('Transfer-Encoding'));
 
         $this->assertStringStartsWith('{', (string) $response->getBody());
         $this->assertStringEndsWith('}', (string) $response->getBody());
+    }
+
+    public function testRequestStreamWithHeadRequestReturnsEmptyResponseBodWithTransferEncodingChunkedForHttp11()
+    {
+        $response = Block\await($this->browser->head($this->base . 'stream/1'), $this->loop);
+
+        $this->assertEquals('1.1', $response->getProtocolVersion());
+
+        $this->assertEquals('chunked', $response->getHeaderLine('Transfer-Encoding'));
+        $this->assertEquals('', (string) $response->getBody());
+    }
+
+    public function testRequestStreamReturnsResponseWithResponseBodyUndecodedWhenResponseHasDoubleTransferEncoding()
+    {
+        $socket = new \React\Socket\Server(0, $this->loop);
+        $socket->on('connection', function (\React\Socket\ConnectionInterface $connection) {
+            $connection->on('data', function () use ($connection) {
+                $connection->end("HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked, chunked\r\nConnection: close\r\n\r\nhello");
+            });
+        });
+
+        $this->base = str_replace('tcp:', 'http:', $socket->getAddress()) . '/';
+
+        $response = Block\await($this->browser->get($this->base . 'stream/1'), $this->loop);
+
+        $this->assertEquals('1.1', $response->getProtocolVersion());
+
+        $this->assertEquals('chunked, chunked', $response->getHeaderLine('Transfer-Encoding'));
+        $this->assertEquals('hello', (string) $response->getBody());
     }
 
     public function testReceiveStreamAndExplicitlyCloseConnectionEvenWhenServerKeepsConnectionOpen()
