@@ -3,9 +3,10 @@
 namespace React\Http;
 
 use Psr\Http\Message\ResponseInterface;
+use RingCentral\Psr7\Request;
 use RingCentral\Psr7\Uri;
 use React\EventLoop\LoopInterface;
-use React\Http\Io\MessageFactory;
+use React\Http\Io\ReadableBodyStream;
 use React\Http\Io\Sender;
 use React\Http\Io\Transaction;
 use React\Promise\PromiseInterface;
@@ -19,7 +20,6 @@ use InvalidArgumentException;
 class Browser
 {
     private $transaction;
-    private $messageFactory;
     private $baseUrl;
     private $protocolVersion = '1.1';
 
@@ -59,10 +59,8 @@ class Browser
      */
     public function __construct(LoopInterface $loop, ConnectorInterface $connector = null)
     {
-        $this->messageFactory = new MessageFactory();
         $this->transaction = new Transaction(
-            Sender::createFromLoop($loop, $connector, $this->messageFactory),
-            $this->messageFactory,
+            Sender::createFromLoop($loop, $connector),
             $loop
         );
     }
@@ -721,18 +719,22 @@ class Browser
      * @param string                         $method
      * @param string                         $url
      * @param array                          $headers
-     * @param string|ReadableStreamInterface $contents
+     * @param string|ReadableStreamInterface $body
      * @return PromiseInterface<ResponseInterface,Exception>
      */
-    private function requestMayBeStreaming($method, $url, array $headers = array(), $contents = '')
+    private function requestMayBeStreaming($method, $url, array $headers = array(), $body = '')
     {
         if ($this->baseUrl !== null) {
             // ensure we're actually below the base URL
             $url = Uri::resolve($this->baseUrl, $url);
         }
 
-        $request = $this->messageFactory->request($method, $url, $headers, $contents, $this->protocolVersion);
+        if ($body instanceof ReadableStreamInterface) {
+            $body = new ReadableBodyStream($body);
+        }
 
-        return $this->transaction->send($request);
+        return $this->transaction->send(
+            new Request($method, $url, $headers, $body, $this->protocolVersion)
+        );
     }
 }

@@ -86,9 +86,22 @@ class Response extends EventEmitter implements ReadableStreamInterface
         return isset($normalized[$name]) ? (array)$normalized[$name] : array();
     }
 
-    private function getHeaderLine($name)
+    /**
+     * @param string $name
+     * @return string
+     */
+    public function getHeaderLine($name)
     {
         return implode(', ' , $this->getHeader($name));
+    }
+
+    /**
+     * @param string $name
+     * @return bool
+     */
+    public function hasHeader($name)
+    {
+        return $this->getHeader($name) !== array();
     }
 
     /** @internal */
