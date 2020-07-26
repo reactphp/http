@@ -8,6 +8,7 @@ use React\Http\Io\MessageFactory;
 use React\Http\Io\Sender;
 use React\Http\Io\Transaction;
 use React\Promise\PromiseInterface;
+use React\Socket\ConnectionInterface;
 use React\Socket\ConnectorInterface;
 use React\Stream\ReadableStreamInterface;
 use InvalidArgumentException;
@@ -381,6 +382,11 @@ class Browser
         return $this->withOptions(array('streaming' => true))->requestMayBeStreaming($method, $url, $headers, $contents);
     }
 
+    public function requestUpgrade($method, $url, $headers = array(), $contents = '')
+    {
+        return $this->withOptions(array('upgrade' => true))->requestMayBeStreaming($method, $url, $headers, $contents);
+    }
+
     /**
      * Changes the maximum timeout used for waiting for pending requests.
      *
@@ -708,7 +714,7 @@ class Browser
      * @see self::withFollowRedirects()
      * @see self::withRejectErrorResponse()
      */
-    private function withOptions(array $options)
+    public function withOptions(array $options)
     {
         $browser = clone $this;
         $browser->transaction = $this->transaction->withOptions($options);
@@ -721,7 +727,7 @@ class Browser
      * @param string                         $url
      * @param array                          $headers
      * @param string|ReadableStreamInterface $contents
-     * @return PromiseInterface<ResponseInterface,Exception>
+     * @return PromiseInterface<ResponseInterface,Exception, ConnectionInterface>
      */
     private function requestMayBeStreaming($method, $url, array $headers = array(), $contents = '')
     {

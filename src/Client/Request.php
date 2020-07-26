@@ -61,7 +61,28 @@ class Request extends EventEmitter implements WritableStreamInterface
                 $streamRef = $stream;
 
                 $stream->on('drain', array($that, 'handleDrain'));
-                $stream->on('data', array($that, 'handleData'));
+
+                $buffer = '';
+                $headerParser = function ($data) use ($requestData, &$headerParser, $buffer, $streamRef, $that) {
+                    $buffer .= $data;
+
+                    static $headerParsed = false;
+
+                    if (!$requestData->isUpgradeRequest() || $headerParsed || false == strpos($buffer, "\r\n\r\n")) {
+                        return $that->handleData($data);
+                    }
+
+                    $headerParsed = true;
+
+                    $response = gPsr\parse_response($buffer);
+
+                    $streamRef->removeListener('data', $headerParser);
+
+                    $that->emit('upgrade', array($streamRef, $response, $that));
+                };
+
+                $stream->on('data', $headerParser);
+
                 $stream->on('end', array($that, 'handleEnd'));
                 $stream->on('error', array($that, 'handleError'));
                 $stream->on('close', array($that, 'handleClose'));
@@ -291,5 +312,10 @@ class Request extends EventEmitter implements WritableStreamInterface
         }
 
         return $factory;
+    }
+
+    public function getRequestData()
+    {
+        return $this->requestData;
     }
 }

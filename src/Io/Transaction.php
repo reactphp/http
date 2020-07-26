@@ -34,6 +34,8 @@ class Transaction
 
     private $streaming = false;
 
+    private $upgrade = false;
+
     private $maximumSize = 16777216; // 16 MiB = 2^24 bytes
 
     public function __construct(Sender $sender, MessageFactory $messageFactory, LoopInterface $loop)
@@ -81,7 +83,7 @@ class Transaction
 
         $loop = $this->loop;
         $this->next($request, $deferred)->then(
-            function (ResponseInterface $response) use ($deferred, $loop, &$timeout) {
+            function ($response) use ($deferred, $loop, &$timeout) {
                 if (isset($deferred->timeout)) {
                     $loop->cancelTimer($deferred->timeout);
                     unset($deferred->timeout);

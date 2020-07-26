@@ -125,4 +125,17 @@ class RequestData
 
         return array();
     }
+
+    public function isUpgradeRequest()
+    {
+        return isset($this->headers['Connection']) && strtolower($this->headers['Connection']) === "upgrade";
+    }
+
+    /**
+     * @return array
+     */
+    public function getHeaders()
+    {
+        return $this->headers;
+    }
 }
