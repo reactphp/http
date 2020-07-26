@@ -36,6 +36,8 @@ class Transaction
 
     private $streaming = false;
 
+    private $upgrade = false;
+
     private $maximumSize = 16777216; // 16 MiB = 2^24 bytes
 
     public function __construct(Sender $sender, LoopInterface $loop)
