@@ -76,9 +76,10 @@ class Sender
      *
      * @internal
      * @param RequestInterface $request
+     * @param bool $upgrade Configures the sender to listen for upgrade
      * @return PromiseInterface Promise<ResponseInterface, ConnectionInterface, Exception>
      */
-    public function send(RequestInterface $request)
+    public function send(RequestInterface $request, $upgrade = false)
     {
         // support HTTP/1.1 and HTTP/1.0 only, ensured by `Browser` already
         assert(\in_array($request->getProtocolVersion(), array('1.0', '1.1'), true));
@@ -106,9 +107,11 @@ class Sender
          * We listen for an upgrade, if the request was upgraded, we will hijack it and resolve immediately
          * This is useful for websocket connections that requires an HTTP Upgrade.
          */
-        $requestStream->on('upgrade', function (ConnectionInterface $socket, ResponseInterface $response) use ($request, $deferred) {
-            $deferred->resolve(new UpgradedResponse($socket, $response, $request));
-        });
+        if ($upgrade) {
+            $requestStream->on('upgrade', function (ConnectionInterface $socket, ResponseInterface $response) use ($request, $deferred) {
+                $deferred->resolve(new UpgradedResponse($socket, $response, $request));
+            });
+        }
 
         if ($body instanceof ReadableStreamInterface) {
             if ($body->isReadable()) {
