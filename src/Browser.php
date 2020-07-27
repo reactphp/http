@@ -381,11 +381,6 @@ class Browser
         return $this->withOptions(array('streaming' => true))->requestMayBeStreaming($method, $url, $headers, $contents);
     }
 
-    public function requestUpgrade($method, $url, $headers = array(), $contents = '')
-    {
-        return $this->withOptions(array('upgrade' => true))->requestMayBeStreaming($method, $url, $headers, $contents);
-    }
-
     /**
      * Changes the maximum timeout used for waiting for pending requests.
      *
