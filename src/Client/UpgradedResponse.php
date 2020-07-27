@@ -4,12 +4,12 @@ namespace React\Http\Client;
 
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use React\Socket\ConnectionInterface;
+use React\Stream\DuplexStreamInterface;
 
 class UpgradedResponse
 {
     /**
-     * @var ConnectionInterface
+     * @var DuplexStreamInterface
      */
     private $connection;
 
@@ -23,7 +23,7 @@ class UpgradedResponse
      */
     private $request;
 
-    public function __construct(ConnectionInterface $connection, ResponseInterface $response, RequestInterface $request)
+    public function __construct(DuplexStreamInterface $connection, ResponseInterface $response, RequestInterface $request)
     {
         $this->connection = $connection;
         $this->response = $response;
@@ -31,7 +31,7 @@ class UpgradedResponse
     }
 
     /**
-     * @return ConnectionInterface
+     * @return DuplexStreamInterface
      */
     public function getConnection()
     {
