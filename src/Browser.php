@@ -714,7 +714,7 @@ class Browser
      * @see self::withFollowRedirects()
      * @see self::withRejectErrorResponse()
      */
-    public function withOptions(array $options)
+    private function withOptions(array $options)
     {
         $browser = clone $this;
         $browser->transaction = $this->transaction->withOptions($options);
