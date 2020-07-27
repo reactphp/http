@@ -35,6 +35,7 @@ class Transaction
 
     private $streaming = false;
 
+    // Determines whether to return the connection of an upgrade or not
     private $upgrade = false;
 
     private $maximumSize = 16777216; // 16 MiB = 2^24 bytes
@@ -146,7 +147,7 @@ class Transaction
         $that = $this;
         ++$deferred->numRequests;
 
-        $promise = $this->sender->send($request);
+        $promise = $this->sender->send($request, $this->upgrade);
 
         if ($this->upgrade) return $promise;
 
