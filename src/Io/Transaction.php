@@ -147,6 +147,8 @@ class Transaction
 
         $promise = $this->sender->send($request);
 
+        if ($this->upgrade) return $promise;
+
         if (!$this->streaming) {
             $promise = $promise->then(function ($response) use ($deferred, $state, $that) {
                 return $that->bufferResponse($response, $deferred, $state);

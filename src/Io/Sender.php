@@ -6,6 +6,7 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use React\EventLoop\LoopInterface;
 use React\Http\Client\Client as HttpClient;
+use React\Http\Client\UpgradedResponse;
 use React\Promise\PromiseInterface;
 use React\Promise\Deferred;
 use React\Socket\Connector;
@@ -101,8 +102,12 @@ class Sender
             $deferred->resolve($response);
         });
 
-        $requestStream->on('upgrade', function (ConnectionInterface $socket) use ($deferred) {
-            $deferred->resolve($socket);
+        /**
+         * We listen for an upgrade, if the request was upgraded, we will hijack it and resolve immediately
+         * This is useful for websocket connections that requires an HTTP Upgrade.
+         */
+        $requestStream->on('upgrade', function (ConnectionInterface $socket, ResponseInterface $response) use ($request, $deferred) {
+            $deferred->resolve(new UpgradedResponse($socket, $response, $request));
         });
 
         if ($body instanceof ReadableStreamInterface) {
@@ -137,33 +142,6 @@ class Sender
             // body is fully buffered => write as one chunk
             $requestStream->end((string)$body);
         }
-
-        return $deferred->promise();
-    }
-
-    /**
-     *
-     * @internal
-     * @param RequestInterface $request
-     * @return PromiseInterface Promise<ResponseInterface, Exception>
-     */
-    public function upgrade(RequestInterface $request)
-    {
-        $requestStream = $this->createRequestStream($request);
-
-        $deferred = new Deferred(function ($_, $reject) use ($requestStream) {
-            // close request stream if request is cancelled
-            $reject(new \RuntimeException('Request cancelled'));
-            $requestStream->close();
-        });
-
-        $requestStream->on('error', function($error) use ($deferred) {
-            $deferred->reject($error);
-        });
-
-        $requestStream->on('upgrade', function (ConnectorInterface $socket) use ($deferred) {
-            $deferred->resolve($socket);
-        });
 
         return $deferred->promise();
     }
