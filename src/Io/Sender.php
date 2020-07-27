@@ -74,7 +74,7 @@ class Sender
      *
      * @internal
      * @param RequestInterface $request
-     * @return PromiseInterface Promise<ResponseInterface, Exception>
+     * @return PromiseInterface Promise<ResponseInterface, ConnectionInterface, Exception>
      */
     public function send(RequestInterface $request)
     {
