@@ -11,8 +11,8 @@ use React\Http\Message\Response;
 use React\Http\Client\UpgradedResponse;
 use React\Promise\PromiseInterface;
 use React\Promise\Deferred;
-use React\Socket\ConnectionInterface;
 use React\Socket\ConnectorInterface;
+use React\Stream\DuplexStreamInterface;
 use React\Stream\ReadableStreamInterface;
 
 /**
@@ -117,7 +117,7 @@ class Sender
          * This is useful for websocket connections that requires an HTTP Upgrade.
          */
         if ($upgrade) {
-            $requestStream->on('upgrade', function (ConnectionInterface $socket, ResponseInterface $response) use ($request, $deferred) {
+            $requestStream->on('upgrade', function (DuplexStreamInterface $socket, ResponseInterface $response) use ($request, $deferred) {
                 $deferred->resolve(new UpgradedResponse($socket, $response, $request));
             });
         }
