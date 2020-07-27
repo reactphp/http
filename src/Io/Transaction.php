@@ -5,6 +5,8 @@ namespace React\Http\Io;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
+use RingCentral\Psr7\Request;
+use RingCentral\Psr7\Uri;
 use React\EventLoop\LoopInterface;
 use React\Http\Message\ResponseException;
 use React\Promise\Deferred;
@@ -17,7 +19,6 @@ use React\Stream\ReadableStreamInterface;
 class Transaction
 {
     private $sender;
-    private $messageFactory;
     private $loop;
 
     // context: http.timeout (ini_get('default_socket_timeout'): 60)
@@ -38,10 +39,9 @@ class Transaction
 
     private $maximumSize = 16777216; // 16 MiB = 2^24 bytes
 
-    public function __construct(Sender $sender, MessageFactory $messageFactory, LoopInterface $loop)
+    public function __construct(Sender $sender, LoopInterface $loop)
     {
         $this->sender = $sender;
-        $this->messageFactory = $messageFactory;
         $this->loop = $loop;
     }
 
@@ -56,7 +56,7 @@ class Transaction
             if (property_exists($transaction, $name)) {
                 // restore default value if null is given
                 if ($value === null) {
-                    $default = new self($this->sender, $this->messageFactory, $this->loop);
+                    $default = new self($this->sender, $this->loop);
                     $value = $default->$name;
                 }
 
@@ -189,11 +189,10 @@ class Transaction
         }
 
         // buffer stream and resolve with buffered body
-        $messageFactory = $this->messageFactory;
         $maximumSize = $this->maximumSize;
         $promise = \React\Promise\Stream\buffer($stream, $maximumSize)->then(
-            function ($body) use ($response, $messageFactory) {
-                return $response->withBody($messageFactory->body($body));
+            function ($body) use ($response) {
+                return $response->withBody(\RingCentral\Psr7\stream_for($body));
             },
             function ($e) use ($stream, $maximumSize) {
                 // try to close stream if buffering fails (or is cancelled)
@@ -250,7 +249,7 @@ class Transaction
     private function onResponseRedirect(ResponseInterface $response, RequestInterface $request, Deferred $deferred)
     {
         // resolve location relative to last request URI
-        $location = $this->messageFactory->uriRelative($request->getUri(), $response->getHeaderLine('Location'));
+        $location = Uri::resolve($request->getUri(), $response->getHeaderLine('Location'));
 
         $request = $this->makeRedirectRequest($request, $location);
         $this->progress('redirect', array($request));
@@ -283,7 +282,7 @@ class Transaction
         // naïve approach..
         $method = ($request->getMethod() === 'HEAD') ? 'HEAD' : 'GET';
 
-        return $this->messageFactory->request($method, $location, $request->getHeaders());
+        return new Request($method, $location, $request->getHeaders());
     }
 
     private function progress($name, array $args = array())

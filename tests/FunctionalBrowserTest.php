@@ -64,11 +64,19 @@ class FunctionalBrowserTest extends TestCase
                 );
             }
 
-            if ($path === '/status/300') {
+            if ($path === '/status/204') {
                 return new Response(
-                    300,
+                    204,
                     array(),
                     ''
+                );
+            }
+
+            if ($path === '/status/304') {
+                return new Response(
+                    304,
+                    array(),
+                    'Not modified'
                 );
             }
 
@@ -308,12 +316,24 @@ class FunctionalBrowserTest extends TestCase
         Block\await($browser->get($this->base . 'redirect-to?url=get'), $this->loop);
     }
 
-    /**
-     * @doesNotPerformAssertions
-     */
-    public function testResponseStatus300WithoutLocationShouldResolveWithoutFollowingRedirect()
+    public function testResponseStatus204ShouldResolveWithEmptyBody()
     {
-        Block\await($this->browser->get($this->base . 'status/300'), $this->loop);
+        $response = Block\await($this->browser->get($this->base . 'status/204'), $this->loop);
+        $this->assertFalse($response->hasHeader('Content-Length'));
+
+        $body = $response->getBody();
+        $this->assertEquals(0, $body->getSize());
+        $this->assertEquals('', (string) $body);
+    }
+
+    public function testResponseStatus304ShouldResolveWithEmptyBodyButContentLengthResponseHeader()
+    {
+        $response = Block\await($this->browser->get($this->base . 'status/304'), $this->loop);
+        $this->assertEquals('12', $response->getHeaderLine('Content-Length'));
+
+        $body = $response->getBody();
+        $this->assertEquals(0, $body->getSize());
+        $this->assertEquals('', (string) $body);
     }
 
     /**
@@ -595,9 +615,33 @@ class FunctionalBrowserTest extends TestCase
     public function testHeadRequestReceivesResponseWithEmptyBodyButWithContentLengthResponseHeader()
     {
         $response = Block\await($this->browser->head($this->base . 'get'), $this->loop);
-        $this->assertEquals('', (string)$response->getBody());
-        $this->assertEquals(0, $response->getBody()->getSize());
         $this->assertEquals('5', $response->getHeaderLine('Content-Length'));
+
+        $body = $response->getBody();
+        $this->assertEquals(0, $body->getSize());
+        $this->assertEquals('', (string) $body);
+    }
+
+    public function testRequestStreamingGetReceivesResponseWithStreamingBodyAndKnownSize()
+    {
+        $response = Block\await($this->browser->requestStreaming('GET', $this->base . 'get'), $this->loop);
+        $this->assertEquals('5', $response->getHeaderLine('Content-Length'));
+
+        $body = $response->getBody();
+        $this->assertEquals(5, $body->getSize());
+        $this->assertEquals('', (string) $body);
+        $this->assertInstanceOf('React\Stream\ReadableStreamInterface', $body);
+    }
+
+    public function testRequestStreamingGetReceivesResponseWithStreamingBodyAndUnknownSizeFromStreamingEndpoint()
+    {
+        $response = Block\await($this->browser->requestStreaming('GET', $this->base . 'stream/1'), $this->loop);
+        $this->assertFalse($response->hasHeader('Content-Length'));
+
+        $body = $response->getBody();
+        $this->assertNull($body->getSize());
+        $this->assertEquals('', (string) $body);
+        $this->assertInstanceOf('React\Stream\ReadableStreamInterface', $body);
     }
 
     public function testRequestStreamingGetReceivesStreamingResponseBody()

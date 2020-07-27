@@ -7,6 +7,7 @@ use Psr\Http\Message\ResponseInterface;
 use React\EventLoop\LoopInterface;
 use React\Http\Client\Client as HttpClient;
 use React\Http\Client\Response as ResponseStream;
+use React\Http\Message\Response;
 use React\Http\Client\UpgradedResponse;
 use React\Promise\PromiseInterface;
 use React\Promise\Deferred;
@@ -50,13 +51,12 @@ class Sender
      * @param ConnectorInterface|null $connector
      * @return self
      */
-    public static function createFromLoop(LoopInterface $loop, ConnectorInterface $connector = null, MessageFactory $messageFactory)
+    public static function createFromLoop(LoopInterface $loop, ConnectorInterface $connector = null)
     {
-        return new self(new HttpClient($loop, $connector), $messageFactory);
+        return new self(new HttpClient($loop, $connector));
     }
 
     private $http;
-    private $messageFactory;
 
     /**
      * [internal] Instantiate Sender
@@ -64,10 +64,9 @@ class Sender
      * @param HttpClient $http
      * @internal
      */
-    public function __construct(HttpClient $http, MessageFactory $messageFactory)
+    public function __construct(HttpClient $http)
     {
         $this->http = $http;
-        $this->messageFactory = $messageFactory;
     }
 
     /**
@@ -93,16 +92,22 @@ class Sender
             $deferred->reject($error);
         });
 
-        $messageFactory = $this->messageFactory;
-        $requestStream->on('response', function (ResponseStream $responseStream) use ($deferred, $messageFactory, $request) {
+        $requestStream->on('response', function (ResponseStream $responseStream) use ($deferred, $request) {
+            $length = null;
+            $code = $responseStream->getCode();
+            if ($request->getMethod() === 'HEAD' || ($code >= 100 && $code < 200) || $code == 204 || $code == 304) {
+                $length = 0;
+            } elseif ($responseStream->hasHeader('Content-Length')) {
+                $length = (int) $responseStream->getHeaderLine('Content-Length');
+            }
+
             // apply response header values from response stream
-            $deferred->resolve($messageFactory->response(
-                $responseStream->getVersion(),
+            $deferred->resolve(new Response(
                 $responseStream->getCode(),
-                $responseStream->getReasonPhrase(),
                 $responseStream->getHeaders(),
-                $responseStream,
-                $request->getMethod()
+                new ReadableBodyStream($responseStream, $length),
+                $responseStream->getVersion(),
+                $responseStream->getReasonPhrase()
             ));
         });
 

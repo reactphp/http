@@ -3,8 +3,10 @@
 namespace React\Http;
 
 use Psr\Http\Message\ResponseInterface;
+use RingCentral\Psr7\Request;
+use RingCentral\Psr7\Uri;
 use React\EventLoop\LoopInterface;
-use React\Http\Io\MessageFactory;
+use React\Http\Io\ReadableBodyStream;
 use React\Http\Io\Sender;
 use React\Http\Io\Transaction;
 use React\Promise\PromiseInterface;
@@ -19,7 +21,6 @@ use InvalidArgumentException;
 class Browser
 {
     private $transaction;
-    private $messageFactory;
     private $baseUrl;
     private $protocolVersion = '1.1';
 
@@ -59,10 +60,8 @@ class Browser
      */
     public function __construct(LoopInterface $loop, ConnectorInterface $connector = null)
     {
-        $this->messageFactory = new MessageFactory();
         $this->transaction = new Transaction(
-            Sender::createFromLoop($loop, $connector, $this->messageFactory),
-            $this->messageFactory,
+            Sender::createFromLoop($loop, $connector),
             $loop
         );
     }
@@ -548,16 +547,16 @@ class Browser
      * Changes the base URL used to resolve relative URLs to.
      *
      * If you configure a base URL, any requests to relative URLs will be
-     * processed by first prepending this absolute base URL. Note that this
-     * merely prepends the base URL and does *not* resolve any relative path
-     * references (like `../` etc.). This is mostly useful for (RESTful) API
-     * calls where all endpoints (URLs) are located under a common base URL.
+     * processed by first resolving this relative to the given absolute base
+     * URL. This supports resolving relative path references (like `../` etc.).
+     * This is particularly useful for (RESTful) API calls where all endpoints
+     * (URLs) are located under a common base URL.
      *
      * ```php
-     * $browser = $browser->withBase('http://api.example.com/v3');
+     * $browser = $browser->withBase('http://api.example.com/v3/');
      *
-     * // will request http://api.example.com/v3/example
-     * $browser->get('/example')->then(…);
+     * // will request http://api.example.com/v3/users
+     * $browser->get('users')->then(…);
      * ```
      *
      * You can pass in a `null` base URL to return a new instance that does not
@@ -590,7 +589,7 @@ class Browser
             return $browser;
         }
 
-        $browser->baseUrl = $this->messageFactory->uri($baseUrl);
+        $browser->baseUrl = new Uri($baseUrl);
         if (!\in_array($browser->baseUrl->getScheme(), array('http', 'https')) || $browser->baseUrl->getHost() === '') {
             throw new \InvalidArgumentException('Base URL must be absolute');
         }
@@ -714,7 +713,7 @@ class Browser
      * @see self::withFollowRedirects()
      * @see self::withRejectErrorResponse()
      */
-    private function withOptions(array $options)
+    public function withOptions(array $options)
     {
         $browser = clone $this;
         $browser->transaction = $this->transaction->withOptions($options);
@@ -726,17 +725,22 @@ class Browser
      * @param string                         $method
      * @param string                         $url
      * @param array                          $headers
-     * @param string|ReadableStreamInterface $contents
+     * @param string|ReadableStreamInterface $body
      * @return PromiseInterface<ResponseInterface,Exception, ConnectionInterface>
      */
-    private function requestMayBeStreaming($method, $url, array $headers = array(), $contents = '')
+    private function requestMayBeStreaming($method, $url, array $headers = array(), $body = '')
     {
-        $request = $this->messageFactory->request($method, $url, $headers, $contents, $this->protocolVersion);
         if ($this->baseUrl !== null) {
             // ensure we're actually below the base URL
-            $request = $request->withUri($this->messageFactory->expandBase($request->getUri(), $this->baseUrl));
+            $url = Uri::resolve($this->baseUrl, $url);
         }
 
-        return $this->transaction->send($request);
+        if ($body instanceof ReadableStreamInterface) {
+            $body = new ReadableBodyStream($body);
+        }
+
+        return $this->transaction->send(
+            new Request($method, $url, $headers, $body, $this->protocolVersion)
+        );
     }
 }
