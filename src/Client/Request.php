@@ -68,13 +68,17 @@ class Request extends EventEmitter implements WritableStreamInterface
 
                     static $headerParsed = false;
 
-                    if (!$requestData->isUpgradeRequest() || $headerParsed || false == strpos($buffer, "\r\n\r\n")) {
+                    if ($headerParsed || false == strpos($buffer, "\r\n\r\n")) {
                         return $that->handleData($data);
                     }
 
                     $headerParsed = true;
 
                     $response = gPsr\parse_response($buffer);
+
+                    if (!$that->responseIsAnUpgradeResponse($response)) {
+                        return $that->handleData($data);
+                    }
 
                     $streamRef->removeListener('data', $headerParser);
 
@@ -108,6 +112,14 @@ class Request extends EventEmitter implements WritableStreamInterface
         $this->on('close', function() use ($promise) {
             $promise->cancel();
         });
+    }
+
+    protected function responseIsAnUpgradeResponse($response)
+    {
+        return
+            $response->hasHeader('Connection') &&
+            (in_array('upgrade', array_map('strtolower', $response->getHeader('Connection')))) &&
+            (int) $response->getStatusCode() === 101;
     }
 
     public function write($data)
