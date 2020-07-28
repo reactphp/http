@@ -61,31 +61,6 @@ class Request extends EventEmitter implements WritableStreamInterface
                 $streamRef = $stream;
 
                 $stream->on('drain', array($that, 'handleDrain'));
-
-                $buffer = '';
-                $headerParser = function ($data) use (&$headerParser, $buffer, $streamRef, $that) {
-                    $buffer .= $data;
-
-                    static $headerParsed = false;
-
-                    if ($headerParsed || false == strpos($buffer, "\r\n\r\n")) {
-                        return $that->handleData($data);
-                    }
-
-                    $headerParsed = true;
-
-                    $response = gPsr\parse_response($buffer);
-
-                    if ($that->responseIsAnUpgradeResponse($response)) {
-                        $that->stream->removeListener('data', $headerParser);
-
-                        $that->emit('upgrade', array($that->stream, $response, $that));
-                        return;
-                    }
-
-                    return $that->handleData($data);
-                };
-
                 $stream->on('data', array($that, 'handleData'));
                 $stream->on('end', array($that, 'handleEnd'));
                 $stream->on('error', array($that, 'handleError'));
@@ -168,32 +143,19 @@ class Request extends EventEmitter implements WritableStreamInterface
     {
         $this->buffer .= $data;
 
-        static $headerParsed = false;
-
-        if ($headerParsed || false == strpos($this->buffer, "\r\n\r\n")) {
-            return $this->handleEx();
-        }
-
-        $headerParsed = true;
-
-        $response = gPsr\parse_response($this->buffer);
-
-        if ($this->responseIsAnUpgradeResponse($response)) {
-            $this->stream->removeListener('data', array($this, 'handleData'));
-
-            $this->emit('upgrade', array($this->stream, $response, $this));
-            return;
-        }
-
         // buffer until double CRLF (or double LF for compatibility with legacy servers)
-        return $this->handleEx();
-    }
-
-    protected function handleEx()
-    {
         if (false !== strpos($this->buffer, "\r\n\r\n") || false !== strpos($this->buffer, "\n\n")) {
             try {
-                list($response, $bodyChunk) = $this->parseResponse($this->buffer);
+                $psrResponse = gPsr\parse_response($this->buffer);
+
+                if ($this->responseIsAnUpgradeResponse($psrResponse)) {
+                    $this->stream->removeListener('data', array($this, 'handleData'));
+
+                    $this->emit('upgrade', array($this->stream, $psrResponse, $this));
+                    return;
+                }
+
+                list($response, $bodyChunk) = $this->parseResponse($psrResponse);
             } catch (\InvalidArgumentException $exception) {
                 $this->emit('error', array($exception));
             }
@@ -277,9 +239,9 @@ class Request extends EventEmitter implements WritableStreamInterface
         $this->removeAllListeners();
     }
 
-    protected function parseResponse($data)
+    protected function parseResponse($psrResponse)
     {
-        $psrResponse = gPsr\parse_response($data);
+//        $psrResponse = gPsr\parse_response($data);
         $headers = array_map(function($val) {
             if (1 === count($val)) {
                 $val = $val[0];

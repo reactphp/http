@@ -86,9 +86,8 @@ class Sender
         assert(\in_array($request->getProtocolVersion(), array('1.0', '1.1'), true));
 
         $body = $request->getBody();
-        $size = $body->getSize();
 
-        $requestStream = $this->createRequestStream($request);
+        list($size, $requestStream) = $this->createRequestStream($request);
 
         $deferred = new Deferred(function ($_, $reject) use ($requestStream) {
             // close request stream if request is cancelled
