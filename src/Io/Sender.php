@@ -79,9 +79,8 @@ class Sender
     public function send(RequestInterface $request, $upgrade = false)
     {
         $body = $request->getBody();
-        $size = $body->getSize();
 
-        $requestStream = $this->createRequestStream($request);
+        list($size, $requestStream) = $this->createRequestStream($request);
 
         $deferred = new Deferred(function ($_, $reject) use ($requestStream) {
             // close request stream if request is cancelled
@@ -182,6 +181,6 @@ class Sender
             $headers[$name] = implode(', ', $values);
         }
 
-        return $this->http->request($request->getMethod(), (string)$request->getUri(), $headers, $request->getProtocolVersion());
+        return array($size, $this->http->request($request->getMethod(), (string)$request->getUri(), $headers, $request->getProtocolVersion()));
     }
 }
