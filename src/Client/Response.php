@@ -32,11 +32,6 @@ class Response extends EventEmitter implements ReadableStreamInterface
         $this->reasonPhrase = $reasonPhrase;
         $this->headers = $headers;
 
-        if (strtolower($this->getHeaderLine('Transfer-Encoding')) === 'chunked') {
-            $this->stream = new ChunkedStreamDecoder($stream);
-            $this->removeHeader('Transfer-Encoding');
-        }
-
         $this->stream->on('data', array($this, 'handleData'));
         $this->stream->on('error', array($this, 'handleError'));
         $this->stream->on('end', array($this, 'handleEnd'));
@@ -66,16 +61,6 @@ class Response extends EventEmitter implements ReadableStreamInterface
     public function getHeaders()
     {
         return $this->headers;
-    }
-
-    private function removeHeader($name)
-    {
-        foreach ($this->headers as $key => $value) {
-            if (strcasecmp($name, $key) === 0) {
-                unset($this->headers[$key]);
-                break;
-            }
-        }
     }
 
     private function getHeader($name)
