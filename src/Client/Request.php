@@ -63,7 +63,7 @@ class Request extends EventEmitter implements WritableStreamInterface
                 $stream->on('drain', array($that, 'handleDrain'));
 
                 $buffer = '';
-                $headerParser = function ($data) use ($requestData, &$headerParser, $buffer, $streamRef, $that) {
+                $headerParser = function ($data) use (&$headerParser, $buffer, $streamRef, $that) {
                     $buffer .= $data;
 
                     static $headerParsed = false;
@@ -76,17 +76,17 @@ class Request extends EventEmitter implements WritableStreamInterface
 
                     $response = gPsr\parse_response($buffer);
 
-                    if (!$that->responseIsAnUpgradeResponse($response)) {
-                        return $that->handleData($data);
+                    if ($that->responseIsAnUpgradeResponse($response)) {
+                        $that->stream->removeListener('data', $headerParser);
+
+                        $that->emit('upgrade', array($that->stream, $response, $that));
+                        return;
                     }
 
-                    $streamRef->removeListener('data', $headerParser);
-
-                    $that->emit('upgrade', array($streamRef, $response, $that));
+                    return $that->handleData($data);
                 };
 
-                $stream->on('data', $headerParser);
-
+                $stream->on('data', array($that, 'handleData'));
                 $stream->on('end', array($that, 'handleEnd'));
                 $stream->on('error', array($that, 'handleError'));
                 $stream->on('close', array($that, 'handleClose'));
@@ -168,7 +168,29 @@ class Request extends EventEmitter implements WritableStreamInterface
     {
         $this->buffer .= $data;
 
+        static $headerParsed = false;
+
+        if ($headerParsed || false == strpos($this->buffer, "\r\n\r\n")) {
+            return $this->handleEx();
+        }
+
+        $headerParsed = true;
+
+        $response = gPsr\parse_response($this->buffer);
+
+        if ($this->responseIsAnUpgradeResponse($response)) {
+            $this->stream->removeListener('data', array($this, 'handleData'));
+
+            $this->emit('upgrade', array($this->stream, $response, $this));
+            return;
+        }
+
         // buffer until double CRLF (or double LF for compatibility with legacy servers)
+        return $this->handleEx();
+    }
+
+    protected function handleEx()
+    {
         if (false !== strpos($this->buffer, "\r\n\r\n") || false !== strpos($this->buffer, "\n\n")) {
             try {
                 list($response, $bodyChunk) = $this->parseResponse($this->buffer);
