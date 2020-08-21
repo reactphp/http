@@ -3,13 +3,14 @@
 namespace React\Tests\Http\Client;
 
 use Clue\React\Block;
+use Psr\Http\Message\ResponseInterface;
 use React\EventLoop\Factory;
 use React\Http\Client\Client;
-use React\Http\Client\Response;
 use React\Promise\Deferred;
 use React\Promise\Stream;
 use React\Socket\Server;
 use React\Socket\ConnectionInterface;
+use React\Stream\ReadableStreamInterface;
 use React\Tests\Http\TestCase;
 
 class FunctionalIntegrationTest extends TestCase
@@ -69,8 +70,8 @@ class FunctionalIntegrationTest extends TestCase
         $request = $client->request('GET', str_replace('tcp:', 'http:', $server->getAddress()));
 
         $once = $this->expectCallableOnceWith('body');
-        $request->on('response', function (Response $response) use ($once) {
-            $response->on('data', $once);
+        $request->on('response', function (ResponseInterface $response, ReadableStreamInterface $body) use ($once) {
+            $body->on('data', $once);
         });
 
         $promise = Stream\first($request, 'close');
@@ -88,8 +89,8 @@ class FunctionalIntegrationTest extends TestCase
         $request = $client->request('GET', 'http://www.google.com/');
 
         $once = $this->expectCallableOnce();
-        $request->on('response', function (Response $response) use ($once) {
-            $response->on('end', $once);
+        $request->on('response', function (ResponseInterface $response, ReadableStreamInterface $body) use ($once) {
+            $body->on('end', $once);
         });
 
         $promise = Stream\first($request, 'close');
@@ -112,8 +113,8 @@ class FunctionalIntegrationTest extends TestCase
         $request = $client->request('POST', 'https://' . (mt_rand(0, 1) === 0 ? 'eu.' : '') . 'httpbin.org/post', array('Content-Length' => strlen($data)));
 
         $deferred = new Deferred();
-        $request->on('response', function (Response $response) use ($deferred) {
-            $deferred->resolve(Stream\buffer($response));
+        $request->on('response', function (ResponseInterface $response, ReadableStreamInterface $body) use ($deferred) {
+            $deferred->resolve(Stream\buffer($body));
         });
 
         $request->on('error', 'printf');
@@ -145,8 +146,8 @@ class FunctionalIntegrationTest extends TestCase
         $request = $client->request('POST', 'https://httpbin.org/post', array('Content-Length' => strlen($data), 'Content-Type' => 'application/json'));
 
         $deferred = new Deferred();
-        $request->on('response', function (Response $response) use ($deferred) {
-            $deferred->resolve(Stream\buffer($response));
+        $request->on('response', function (ResponseInterface $response, ReadableStreamInterface $body) use ($deferred) {
+            $deferred->resolve(Stream\buffer($body));
         });
 
         $request->on('error', 'printf');

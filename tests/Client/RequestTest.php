@@ -26,10 +26,6 @@ class RequestTest extends TestCase
 
         $this->connector = $this->getMockBuilder('React\Socket\ConnectorInterface')
             ->getMock();
-
-        $this->response = $this->getMockBuilder('React\Http\Client\Response')
-            ->disableOriginalConstructor()
-            ->getMock();
     }
 
     /** @test */
@@ -81,48 +77,13 @@ class RequestTest extends TestCase
             ->method('removeListener')
             ->with('close', $this->identicalTo(array($request, 'handleClose')));
 
-        $response = $this->response;
-
-        $this->stream->expects($this->once())
-            ->method('emit')
-            ->with('data', $this->identicalTo(array('body')));
-
-        $response->expects($this->at(0))
-            ->method('on')
-            ->with('close', $this->anything())
-            ->will($this->returnCallback(function ($event, $cb) use (&$endCallback) {
-                $endCallback = $cb;
-            }));
-
-        $factory = $this->createCallableMock();
-        $factory->expects($this->once())
-            ->method('__invoke')
-            ->with('HTTP', '1.0', '200', 'OK', array('Content-Type' => 'text/plain'))
-            ->will($this->returnValue($response));
-
-        $request->setResponseFactory($factory);
-
-        $handler = $this->createCallableMock();
-        $handler->expects($this->once())
-            ->method('__invoke')
-            ->with($response);
-
-        $request->on('response', $handler);
         $request->on('end', $this->expectCallableNever());
 
-        $handler = $this->createCallableMock();
-        $handler->expects($this->once())
-            ->method('__invoke');
-
-        $request->on('close', $handler);
         $request->end();
 
         $request->handleData("HTTP/1.0 200 OK\r\n");
         $request->handleData("Content-Type: text/plain\r\n");
         $request->handleData("\r\nbody");
-
-        $this->assertNotNull($endCallback);
-        call_user_func($endCallback);
     }
 
     /** @test */
@@ -209,7 +170,7 @@ class RequestTest extends TestCase
     }
 
     /** @test */
-    public function requestShouldEmitErrorIfGuzzleParseThrowsException()
+    public function requestShouldEmitErrorIfRequestParserThrowsException()
     {
         $requestData = new RequestData('GET', 'http://www.example.com');
         $request = new Request($this->connector, $requestData);
@@ -288,12 +249,6 @@ class RequestTest extends TestCase
             ->method('write')
             ->with($this->matchesRegularExpression("#^POST / HTTP/1\.0\r\nHost: www.example.com\r\nUser-Agent:.*\r\n\r\nsome post data$#"));
 
-        $factory = $this->createCallableMock();
-        $factory->expects($this->once())
-            ->method('__invoke')
-            ->will($this->returnValue($this->response));
-
-        $request->setResponseFactory($factory);
         $request->end('some post data');
 
         $request->handleData("HTTP/1.0 200 OK\r\n");
@@ -322,13 +277,6 @@ class RequestTest extends TestCase
             ->method('write')
             ->with($this->identicalTo("data"));
 
-        $factory = $this->createCallableMock();
-        $factory->expects($this->once())
-            ->method('__invoke')
-            ->will($this->returnValue($this->response));
-
-        $request->setResponseFactory($factory);
-
         $request->write("some");
         $request->write("post");
         $request->end("data");
@@ -355,13 +303,6 @@ class RequestTest extends TestCase
             ->expects($this->at(6))
             ->method('write')
             ->with($this->identicalTo("data"));
-
-        $factory = $this->createCallableMock();
-        $factory->expects($this->once())
-            ->method('__invoke')
-            ->will($this->returnValue($this->response));
-
-        $request->setResponseFactory($factory);
 
         $this->assertFalse($request->write("some"));
         $this->assertFalse($request->write("post"));
@@ -402,13 +343,6 @@ class RequestTest extends TestCase
             ->method('write')
             ->with($this->identicalTo("data"));
 
-        $factory = $this->createCallableMock();
-        $factory->expects($this->once())
-            ->method('__invoke')
-            ->will($this->returnValue($this->response));
-
-        $request->setResponseFactory($factory);
-
         $this->assertFalse($request->write("some"));
         $this->assertFalse($request->write("post"));
 
@@ -447,16 +381,9 @@ class RequestTest extends TestCase
             ->method('write')
             ->with($this->identicalTo("data"));
 
-        $factory = $this->createCallableMock();
-        $factory->expects($this->once())
-            ->method('__invoke')
-            ->will($this->returnValue($this->response));
-
         $loop = $this
             ->getMockBuilder('React\EventLoop\LoopInterface')
             ->getMock();
-
-        $request->setResponseFactory($factory);
 
         $stream = fopen('php://memory', 'r+');
         $stream = new DuplexResourceStream($stream, $loop);
@@ -573,43 +500,6 @@ class RequestTest extends TestCase
     }
 
     /** @test */
-    public function requestShouldRelayErrorEventsFromResponse()
-    {
-        $requestData = new RequestData('GET', 'http://www.example.com');
-        $request = new Request($this->connector, $requestData);
-
-        $this->successfulConnectionMock();
-
-        $response = $this->response;
-
-        $response->expects($this->at(0))
-            ->method('on')
-            ->with('close', $this->anything());
-        $response->expects($this->at(1))
-            ->method('on')
-            ->with('error', $this->anything())
-            ->will($this->returnCallback(function ($event, $cb) use (&$errorCallback) {
-                $errorCallback = $cb;
-            }));
-
-        $factory = $this->createCallableMock();
-        $factory->expects($this->once())
-            ->method('__invoke')
-            ->with('HTTP', '1.0', '200', 'OK', array('Content-Type' => 'text/plain'))
-            ->will($this->returnValue($response));
-
-        $request->setResponseFactory($factory);
-        $request->end();
-
-        $request->handleData("HTTP/1.0 200 OK\r\n");
-        $request->handleData("Content-Type: text/plain\r\n");
-        $request->handleData("\r\nbody");
-
-        $this->assertNotNull($errorCallback);
-        call_user_func($errorCallback, new \Exception('test'));
-    }
-
-    /** @test */
     public function requestShouldRemoveAllListenerAfterClosed()
     {
         $requestData = new RequestData('GET', 'http://www.example.com');
@@ -660,25 +550,12 @@ class RequestTest extends TestCase
 
         $this->successfulConnectionMock();
 
-        $response = $this->response;
+        $response = null;
+        $request->on('response', $this->expectCallableOnce());
+        $request->on('response', function ($value) use (&$response) {
+            $response = $value;
+        });
 
-        $response->expects($this->at(0))
-        ->method('on')
-        ->with('close', $this->anything());
-        $response->expects($this->at(1))
-        ->method('on')
-        ->with('error', $this->anything())
-        ->will($this->returnCallback(function ($event, $cb) use (&$errorCallback) {
-            $errorCallback = $cb;
-        }));
-
-        $factory = $this->createCallableMock();
-        $factory->expects($this->once())
-        ->method('__invoke')
-        ->with('HTTP', '1.0', '200', 'OK', array('Content-Type' => 'text/plain', 'X-Xss-Protection' => '1; mode=block', 'Cache-Control' => 'public, must-revalidate, max-age=0'))
-        ->will($this->returnValue($response));
-
-        $request->setResponseFactory($factory);
         $request->end();
 
         $request->handleData("HTTP/1.0 200 OK\r\n");
@@ -687,28 +564,13 @@ class RequestTest extends TestCase
         $request->handleData("Cache-Control:public, must-revalidate, max-age=0\r\n");
         $request->handleData("\r\nbody");
 
-        $this->assertNotNull($errorCallback);
-        call_user_func($errorCallback, new \Exception('test'));
-    }
-
-    /** @test */
-    public function chunkedStreamDecoder()
-    {
-        $requestData = new RequestData('GET', 'http://www.example.com');
-        $request = new Request($this->connector, $requestData);
-
-        $this->successfulConnectionMock();
-
-        $request->end();
-
-        $this->stream->expects($this->once())
-            ->method('emit')
-            ->with('data', array("1\r\nb\r"));
-
-        $request->handleData("HTTP/1.0 200 OK\r\n");
-        $request->handleData("Transfer-Encoding: chunked\r\n");
-        $request->handleData("\r\n1\r\nb\r");
-        $request->handleData("\n3\t\nody\r\n0\t\n\r\n");
-
+        /** @var \Psr\Http\Message\ResponseInterface $response */
+        $this->assertInstanceOf('Psr\Http\Message\ResponseInterface', $response);
+        $this->assertEquals('1.0', $response->getProtocolVersion());
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals('OK', $response->getReasonPhrase());
+        $this->assertEquals('text/plain', $response->getHeaderLine('Content-Type'));
+        $this->assertEquals('1; mode=block', $response->getHeaderLine('X-Xss-Protection'));
+        $this->assertEquals('public, must-revalidate, max-age=0', $response->getHeaderLine('Cache-Control'));
     }
 }
