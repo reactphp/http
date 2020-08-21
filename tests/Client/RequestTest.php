@@ -86,28 +86,30 @@ class RequestTest extends TestCase
         $request->handleData("\r\nbody");
     }
 
+    /**
+     * @test
+     */
+    public function requestShouldConnectViaTlsIfUrlUsesHttpsScheme()
+    {
+        $requestData = new RequestData('GET', 'https://www.example.com');
+        $request = new Request($this->connector, $requestData);
+
+        $this->connector->expects($this->once())->method('connect')->with('tls://www.example.com:443')->willReturn(new Promise(function () { }));
+
+        $request->end();
+    }
+
     /** @test */
     public function requestShouldEmitErrorIfConnectionFails()
     {
         $requestData = new RequestData('GET', 'http://www.example.com');
         $request = new Request($this->connector, $requestData);
 
-        $this->rejectedConnectionMock();
+        $this->connector->expects($this->once())->method('connect')->willReturn(\React\Promise\reject(new \RuntimeException()));
 
-        $handler = $this->createCallableMock();
-        $handler->expects($this->once())
-            ->method('__invoke')
-            ->with(
-                $this->isInstanceOf('RuntimeException')
-            );
+        $request->on('error', $this->expectCallableOnceWith($this->isInstanceOf('RuntimeException')));
 
-        $request->on('error', $handler);
-
-        $handler = $this->createCallableMock();
-        $handler->expects($this->once())
-            ->method('__invoke');
-
-        $request->on('close', $handler);
+        $request->on('close', $this->expectCallableOnce());
         $request->on('end', $this->expectCallableNever());
 
         $request->end();
@@ -121,20 +123,9 @@ class RequestTest extends TestCase
 
         $this->successfulConnectionMock();
 
-        $handler = $this->createCallableMock();
-        $handler->expects($this->once())
-            ->method('__invoke')
-            ->with(
-                $this->isInstanceOf('RuntimeException')
-            );
+        $request->on('error', $this->expectCallableOnceWith($this->isInstanceOf('RuntimeException')));
 
-        $request->on('error', $handler);
-
-        $handler = $this->createCallableMock();
-        $handler->expects($this->once())
-            ->method('__invoke');
-
-        $request->on('close', $handler);
+        $request->on('close', $this->expectCallableOnce());
         $request->on('end', $this->expectCallableNever());
 
         $request->end();
@@ -149,20 +140,9 @@ class RequestTest extends TestCase
 
         $this->successfulConnectionMock();
 
-        $handler = $this->createCallableMock();
-        $handler->expects($this->once())
-            ->method('__invoke')
-            ->with(
-                $this->isInstanceOf('Exception')
-            );
+        $request->on('error', $this->expectCallableOnceWith($this->isInstanceOf('Exception')));
 
-        $request->on('error', $handler);
-
-        $handler = $this->createCallableMock();
-        $handler->expects($this->once())
-            ->method('__invoke');
-
-        $request->on('close', $handler);
+        $request->on('close', $this->expectCallableOnce());
         $request->on('end', $this->expectCallableNever());
 
         $request->end();
@@ -177,14 +157,7 @@ class RequestTest extends TestCase
 
         $this->successfulConnectionMock();
 
-        $handler = $this->createCallableMock();
-        $handler->expects($this->once())
-            ->method('__invoke')
-            ->with(
-                $this->isInstanceOf('\InvalidArgumentException')
-            );
-
-        $request->on('error', $handler);
+        $request->on('error', $this->expectCallableOnceWith($this->isInstanceOf('InvalidArgumentException')));
 
         $request->end();
         $request->handleData("\r\n\r\n");
@@ -198,14 +171,7 @@ class RequestTest extends TestCase
         $requestData = new RequestData('GET', 'ftp://www.example.com');
         $request = new Request($this->connector, $requestData);
 
-        $handler = $this->createCallableMock();
-        $handler->expects($this->once())
-            ->method('__invoke')
-            ->with(
-                $this->isInstanceOf('\InvalidArgumentException')
-            );
-
-        $request->on('error', $handler);
+        $request->on('error', $this->expectCallableOnceWith($this->isInstanceOf('InvalidArgumentException')));
 
         $this->connector->expects($this->never())
             ->method('connect');
@@ -221,14 +187,7 @@ class RequestTest extends TestCase
         $requestData = new RequestData('GET', 'www.example.com');
         $request = new Request($this->connector, $requestData);
 
-        $handler = $this->createCallableMock();
-        $handler->expects($this->once())
-            ->method('__invoke')
-            ->with(
-                $this->isInstanceOf('\InvalidArgumentException')
-            );
-
-        $request->on('error', $handler);
+        $request->on('error', $this->expectCallableOnceWith($this->isInstanceOf('InvalidArgumentException')));
 
         $this->connector->expects($this->never())
             ->method('connect');
@@ -531,15 +490,6 @@ class RequestTest extends TestCase
         return function () use ($deferred, $stream) {
             $deferred->resolve($stream);
         };
-    }
-
-    private function rejectedConnectionMock()
-    {
-        $this->connector
-            ->expects($this->once())
-            ->method('connect')
-            ->with('www.example.com:80')
-            ->will($this->returnValue(new RejectedPromise(new \RuntimeException())));
     }
 
     /** @test */
