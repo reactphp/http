@@ -433,7 +433,7 @@ class Browser
      * You can pass in the maximum number of redirects to follow:
      *
      * ```php
-     * $new = $browser->withFollowRedirects(5);
+     * $browser = $browser->withFollowRedirects(5);
      * ```
      *
      * The request will automatically be rejected when the number of redirects
@@ -604,9 +604,9 @@ class Browser
      * can use this method:
      *
      * ```php
-     * $newBrowser = $browser->withProtocolVersion('1.0');
+     * $browser = $browser->withProtocolVersion('1.0');
      *
-     * $newBrowser->get($url)->then(…);
+     * $browser->get($url)->then(…);
      * ```
      *
      * Notice that the [`Browser`](#browser) is an immutable object, i.e. this

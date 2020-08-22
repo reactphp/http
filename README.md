@@ -2185,13 +2185,13 @@ given timeout value applied.
 
 #### withFollowRedirects()
 
-The `withTimeout(bool|int $$followRedirects): Browser` method can be used to
+The `withTimeout(bool|int $followRedirects): Browser` method can be used to
 change how HTTP redirects will be followed.
 
 You can pass in the maximum number of redirects to follow:
 
 ```php
-$new = $browser->withFollowRedirects(5);
+$browser = $browser->withFollowRedirects(5);
 ```
 
 The request will automatically be rejected when the number of redirects
@@ -2326,9 +2326,9 @@ If you want to explicitly use the legacy HTTP/1.0 protocol version, you
 can use this method:
 
 ```php
-$newBrowser = $browser->withProtocolVersion('1.0');
+$browser = $browser->withProtocolVersion('1.0');
 
-$newBrowser->get($url)->then(…);
+$browser->get($url)->then(…);
 ```
 
 Notice that the [`Browser`](#browser) is an immutable object, i.e. this
@@ -2337,7 +2337,7 @@ new protocol version applied.
 
 #### withResponseBuffer()
 
-The `withRespomseBuffer(int $maximumSize): Browser` method can be used to
+The `withResponseBuffer(int $maximumSize): Browser` method can be used to
 change the maximum size for buffering a response body.
 
 The preferred way to send an HTTP request is by using the above
