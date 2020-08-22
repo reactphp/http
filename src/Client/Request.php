@@ -89,6 +89,14 @@ class Request extends EventEmitter implements WritableStreamInterface
         });
     }
 
+    protected function responseIsAnUpgradeResponse($response)
+    {
+        return
+            $response->hasHeader('Connection') &&
+            (in_array('upgrade', array_map('strtolower', $response->getHeader('Connection')))) &&
+            (int) $response->getStatusCode() === 101;
+    }
+
     public function write($data)
     {
         if (!$this->isWritable()) {
@@ -138,7 +146,16 @@ class Request extends EventEmitter implements WritableStreamInterface
         // buffer until double CRLF (or double LF for compatibility with legacy servers)
         if (false !== strpos($this->buffer, "\r\n\r\n") || false !== strpos($this->buffer, "\n\n")) {
             try {
-                list($response, $bodyChunk) = $this->parseResponse($this->buffer);
+                $psrResponse = gPsr\parse_response($this->buffer);
+
+                if ($this->responseIsAnUpgradeResponse($psrResponse)) {
+                    $this->stream->removeListener('data', array($this, 'handleData'));
+
+                    $this->emit('upgrade', array($this->stream, $psrResponse, $this));
+                    return;
+                }
+
+                list($response, $bodyChunk) = $this->parseResponse($psrResponse);
             } catch (\InvalidArgumentException $exception) {
                 $this->emit('error', array($exception));
             }
@@ -222,9 +239,8 @@ class Request extends EventEmitter implements WritableStreamInterface
         $this->removeAllListeners();
     }
 
-    protected function parseResponse($data)
+    protected function parseResponse($psrResponse)
     {
-        $psrResponse = gPsr\parse_response($data);
         $headers = array_map(function($val) {
             if (1 === count($val)) {
                 $val = $val[0];
@@ -291,5 +307,10 @@ class Request extends EventEmitter implements WritableStreamInterface
         }
 
         return $factory;
+    }
+
+    public function getRequestData()
+    {
+        return $this->requestData;
     }
 }

@@ -10,6 +10,7 @@ use React\Http\Io\ReadableBodyStream;
 use React\Http\Io\Sender;
 use React\Http\Io\Transaction;
 use React\Promise\PromiseInterface;
+use React\Socket\ConnectionInterface;
 use React\Socket\ConnectorInterface;
 use React\Stream\ReadableStreamInterface;
 use InvalidArgumentException;
@@ -707,7 +708,7 @@ class Browser
      * @see self::withFollowRedirects()
      * @see self::withRejectErrorResponse()
      */
-    private function withOptions(array $options)
+    public function withOptions(array $options)
     {
         $browser = clone $this;
         $browser->transaction = $this->transaction->withOptions($options);
@@ -720,7 +721,7 @@ class Browser
      * @param string                         $url
      * @param array                          $headers
      * @param string|ReadableStreamInterface $body
-     * @return PromiseInterface<ResponseInterface,Exception>
+     * @return PromiseInterface<ResponseInterface,Exception, ConnectionInterface>
      */
     private function requestMayBeStreaming($method, $url, array $headers = array(), $body = '')
     {

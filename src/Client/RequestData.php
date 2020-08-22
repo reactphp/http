@@ -125,4 +125,12 @@ class RequestData
 
         return array();
     }
+
+    /**
+     * @return array
+     */
+    public function getHeaders()
+    {
+        return $this->headers;
+    }
 }
