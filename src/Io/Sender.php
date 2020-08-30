@@ -3,10 +3,9 @@
 namespace React\Http\Io;
 
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 use React\EventLoop\LoopInterface;
 use React\Http\Client\Client as HttpClient;
-use React\Http\Client\Response as ResponseStream;
-use React\Http\Message\Response;
 use React\Promise\PromiseInterface;
 use React\Promise\Deferred;
 use React\Socket\ConnectorInterface;
@@ -108,26 +107,18 @@ class Sender
             $deferred->reject($error);
         });
 
-        $requestStream->on('response', function (ResponseStream $responseStream) use ($deferred, $request) {
+        $requestStream->on('response', function (ResponseInterface $response, ReadableStreamInterface $body) use ($deferred, $request) {
             $length = null;
-            $body = $responseStream;
-            $code = $responseStream->getCode();
+            $code = $response->getStatusCode();
             if ($request->getMethod() === 'HEAD' || ($code >= 100 && $code < 200) || $code == 204 || $code == 304) {
                 $length = 0;
-            } elseif (\strtolower($responseStream->getHeaderLine('Transfer-Encoding')) === 'chunked') {
+            } elseif (\strtolower($response->getHeaderLine('Transfer-Encoding')) === 'chunked') {
                 $body = new ChunkedDecoder($body);
-            } elseif ($responseStream->hasHeader('Content-Length')) {
-                $length = (int) $responseStream->getHeaderLine('Content-Length');
+            } elseif ($response->hasHeader('Content-Length')) {
+                $length = (int) $response->getHeaderLine('Content-Length');
             }
 
-            // apply response header values from response stream
-            $deferred->resolve(new Response(
-                $responseStream->getCode(),
-                $responseStream->getHeaders(),
-                new ReadableBodyStream($body, $length),
-                $responseStream->getVersion(),
-                $responseStream->getReasonPhrase()
-            ));
+            $deferred->resolve($response->withBody(new ReadableBodyStream($body, $length)));
         });
 
         if ($body instanceof ReadableStreamInterface) {
