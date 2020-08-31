@@ -32,8 +32,8 @@
         "react/event-loop": "^1.0 || ^0.5",
         "react/promise": "^2.3 || ^1.2.1",
         "react/promise-stream": "^1.1",
-        "react/socket": "^1.1",
-        "react/stream": "^1.0 || ^0.7.5",
+        "react/socket": "^1.6",
+        "react/stream": "^1.1",
         "ringcentral/psr7": "^1.2"
     },
     "require-dev": {
