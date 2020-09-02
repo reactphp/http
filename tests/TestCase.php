@@ -41,13 +41,29 @@ class TestCase extends BaseTestCase
     {
         $mock = $this->createCallableMock();
 
-        for ($i = 0; $i < $numberOfCalls; $i++) {
-            $mock
-                ->expects($this->at($i))
-                ->method('__invoke')
-                ->with($this->equalTo($with[$i]));
+        if($numberOfCalls == 2){
+            $mock->expects($this->exactly($numberOfCalls))->method('__invoke')->withConsecutive(
+                array($this->equalTo($with[0])),
+                array($this->equalTo($with[1]))
+            );
         }
 
+        if($numberOfCalls == 3){
+            $mock->expects($this->exactly($numberOfCalls))->method('__invoke')->withConsecutive(
+                array($this->equalTo($with[0])),
+                array($this->equalTo($with[1])),
+                array($this->equalTo($with[2]))
+            );
+        }
+
+        if($numberOfCalls == 4){
+            $mock->expects($this->exactly($numberOfCalls))->method('__invoke')->withConsecutive(
+                array($this->equalTo($with[0])),
+                array($this->equalTo($with[1])),
+                array($this->equalTo($with[2])),
+                array($this->equalTo($with[3]))
+            );
+        }
         return $mock;
     }
 
