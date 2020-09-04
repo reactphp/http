@@ -36,46 +36,21 @@ class RequestTest extends TestCase
 
         $this->successfulConnectionMock();
 
-        $this->stream
-            ->expects($this->at(0))
-            ->method('on')
-            ->with('drain', $this->identicalTo(array($request, 'handleDrain')));
-        $this->stream
-            ->expects($this->at(1))
-            ->method('on')
-            ->with('data', $this->identicalTo(array($request, 'handleData')));
-        $this->stream
-            ->expects($this->at(2))
-            ->method('on')
-            ->with('end', $this->identicalTo(array($request, 'handleEnd')));
-        $this->stream
-            ->expects($this->at(3))
-            ->method('on')
-            ->with('error', $this->identicalTo(array($request, 'handleError')));
-        $this->stream
-            ->expects($this->at(4))
-            ->method('on')
-            ->with('close', $this->identicalTo(array($request, 'handleClose')));
-        $this->stream
-            ->expects($this->at(6))
-            ->method('removeListener')
-            ->with('drain', $this->identicalTo(array($request, 'handleDrain')));
-        $this->stream
-            ->expects($this->at(7))
-            ->method('removeListener')
-            ->with('data', $this->identicalTo(array($request, 'handleData')));
-        $this->stream
-            ->expects($this->at(8))
-            ->method('removeListener')
-            ->with('end', $this->identicalTo(array($request, 'handleEnd')));
-        $this->stream
-            ->expects($this->at(9))
-            ->method('removeListener')
-            ->with('error', $this->identicalTo(array($request, 'handleError')));
-        $this->stream
-            ->expects($this->at(10))
-            ->method('removeListener')
-            ->with('close', $this->identicalTo(array($request, 'handleClose')));
+        $this->stream->expects($this->exactly(6))->method('on')->withConsecutive(
+            array('drain', $this->identicalTo(array($request, 'handleDrain'))),
+            array('data', $this->identicalTo(array($request, 'handleData'))),
+            array('end', $this->identicalTo(array($request, 'handleEnd'))),
+            array('error', $this->identicalTo(array($request, 'handleError'))),
+            array('close', $this->identicalTo(array($request, 'handleClose')))
+        );
+
+        $this->stream->expects($this->exactly(5))->method('removeListener')->withConsecutive(
+            array('drain', $this->identicalTo(array($request, 'handleDrain'))),
+            array('data', $this->identicalTo(array($request, 'handleData'))),
+            array('end', $this->identicalTo(array($request, 'handleEnd'))),
+            array('error', $this->identicalTo(array($request, 'handleError'))),
+            array('close', $this->identicalTo(array($request, 'handleClose')))
+        );
 
         $request->on('end', $this->expectCallableNever());
 
@@ -223,18 +198,11 @@ class RequestTest extends TestCase
 
         $this->successfulConnectionMock();
 
-        $this->stream
-            ->expects($this->at(5))
-            ->method('write')
-            ->with($this->matchesRegularExpression("#^POST / HTTP/1\.0\r\nHost: www.example.com\r\nUser-Agent:.*\r\n\r\nsome$#"));
-        $this->stream
-            ->expects($this->at(6))
-            ->method('write')
-            ->with($this->identicalTo("post"));
-        $this->stream
-            ->expects($this->at(7))
-            ->method('write')
-            ->with($this->identicalTo("data"));
+        $this->stream->expects($this->exactly(3))->method('write')->withConsecutive(
+            array($this->matchesRegularExpression("#^POST / HTTP/1\.0\r\nHost: www.example.com\r\nUser-Agent:.*\r\n\r\nsome$#")),
+            array($this->identicalTo("post")),
+            array($this->identicalTo("data"))
+        );
 
         $request->write("some");
         $request->write("post");
@@ -253,15 +221,12 @@ class RequestTest extends TestCase
 
         $resolveConnection = $this->successfulAsyncConnectionMock();
 
-        $this->stream
-            ->expects($this->at(5))
-            ->method('write')
-            ->with($this->matchesRegularExpression("#^POST / HTTP/1\.0\r\nHost: www.example.com\r\nUser-Agent:.*\r\n\r\nsomepost$#"))
-            ->willReturn(true);
-        $this->stream
-            ->expects($this->at(6))
-            ->method('write')
-            ->with($this->identicalTo("data"));
+        $this->stream->expects($this->exactly(2))->method('write')->withConsecutive(
+            array($this->matchesRegularExpression("#^POST / HTTP/1\.0\r\nHost: www.example.com\r\nUser-Agent:.*\r\n\r\nsomepost$#")),
+            array($this->identicalTo("data"))
+        )->willReturn(
+            true
+        );
 
         $this->assertFalse($request->write("some"));
         $this->assertFalse($request->write("post"));
@@ -292,15 +257,12 @@ class RequestTest extends TestCase
 
         $resolveConnection = $this->successfulAsyncConnectionMock();
 
-        $this->stream
-            ->expects($this->at(0))
-            ->method('write')
-            ->with($this->matchesRegularExpression("#^POST / HTTP/1\.0\r\nHost: www.example.com\r\nUser-Agent:.*\r\n\r\nsomepost$#"))
-            ->willReturn(false);
-        $this->stream
-            ->expects($this->at(1))
-            ->method('write')
-            ->with($this->identicalTo("data"));
+        $this->stream->expects($this->exactly(2))->method('write')->withConsecutive(
+            array($this->matchesRegularExpression("#^POST / HTTP/1\.0\r\nHost: www.example.com\r\nUser-Agent:.*\r\n\r\nsomepost$#")),
+            array($this->identicalTo("data"))
+        )->willReturn(
+            false
+        );
 
         $this->assertFalse($request->write("some"));
         $this->assertFalse($request->write("post"));
@@ -327,18 +289,11 @@ class RequestTest extends TestCase
 
         $this->successfulConnectionMock();
 
-        $this->stream
-            ->expects($this->at(5))
-            ->method('write')
-            ->with($this->matchesRegularExpression("#^POST / HTTP/1\.0\r\nHost: www.example.com\r\nUser-Agent:.*\r\n\r\nsome$#"));
-        $this->stream
-            ->expects($this->at(6))
-            ->method('write')
-            ->with($this->identicalTo("post"));
-        $this->stream
-            ->expects($this->at(7))
-            ->method('write')
-            ->with($this->identicalTo("data"));
+        $this->stream->expects($this->exactly(3))->method('write')->withConsecutive(
+            array($this->matchesRegularExpression("#^POST / HTTP/1\.0\r\nHost: www.example.com\r\nUser-Agent:.*\r\n\r\nsome$#")),
+            array($this->identicalTo("post")),
+            array($this->identicalTo("data"))
+        );
 
         $loop = $this
             ->getMockBuilder('React\EventLoop\LoopInterface')
