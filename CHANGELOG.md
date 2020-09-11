@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.1.0 (2020-09-11)
+
+*   Feature: Support upcoming PHP 8 release, update to reactphp/socket v1.6 and adjust type checks for invalid chunk headers.
+    (#391 by @clue)
+
+*   Feature: Consistently resolve base URL according to HTTP specs.
+    (#379 by @clue)
+
+*   Feature / Fix: Expose `Transfer-Encoding: chunked` response header and fix chunked responses for `HEAD` requests.
+    (#381 by @clue)
+
+*   Internal refactoring to remove unneeded `MessageFactory` and `Response` classes.
+    (#380 and #389 by @clue)
+
+*   Minor documentation improvements and improve test suite, update to support PHPUnit 9.3.
+    (#385 by @clue and #393 by @SimonFrings)
+
 ## 1.0.0 (2020-07-11)
 
 A major new feature release, see [**release announcement**](https://clue.engineering/2020/announcing-reactphp-http).
@@ -84,7 +101,7 @@ minutes. See below for more details:
 
     This improves default concurrency to 1024 requests and caps the default request buffer at 64K.
     The previous defaults resulted in just 4 concurrent requests with a request buffer of 8M.
-    See [`Server`](../README.md#server) for details on how to override these defaults.
+    See [`Server`](README.md#server) for details on how to override these defaults.
 
 *   Feature: Expose ReactPHP in `User-Agent` client-side request header and in `Server` server-side response header.
     (#374 by @clue)
