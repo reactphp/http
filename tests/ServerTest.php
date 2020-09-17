@@ -110,6 +110,35 @@ final class ServerTest extends TestCase
         $this->assertSame('beforeokafter', $called);
     }
 
+    public function testPostFormData()
+    {
+        $loop = Factory::create();
+        $deferred = new Deferred();
+        $server = new Server($loop, function (ServerRequestInterface $request) use ($deferred) {
+            $deferred->resolve($request);
+        });
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+        $this->connection->emit('data', array("POST / HTTP/1.0\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: 7\r\n\r\nfoo=bar"));
+
+        $request = Block\await($deferred->promise(), $loop);
+        assert($request instanceof ServerRequestInterface);
+
+        $form = $request->getParsedBody();
+
+        $this->assertTrue(isset($form['foo']));
+        $this->assertEquals('bar', $form['foo']);
+
+        $this->assertEquals(array(), $request->getUploadedFiles());
+
+        $body = $request->getBody();
+
+        $this->assertSame(7, $body->getSize());
+        $this->assertSame(7, $body->tell());
+        $this->assertSame('foo=bar', (string) $body);
+    }
+
     public function testPostFileUpload()
     {
         $loop = Factory::create();
@@ -132,11 +161,14 @@ final class ServerTest extends TestCase
             }
         });
 
-        $parsedRequest = Block\await($deferred->promise(), $loop);
-        $this->assertNotEmpty($parsedRequest->getUploadedFiles());
-        $this->assertEmpty($parsedRequest->getParsedBody());
+        $request = Block\await($deferred->promise(), $loop);
+        assert($request instanceof ServerRequestInterface);
 
-        $files = $parsedRequest->getUploadedFiles();
+        $this->assertEmpty($request->getParsedBody());
+
+        $this->assertNotEmpty($request->getUploadedFiles());
+
+        $files = $request->getUploadedFiles();
 
         $this->assertTrue(isset($files['file']));
         $this->assertCount(1, $files);
@@ -144,6 +176,37 @@ final class ServerTest extends TestCase
         $this->assertSame('hello.txt', $files['file']->getClientFilename());
         $this->assertSame('text/plain', $files['file']->getClientMediaType());
         $this->assertSame("hello\r\n", (string)$files['file']->getStream());
+
+        $body = $request->getBody();
+
+        $this->assertSame(220, $body->getSize());
+        $this->assertSame(220, $body->tell());
+    }
+
+    public function testPostJsonWillNotBeParsedByDefault()
+    {
+        $loop = Factory::create();
+        $deferred = new Deferred();
+        $server = new Server($loop, function (ServerRequestInterface $request) use ($deferred) {
+            $deferred->resolve($request);
+        });
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+        $this->connection->emit('data', array("POST / HTTP/1.0\r\nContent-Type: application/json\r\nContent-Length: 6\r\n\r\n[true]"));
+
+        $request = Block\await($deferred->promise(), $loop);
+        assert($request instanceof ServerRequestInterface);
+
+        $this->assertNull($request->getParsedBody());
+
+        $this->assertSame(array(), $request->getUploadedFiles());
+
+        $body = $request->getBody();
+
+        $this->assertSame(6, $body->getSize());
+        $this->assertSame(0, $body->tell());
+        $this->assertSame('[true]', (string) $body);
     }
 
     public function testServerReceivesBufferedRequestByDefault()
