@@ -2,10 +2,11 @@
 
 namespace React\Http\Message;
 
+use Psr\Http\Message\StreamInterface;
+use React\Http\Io\BufferedBody;
 use React\Http\Io\HttpBodyStream;
 use React\Stream\ReadableStreamInterface;
 use RingCentral\Psr7\Response as Psr7Response;
-use Psr\Http\Message\StreamInterface;
 
 /**
  * Represents an outgoing server response message.
@@ -48,9 +49,11 @@ final class Response extends Psr7Response
         $version = '1.1',
         $reason = null
     ) {
-        if ($body instanceof ReadableStreamInterface && !$body instanceof StreamInterface) {
+        if (\is_string($body)) {
+            $body = new BufferedBody($body);
+        } elseif ($body instanceof ReadableStreamInterface && !$body instanceof StreamInterface) {
             $body = new HttpBodyStream($body, null);
-        } elseif (!\is_string($body) && !$body instanceof StreamInterface) {
+        } elseif (!$body instanceof StreamInterface) {
             throw new \InvalidArgumentException('Invalid response body given');
         }
 

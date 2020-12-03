@@ -15,6 +15,9 @@ class BufferedBody implements StreamInterface
     private $position = 0;
     private $closed = false;
 
+    /**
+     * @param string $buffer
+     */
     public function __construct($buffer)
     {
         $this->buffer = $buffer;
