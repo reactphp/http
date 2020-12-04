@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.0 (2020-12-04)
+
+*   Feature: Keep request body in memory also after consuming request body.
+    (#395 by @clue)
+
+    This means consumers can now always access the complete request body as
+    detailed in the documentation. This allows building custom parsers and more
+    advanced processing models without having to mess with the default parsers.
+
 ## 1.1.0 (2020-09-11)
 
 *   Feature: Support upcoming PHP 8 release, update to reactphp/socket v1.6 and adjust type checks for invalid chunk headers.

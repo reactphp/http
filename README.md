@@ -287,7 +287,7 @@ header. If the server requires authentication, if may return a `401` (Unauthoriz
 status code which will reject the request by default (see also the
 [`withRejectErrorResponse()` method](#withrejecterrorresponse) below).
 
-In order to pass authentication details, you can simple pass the username and
+In order to pass authentication details, you can simply pass the username and
 password as part of the request URL like this:
 
 ```php
@@ -2185,7 +2185,7 @@ given timeout value applied.
 
 #### withFollowRedirects()
 
-The `withTimeout(bool|int $followRedirects): Browser` method can be used to
+The `withFollowRedirects(bool|int $followRedirects): Browser` method can be used to
 change how HTTP redirects will be followed.
 
 You can pass in the maximum number of redirects to follow:
@@ -2732,7 +2732,7 @@ This project follows [SemVer](https://semver.org/).
 This will install the latest supported version:
 
 ```bash
-$ composer require react/http:^1.1
+$ composer require react/http:^1.2
 ```
 
 See also the [CHANGELOG](CHANGELOG.md) for details about version upgrades.
