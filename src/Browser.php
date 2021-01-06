@@ -15,7 +15,7 @@ use React\Stream\ReadableStreamInterface;
 use InvalidArgumentException;
 
 /**
- * @final This class is final and shouldn't be extended as it is likely to be marked final in a future relase.
+ * @final This class is final and shouldn't be extended as it is likely to be marked final in a future release.
  */
 class Browser
 {
@@ -302,7 +302,7 @@ class Browser
      * @param string                         $url      URL for the request
      * @param array                          $headers  Additional request headers
      * @param string|ReadableStreamInterface $body     HTTP request body contents
-     * @return PromiseInterface<ResponseInterface,Exception>
+     * @return PromiseInterface<ResponseInterface,\Exception>
      */
     public function request($method, $url, array $headers = array(), $body = '')
     {
@@ -373,11 +373,11 @@ class Browser
      * @param string                         $url      URL for the request
      * @param array                          $headers  Additional request headers
      * @param string|ReadableStreamInterface $body     HTTP request body contents
-     * @return PromiseInterface<ResponseInterface,Exception>
+     * @return PromiseInterface<ResponseInterface,\Exception>
      */
-    public function requestStreaming($method, $url, $headers = array(), $contents = '')
+    public function requestStreaming($method, $url, $headers = array(), $body = '')
     {
-        return $this->withOptions(array('streaming' => true))->requestMayBeStreaming($method, $url, $headers, $contents);
+        return $this->withOptions(array('streaming' => true))->requestMayBeStreaming($method, $url, $headers, $body);
     }
 
     /**
@@ -720,7 +720,7 @@ class Browser
      * @param string                         $url
      * @param array                          $headers
      * @param string|ReadableStreamInterface $body
-     * @return PromiseInterface<ResponseInterface,Exception>
+     * @return PromiseInterface<ResponseInterface,\Exception>
      */
     private function requestMayBeStreaming($method, $url, array $headers = array(), $body = '')
     {
