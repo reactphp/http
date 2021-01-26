@@ -9,7 +9,8 @@ $loop = Factory::create();
 // Note how this example uses the advanced `StreamingRequestMiddleware` to allow streaming
 // the incoming HTTP request. This very simple example merely counts the size
 // of the streaming body, it does not otherwise buffer its contents in memory.
-$server = new React\Http\Server(array(
+$server = new React\Http\Server(
+    $loop,
     new React\Http\Middleware\StreamingRequestMiddleware(),
     function (Psr\Http\Message\ServerRequestInterface $request) {
         $body = $request->getBody();
@@ -44,7 +45,7 @@ $server = new React\Http\Server(array(
             });
         });
     }
-));
+);
 
 $server->on('error', 'printf');
 
