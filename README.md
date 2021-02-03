@@ -1,6 +1,6 @@
 # HTTP
 
-[![Build Status](https://travis-ci.org/reactphp/http.svg?branch=master)](https://travis-ci.org/reactphp/http)
+[![CI status](https://github.com/reactphp/http/workflows/CI/badge.svg)](https://github.com/reactphp/http/actions)
 
 Event-driven, streaming HTTP client and server implementation for [ReactPHP](https://reactphp.org/).
 
