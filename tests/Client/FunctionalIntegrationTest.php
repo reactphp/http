@@ -167,6 +167,9 @@ class FunctionalIntegrationTest extends TestCase
     /** @group internet */
     public function testCancelPendingConnectionEmitsClose()
     {
+        // max_nesting_level was set to 100 for PHP Versions < 5.4 which resulted in failing test for legacy PHP
+        ini_set('xdebug.max_nesting_level', 256);
+
         $loop = Factory::create();
         $client = new Client($loop);
 
