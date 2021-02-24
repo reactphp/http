@@ -172,6 +172,7 @@ class RequestHeaderParser extends EventEmitter
         }
 
         // default host if unset comes from local socket address or defaults to localhost
+        $hasHost = $host !== null;
         if ($host === null) {
             $host = isset($localParts['host'], $localParts['port']) ? $localParts['host'] . ':' . $localParts['port'] : '127.0.0.1';
         }
@@ -234,8 +235,8 @@ class RequestHeaderParser extends EventEmitter
             $request = $request->withRequestTarget($start['target']);
         }
 
-        // Optional Host header value MUST be valid (host and optional port)
-        if ($request->hasHeader('Host')) {
+        if ($hasHost) {
+            // Optional Host request header value MUST be valid (host and optional port)
             $parts = \parse_url('http://' . $request->getHeaderLine('Host'));
 
             // make sure value contains valid host component (IP or hostname)
@@ -248,6 +249,12 @@ class RequestHeaderParser extends EventEmitter
             if ($parts === false || $parts) {
                 throw new \InvalidArgumentException('Invalid Host header value');
             }
+        } elseif (!$hasHost && $start['version'] === '1.1' && $start['method'] !== 'CONNECT') {
+            // require Host request header for HTTP/1.1 (except for CONNECT method)
+            throw new \InvalidArgumentException('Missing required Host request header');
+        } elseif (!$hasHost) {
+            // remove default Host request header for HTTP/1.0 when not explicitly given
+            $request = $request->withoutHeader('Host');
         }
 
         // ensure message boundaries are valid according to Content-Length and Transfer-Encoding request headers
@@ -269,9 +276,6 @@ class RequestHeaderParser extends EventEmitter
                 throw new \InvalidArgumentException('The value of `Content-Length` is not valid', 400);
             }
         }
-
-        // always sanitize Host header because it contains critical routing information
-        $request = $request->withUri($request->getUri()->withUserInfo('u')->withUserInfo(''));
 
         return $request;
     }

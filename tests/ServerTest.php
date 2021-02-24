@@ -269,6 +269,7 @@ final class ServerTest extends TestCase
 
         $data = array();
         $data[] = "POST / HTTP/1.1\r\n";
+        $data[] = "Host: localhost\r\n";
         $data[] = "Content-Type: multipart/form-data; boundary=" . $boundary . "\r\n";
         $data[] = "Content-Length: 220\r\n";
         $data[] = "\r\n";
