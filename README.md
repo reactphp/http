@@ -1846,7 +1846,7 @@ implementations and ongoing effort to standardize interfaces between these with
 and support this goal.
 As such, this project only bundles a few middleware implementations that are
 required to match PHP's request behavior (see
-[middleware implementations](#react-http-middleware)) and otherwise actively
+[middleware implementations](#reacthttpmiddleware)) and otherwise actively
 encourages third-party middleware implementations.
 
 While we would love to support PSR-15 directly in `react/http`, we understand
