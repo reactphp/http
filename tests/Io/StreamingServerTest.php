@@ -3001,7 +3001,9 @@ class StreamingServerTest extends TestCase
         // pretend parser just finished parsing
         $server->handleRequest($this->connection, $request);
 
+        $this->assertCount(2, $this->connection->listeners('close'));
         $body->end();
+        $this->assertCount(1, $this->connection->listeners('close'));
     }
 
     private function createGetRequest()

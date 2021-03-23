@@ -367,7 +367,8 @@ final class StreamingServer extends EventEmitter
         if ($persist) {
             $body->pipe($connection, array('end' => false));
             $parser = $this->parser;
-            $body->on('end', function () use ($connection, $parser) {
+            $body->on('end', function () use ($connection, $parser, $body) {
+                $connection->removeListener('close', array($body, 'close'));
                 $parser->handle($connection);
             });
         } else {

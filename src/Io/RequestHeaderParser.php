@@ -106,10 +106,6 @@ class RequestHeaderParser extends EventEmitter
                 $stream->close();
             }
         });
-
-        $conn->on('close', function () use (&$buffer, &$fn) {
-            $fn = $buffer = null;
-        });
     }
 
     /**
