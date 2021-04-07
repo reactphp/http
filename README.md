@@ -70,6 +70,10 @@ multiple concurrent HTTP requests without blocking.
         * [withResponseBuffer()](#withresponsebuffer)
     * [React\Http\Message](#reacthttpmessage)
         * [Response](#response)
+            * [html()](#html)
+            * [json()](#json)
+            * [plaintext()](#plaintext)
+            * [xml()](#xml)
         * [ServerRequest](#serverrequest)
         * [ResponseException](#responseexception)
     * [React\Http\Middleware](#reacthttpmiddleware)
@@ -2462,6 +2466,183 @@ constants with the `STATUS_*` prefix. For instance, the `200 OK` and
 > Internally, this implementation builds on top of an existing incoming
   response message and only adds required streaming support. This base class is
   considered an implementation detail that may change in the future.
+
+##### html()
+
+The static `html(string $html): Response` method can be used to
+create an HTML response.
+
+```php
+$html = <<<HTML
+<!doctype html>
+<html>
+<body>Hello wörld!</body>
+</html>
+
+HTML;
+
+$response = React\Http\Message\Response::html($html);
+```
+
+This is a convenient shortcut method that returns the equivalent of this:
+
+```
+$response = new React\Http\Message\Response(
+    React\Http\Message\Response::STATUS_OK,
+    [
+        'Content-Type' => 'text/html; charset=utf-8'
+    ],
+    $html
+);
+```
+
+This method always returns a response with a `200 OK` status code and
+the appropriate `Content-Type` response header for the given HTTP source
+string encoded in UTF-8 (Unicode). It's generally recommended to end the
+given plaintext string with a trailing newline.
+
+If you want to use a different status code or custom HTTP response
+headers, you can manipulate the returned response object using the
+provided PSR-7 methods or directly instantiate a custom HTTP response
+object using the `Response` constructor:
+
+```php
+$response = React\Http\Message\Response::html(
+    "<h1>Error</h1>\n<p>Invalid user name given.</p>\n"
+)->withStatus(React\Http\Message\Response::STATUS_BAD_REQUEST);
+```
+
+##### json()
+
+The static `json(mixed $data): Response` method can be used to
+create a JSON response.
+
+```php
+$response = React\Http\Message\Response::json(['name' => 'Alice']);
+```
+
+This is a convenient shortcut method that returns the equivalent of this:
+
+```
+$response = new React\Http\Message\Response(
+    React\Http\Message\Response::STATUS_OK,
+    [
+        'Content-Type' => 'application/json'
+    ],
+    json_encode(
+        ['name' => 'Alice'],
+        JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION
+    ) . "\n"
+);
+```
+
+This method always returns a response with a `200 OK` status code and
+the appropriate `Content-Type` response header for the given structured
+data encoded as a JSON text.
+
+The given structured data will be encoded as a JSON text. Any `string`
+values in the data must be encoded in UTF-8 (Unicode). If the encoding
+fails, this method will throw an `InvalidArgumentException`.
+
+By default, the given structured data will be encoded with the flags as
+shown above. This includes pretty printing (PHP 5.4+) and preserving
+zero fractions for `float` values (PHP 5.6.6+) to ease debugging. It is
+assumed any additional data overhead is usually compensated by using HTTP
+response compression.
+
+If you want to use a different status code or custom HTTP response
+headers, you can manipulate the returned response object using the
+provided PSR-7 methods or directly instantiate a custom HTTP response
+object using the `Response` constructor:
+
+```php
+$response = React\Http\Message\Response::json(
+    ['error' => 'Invalid user name given']
+)->withStatus(React\Http\Message\Response::STATUS_BAD_REQUEST);
+```
+
+##### plaintext()
+
+The static `plaintext(string $text): Response` method can be used to
+create a plaintext response.
+
+```php
+$response = React\Http\Message\Response::plaintext("Hello wörld!\n");
+```
+
+This is a convenient shortcut method that returns the equivalent of this:
+
+```
+$response = new React\Http\Message\Response(
+    React\Http\Message\Response::STATUS_OK,
+    [
+        'Content-Type' => 'text/plain; charset=utf-8'
+    ],
+    "Hello wörld!\n"
+);
+```
+
+This method always returns a response with a `200 OK` status code and
+the appropriate `Content-Type` response header for the given plaintext
+string encoded in UTF-8 (Unicode). It's generally recommended to end the
+given plaintext string with a trailing newline.
+
+If you want to use a different status code or custom HTTP response
+headers, you can manipulate the returned response object using the
+provided PSR-7 methods or directly instantiate a custom HTTP response
+object using the `Response` constructor:
+
+```php
+$response = React\Http\Message\Response::plaintext(
+    "Error: Invalid user name given.\n"
+)->withStatus(React\Http\Message\Response::STATUS_BAD_REQUEST);
+```
+
+##### xml()
+
+The static `xml(string $xml): Response` method can be used to
+create an XML response.
+
+```php
+$xml = <<<XML
+<?xml version="1.0" encoding="utf-8"?>
+<body>
+    <greeting>Hello wörld!</greeting>
+</body>
+
+XML;
+
+$response = React\Http\Message\Response::xml($xml);
+```
+
+This is a convenient shortcut method that returns the equivalent of this:
+
+```
+$response = new React\Http\Message\Response(
+    React\Http\Message\Response::STATUS_OK,
+    [
+        'Content-Type' => 'application/xml'
+    ],
+    $xml
+);
+```
+
+This method always returns a response with a `200 OK` status code and
+the appropriate `Content-Type` response header for the given XML source
+string. It's generally recommended to use UTF-8 (Unicode) and specify
+this as part of the leading XML declaration and to end the given XML
+source string with a trailing newline.
+
+If you want to use a different status code or custom HTTP response
+headers, you can manipulate the returned response object using the
+provided PSR-7 methods or directly instantiate a custom HTTP response
+object using the `Response` constructor:
+
+```php
+$response = React\Http\Message\Response::xml(
+    "<error><message>Invalid user name given.</message></error>\n"
+)->withStatus(React\Http\Message\Response::STATUS_BAD_REQUEST);
+```
 
 #### ServerRequest
 
