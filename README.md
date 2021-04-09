@@ -69,6 +69,7 @@ multiple concurrent HTTP requests without blocking.
         * [withProtocolVersion()](#withprotocolversion)
         * [withResponseBuffer()](#withresponsebuffer)
     * [React\Http\Message](#reacthttpmessage)
+        * [ResponseFactory](#responsefactory)
         * [Response](#response)
         * [ServerRequest](#serverrequest)
         * [ResponseException](#responseexception)
@@ -103,13 +104,7 @@ This is an HTTP server which responds with `Hello World!` to every request.
 $loop = React\EventLoop\Factory::create();
 
 $server = new React\Http\Server($loop, function (Psr\Http\Message\ServerRequestInterface $request) {
-    return new React\Http\Message\Response(
-        200,
-        array(
-            'Content-Type' => 'text/plain'
-        ),
-        "Hello World!\n"
-    );
+    return React\Http\Message\ResponseFactory::plain("Hello World!\n");
 });
 
 $socket = new React\Socket\Server(8080, $loop);
@@ -719,13 +714,7 @@ object and expects a [response](#server-response) object in return:
 
 ```php
 $server = new React\Http\Server($loop, function (Psr\Http\Message\ServerRequestInterface $request) {
-    return new React\Http\Message\Response(
-        200,
-        array(
-            'Content-Type' => 'text/plain'
-        ),
-        "Hello World!\n"
-    );
+    return React\Http\Message\ResponseFactory::plain("Hello World!\n");
 });
 ```
 
@@ -2373,6 +2362,19 @@ method actually returns a *new* [`Browser`](#browser) instance with the
 given setting applied.
 
 ### React\Http\Message
+
+#### ResponseFactory
+
+The `React\Http\Message\ResponseFactory` provides a few methods for well known content types. Except `json` all methods 
+accept both string or [`ReadableStreamInterface`](https://github.com/reactphp/stream#readablestreaminterface) as body.
+`json` however, will also do the encoding to JSON for you.
+
+```php
+$htmlResponse = React\Http\Message\ResponseFactory::html('<html><body>Hello world!</body></html>');
+$jsonResponse = React\Http\Message\ResponseFactory::json(array('message' => array('body' => 'Hello World!')));
+$plainResponse = React\Http\Message\ResponseFactory::plain('Hello world!');
+$xmlResponse = React\Http\Message\ResponseFactory::xml('<?xml version="1.0" encoding="UTF-8"?><message><body>Hello world!</body></message>');
+```
 
 #### Response
 

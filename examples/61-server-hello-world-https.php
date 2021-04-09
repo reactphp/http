@@ -2,7 +2,7 @@
 
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
-use React\Http\Message\Response;
+use React\Http\Message\ResponseFactory;
 use React\Http\Server;
 
 require __DIR__ . '/../vendor/autoload.php';
@@ -10,13 +10,7 @@ require __DIR__ . '/../vendor/autoload.php';
 $loop = Factory::create();
 
 $server = new Server($loop, function (ServerRequestInterface $request) {
-    return new Response(
-        200,
-        array(
-            'Content-Type' => 'text/plain'
-        ),
-        "Hello world!\n"
-    );
+    return ResponseFactory::plain("Hello world\n");
 });
 
 $socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
