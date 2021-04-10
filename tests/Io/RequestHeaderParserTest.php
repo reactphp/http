@@ -257,7 +257,7 @@ class RequestHeaderParserTest extends TestCase
         $connection->emit('data', array("GET /foo HTTP/1.0\r\n\r\n"));
 
         $this->assertEquals('http://127.1.1.1:8000/foo', $request->getUri());
-        $this->assertEquals('127.1.1.1:8000', $request->getHeaderLine('Host'));
+        $this->assertFalse($request->hasHeader('Host'));
     }
 
     public function testHeaderEventViaHttpsShouldApplyHttpsSchemeFromLocalTlsConnectionAddress()
@@ -550,7 +550,7 @@ class RequestHeaderParserTest extends TestCase
         $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(null)->getMock();
         $parser->handle($connection);
 
-        $connection->emit('data', array("GET / HTTP/1.1\r\nContent-Length: foo\r\n\r\n"));
+        $connection->emit('data', array("GET / HTTP/1.1\r\nHost: localhost\r\nContent-Length: foo\r\n\r\n"));
 
         $this->assertInstanceOf('InvalidArgumentException', $error);
         $this->assertSame(400, $error->getCode());
@@ -570,7 +570,7 @@ class RequestHeaderParserTest extends TestCase
         $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(null)->getMock();
         $parser->handle($connection);
 
-        $connection->emit('data', array("GET / HTTP/1.1\r\nContent-Length: 4\r\nContent-Length: 5\r\n\r\n"));
+        $connection->emit('data', array("GET / HTTP/1.1\r\nHost: localhost\r\nContent-Length: 4\r\nContent-Length: 5\r\n\r\n"));
 
         $this->assertInstanceOf('InvalidArgumentException', $error);
         $this->assertSame(400, $error->getCode());
@@ -590,7 +590,7 @@ class RequestHeaderParserTest extends TestCase
         $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(null)->getMock();
         $parser->handle($connection);
 
-        $connection->emit('data', array("GET / HTTP/1.1\r\nTransfer-Encoding: foo\r\n\r\n"));
+        $connection->emit('data', array("GET / HTTP/1.1\r\nHost: localhost\r\nTransfer-Encoding: foo\r\n\r\n"));
 
         $this->assertInstanceOf('InvalidArgumentException', $error);
         $this->assertSame(501, $error->getCode());
@@ -610,7 +610,7 @@ class RequestHeaderParserTest extends TestCase
         $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(null)->getMock();
         $parser->handle($connection);
 
-        $connection->emit('data', array("GET / HTTP/1.1\r\nTransfer-Encoding: chunked\r\nContent-Length: 0\r\n\r\n"));
+        $connection->emit('data', array("GET / HTTP/1.1\r\nHost: localhost\r\nTransfer-Encoding: chunked\r\nContent-Length: 0\r\n\r\n"));
 
         $this->assertInstanceOf('InvalidArgumentException', $error);
         $this->assertSame(400, $error->getCode());
@@ -762,7 +762,7 @@ class RequestHeaderParserTest extends TestCase
     private function createGetRequest()
     {
         $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "Connection: close\r\n";
         $data .= "\r\n";
 
@@ -772,7 +772,7 @@ class RequestHeaderParserTest extends TestCase
     private function createAdvancedPostRequest()
     {
         $data = "POST /foo?bar=baz HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "User-Agent: react/alpha\r\n";
         $data .= "Connection: close\r\n";
         $data .= "\r\n";

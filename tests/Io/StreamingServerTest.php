@@ -211,7 +211,7 @@ class StreamingServerTest extends TestCase
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
 
-        $data = "GET / HTTP/1.1\r\nHost: example.com:80\r\n\r\n";
+        $data = "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n";
         $this->connection->emit('data', array($data));
 
         $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
@@ -221,6 +221,41 @@ class StreamingServerTest extends TestCase
         $this->assertSame('http://example.com/', (string)$requestAssertion->getUri());
         $this->assertNull($requestAssertion->getUri()->getPort());
         $this->assertSame('example.com', $requestAssertion->getHeaderLine('Host'));
+    }
+
+    public function testRequestGetHttp10WithoutHostWillBeIgnored()
+    {
+        $requestAssertion = null;
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$requestAssertion) {
+            $requestAssertion = $request;
+        });
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.0\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertSame('GET', $requestAssertion->getMethod());
+        $this->assertSame('/', $requestAssertion->getRequestTarget());
+        $this->assertSame('/', $requestAssertion->getUri()->getPath());
+        $this->assertSame('http://127.0.0.1/', (string)$requestAssertion->getUri());
+        $this->assertNull($requestAssertion->getUri()->getPort());
+        $this->assertEquals('1.0', $requestAssertion->getProtocolVersion());
+        $this->assertSame('', $requestAssertion->getHeaderLine('Host'));
+    }
+
+    public function testRequestGetHttp11WithoutHostWillReject()
+    {
+        $server = new StreamingServer(Factory::create(), 'var_dump');
+        $server->on('error', $this->expectCallableOnce());
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\n\r\n";
+        $this->connection->emit('data', array($data));
     }
 
     public function testRequestOptionsAsterisk()
@@ -278,7 +313,7 @@ class StreamingServerTest extends TestCase
         $this->assertSame('example.com:443', $requestAssertion->getHeaderLine('Host'));
     }
 
-    public function testRequestConnectWithoutHostWillBeAdded()
+    public function testRequestConnectWithoutHostWillBePassesAsIs()
     {
         $requestAssertion = null;
         $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$requestAssertion) {
@@ -297,10 +332,10 @@ class StreamingServerTest extends TestCase
         $this->assertSame('', $requestAssertion->getUri()->getPath());
         $this->assertSame('http://example.com:443', (string)$requestAssertion->getUri());
         $this->assertSame(443, $requestAssertion->getUri()->getPort());
-        $this->assertSame('example.com:443', $requestAssertion->getHeaderLine('Host'));
+        $this->assertFalse($requestAssertion->hasHeader('Host'));
     }
 
-    public function testRequestConnectAuthorityFormWithDefaultPortWillBeIgnored()
+    public function testRequestConnectAuthorityFormWithDefaultPortWillBePassedAsIs()
     {
         $requestAssertion = null;
         $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$requestAssertion) {
@@ -319,10 +354,10 @@ class StreamingServerTest extends TestCase
         $this->assertSame('', $requestAssertion->getUri()->getPath());
         $this->assertSame('http://example.com', (string)$requestAssertion->getUri());
         $this->assertNull($requestAssertion->getUri()->getPort());
-        $this->assertSame('example.com', $requestAssertion->getHeaderLine('Host'));
+        $this->assertSame('example.com:80', $requestAssertion->getHeaderLine('Host'));
     }
 
-    public function testRequestConnectAuthorityFormNonMatchingHostWillBeOverwritten()
+    public function testRequestConnectAuthorityFormNonMatchingHostWillBePassedAsIs()
     {
         $requestAssertion = null;
         $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$requestAssertion) {
@@ -341,7 +376,7 @@ class StreamingServerTest extends TestCase
         $this->assertSame('', $requestAssertion->getUri()->getPath());
         $this->assertSame('http://example.com', (string)$requestAssertion->getUri());
         $this->assertNull($requestAssertion->getUri()->getPort());
-        $this->assertSame('example.com', $requestAssertion->getHeaderLine('Host'));
+        $this->assertSame('other.example.org', $requestAssertion->getHeaderLine('Host'));
     }
 
     public function testRequestConnectOriginFormRequestTargetWillReject()
@@ -416,29 +451,7 @@ class StreamingServerTest extends TestCase
         $this->assertSame('example.com', $requestAssertion->getHeaderLine('Host'));
     }
 
-    public function testRequestAbsoluteAddsMissingHostEvent()
-    {
-        $requestAssertion = null;
-
-        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use (&$requestAssertion) {
-            $requestAssertion = $request;
-        });
-
-        $server->listen($this->socket);
-        $this->socket->emit('connection', array($this->connection));
-
-        $data = "GET http://example.com:8080/test HTTP/1.0\r\n\r\n";
-        $this->connection->emit('data', array($data));
-
-        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
-        $this->assertSame('GET', $requestAssertion->getMethod());
-        $this->assertSame('http://example.com:8080/test', $requestAssertion->getRequestTarget());
-        $this->assertEquals('http://example.com:8080/test', $requestAssertion->getUri());
-        $this->assertSame('/test', $requestAssertion->getUri()->getPath());
-        $this->assertSame('example.com:8080', $requestAssertion->getHeaderLine('Host'));
-    }
-
-    public function testRequestAbsoluteNonMatchingHostWillBeOverwritten()
+    public function testRequestAbsoluteNonMatchingHostWillBePassedAsIs()
     {
         $requestAssertion = null;
 
@@ -457,7 +470,19 @@ class StreamingServerTest extends TestCase
         $this->assertSame('http://example.com/test', $requestAssertion->getRequestTarget());
         $this->assertEquals('http://example.com/test', $requestAssertion->getUri());
         $this->assertSame('/test', $requestAssertion->getUri()->getPath());
-        $this->assertSame('example.com', $requestAssertion->getHeaderLine('Host'));
+        $this->assertSame('other.example.org', $requestAssertion->getHeaderLine('Host'));
+    }
+
+    public function testRequestAbsoluteWithoutHostWillReject()
+    {
+        $server = new StreamingServer(Factory::create(), $this->expectCallableNever());
+        $server->on('error', $this->expectCallableOnce());
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET http://example.com:8080/test HTTP/1.1\r\n\r\n";
+        $this->connection->emit('data', array($data));
     }
 
     public function testRequestOptionsAsteriskEvent()
@@ -516,7 +541,7 @@ class StreamingServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "Connection: close\r\n";
         $data .= "Content-Length: 5\r\n";
         $data .= "\r\n";
@@ -536,7 +561,7 @@ class StreamingServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "Connection: close\r\n";
         $data .= "Content-Length: 5\r\n";
         $data .= "\r\n";
@@ -955,7 +980,7 @@ class StreamingServerTest extends TestCase
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
 
-        $data = "GET / HTTP/1.1\r\n\r\n";
+        $data = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n";
         $this->connection->emit('data', array($data));
 
         $this->assertEquals("HTTP/1.1 200 OK\r\nUpgrade: demo\r\nContent-Length: 3\r\n\r\nfoo", $buffer);
@@ -990,7 +1015,7 @@ class StreamingServerTest extends TestCase
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
 
-        $data = "GET / HTTP/1.1\r\nUpgrade: demo\r\n\r\n";
+        $data = "GET / HTTP/1.1\r\nHost: localhost\r\nUpgrade: demo\r\n\r\n";
         $this->connection->emit('data', array($data));
 
         $this->assertEquals("HTTP/1.1 200 OK\r\nContent-Length: 3\r\n\r\nfoo", $buffer);
@@ -1028,7 +1053,7 @@ class StreamingServerTest extends TestCase
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
 
-        $data = "GET / HTTP/1.1\r\nUpgrade: demo\r\n\r\n";
+        $data = "GET / HTTP/1.1\r\nHost: localhost\r\nUpgrade: demo\r\n\r\n";
         $this->connection->emit('data', array($data));
 
         $this->assertEquals("HTTP/1.1 101 Switching Protocols\r\nUpgrade: demo\r\nConnection: upgrade\r\n\r\nfoo", $buffer);
@@ -1066,7 +1091,7 @@ class StreamingServerTest extends TestCase
         $server->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
 
-        $data = "GET / HTTP/1.1\r\nUpgrade: demo\r\n\r\n";
+        $data = "GET / HTTP/1.1\r\nHost: localhost\r\nUpgrade: demo\r\n\r\n";
         $this->connection->emit('data', array($data));
 
         $stream->write('hello');
@@ -1418,7 +1443,7 @@ class StreamingServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "Connection: close\r\n";
         $data .= "Content-Length: 5\r\n";
         $data .= "\r\n";
@@ -1447,7 +1472,7 @@ class StreamingServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "Connection: close\r\n";
         $data .= "Transfer-Encoding: chunked\r\n";
         $data .= "\r\n";
@@ -1477,7 +1502,7 @@ class StreamingServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "Connection: close\r\n";
         $data .= "Transfer-Encoding: chunked\r\n";
         $data .= "\r\n";
@@ -1506,7 +1531,7 @@ class StreamingServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "Connection: close\r\n";
         $data .= "Transfer-Encoding: chunked\r\n";
         $data .= "\r\n";
@@ -1535,7 +1560,7 @@ class StreamingServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "Connection: close\r\n";
         $data .= "Transfer-Encoding: CHUNKED\r\n";
         $data .= "\r\n";
@@ -1564,7 +1589,7 @@ class StreamingServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "Connection: close\r\n";
         $data .= "Transfer-Encoding: CHunKeD\r\n";
         $data .= "\r\n";
@@ -1593,7 +1618,7 @@ class StreamingServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "Connection: close\r\n";
         $data .= "Content-Length: 5\r\n";
         $data .= "\r\n";
@@ -1622,7 +1647,7 @@ class StreamingServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "Connection: close\r\n";
         $data .= "Content-Length: 5\r\n";
         $data .= "\r\n";
@@ -1654,7 +1679,7 @@ class StreamingServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "Connection: close\r\n";
         $data .= "Content-Length: 0\r\n";
         $data .= "\r\n";
@@ -1680,7 +1705,7 @@ class StreamingServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "Connection: close\r\n";
         $data .= "Content-Length: 0\r\n";
         $data .= "\r\n";
@@ -1707,7 +1732,7 @@ class StreamingServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "Connection: close\r\n";
         $data .= "Content-Length: 0\r\n";
         $data .= "\r\n";
@@ -1733,7 +1758,7 @@ class StreamingServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "Connection: close\r\n";
         $data .= "Transfer-Encoding: chunked\r\n";
         $data .= "\r\n";
@@ -1757,7 +1782,7 @@ class StreamingServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "Connection: close\r\n";
         $data .= "Transfer-Encoding: chunked\r\n";
         $data .= "\r\n";
@@ -1779,7 +1804,7 @@ class StreamingServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "Connection: close\r\n";
         $data .= "Transfer-Encoding: chunked\r\n";
         $data .= "\r\n";
@@ -1802,7 +1827,7 @@ class StreamingServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "Connection: close\r\n";
         $data .= "Transfer-Encoding: chunked\r\n";
         $data .= "\r\n";
@@ -1824,7 +1849,7 @@ class StreamingServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "Connection: close\r\n";
         $data .= "Content-Length: 500\r\n";
         $data .= "\r\n";
@@ -2221,7 +2246,7 @@ class StreamingServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "Connection: close\r\n";
         $data .= "Expect: 100-continue\r\n";
         $data .= "\r\n";
@@ -2744,7 +2769,7 @@ class StreamingServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "Connection: close\r\n";
         $data .= "Cookie: hello=world\r\n";
         $data .= "\r\n";
@@ -2765,7 +2790,7 @@ class StreamingServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "Connection: close\r\n";
         $data .= "Cookie: hello=world\r\n";
         $data .= "Cookie: test=failed\r\n";
@@ -2786,7 +2811,7 @@ class StreamingServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "Connection: close\r\n";
         $data .= "Cookie: hello=world; test=abc\r\n";
         $data .= "\r\n";
@@ -2805,7 +2830,7 @@ class StreamingServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
 
         $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "Connection: close\r\n";
         $data .= "Cookie: test=abc,def; hello=world\r\n";
         $data .= "\r\n";
@@ -3009,7 +3034,7 @@ class StreamingServerTest extends TestCase
     private function createGetRequest()
     {
         $data = "GET / HTTP/1.1\r\n";
-        $data .= "Host: example.com:80\r\n";
+        $data .= "Host: example.com\r\n";
         $data .= "Connection: close\r\n";
         $data .= "\r\n";
 
