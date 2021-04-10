@@ -210,7 +210,8 @@ final class StreamingServer extends EventEmitter
         $response = new Response(
             $code,
             array(
-                'Content-Type' => 'text/plain'
+                'Content-Type' => 'text/plain',
+                'Connection' => 'close' // we do not want to keep the connection open after an error
             ),
             'Error ' . $code
         );
@@ -273,17 +274,28 @@ final class StreamingServer extends EventEmitter
             $chunked = true;
         } else {
             // remove any Transfer-Encoding headers unless automatically enabled above
+            // we do not want to keep connection alive, so pretend we received "Connection: close" request header
             $response = $response->withoutHeader('Transfer-Encoding');
+            $request = $request->withHeader('Connection', 'close');
         }
 
         // assign "Connection" header automatically
+        $persist = false;
         if ($code === 101) {
             // 101 (Switching Protocols) response uses Connection: upgrade header
+            // This implies that this stream now uses another protocol and we
+            // may not persist this connection for additional requests.
             $response = $response->withHeader('Connection', 'upgrade');
-        } elseif ($version === '1.1') {
-            // HTTP/1.1 assumes persistent connection support by default
-            // we do not support persistent connections, so let the client know
+        } elseif (\strtolower($request->getHeaderLine('Connection')) === 'close' || \strtolower($response->getHeaderLine('Connection')) === 'close') {
+            // obey explicit "Connection: close" request header or response header if present
             $response = $response->withHeader('Connection', 'close');
+        } elseif ($version === '1.1') {
+            // HTTP/1.1 assumes persistent connection support by default, so we don't need to inform client
+            $persist = true;
+        } elseif (strtolower($request->getHeaderLine('Connection')) === 'keep-alive') {
+            // obey explicit "Connection: keep-alive" request header and inform client
+            $persist = true;
+            $response = $response->withHeader('Connection', 'keep-alive');
         } else {
             // remove any Connection headers unless automatically enabled above
             $response = $response->withoutHeader('Connection');
@@ -328,9 +340,15 @@ final class StreamingServer extends EventEmitter
                 $body = "0\r\n\r\n";
             }
 
-            // end connection after writing response headers and body
+            // write response headers and body
             $connection->write($headers . "\r\n" . $body);
-            $connection->end();
+
+            // either wait for next request over persistent connection or end connection
+            if ($persist) {
+                $this->parser->handle($connection);
+            } else {
+                $connection->end();
+            }
             return;
         }
 
@@ -345,6 +363,16 @@ final class StreamingServer extends EventEmitter
         // in particular this may only fire on a later read/write attempt.
         $connection->on('close', array($body, 'close'));
 
-        $body->pipe($connection);
+        // write streaming body and then wait for next request over persistent connection
+        if ($persist) {
+            $body->pipe($connection, array('end' => false));
+            $parser = $this->parser;
+            $body->on('end', function () use ($connection, $parser, $body) {
+                $connection->removeListener('close', array($body, 'close'));
+                $parser->handle($connection);
+            });
+        } else {
+            $body->pipe($connection);
+        }
     }
 }

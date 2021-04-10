@@ -1,11 +1,18 @@
 <?php
 
+// A simple HTTP web server that can be used to benchmark requests per second and download speed
+//
 // $ php examples/99-server-benchmark-download.php 8080
+//
+// This example runs the web server on a single CPU core in order to measure the
+// per core performance.
+//
 // $ curl http://localhost:8080/10g.bin > /dev/null
 // $ wget http://localhost:8080/10g.bin -O /dev/null
-// $ ab -n10 -c10 http://localhost:8080/1g.bin
-// $ docker run -it --rm --net=host jordi/ab -n100000 -c10 http://localhost:8080/
-// $ docker run -it --rm --net=host jordi/ab -n10 -c10 http://localhost:8080/1g.bin
+// $ ab -n10 -c10 -k http://localhost:8080/1g.bin
+// $ docker run -it --rm --net=host jordi/ab -n100000 -c10 -k http://localhost:8080/
+// $ docker run -it --rm --net=host jordi/ab -n10 -c10 -k http://localhost:8080/1g.bin
+// $ docker run -it --rm --net=host skandyla/wrk -t8 -c10 -d20 http://localhost:8080/
 
 use Evenement\EventEmitter;
 use Psr\Http\Message\ServerRequestInterface;
