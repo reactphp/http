@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.3.0 (2021-04-11)
+
+*   Feature: Support persistent connections (`Connection: keep-alive`).
+    (#405 by @clue)
+
+    This shows a noticeable performance improvement especially when benchmarking
+    using persistent connections (which is the default pretty much everywhere).
+    Together with other changes in this release, this improves benchmarking
+    performance by around 100%.
+
+*   Feature: Require `Host` request header for HTTP/1.1 requests.
+    (#404 by @clue)
+
+*   Minor documentation improvements.
+    (#398 by @fritz-gerneth and #399 and #400 by @pavog)
+
+*   Improve test suite, use GitHub actions for continuous integration (CI).
+    (#402 by @SimonFrings)
+
 ## 1.2.0 (2020-12-04)
 
 *   Feature: Keep request body in memory also after consuming request body.
