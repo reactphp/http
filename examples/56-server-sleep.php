@@ -2,7 +2,7 @@
 
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
-use React\Http\Message\Response;
+use React\Http\Message\ResponseFactory;
 use React\Http\Server;
 use React\Promise\Promise;
 
@@ -13,13 +13,7 @@ $loop = Factory::create();
 $server = new Server($loop, function (ServerRequestInterface $request) use ($loop) {
     return new Promise(function ($resolve, $reject) use ($loop) {
         $loop->addTimer(1.5, function() use ($resolve) {
-            $response = new Response(
-                200,
-                array(
-                    'Content-Type' => 'text/plain'
-                ),
-                "Hello world"
-            );
+            $response = ResponseFactory::plain('Hello world');
             $resolve($response);
         });
     });

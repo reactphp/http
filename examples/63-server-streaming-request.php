@@ -1,6 +1,7 @@
 <?php
 
 use React\EventLoop\Factory;
+use React\Http\Message\ResponseFactory;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -24,24 +25,12 @@ $server = new React\Http\Server(
             });
 
             $body->on('end', function () use ($resolve, &$bytes){
-                $resolve(new React\Http\Message\Response(
-                    200,
-                    array(
-                        'Content-Type' => 'text/plain'
-                    ),
-                    "Received $bytes bytes\n"
-                ));
+                $resolve(ResponseFactory::plain("Received $bytes bytes\n"));
             });
 
             // an error occures e.g. on invalid chunked encoded data or an unexpected 'end' event
             $body->on('error', function (\Exception $exception) use ($resolve, &$bytes) {
-                $resolve(new React\Http\Message\Response(
-                    400,
-                    array(
-                        'Content-Type' => 'text/plain'
-                    ),
-                    "Encountered error after $bytes bytes: {$exception->getMessage()}\n"
-                ));
+                $resolve(ResponseFactory::plain("Encountered error after $bytes bytes: {$exception->getMessage()}\n")->withStatus(400));
             });
         });
     }

@@ -6,6 +6,7 @@
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Message\Response;
+use React\Http\Message\ResponseFactory;
 use React\Http\Server;
 use React\Socket\Connector;
 use React\Socket\ConnectionInterface;
@@ -21,14 +22,7 @@ $connector = new Connector($loop);
 // doesn't have to store any payload data in memory at all.
 $server = new Server($loop, function (ServerRequestInterface $request) use ($connector) {
     if ($request->getMethod() !== 'CONNECT') {
-        return new Response(
-            405,
-            array(
-                'Content-Type' => 'text/plain',
-                'Allow' => 'CONNECT'
-            ),
-            'This is a HTTP CONNECT (secure HTTPS) proxy'
-        );
+        return ResponseFactory::plain('This is a HTTP CONNECT (secure HTTPS) proxy')->withStatus(405);
     }
 
     // try to connect to given target host
@@ -42,13 +36,7 @@ $server = new Server($loop, function (ServerRequestInterface $request) use ($con
             );
         },
         function ($e) {
-            return new Response(
-                502,
-                array(
-                    'Content-Type' => 'text/plain'
-                ),
-                'Unable to connect: ' . $e->getMessage()
-            );
+            return ResponseFactory::plain('Unable to connect: ' . $e->getMessage())->withStatus(502);
         }
     );
 });

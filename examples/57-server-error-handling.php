@@ -2,7 +2,7 @@
 
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
-use React\Http\Message\Response;
+use React\Http\Message\ResponseFactory;
 use React\Http\Server;
 use React\Promise\Promise;
 
@@ -19,13 +19,7 @@ $server = new Server($loop, function (ServerRequestInterface $request) use (&$co
             throw new Exception('Second call');
         }
 
-        $response = new Response(
-            200,
-            array(
-                'Content-Type' => 'text/plain'
-            ),
-            "Hello World!\n"
-        );
+        $response = ResponseFactory::plain("Hello World!\n");
 
         $resolve($response);
     });
