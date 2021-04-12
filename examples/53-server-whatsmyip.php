@@ -1,5 +1,6 @@
 <?php
 
+use Fig\Http\Message\StatusCodeInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Message\Response;
@@ -13,7 +14,7 @@ $server = new Server($loop, function (ServerRequestInterface $request) {
     $body = "Your IP is: " . $request->getServerParams()['REMOTE_ADDR'];
 
     return new Response(
-        200,
+        StatusCodeInterface::STATUS_OK,
         array(
             'Content-Type' => 'text/plain'
         ),

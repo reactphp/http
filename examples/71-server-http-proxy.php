@@ -3,6 +3,7 @@
 // $ php examples/71-server-http-proxy.php 8080
 // $ curl -v --proxy http://localhost:8080 http://reactphp.org/
 
+use Fig\Http\Message\StatusCodeInterface;
 use Psr\Http\Message\RequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Message\Response;
@@ -20,7 +21,7 @@ $loop = Factory::create();
 $server = new Server($loop, function (RequestInterface $request) {
     if (strpos($request->getRequestTarget(), '://') === false) {
         return new Response(
-            400,
+            StatusCodeInterface::STATUS_BAD_REQUEST,
             array(
                 'Content-Type' => 'text/plain'
             ),
@@ -40,7 +41,7 @@ $server = new Server($loop, function (RequestInterface $request) {
     // left up as an exercise: use an HTTP client to send the outgoing request
     // and forward the incoming response to the original client request
     return new Response(
-        200,
+        StatusCodeInterface::STATUS_OK,
         array(
             'Content-Type' => 'text/plain'
         ),

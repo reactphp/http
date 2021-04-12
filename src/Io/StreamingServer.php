@@ -3,6 +3,7 @@
 namespace React\Http\Io;
 
 use Evenement\EventEmitter;
+use Fig\Http\Message\StatusCodeInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\LoopInterface;
@@ -120,7 +121,7 @@ final class StreamingServer extends EventEmitter
             // parsing failed => assume dummy request and send appropriate error
             $that->writeError(
                 $conn,
-                $e->getCode() !== 0 ? $e->getCode() : 400,
+                $e->getCode() !== 0 ? $e->getCode() : StatusCodeInterface::STATUS_BAD_REQUEST,
                 new ServerRequest('GET', '/')
             );
         });
@@ -199,7 +200,7 @@ final class StreamingServer extends EventEmitter
                 $exception = new \RuntimeException($message, null, $previous);
 
                 $that->emit('error', array($exception));
-                return $that->writeError($conn, 500, $request);
+                return $that->writeError($conn, StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR, $request);
             }
         );
     }
@@ -262,7 +263,7 @@ final class StreamingServer extends EventEmitter
 
         // assign "Content-Length" and "Transfer-Encoding" headers automatically
         $chunked = false;
-        if (($method === 'CONNECT' && $code >= 200 && $code < 300) || ($code >= 100 && $code < 200) || $code === 204) {
+        if (($method === 'CONNECT' && $code >= 200 && $code < 300) || ($code >= 100 && $code < 200) || $code === StatusCodeInterface::STATUS_NO_CONTENT) {
             // 2xx response to CONNECT and 1xx and 204 MUST NOT include Content-Length or Transfer-Encoding header
             $response = $response->withoutHeader('Content-Length')->withoutHeader('Transfer-Encoding');
         } elseif ($body->getSize() !== null) {
@@ -281,7 +282,7 @@ final class StreamingServer extends EventEmitter
 
         // assign "Connection" header automatically
         $persist = false;
-        if ($code === 101) {
+        if ($code === StatusCodeInterface::STATUS_SWITCHING_PROTOCOLS) {
             // 101 (Switching Protocols) response uses Connection: upgrade header
             // This implies that this stream now uses another protocol and we
             // may not persist this connection for additional requests.
@@ -303,7 +304,7 @@ final class StreamingServer extends EventEmitter
 
         // 101 (Switching Protocols) response (for Upgrade request) forwards upgraded data through duplex stream
         // 2xx (Successful) response to CONNECT forwards tunneled application data through duplex stream
-        if (($code === 101 || ($method === 'CONNECT' && $code >= 200 && $code < 300)) && $body instanceof HttpBodyStream && $body->input instanceof WritableStreamInterface) {
+        if (($code === StatusCodeInterface::STATUS_SWITCHING_PROTOCOLS || ($method === 'CONNECT' && $code >= 200 && $code < 300)) && $body instanceof HttpBodyStream && $body->input instanceof WritableStreamInterface) {
             if ($request->getBody()->isReadable()) {
                 // request is still streaming => wait for request close before forwarding following data from connection
                 $request->getBody()->on('close', function () use ($connection, $body) {
@@ -329,7 +330,7 @@ final class StreamingServer extends EventEmitter
 
         // response to HEAD and 1xx, 204 and 304 responses MUST NOT include a body
         // exclude status 101 (Switching Protocols) here for Upgrade request handling above
-        if ($method === 'HEAD' || $code === 100 || ($code > 101 && $code < 200) || $code === 204 || $code === 304) {
+        if ($method === 'HEAD' || $code === 100 || ($code > StatusCodeInterface::STATUS_SWITCHING_PROTOCOLS && $code < 200) || $code === StatusCodeInterface::STATUS_NO_CONTENT || $code === StatusCodeInterface::STATUS_NOT_MODIFIED) {
             $body = '';
         }
 

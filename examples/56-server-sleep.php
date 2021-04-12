@@ -1,5 +1,6 @@
 <?php
 
+use Fig\Http\Message\StatusCodeInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Message\Response;
@@ -14,7 +15,7 @@ $server = new Server($loop, function (ServerRequestInterface $request) use ($loo
     return new Promise(function ($resolve, $reject) use ($loop) {
         $loop->addTimer(1.5, function() use ($resolve) {
             $response = new Response(
-                200,
+                StatusCodeInterface::STATUS_OK,
                 array(
                     'Content-Type' => 'text/plain'
                 ),

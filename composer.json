@@ -34,7 +34,8 @@
         "react/promise-stream": "^1.1",
         "react/socket": "^1.6",
         "react/stream": "^1.1",
-        "ringcentral/psr7": "^1.2"
+        "ringcentral/psr7": "^1.2",
+        "fig/http-message-util": "^1.1"
     },
     "require-dev": {
         "clue/block-react": "^1.1",

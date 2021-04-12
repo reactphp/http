@@ -7,6 +7,7 @@
 // $ curl --form name=test --form age=30 http://localhost:8080/
 // $ curl --form name=hi --form avatar=@avatar.png http://localhost:8080/
 
+use Fig\Http\Message\StatusCodeInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\UploadedFileInterface;
 use React\EventLoop\Factory;
@@ -114,7 +115,7 @@ $body
 HTML;
 
     return new Response(
-        200,
+        StatusCodeInterface::STATUS_OK,
         array(
             'Content-Type' => 'text/html; charset=UTF-8'
         ),

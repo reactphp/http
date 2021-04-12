@@ -1,5 +1,6 @@
 <?php
 
+use Fig\Http\Message\StatusCodeInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Message\Response;
@@ -12,7 +13,7 @@ $loop = Factory::create();
 
 $server = new Server($loop, function (ServerRequestInterface $request) use ($loop) {
     if ($request->getMethod() !== 'GET' || $request->getUri()->getPath() !== '/') {
-        return new Response(404);
+        return new Response(StatusCodeInterface::STATUS_NOT_FOUND);
     }
 
     $stream = new ThroughStream();
@@ -33,7 +34,7 @@ $server = new Server($loop, function (ServerRequestInterface $request) use ($loo
     });
 
     return new Response(
-        200,
+        StatusCodeInterface::STATUS_OK,
         array(
             'Content-Type' => 'text/plain'
         ),
