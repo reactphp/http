@@ -19,6 +19,7 @@ $ telnet localhost 1080
 Hint: try this with multiple connections :)
 */
 
+use Fig\Http\Message\StatusCodeInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Loop;
 use React\Http\Message\Response;
@@ -38,7 +39,7 @@ $chat = new ThroughStream();
 $http = new React\Http\HttpServer(function (ServerRequestInterface $request) use ($chat) {
     if ($request->getHeaderLine('Upgrade') !== 'chat' || $request->getProtocolVersion() === '1.0') {
         return new Response(
-            426,
+            StatusCodeInterface::STATUS_UPGRADE_REQUIRED,
             array(
                 'Upgrade' => 'chat'
             ),
@@ -76,7 +77,7 @@ $http = new React\Http\HttpServer(function (ServerRequestInterface $request) use
     });
 
     return new Response(
-        101,
+        StatusCodeInterface::STATUS_SWITCHING_PROTOCOLS,
         array(
             'Upgrade' => 'chat'
         ),

@@ -3,6 +3,7 @@
 // $ php examples/72-server-http-connect-proxy.php 8080
 // $ curl -v --proxy http://localhost:8080 https://reactphp.org/
 
+use Fig\Http\Message\StatusCodeInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Message\Response;
 use React\Socket\Connector;
@@ -19,7 +20,7 @@ $connector = new Connector();
 $http = new React\Http\HttpServer(function (ServerRequestInterface $request) use ($connector) {
     if ($request->getMethod() !== 'CONNECT') {
         return new Response(
-            405,
+            StatusCodeInterface::STATUS_METHOD_NOT_ALLOWED,
             array(
                 'Content-Type' => 'text/plain',
                 'Allow' => 'CONNECT'
@@ -33,14 +34,14 @@ $http = new React\Http\HttpServer(function (ServerRequestInterface $request) use
         function (ConnectionInterface $remote) {
             // connection established => forward data
             return new Response(
-                200,
+                StatusCodeInterface::STATUS_OK,
                 array(),
                 $remote
             );
         },
         function (Exception $e) {
             return new Response(
-                502,
+                StatusCodeInterface::STATUS_BAD_GATEWAY,
                 array(
                     'Content-Type' => 'text/plain'
                 ),

@@ -6,6 +6,7 @@
 // $ php examples/59-server-json-api.php 8080
 // $ curl -v http://localhost:8080/ -H 'Content-Type: application/json' -d '{"name":"Alice"}'
 
+use Fig\Http\Message\StatusCodeInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Message\Response;
 
@@ -14,7 +15,7 @@ require __DIR__ . '/../vendor/autoload.php';
 $http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
     if ($request->getHeaderLine('Content-Type') !== 'application/json') {
         return new Response(
-            415, // Unsupported Media Type
+            StatusCodeInterface::STATUS_UNSUPPORTED_MEDIA_TYPE,
             array(
                 'Content-Type' => 'application/json'
             ),
@@ -25,7 +26,7 @@ $http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
     $input = json_decode($request->getBody()->getContents());
     if (json_last_error() !== JSON_ERROR_NONE) {
         return new Response(
-            400, // Bad Request
+            StatusCodeInterface::STATUS_BAD_REQUEST,
             array(
                 'Content-Type' => 'application/json'
             ),
@@ -35,7 +36,7 @@ $http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
 
     if (!isset($input->name) || !is_string($input->name)) {
         return new Response(
-            422, // Unprocessable Entity
+            StatusCodeInterface::STATUS_UNPROCESSABLE_ENTITY,
             array(
                 'Content-Type' => 'application/json'
             ),
@@ -44,7 +45,7 @@ $http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
     }
 
     return new Response(
-        200,
+        StatusCodeInterface::STATUS_OK,
         array(
             'Content-Type' => 'application/json'
         ),

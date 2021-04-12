@@ -1,5 +1,6 @@
 <?php
 
+use Fig\Http\Message\StatusCodeInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Message\Response;
 
@@ -7,7 +8,7 @@ require __DIR__ . '/../vendor/autoload.php';
 
 $http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
     return new Response(
-        200,
+        StatusCodeInterface::STATUS_OK,
         array(
             'Content-Type' => 'text/plain'
         ),
