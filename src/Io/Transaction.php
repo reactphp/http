@@ -9,6 +9,7 @@ use RingCentral\Psr7\Request;
 use RingCentral\Psr7\Uri;
 use React\EventLoop\LoopInterface;
 use React\Http\Message\ResponseException;
+use React\Http\Message\TimeoutException;
 use React\Promise\Deferred;
 use React\Promise\PromiseInterface;
 use React\Stream\ReadableStreamInterface;
@@ -127,7 +128,7 @@ class Transaction
     public function applyTimeout(Deferred $deferred, $timeout)
     {
         $deferred->timeout = $this->loop->addTimer($timeout, function () use ($timeout, $deferred) {
-            $deferred->reject(new \RuntimeException(
+            $deferred->reject(new TimeoutException(
                 'Request timed out after ' . $timeout . ' seconds'
             ));
             if (isset($deferred->pending)) {
