@@ -6,6 +6,7 @@
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Message\Response;
+use Fig\Http\Message\StatusCodeInterface;
 use React\Http\Server;
 use React\Socket\Connector;
 use React\Socket\ConnectionInterface;
@@ -22,7 +23,7 @@ $connector = new Connector($loop);
 $server = new Server($loop, function (ServerRequestInterface $request) use ($connector) {
     if ($request->getMethod() !== 'CONNECT') {
         return new Response(
-            405,
+            StatusCodeInterface::STATUS_METHOD_NOT_ALLOWED,
             array(
                 'Content-Type' => 'text/plain',
                 'Allow' => 'CONNECT'
@@ -36,14 +37,14 @@ $server = new Server($loop, function (ServerRequestInterface $request) use ($con
         function (ConnectionInterface $remote) {
             // connection established => forward data
             return new Response(
-                200,
+                StatusCodeInterface::STATUS_OK,
                 array(),
                 $remote
             );
         },
         function ($e) {
             return new Response(
-                502,
+                StatusCodeInterface::STATUS_BAD_GATEWAY,
                 array(
                     'Content-Type' => 'text/plain'
                 ),

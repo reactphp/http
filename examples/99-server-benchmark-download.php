@@ -15,6 +15,7 @@
 // $ docker run -it --rm --net=host skandyla/wrk -t8 -c10 -d20 http://localhost:8080/
 
 use Evenement\EventEmitter;
+use Fig\Http\Message\StatusCodeInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Message\Response;
@@ -98,7 +99,7 @@ $server = new Server($loop, function (ServerRequestInterface $request) use ($loo
     switch ($request->getUri()->getPath()) {
         case '/':
             return new Response(
-                200,
+                StatusCodeInterface::STATUS_OK,
                 array(
                     'Content-Type' => 'text/html'
                 ),
@@ -111,13 +112,13 @@ $server = new Server($loop, function (ServerRequestInterface $request) use ($loo
             $stream = new ChunkRepeater(str_repeat('.', 1000000), 10000);
             break;
         default:
-            return new Response(404);
+            return new Response(StatusCodeInterface::STATUS_NOT_FOUND);
     }
 
     $loop->addTimer(0, array($stream, 'resume'));
 
     return new Response(
-        200,
+        StatusCodeInterface::STATUS_OK,
         array(
             'Content-Type' => 'application/octet-data',
             'Content-Length' => $stream->getSize()

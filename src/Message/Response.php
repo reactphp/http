@@ -2,6 +2,7 @@
 
 namespace React\Http\Message;
 
+use Fig\Http\Message\StatusCodeInterface;
 use React\Http\Io\HttpBodyStream;
 use React\Stream\ReadableStreamInterface;
 use RingCentral\Psr7\Response as Psr7Response;
@@ -42,7 +43,7 @@ final class Response extends Psr7Response
      * @throws \InvalidArgumentException for an invalid body
      */
     public function __construct(
-        $status = 200,
+        $status = StatusCodeInterface::STATUS_OK,
         array $headers = array(),
         $body = '',
         $version = '1.1',

@@ -3,6 +3,7 @@
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Message\Response;
+use Fig\Http\Message\StatusCodeInterface;
 use React\Http\Server;
 
 require __DIR__ . '/../vendor/autoload.php';
@@ -12,7 +13,7 @@ $loop = Factory::create();
 $counter = 0;
 $server = new Server($loop, function (ServerRequestInterface $request) use (&$counter) {
     return new Response(
-        200,
+        StatusCodeInterface::STATUS_OK,
         array(
             'Content-Type' => 'text/plain'
         ),

@@ -1,6 +1,7 @@
 <?php
 
 use React\EventLoop\Factory;
+use Fig\Http\Message\StatusCodeInterface;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -25,7 +26,7 @@ $server = new React\Http\Server(
 
             $body->on('end', function () use ($resolve, &$bytes){
                 $resolve(new React\Http\Message\Response(
-                    200,
+                    StatusCodeInterface::STATUS_OK,
                     array(
                         'Content-Type' => 'text/plain'
                     ),
@@ -36,7 +37,7 @@ $server = new React\Http\Server(
             // an error occures e.g. on invalid chunked encoded data or an unexpected 'end' event
             $body->on('error', function (\Exception $exception) use ($resolve, &$bytes) {
                 $resolve(new React\Http\Message\Response(
-                    400,
+                    StatusCodeInterface::STATUS_BAD_REQUEST,
                     array(
                         'Content-Type' => 'text/plain'
                     ),

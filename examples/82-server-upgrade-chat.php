@@ -22,6 +22,7 @@ Hint: try this with multiple connections :)
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Message\Response;
+use Fig\Http\Message\StatusCodeInterface;
 use React\Http\Server;
 use React\Stream\CompositeStream;
 use React\Stream\ThroughStream;
@@ -41,7 +42,7 @@ $chat = new ThroughStream();
 $server = new Server($loop, function (ServerRequestInterface $request) use ($loop, $chat) {
     if ($request->getHeaderLine('Upgrade') !== 'chat' || $request->getProtocolVersion() === '1.0') {
         return new Response(
-            426,
+            StatusCodeInterface::STATUS_UPGRADE_REQUIRED,
             array(
                 'Upgrade' => 'chat'
             ),
@@ -79,7 +80,7 @@ $server = new Server($loop, function (ServerRequestInterface $request) use ($loo
     });
 
     return new Response(
-        101,
+        StatusCodeInterface::STATUS_SWITCHING_PROTOCOLS,
         array(
             'Upgrade' => 'chat'
         ),
