@@ -11,13 +11,11 @@ use RingCentral\Psr7;
 
 require __DIR__ . '/../vendor/autoload.php';
 
-$loop = Factory::create();
-
 // Note how this example uses the `Server` without the `StreamingRequestMiddleware`.
 // This means that this proxy buffers the whole request before "processing" it.
 // As such, this is store-and-forward proxy. This could also use the advanced
 // `StreamingRequestMiddleware` to forward the incoming request as it comes in.
-$server = new Server($loop, function (RequestInterface $request) {
+$server = new Server(function (RequestInterface $request) {
     if (strpos($request->getRequestTarget(), '://') === false) {
         return new Response(
             400,
@@ -48,9 +46,7 @@ $server = new Server($loop, function (RequestInterface $request) {
     );
 });
 
-$socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
+$socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0');
 $server->listen($socket);
 
 echo 'Listening on ' . str_replace('tcp:', 'http:', $socket->getAddress()) . PHP_EOL;
-
-$loop->run();

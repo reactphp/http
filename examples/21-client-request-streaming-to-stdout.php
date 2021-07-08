@@ -13,11 +13,10 @@ if (DIRECTORY_SEPARATOR === '\\') {
     exit(1);
 }
 
-$loop = React\EventLoop\Factory::create();
-$client = new Browser($loop);
+$client = new Browser();
 
-$out = new WritableResourceStream(STDOUT, $loop);
-$info = new WritableResourceStream(STDERR, $loop);
+$out = new WritableResourceStream(STDOUT);
+$info = new WritableResourceStream(STDERR);
 
 $url = isset($argv[1]) ? $argv[1] : 'http://google.com/';
 $info->write('Requesting ' . $url . '…' . PHP_EOL);
@@ -29,5 +28,3 @@ $client->requestStreaming('GET', $url)->then(function (ResponseInterface $respon
     assert($body instanceof ReadableStreamInterface);
     $body->pipe($out);
 }, 'printf');
-
-$loop->run();

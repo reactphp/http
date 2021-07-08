@@ -20,15 +20,13 @@ Hint: try this with multiple connections :)
 */
 
 use Psr\Http\Message\ServerRequestInterface;
-use React\EventLoop\Factory;
+use React\EventLoop\Loop;
 use React\Http\Message\Response;
 use React\Http\Server;
 use React\Stream\CompositeStream;
 use React\Stream\ThroughStream;
 
 require __DIR__ . '/../vendor/autoload.php';
-
-$loop = Factory::create();
 
 // simply use a shared duplex ThroughStream for all clients
 // it will simply emit any data that is sent to it
@@ -38,7 +36,7 @@ $chat = new ThroughStream();
 // Note how this example uses the `Server` without the `StreamingRequestMiddleware`.
 // The initial incoming request does not contain a body and we upgrade to a
 // stream object below.
-$server = new Server($loop, function (ServerRequestInterface $request) use ($loop, $chat) {
+$server = new Server(function (ServerRequestInterface $request) use ($chat) {
     if ($request->getHeaderLine('Upgrade') !== 'chat' || $request->getProtocolVersion() === '1.0') {
         return new Response(
             426,
@@ -68,7 +66,7 @@ $server = new Server($loop, function (ServerRequestInterface $request) use ($loo
     });
 
     // say hello to new user
-    $loop->addTimer(0, function () use ($chat, $username, $out) {
+    Loop::addTimer(0, function () use ($chat, $username, $out) {
         $out->write('Welcome to this chat example, ' . $username . '!' . PHP_EOL);
         $chat->write($username . ' joined' . PHP_EOL);
     });
@@ -87,9 +85,7 @@ $server = new Server($loop, function (ServerRequestInterface $request) use ($loo
     );
 });
 
-$socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
+$socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0');
 $server->listen($socket);
 
 echo 'Listening on ' . str_replace('tcp:', 'http:', $socket->getAddress()) . PHP_EOL;
-
-$loop->run();

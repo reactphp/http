@@ -3,6 +3,7 @@
 namespace React\Http;
 
 use Evenement\EventEmitter;
+use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
 use React\Http\Io\IniUtil;
 use React\Http\Io\MiddlewareRunner;
@@ -23,7 +24,7 @@ use React\Socket\ServerInterface;
  * object and expects a [response](#server-response) object in return:
  *
  * ```php
- * $server = new React\Http\Server($loop, function (Psr\Http\Message\ServerRequestInterface $request) {
+ * $server = new React\Http\Server(function (Psr\Http\Message\ServerRequestInterface $request) {
  *     return new React\Http\Message\Response(
  *         200,
  *         array(
@@ -42,6 +43,12 @@ use React\Socket\ServerInterface;
  * [PSR-7 `ResponseInterface`](https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface),
  * see also following [response](#server-response) chapter for more details.
  *
+ * This class takes an optional `LoopInterface|null $loop` parameter that can be used to
+ * pass the event loop instance to use for this object. You can use a `null` value
+ * here in order to use the [default loop](https://github.com/reactphp/event-loop#loop).
+ * This value SHOULD NOT be given unless you're sure you want to explicitly use a
+ * given event loop instance.
+ *
  * In order to start listening for any incoming connections, the `Server` needs
  * to be attached to an instance of
  * [`React\Socket\ServerInterface`](https://github.com/reactphp/socket#serverinterface)
@@ -51,9 +58,9 @@ use React\Socket\ServerInterface;
  * to start a plaintext HTTP server like this:
  *
  * ```php
- * $server = new React\Http\Server($loop, $handler);
+ * $server = new React\Http\Server($handler);
  *
- * $socket = new React\Socket\Server('0.0.0.0:8080', $loop);
+ * $socket = new React\Socket\Server('0.0.0.0:8080');
  * $server->listen($socket);
  * ```
  *
@@ -122,7 +129,6 @@ use React\Socket\ServerInterface;
  *
  * ```php
  * $server = new React\Http\Server(
- *     $loop,
  *     new React\Http\Middleware\StreamingRequestMiddleware(),
  *     new React\Http\Middleware\LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
  *     new React\Http\Middleware\RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
@@ -148,7 +154,6 @@ use React\Socket\ServerInterface;
  *
  * ```php
  * $server = new React\Http\Server(
- *     $loop,
  *     new React\Http\Middleware\StreamingRequestMiddleware(),
  *     $handler
  * );
@@ -191,14 +196,19 @@ final class Server extends EventEmitter
      * connections in order to then parse incoming data as HTTP.
      * See also [listen()](#listen) for more details.
      *
-     * @param LoopInterface $loop
+     * @param callable|LoopInterface $requestHandlerOrLoop
      * @param callable[] ...$requestHandler
      * @see self::listen()
      */
-    public function __construct(LoopInterface $loop)
+    public function __construct($requestHandlerOrLoop)
     {
         $requestHandlers = \func_get_args();
-        \array_shift($requestHandlers);
+        if (reset($requestHandlers) instanceof LoopInterface) {
+            $loop = \array_shift($requestHandlers);
+        } else {
+            $loop = Loop::get();
+        }
+
         $requestHandlersCount = \count($requestHandlers);
         if ($requestHandlersCount === 0 || \count(\array_filter($requestHandlers, 'is_callable')) < $requestHandlersCount) {
             throw new \InvalidArgumentException('Invalid request handler given');
@@ -253,9 +263,9 @@ final class Server extends EventEmitter
      * order to start a plaintext HTTP server like this:
      *
      * ```php
-     * $server = new React\Http\Server($loop, $handler);
+     * $server = new React\Http\Server($handler);
      *
-     * $socket = new React\Socket\Server(8080, $loop);
+     * $socket = new React\Socket\Server(8080);
      * $server->listen($socket);
      * ```
      *
@@ -279,9 +289,9 @@ final class Server extends EventEmitter
      * `passphrase` like this:
      *
      * ```php
-     * $server = new React\Http\Server($loop, $handler);
+     * $server = new React\Http\Server($handler);
      *
-     * $socket = new React\Socket\Server('tls://0.0.0.0:8443', $loop, array(
+     * $socket = new React\Socket\Server('tls://0.0.0.0:8443', null, array(
      *     'local_cert' => __DIR__ . '/localhost.pem'
      * ));
      * $server->listen($socket);

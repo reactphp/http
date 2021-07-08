@@ -16,15 +16,12 @@
 
 use Evenement\EventEmitter;
 use Psr\Http\Message\ServerRequestInterface;
-use React\EventLoop\Factory;
 use React\Http\Message\Response;
 use React\Http\Server;
 use React\Stream\ReadableStreamInterface;
 use React\Stream\WritableStreamInterface;
 
 require __DIR__ . '/../vendor/autoload.php';
-
-$loop = Factory::create();
 
 /** A readable stream that can emit a lot of data */
 class ChunkRepeater extends EventEmitter implements ReadableStreamInterface
@@ -94,7 +91,7 @@ class ChunkRepeater extends EventEmitter implements ReadableStreamInterface
     }
 }
 
-$server = new Server($loop, function (ServerRequestInterface $request) use ($loop) {
+$server = new Server(function (ServerRequestInterface $request) {
     switch ($request->getUri()->getPath()) {
         case '/':
             return new Response(
@@ -114,7 +111,7 @@ $server = new Server($loop, function (ServerRequestInterface $request) use ($loo
             return new Response(404);
     }
 
-    $loop->addTimer(0, array($stream, 'resume'));
+    React\EventLoop\Loop::addTimer(0, array($stream, 'resume'));
 
     return new Response(
         200,
@@ -126,9 +123,7 @@ $server = new Server($loop, function (ServerRequestInterface $request) use ($loo
     );
 });
 
-$socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
+$socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0');
 $server->listen($socket);
 
 echo 'Listening on ' . str_replace('tcp:', 'http:', $socket->getAddress()) . PHP_EOL;
-
-$loop->run();

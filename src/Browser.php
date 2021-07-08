@@ -5,6 +5,7 @@ namespace React\Http;
 use Psr\Http\Message\ResponseInterface;
 use RingCentral\Psr7\Request;
 use RingCentral\Psr7\Uri;
+use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
 use React\Http\Io\ReadableBodyStream;
 use React\Http\Io\Sender;
@@ -26,20 +27,23 @@ class Browser
     /**
      * The `Browser` is responsible for sending HTTP requests to your HTTP server
      * and keeps track of pending incoming HTTP responses.
-     * It also registers everything with the main [`EventLoop`](https://github.com/reactphp/event-loop#usage).
      *
      * ```php
-     * $loop = React\EventLoop\Factory::create();
-     *
-     * $browser = new React\Http\Browser($loop);
+     * $browser = new React\Http\Browser();
      * ```
+     *
+     * This class takes an optional `LoopInterface|null $loop` parameter that can be used to
+     * pass the event loop instance to use for this object. You can use a `null` value
+     * here in order to use the [default loop](https://github.com/reactphp/event-loop#loop).
+     * This value SHOULD NOT be given unless you're sure you want to explicitly use a
+     * given event loop instance.
      *
      * If you need custom connector settings (DNS resolution, TLS parameters, timeouts,
      * proxy servers etc.), you can explicitly pass a custom instance of the
      * [`ConnectorInterface`](https://github.com/reactphp/socket#connectorinterface):
      *
      * ```php
-     * $connector = new React\Socket\Connector($loop, array(
+     * $connector = new React\Socket\Connector(null, array(
      *     'dns' => '127.0.0.1',
      *     'tcp' => array(
      *         'bindto' => '192.168.10.1:0'
@@ -50,15 +54,16 @@ class Browser
      *     )
      * ));
      *
-     * $browser = new React\Http\Browser($loop, $connector);
+     * $browser = new React\Http\Browser(null, $connector);
      * ```
      *
-     * @param LoopInterface $loop
-     * @param ConnectorInterface|null $connector [optional] Connector to use.
+     * @param ?LoopInterface $loop
+     * @param ?ConnectorInterface $connector [optional] Connector to use.
      *     Should be `null` in order to use default Connector.
      */
-    public function __construct(LoopInterface $loop, ConnectorInterface $connector = null)
+    public function __construct(LoopInterface $loop = null, ConnectorInterface $connector = null)
     {
+        $loop = $loop ?: Loop::get();
         $this->transaction = new Transaction(
             Sender::createFromLoop($loop, $connector),
             $loop
@@ -127,7 +132,7 @@ class Browser
      *
      * ```php
      * $body = new React\Stream\ThroughStream();
-     * $loop->addTimer(1.0, function () use ($body) {
+     * Loop::addTimer(1.0, function () use ($body) {
      *     $body->end("hello world");
      * });
      *
@@ -185,7 +190,7 @@ class Browser
      *
      * ```php
      * $body = new React\Stream\ThroughStream();
-     * $loop->addTimer(1.0, function () use ($body) {
+     * Loop::addTimer(1.0, function () use ($body) {
      *     $body->end("hello world");
      * });
      *
@@ -227,7 +232,7 @@ class Browser
      *
      * ```php
      * $body = new React\Stream\ThroughStream();
-     * $loop->addTimer(1.0, function () use ($body) {
+     * Loop::addTimer(1.0, function () use ($body) {
      *     $body->end("hello world");
      * });
      *
@@ -291,7 +296,7 @@ class Browser
      *
      * ```php
      * $body = new React\Stream\ThroughStream();
-     * $loop->addTimer(1.0, function () use ($body) {
+     * Loop::addTimer(1.0, function () use ($body) {
      *     $body->end("hello world");
      * });
      *
@@ -362,7 +367,7 @@ class Browser
      *
      * ```php
      * $body = new React\Stream\ThroughStream();
-     * $loop->addTimer(1.0, function () use ($body) {
+     * Loop::addTimer(1.0, function () use ($body) {
      *     $body->end("hello world");
      * });
      *
