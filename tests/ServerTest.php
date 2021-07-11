@@ -46,6 +46,21 @@ final class ServerTest extends TestCase
         $this->socket = new SocketServerStub();
     }
 
+    public function testConstructWithoutLoopAssignsLoopAutomatically()
+    {
+        $server = new Server(function () { });
+
+        $ref = new \ReflectionProperty($server, 'streamingServer');
+        $ref->setAccessible(true);
+        $streamingServer = $ref->getValue($server);
+
+        $ref = new \ReflectionProperty($streamingServer, 'loop');
+        $ref->setAccessible(true);
+        $loop = $ref->getValue($streamingServer);
+
+        $this->assertInstanceOf('React\EventLoop\LoopInterface', $loop);
+    }
+
     public function testInvalidCallbackFunctionLeadsToException()
     {
         $this->setExpectedException('InvalidArgumentException');

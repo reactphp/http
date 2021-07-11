@@ -8,8 +8,7 @@ use Psr\Http\Message\ResponseInterface;
 
 require __DIR__ . '/../vendor/autoload.php';
 
-$loop = React\EventLoop\Factory::create();
-$client = new Browser($loop);
+$client = new Browser();
 
 $promises = array(
     $client->head('http://www.github.com/clue/http-react'),
@@ -28,5 +27,3 @@ React\Promise\any($promises)->then(function (ResponseInterface $response) use ($
     var_dump($response->getHeaders());
     echo PHP_EOL . $response->getBody();
 });
-
-$loop->run();

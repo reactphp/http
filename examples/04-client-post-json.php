@@ -5,8 +5,7 @@ use Psr\Http\Message\ResponseInterface;
 
 require __DIR__ . '/../vendor/autoload.php';
 
-$loop = React\EventLoop\Factory::create();
-$client = new Browser($loop);
+$client = new Browser();
 
 $data = array(
     'name' => array(
@@ -25,5 +24,3 @@ $client->post(
 )->then(function (ResponseInterface $response) {
     echo (string)$response->getBody();
 }, 'printf');
-
-$loop->run();

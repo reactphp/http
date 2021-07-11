@@ -83,6 +83,9 @@ class FunctionalIntegrationTest extends TestCase
     /** @group internet */
     public function testSuccessfulResponseEmitsEnd()
     {
+        // max_nesting_level was set to 100 for PHP Versions < 5.4 which resulted in failing test for legacy PHP
+        ini_set('xdebug.max_nesting_level', 256);
+
         $loop = Factory::create();
         $client = new Client($loop);
 
@@ -105,6 +108,9 @@ class FunctionalIntegrationTest extends TestCase
         if (defined('HHVM_VERSION')) {
             $this->markTestSkipped('Not supported on HHVM');
         }
+
+        // max_nesting_level was set to 100 for PHP Versions < 5.4 which resulted in failing test for legacy PHP
+        ini_set('xdebug.max_nesting_level', 256);
 
         $loop = Factory::create();
         $client = new Client($loop);

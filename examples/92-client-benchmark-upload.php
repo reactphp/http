@@ -11,9 +11,10 @@
 // b2) run HTTP client sending a 10 GB upload
 // $ php examples/92-client-benchmark-upload.php http://localhost:8080/ 10000
 
-use React\Http\Browser;
 use Evenement\EventEmitter;
 use Psr\Http\Message\ResponseInterface;
+use React\EventLoop\Loop;
+use React\Http\Browser;
 use React\Stream\ReadableStreamInterface;
 use React\Stream\Util;
 use React\Stream\WritableStreamInterface;
@@ -92,33 +93,30 @@ class ChunkRepeater extends EventEmitter implements ReadableStreamInterface
     }
 }
 
-$loop = React\EventLoop\Factory::create();
-$client = new Browser($loop);
+$client = new Browser();
 
 $url = isset($argv[1]) ? $argv[1] : 'http://httpbin.org/post';
 $n = isset($argv[2]) ? $argv[2] : 10;
 $source = new ChunkRepeater(str_repeat('x', 1000000), $n);
-$loop->futureTick(function () use ($source) {
+Loop::futureTick(function () use ($source) {
     $source->resume();
 });
 
 echo 'POSTing ' . $n . ' MB to ' . $url . PHP_EOL;
 
 $start = microtime(true);
-$report = $loop->addPeriodicTimer(0.05, function () use ($source, $start) {
+$report = Loop::addPeriodicTimer(0.05, function () use ($source, $start) {
     printf("\r%d bytes in %0.3fs...", $source->getPosition(), microtime(true) - $start);
 });
 
-$client->post($url, array('Content-Length' => $n * 1000000), $source)->then(function (ResponseInterface $response) use ($source, $report, $loop, $start) {
+$client->post($url, array('Content-Length' => $n * 1000000), $source)->then(function (ResponseInterface $response) use ($source, $report, $start) {
     $now = microtime(true);
-    $loop->cancelTimer($report);
+    Loop::cancelTimer($report);
 
     printf("\r%d bytes in %0.3fs => %.1f MB/s\n", $source->getPosition(), $now - $start, $source->getPosition() / ($now - $start) / 1000000);
 
     echo rtrim(preg_replace('/x{5,}/','x…', (string) $response->getBody()), PHP_EOL) . PHP_EOL;
-}, function ($e) use ($loop, $report) {
-    $loop->cancelTimer($report);
+}, function ($e) use ($report) {
+    Loop::cancelTimer($report);
     echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
-
-$loop->run();

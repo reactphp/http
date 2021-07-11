@@ -28,6 +28,21 @@ class BrowserTest extends TestCase
         $ref->setValue($this->browser, $this->sender);
     }
 
+    public function testConstructWithoutLoopAssignsLoopAutomatically()
+    {
+        $browser = new Browser();
+
+        $ref = new \ReflectionProperty($browser, 'transaction');
+        $ref->setAccessible(true);
+        $transaction = $ref->getValue($browser);
+
+        $ref = new \ReflectionProperty($transaction, 'loop');
+        $ref->setAccessible(true);
+        $loop = $ref->getValue($transaction);
+
+        $this->assertInstanceOf('React\EventLoop\LoopInterface', $loop);
+    }
+
     public function testGetSendsGetRequest()
     {
         $that = $this;
