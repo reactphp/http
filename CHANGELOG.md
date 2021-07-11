@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.4.0 (2021-07-11)
+
+A major new feature release, see [**release announcement**](https://clue.engineering/2021/announcing-reactphp-default-loop).
+
+*   Feature: Simplify usage by supporting new [default loop](https://reactphp.org/event-loop/#loop).
+    (#410 by @clue)
+
+    ```php
+    // old (still supported)
+    $browser = new React\Http\Browser($loop);
+    $server = new React\Http\Server($loop, $handler);
+
+    // new (using default loop)
+    $browser = new React\Http\Browser();
+    $server = new React\Http\Server($handler);
+    ```
+
 ## 1.3.0 (2021-04-11)
 
 *   Feature: Support persistent connections (`Connection: keep-alive`).
