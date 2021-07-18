@@ -8,6 +8,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Browser;
 use React\Http\Message\ResponseException;
+use React\Http\Message\TimeoutException;
 use React\Http\Middleware\StreamingRequestMiddleware;
 use React\Http\Message\Response;
 use React\Http\Server;
@@ -260,7 +261,7 @@ class FunctionalBrowserTest extends TestCase
     {
         $promise = $this->browser->withTimeout(0.1)->get($this->base . 'delay/10');
 
-        $this->setExpectedException('RuntimeException', 'Request timed out after 0.1 seconds');
+        $this->setExpectedException('\React\Http\Message\TimeoutException', 'Request timed out after 0.1 seconds');
         Block\await($promise, $this->loop);
     }
 
@@ -270,7 +271,7 @@ class FunctionalBrowserTest extends TestCase
         $promise = $this->browser->withTimeout(0.1)->post($this->base . 'delay/10', array(), $stream);
         $stream->end();
 
-        $this->setExpectedException('RuntimeException', 'Request timed out after 0.1 seconds');
+        $this->setExpectedException('\React\Http\Message\TimeoutException', 'Request timed out after 0.1 seconds');
         Block\await($promise, $this->loop);
     }
 
