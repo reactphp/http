@@ -2,11 +2,10 @@
 
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Message\Response;
-use React\Http\Server;
 
 require __DIR__ . '/../vendor/autoload.php';
 
-$server = new Server(function (ServerRequestInterface $request) {
+$http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
     $queryParams = $request->getQueryParams();
 
     $body = 'The query parameter "foo" is not set. Click the following link ';
@@ -25,7 +24,7 @@ $server = new Server(function (ServerRequestInterface $request) {
     );
 });
 
-$socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0');
-$server->listen($socket);
+$socket = new React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0');
+$http->listen($socket);
 
 echo 'Listening on ' . str_replace('tcp:', 'http:', $socket->getAddress()) . PHP_EOL;

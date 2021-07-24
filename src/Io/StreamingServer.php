@@ -20,7 +20,7 @@ use React\Stream\WritableStreamInterface;
  * The internal `StreamingServer` class is responsible for handling incoming connections and then
  * processing each incoming HTTP request.
  *
- * Unlike the [`Server`](#server) class, it does not buffer and parse the incoming
+ * Unlike the [`HttpServer`](#server) class, it does not buffer and parse the incoming
  * HTTP request body by default. This means that the request handler will be
  * invoked with a streaming request body. Once the request headers have been
  * received, it will invoke the request handler function. This request handler
@@ -63,7 +63,7 @@ use React\Stream\WritableStreamInterface;
  * See also the [`listen()`](#listen) method and the [first example](examples) for more details.
  *
  * The `StreamingServer` class is considered advanced usage and unless you know
- * what you're doing, you're recommended to use the [`Server`](#server) class
+ * what you're doing, you're recommended to use the [`HttpServer`](#httpserver) class
  * instead. The `StreamingServer` class is specifically designed to help with
  * more advanced use cases where you want to have full control over consuming
  * the incoming HTTP request body and concurrency settings.
@@ -75,7 +75,7 @@ use React\Stream\WritableStreamInterface;
  * handler function may not be fully compatible with PSR-7. See also
  * [streaming request](#streaming-request) below for more details.
  *
- * @see \React\Http\Server
+ * @see \React\Http\HttpServer
  * @see \React\Http\Message\Response
  * @see self::listen()
  * @internal
@@ -130,7 +130,7 @@ final class StreamingServer extends EventEmitter
      * Starts listening for HTTP requests on the given socket server instance
      *
      * @param ServerInterface $socket
-     * @see \React\Http\Server::listen()
+     * @see \React\Http\HttpServer::listen()
      */
     public function listen(ServerInterface $socket)
     {

@@ -15,7 +15,7 @@ use React\Http\Middleware\RequestBodyParserMiddleware;
 use React\Socket\ServerInterface;
 
 /**
- * The `React\Http\Server` class is responsible for handling incoming connections and then
+ * The `React\Http\HttpServer` class is responsible for handling incoming connections and then
  * processing each incoming HTTP request.
  *
  * When a complete HTTP request has been received, it will invoke the given
@@ -24,7 +24,7 @@ use React\Socket\ServerInterface;
  * object and expects a [response](#server-response) object in return:
  *
  * ```php
- * $server = new React\Http\Server(function (Psr\Http\Message\ServerRequestInterface $request) {
+ * $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
  *     return new React\Http\Message\Response(
  *         200,
  *         array(
@@ -49,7 +49,7 @@ use React\Socket\ServerInterface;
  * This value SHOULD NOT be given unless you're sure you want to explicitly use a
  * given event loop instance.
  *
- * In order to start listening for any incoming connections, the `Server` needs
+ * In order to start listening for any incoming connections, the `HttpServer` needs
  * to be attached to an instance of
  * [`React\Socket\ServerInterface`](https://github.com/reactphp/socket#serverinterface)
  * through the [`listen()`](#listen) method as described in the following
@@ -58,17 +58,17 @@ use React\Socket\ServerInterface;
  * to start a plaintext HTTP server like this:
  *
  * ```php
- * $server = new React\Http\Server($handler);
+ * $http = new React\Http\HttpServer($handler);
  *
  * $socket = new React\Socket\Server('0.0.0.0:8080');
- * $server->listen($socket);
+ * $http->listen($socket);
  * ```
  *
  * See also the [`listen()`](#listen) method and
  * [hello world server example](../examples/51-server-hello-world.php)
  * for more details.
  *
- * By default, the `Server` buffers and parses the complete incoming HTTP
+ * By default, the `HttpServer` buffers and parses the complete incoming HTTP
  * request in memory. It will invoke the given request handler function when the
  * complete request headers and request body has been received. This means the
  * [request](#server-request) object passed to your request handler function will be
@@ -121,14 +121,14 @@ use React\Socket\ServerInterface;
  * or explicitly limit concurrency.
  *
  * In order to override the above buffering defaults, you can configure the
- * `Server` explicitly. You can use the
+ * `HttpServer` explicitly. You can use the
  * [`LimitConcurrentRequestsMiddleware`](#limitconcurrentrequestsmiddleware) and
  * [`RequestBodyBufferMiddleware`](#requestbodybuffermiddleware) (see below)
  * to explicitly configure the total number of requests that can be handled at
  * once like this:
  *
  * ```php
- * $server = new React\Http\Server(
+ * $http = new React\Http\HttpServer(
  *     new React\Http\Middleware\StreamingRequestMiddleware(),
  *     new React\Http\Middleware\LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
  *     new React\Http\Middleware\RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
@@ -153,7 +153,7 @@ use React\Socket\ServerInterface;
  * in memory:
  *
  * ```php
- * $server = new React\Http\Server(
+ * $http = new React\Http\HttpServer(
  *     new React\Http\Middleware\StreamingRequestMiddleware(),
  *     $handler
  * );
@@ -167,8 +167,12 @@ use React\Socket\ServerInterface;
  * have full control over consuming the incoming HTTP request body and
  * concurrency settings. See also [streaming incoming request](#streaming-incoming-request)
  * below for more details.
+ *
+ * > Changelog v1.5.0: This class has been renamed to `HttpServer` from the
+ *   previous `Server` class in order to avoid any ambiguities.
+ *   The previous name has been deprecated and should not be used anymore.
  */
-final class Server extends EventEmitter
+final class HttpServer extends EventEmitter
 {
     /**
      * The maximum buffer size used for each request.
@@ -263,10 +267,10 @@ final class Server extends EventEmitter
      * order to start a plaintext HTTP server like this:
      *
      * ```php
-     * $server = new React\Http\Server($handler);
+     * $http = new React\Http\HttpServer($handler);
      *
      * $socket = new React\Socket\Server(8080);
-     * $server->listen($socket);
+     * $http->listen($socket);
      * ```
      *
      * See also [hello world server example](../examples/51-server-hello-world.php)
@@ -289,12 +293,12 @@ final class Server extends EventEmitter
      * `passphrase` like this:
      *
      * ```php
-     * $server = new React\Http\Server($handler);
+     * $http = new React\Http\HttpServer($handler);
      *
      * $socket = new React\Socket\Server('tls://0.0.0.0:8443', null, array(
      *     'local_cert' => __DIR__ . '/localhost.pem'
      * ));
-     * $server->listen($socket);
+     * $http->listen($socket);
      * ```
      *
      * See also [hello world HTTPS example](../examples/61-server-hello-world-https.php)

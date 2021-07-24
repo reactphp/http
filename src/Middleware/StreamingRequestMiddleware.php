@@ -13,7 +13,7 @@ use Psr\Http\Message\ServerRequestInterface;
  * that emit chunks of incoming data as it is received:
  *
  * ```php
- * $server = new React\Http\Server(array(
+ * $http = new React\Http\HttpServer(
  *     new React\Http\Middleware\StreamingRequestMiddleware(),
  *     function (Psr\Http\Message\ServerRequestInterface $request) {
  *         $body = $request->getBody();
@@ -34,7 +34,7 @@ use Psr\Http\Message\ServerRequestInterface;
  *             });
  *         });
  *     }
- * ));
+ * );
  * ```
  *
  * See also [streaming incoming request](../../README.md#streaming-incoming-request)
@@ -47,17 +47,17 @@ use Psr\Http\Message\ServerRequestInterface;
  * once:
  *
  * ```php
- * $server = new React\Http\Server(array(
+ * $http = new React\Http\HttpServer(
  *     new React\Http\Middleware\StreamingRequestMiddleware(),
  *     new React\Http\Middleware\LimitConcurrentRequestsMiddleware(100), // 100 concurrent buffering handlers
  *     new React\Http\Middleware\RequestBodyBufferMiddleware(2 * 1024 * 1024), // 2 MiB per request
  *     new React\Http\Middleware\RequestBodyParserMiddleware(),
  *     $handler
- * ));
+ * );
  * ```
  *
  * > Internally, this class is used as a "marker" to not trigger the default
- *   request buffering behavior in the `Server`. It does not implement any logic
+ *   request buffering behavior in the `HttpServer`. It does not implement any logic
  *   on its own.
  */
 final class StreamingRequestMiddleware

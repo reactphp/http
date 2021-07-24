@@ -2,17 +2,17 @@
 
 namespace React\Tests\Http;
 
-use React\EventLoop\Factory;
-use React\Http\Server;
-use Psr\Http\Message\ServerRequestInterface;
-use React\Promise\Deferred;
 use Clue\React\Block;
-use React\Promise;
-use React\Http\Middleware\StreamingRequestMiddleware;
-use React\Stream\ReadableStreamInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use React\EventLoop\Factory;
+use React\Http\HttpServer;
 use React\Http\Io\IniUtil;
+use React\Http\Middleware\StreamingRequestMiddleware;
+use React\Promise;
+use React\Promise\Deferred;
+use React\Stream\ReadableStreamInterface;
 
-final class ServerTest extends TestCase
+final class HttpServerTest extends TestCase
 {
     private $connection;
     private $socket;
@@ -48,11 +48,11 @@ final class ServerTest extends TestCase
 
     public function testConstructWithoutLoopAssignsLoopAutomatically()
     {
-        $server = new Server(function () { });
+        $http = new HttpServer(function () { });
 
-        $ref = new \ReflectionProperty($server, 'streamingServer');
+        $ref = new \ReflectionProperty($http, 'streamingServer');
         $ref->setAccessible(true);
-        $streamingServer = $ref->getValue($server);
+        $streamingServer = $ref->getValue($http);
 
         $ref = new \ReflectionProperty($streamingServer, 'loop');
         $ref->setAccessible(true);
@@ -64,17 +64,17 @@ final class ServerTest extends TestCase
     public function testInvalidCallbackFunctionLeadsToException()
     {
         $this->setExpectedException('InvalidArgumentException');
-        new Server(Factory::create(), 'invalid');
+        new HttpServer('invalid');
     }
 
     public function testSimpleRequestCallsRequestHandlerOnce()
     {
         $called = null;
-        $server = new Server(Factory::create(), function (ServerRequestInterface $request) use (&$called) {
+        $http = new HttpServer(function (ServerRequestInterface $request) use (&$called) {
             ++$called;
         });
 
-        $server->listen($this->socket);
+        $http->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
         $this->connection->emit('data', array("GET / HTTP/1.0\r\n\r\n"));
 
@@ -87,9 +87,9 @@ final class ServerTest extends TestCase
     public function testSimpleRequestCallsArrayRequestHandlerOnce()
     {
         $this->called = null;
-        $server = new Server(Factory::create(), array($this, 'helperCallableOnce'));
+        $http = new HttpServer(array($this, 'helperCallableOnce'));
 
-        $server->listen($this->socket);
+        $http->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
         $this->connection->emit('data', array("GET / HTTP/1.0\r\n\r\n"));
 
@@ -104,8 +104,7 @@ final class ServerTest extends TestCase
     public function testSimpleRequestWithMiddlewareArrayProcessesMiddlewareStack()
     {
         $called = null;
-        $server = new Server(
-            Factory::create(),
+        $http = new HttpServer(
             function (ServerRequestInterface $request, $next) use (&$called) {
                 $called = 'before';
                 $ret = $next($request->withHeader('Demo', 'ok'));
@@ -118,7 +117,7 @@ final class ServerTest extends TestCase
             }
         );
 
-        $server->listen($this->socket);
+        $http->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
         $this->connection->emit('data', array("GET / HTTP/1.0\r\n\r\n"));
 
@@ -129,11 +128,11 @@ final class ServerTest extends TestCase
     {
         $loop = Factory::create();
         $deferred = new Deferred();
-        $server = new Server($loop, function (ServerRequestInterface $request) use ($deferred) {
+        $http = new HttpServer($loop, function (ServerRequestInterface $request) use ($deferred) {
             $deferred->resolve($request);
         });
 
-        $server->listen($this->socket);
+        $http->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
         $this->connection->emit('data', array("POST / HTTP/1.0\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: 7\r\n\r\nfoo=bar"));
 
@@ -158,11 +157,11 @@ final class ServerTest extends TestCase
     {
         $loop = Factory::create();
         $deferred = new Deferred();
-        $server = new Server($loop, function (ServerRequestInterface $request) use ($deferred) {
+        $http = new HttpServer($loop, function (ServerRequestInterface $request) use ($deferred) {
             $deferred->resolve($request);
         });
 
-        $server->listen($this->socket);
+        $http->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
 
         $connection = $this->connection;
@@ -202,11 +201,11 @@ final class ServerTest extends TestCase
     {
         $loop = Factory::create();
         $deferred = new Deferred();
-        $server = new Server($loop, function (ServerRequestInterface $request) use ($deferred) {
+        $http = new HttpServer($loop, function (ServerRequestInterface $request) use ($deferred) {
             $deferred->resolve($request);
         });
 
-        $server->listen($this->socket);
+        $http->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
         $this->connection->emit('data', array("POST / HTTP/1.0\r\nContent-Type: application/json\r\nContent-Length: 6\r\n\r\n[true]"));
 
@@ -227,11 +226,11 @@ final class ServerTest extends TestCase
     public function testServerReceivesBufferedRequestByDefault()
     {
         $streaming = null;
-        $server = new Server(Factory::create(), function (ServerRequestInterface $request) use (&$streaming) {
+        $http = new HttpServer(function (ServerRequestInterface $request) use (&$streaming) {
             $streaming = $request->getBody() instanceof ReadableStreamInterface;
         });
 
-        $server->listen($this->socket);
+        $http->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
         $this->connection->emit('data', array("GET / HTTP/1.0\r\n\r\n"));
 
@@ -241,15 +240,14 @@ final class ServerTest extends TestCase
     public function testServerWithStreamingRequestMiddlewareReceivesStreamingRequest()
     {
         $streaming = null;
-        $server = new Server(
-            Factory::create(),
+        $http = new HttpServer(
             new StreamingRequestMiddleware(),
             function (ServerRequestInterface $request) use (&$streaming) {
                 $streaming = $request->getBody() instanceof ReadableStreamInterface;
             }
         );
 
-        $server->listen($this->socket);
+        $http->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
         $this->connection->emit('data', array("GET / HTTP/1.0\r\n\r\n"));
 
@@ -260,14 +258,14 @@ final class ServerTest extends TestCase
     {
         $exception = new \Exception();
         $capturedException = null;
-        $server = new Server(Factory::create(), function () use ($exception) {
+        $http = new HttpServer(function () use ($exception) {
             return Promise\reject($exception);
         });
-        $server->on('error', function ($error) use (&$capturedException) {
+        $http->on('error', function ($error) use (&$capturedException) {
             $capturedException = $error;
         });
 
-        $server->listen($this->socket);
+        $http->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
 
         $data = $this->createPostFileUploadRequest();
@@ -328,36 +326,36 @@ final class ServerTest extends TestCase
      */
     public function testServerConcurrency($memory_limit, $post_max_size, $expectedConcurrency)
     {
-        $server = new Server(Factory::create(), function () { });
+        $http = new HttpServer(function () { });
 
-        $ref = new \ReflectionMethod($server, 'getConcurrentRequestsLimit');
+        $ref = new \ReflectionMethod($http, 'getConcurrentRequestsLimit');
         $ref->setAccessible(true);
 
-        $value = $ref->invoke($server, $memory_limit, $post_max_size);
+        $value = $ref->invoke($http, $memory_limit, $post_max_size);
 
         $this->assertEquals($expectedConcurrency, $value);
     }
 
     public function testServerGetPostMaxSizeReturnsSizeFromGivenIniSetting()
     {
-        $server = new Server(Factory::create(), function () { });
+        $http = new HttpServer(function () { });
 
-        $ref = new \ReflectionMethod($server, 'getMaxRequestSize');
+        $ref = new \ReflectionMethod($http, 'getMaxRequestSize');
         $ref->setAccessible(true);
 
-        $value = $ref->invoke($server, '1k');
+        $value = $ref->invoke($http, '1k');
 
         $this->assertEquals(1024, $value);
     }
 
     public function testServerGetPostMaxSizeReturnsSizeCappedFromGivenIniSetting()
     {
-        $server = new Server(Factory::create(), function () { });
+        $http = new HttpServer(function () { });
 
-        $ref = new \ReflectionMethod($server, 'getMaxRequestSize');
+        $ref = new \ReflectionMethod($http, 'getMaxRequestSize');
         $ref->setAccessible(true);
 
-        $value = $ref->invoke($server, '1M');
+        $value = $ref->invoke($http, '1M');
 
         $this->assertEquals(64 * 1024, $value);
     }
@@ -368,12 +366,12 @@ final class ServerTest extends TestCase
             $this->markTestSkipped();
         }
 
-        $server = new Server(Factory::create(), function () { });
+        $http = new HttpServer(function () { });
 
-        $ref = new \ReflectionMethod($server, 'getMaxRequestSize');
+        $ref = new \ReflectionMethod($http, 'getMaxRequestSize');
         $ref->setAccessible(true);
 
-        $value = $ref->invoke($server);
+        $value = $ref->invoke($http);
 
         $this->assertEquals(64 * 1024, $value);
     }
@@ -383,14 +381,14 @@ final class ServerTest extends TestCase
         $old = ini_get('memory_limit');
         ini_set('memory_limit', '-1');
 
-        $server = new Server(Factory::create(), function () { });
+        $http = new HttpServer(function () { });
 
         ini_set('memory_limit', $old);
 
-        $ref = new \ReflectionProperty($server, 'streamingServer');
+        $ref = new \ReflectionProperty($http, 'streamingServer');
         $ref->setAccessible(true);
 
-        $streamingServer = $ref->getValue($server);
+        $streamingServer = $ref->getValue($http);
 
         $ref = new \ReflectionProperty($streamingServer, 'callback');
         $ref->setAccessible(true);
@@ -411,14 +409,14 @@ final class ServerTest extends TestCase
         $old = ini_get('memory_limit');
         ini_set('memory_limit', '100M');
 
-        $server = new Server(Factory::create(), function () { });
+        $http = new HttpServer(function () { });
 
         ini_set('memory_limit', $old);
 
-        $ref = new \ReflectionProperty($server, 'streamingServer');
+        $ref = new \ReflectionProperty($http, 'streamingServer');
         $ref->setAccessible(true);
 
-        $streamingServer = $ref->getValue($server);
+        $streamingServer = $ref->getValue($http);
 
         $ref = new \ReflectionProperty($streamingServer, 'callback');
         $ref->setAccessible(true);
