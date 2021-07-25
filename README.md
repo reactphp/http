@@ -598,10 +598,7 @@ to HTTPS port`443` only, this can technically be used to tunnel any TCP/IP-based
 protocol, such as plain HTTP and TLS-encrypted HTTPS.
 
 ```php
-$proxy = new Clue\React\HttpProxy\ProxyConnector(
-    'http://127.0.0.1:8080',
-    new React\Socket\Connector()
-);
+$proxy = new Clue\React\HttpProxy\ProxyConnector('127.0.0.1:8080');
 
 $connector = new React\Socket\Connector(array(
     'tcp' => $proxy,
@@ -611,7 +608,7 @@ $connector = new React\Socket\Connector(array(
 $browser = new React\Http\Browser($connector);
 ```
 
-See also the [HTTP CONNECT proxy example](examples/11-client-http-connect-proxy.php).
+See also the [HTTP proxy example](examples/11-client-http-proxy.php).
 
 ### SOCKS proxy
 
@@ -625,10 +622,7 @@ address (anonymity) or to circumvent address blocking (geoblocking). While many
 only, this can technically be used to tunnel any TCP/IP-based protocol.
 
 ```php
-$proxy = new Clue\React\Socks\Client(
-    'socks://127.0.0.1:1080',
-    new React\Socket\Connector()
-);
+$proxy = new Clue\React\Socks\Client('127.0.0.1:1080');
 
 $connector = new React\Socket\Connector(array(
     'tcp' => $proxy,
@@ -657,7 +651,7 @@ from the outside (database behind firewall) and as such can also be used for
 plain HTTP and TLS-encrypted HTTPS.
 
 ```php
-$proxy = new Clue\React\SshProxy\SshSocksConnector('me@localhost:22', Loop::get());
+$proxy = new Clue\React\SshProxy\SshSocksConnector('alice@example.com');
 
 $connector = new React\Socket\Connector(array(
     'tcp' => $proxy,

@@ -1,17 +1,19 @@
 <?php
 
 // not already running a SOCKS proxy server?
-// Try LeProxy.org or this: `ssh -D 1080 localhost`
+// Try LeProxy.org or this:
+//
+// $ ssh -D 1080 alice@example.com
+// $ socks_proxy=127.0.0.1:1080 php examples/12-client-socks-proxy.php
 
-use Clue\React\Socks\Client as SocksClient;
 use Psr\Http\Message\ResponseInterface;
 use React\Http\Browser;
 use React\Socket\Connector;
 
 require __DIR__ . '/../vendor/autoload.php';
 
-// create a new SOCKS proxy client which connects to a SOCKS proxy server listening on localhost:1080
-$proxy = new SocksClient('127.0.0.1:1080', new Connector());
+// create a new SOCKS proxy client which connects to a SOCKS proxy server listening on 127.0.0.1:1080
+$proxy = new Clue\React\Socks\Client(getenv('socks_proxy') ?: '127.0.0.1:1080');
 
 // create a Browser object that uses the SOCKS proxy client for connections
 $connector = new Connector(array(
