@@ -16,7 +16,7 @@ class Client
     public function __construct(LoopInterface $loop, ConnectorInterface $connector = null)
     {
         if ($connector === null) {
-            $connector = new Connector($loop);
+            $connector = new Connector(array(), $loop);
         }
 
         $this->connector = $connector;

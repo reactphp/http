@@ -14,6 +14,7 @@ use React\Http\Message\Response;
 use React\Promise\Promise;
 use React\Promise\Stream;
 use React\Socket\Connector;
+use React\Socket\SocketServer;
 use React\Stream\ReadableStreamInterface;
 use React\Stream\ThroughStream;
 use RingCentral\Psr7\Request;
@@ -141,7 +142,7 @@ class FunctionalBrowserTest extends TestCase
 
             var_dump($path);
         });
-        $socket = new \React\Socket\Server(0, $this->loop);
+        $socket = new SocketServer('127.0.0.1:0', array(), $this->loop);
         $http->listen($socket);
 
         $this->base = str_replace('tcp:', 'http:', $socket->getAddress()) . '/';
@@ -392,11 +393,11 @@ class FunctionalBrowserTest extends TestCase
             $this->markTestSkipped('Not supported on HHVM');
         }
 
-        $connector = new Connector($this->loop, array(
+        $connector = new Connector(array(
             'tls' => array(
                 'verify_peer' => true
             )
-        ));
+        ), $this->loop);
 
         $browser = new Browser($connector, $this->loop);
 
@@ -414,11 +415,11 @@ class FunctionalBrowserTest extends TestCase
             $this->markTestSkipped('Not supported on HHVM');
         }
 
-        $connector = new Connector($this->loop, array(
+        $connector = new Connector(array(
             'tls' => array(
                 'verify_peer' => false
             )
-        ));
+        ), $this->loop);
 
         $browser = new Browser($connector, $this->loop);
 
@@ -497,7 +498,7 @@ class FunctionalBrowserTest extends TestCase
 
     public function testRequestStreamReturnsResponseWithResponseBodyUndecodedWhenResponseHasDoubleTransferEncoding()
     {
-        $socket = new \React\Socket\Server(0, $this->loop);
+        $socket = new SocketServer('127.0.0.1:0', array(), $this->loop);
         $socket->on('connection', function (\React\Socket\ConnectionInterface $connection) {
             $connection->on('data', function () use ($connection) {
                 $connection->end("HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked, chunked\r\nConnection: close\r\n\r\nhello");
@@ -517,7 +518,7 @@ class FunctionalBrowserTest extends TestCase
     public function testReceiveStreamAndExplicitlyCloseConnectionEvenWhenServerKeepsConnectionOpen()
     {
         $closed = new \React\Promise\Deferred();
-        $socket = new \React\Socket\Server(0, $this->loop);
+        $socket = new SocketServer('127.0.0.1:0', array(), $this->loop);
         $socket->on('connection', function (\React\Socket\ConnectionInterface $connection) use ($closed) {
             $connection->on('data', function () use ($connection) {
                 $connection->write("HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nhello");
@@ -576,7 +577,7 @@ class FunctionalBrowserTest extends TestCase
         $http = new HttpServer($this->loop, new StreamingRequestMiddleware(), function (ServerRequestInterface $request) {
             return new Response(200);
         });
-        $socket = new \React\Socket\Server(0, $this->loop);
+        $socket = new SocketServer('127.0.0.1:0', array(), $this->loop);
         $http->listen($socket);
 
         $this->base = str_replace('tcp:', 'http:', $socket->getAddress()) . '/';
@@ -607,7 +608,7 @@ class FunctionalBrowserTest extends TestCase
                 $request->getProtocolVersion()
             );
         });
-        $socket = new \React\Socket\Server(0, $this->loop);
+        $socket = new SocketServer('127.0.0.1:0', array(), $this->loop);
         $http->listen($socket);
 
         $this->base = str_replace('tcp:', 'http:', $socket->getAddress()) . '/';
@@ -627,7 +628,7 @@ class FunctionalBrowserTest extends TestCase
                 $request->getProtocolVersion()
             );
         });
-        $socket = new \React\Socket\Server(0, $this->loop);
+        $socket = new SocketServer('127.0.0.1:0', array(), $this->loop);
         $http->listen($socket);
 
         $this->base = str_replace('tcp:', 'http:', $socket->getAddress()) . '/';

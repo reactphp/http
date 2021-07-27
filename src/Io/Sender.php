@@ -39,7 +39,7 @@ class Sender
      * settings. You can use this method manually like this:
      *
      * ```php
-     * $connector = new \React\Socket\Connector($loop);
+     * $connector = new \React\Socket\Connector(array(), $loop);
      * $sender = \React\Http\Io\Sender::createFromLoop($loop, $connector);
      * ```
      *

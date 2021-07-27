@@ -32,7 +32,7 @@
         "react/event-loop": "^1.2",
         "react/promise": "^2.3 || ^1.2.1",
         "react/promise-stream": "^1.1",
-        "react/socket": "^1.8",
+        "react/socket": "^1.9",
         "react/stream": "^1.2",
         "ringcentral/psr7": "^1.2"
     },

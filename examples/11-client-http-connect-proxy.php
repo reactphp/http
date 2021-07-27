@@ -17,7 +17,7 @@ require __DIR__ . '/../vendor/autoload.php';
 $proxy = new HttpConnectClient('127.0.0.1:8080', new Connector());
 
 // create a Browser object that uses the HTTP CONNECT proxy client for connections
-$connector = new Connector(null, array(
+$connector = new Connector(array(
     'tcp' => $proxy,
     'dns' => false
 ));

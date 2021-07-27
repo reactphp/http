@@ -13,7 +13,7 @@ require __DIR__ . '/../vendor/autoload.php';
 $proxy = new SshSocksConnector(isset($argv[1]) ? $argv[1] : 'localhost:22', Loop::get());
 
 // create a Browser object that uses the SSH proxy client for connections
-$connector = new Connector(null, array(
+$connector = new Connector(array(
     'tcp' => $proxy,
     'dns' => false
 ));
