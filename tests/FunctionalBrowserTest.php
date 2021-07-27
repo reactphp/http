@@ -7,10 +7,10 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\Http\Browser;
+use React\Http\HttpServer;
 use React\Http\Message\ResponseException;
 use React\Http\Middleware\StreamingRequestMiddleware;
 use React\Http\Message\Response;
-use React\Http\Server;
 use React\Promise\Promise;
 use React\Promise\Stream;
 use React\Socket\Connector;
@@ -32,7 +32,7 @@ class FunctionalBrowserTest extends TestCase
         $this->loop = $loop = Factory::create();
         $this->browser = new Browser($this->loop);
 
-        $server = new Server($this->loop, new StreamingRequestMiddleware(), function (ServerRequestInterface $request) use ($loop) {
+        $http = new HttpServer($this->loop, new StreamingRequestMiddleware(), function (ServerRequestInterface $request) use ($loop) {
             $path = $request->getUri()->getPath();
 
             $headers = array();
@@ -142,7 +142,7 @@ class FunctionalBrowserTest extends TestCase
             var_dump($path);
         });
         $socket = new \React\Socket\Server(0, $this->loop);
-        $server->listen($socket);
+        $http->listen($socket);
 
         $this->base = str_replace('tcp:', 'http:', $socket->getAddress()) . '/';
     }
@@ -573,11 +573,11 @@ class FunctionalBrowserTest extends TestCase
      */
     public function testPostStreamWillStartSendingRequestEvenWhenBodyDoesNotEmitData()
     {
-        $server = new Server($this->loop, new StreamingRequestMiddleware(), function (ServerRequestInterface $request) {
+        $http = new HttpServer($this->loop, new StreamingRequestMiddleware(), function (ServerRequestInterface $request) {
             return new Response(200);
         });
         $socket = new \React\Socket\Server(0, $this->loop);
-        $server->listen($socket);
+        $http->listen($socket);
 
         $this->base = str_replace('tcp:', 'http:', $socket->getAddress()) . '/';
 
@@ -600,7 +600,7 @@ class FunctionalBrowserTest extends TestCase
 
     public function testSendsHttp11ByDefault()
     {
-        $server = new Server($this->loop, function (ServerRequestInterface $request) {
+        $http = new HttpServer($this->loop, function (ServerRequestInterface $request) {
             return new Response(
                 200,
                 array(),
@@ -608,7 +608,7 @@ class FunctionalBrowserTest extends TestCase
             );
         });
         $socket = new \React\Socket\Server(0, $this->loop);
-        $server->listen($socket);
+        $http->listen($socket);
 
         $this->base = str_replace('tcp:', 'http:', $socket->getAddress()) . '/';
 
@@ -620,7 +620,7 @@ class FunctionalBrowserTest extends TestCase
 
     public function testSendsExplicitHttp10Request()
     {
-        $server = new Server($this->loop, function (ServerRequestInterface $request) {
+        $http = new HttpServer($this->loop, function (ServerRequestInterface $request) {
             return new Response(
                 200,
                 array(),
@@ -628,7 +628,7 @@ class FunctionalBrowserTest extends TestCase
             );
         });
         $socket = new \React\Socket\Server(0, $this->loop);
-        $server->listen($socket);
+        $http->listen($socket);
 
         $this->base = str_replace('tcp:', 'http:', $socket->getAddress()) . '/';
 

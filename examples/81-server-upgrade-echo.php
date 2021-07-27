@@ -20,15 +20,14 @@ $ telnet localhost 1080
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Loop;
 use React\Http\Message\Response;
-use React\Http\Server;
 use React\Stream\ThroughStream;
 
 require __DIR__ . '/../vendor/autoload.php';
 
-// Note how this example uses the `Server` without the `StreamingRequestMiddleware`.
+// Note how this example uses the `HttpServer` without the `StreamingRequestMiddleware`.
 // The initial incoming request does not contain a body and we upgrade to a
 // stream object below.
-$server = new Server(function (ServerRequestInterface $request) {
+$http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
     if ($request->getHeaderLine('Upgrade') !== 'echo' || $request->getProtocolVersion() === '1.0') {
         return new Response(
             426,
@@ -57,7 +56,7 @@ $server = new Server(function (ServerRequestInterface $request) {
     );
 });
 
-$socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0');
-$server->listen($socket);
+$socket = new React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0');
+$http->listen($socket);
 
 echo 'Listening on ' . str_replace('tcp:', 'http:', $socket->getAddress()) . PHP_EOL;

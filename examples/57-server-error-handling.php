@@ -2,13 +2,12 @@
 
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Message\Response;
-use React\Http\Server;
 use React\Promise\Promise;
 
 require __DIR__ . '/../vendor/autoload.php';
 
 $count = 0;
-$server = new Server(function (ServerRequestInterface $request) use (&$count) {
+$http = new React\Http\HttpServer(function (ServerRequestInterface $request) use (&$count) {
     return new Promise(function ($resolve, $reject) use (&$count) {
         $count++;
 
@@ -28,7 +27,7 @@ $server = new Server(function (ServerRequestInterface $request) use (&$count) {
     });
 });
 
-$socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0');
-$server->listen($socket);
+$socket = new React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0');
+$http->listen($socket);
 
 echo 'Listening on ' . str_replace('tcp:', 'http:', $socket->getAddress()) . PHP_EOL;

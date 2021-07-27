@@ -17,7 +17,6 @@
 use Evenement\EventEmitter;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Message\Response;
-use React\Http\Server;
 use React\Stream\ReadableStreamInterface;
 use React\Stream\WritableStreamInterface;
 
@@ -91,7 +90,7 @@ class ChunkRepeater extends EventEmitter implements ReadableStreamInterface
     }
 }
 
-$server = new Server(function (ServerRequestInterface $request) {
+$http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
     switch ($request->getUri()->getPath()) {
         case '/':
             return new Response(
@@ -123,7 +122,7 @@ $server = new Server(function (ServerRequestInterface $request) {
     );
 });
 
-$socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0');
-$server->listen($socket);
+$socket = new React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0');
+$http->listen($socket);
 
 echo 'Listening on ' . str_replace('tcp:', 'http:', $socket->getAddress()) . PHP_EOL;

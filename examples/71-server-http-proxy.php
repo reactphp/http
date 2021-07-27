@@ -4,18 +4,16 @@
 // $ curl -v --proxy http://localhost:8080 http://reactphp.org/
 
 use Psr\Http\Message\RequestInterface;
-use React\EventLoop\Factory;
 use React\Http\Message\Response;
-use React\Http\Server;
 use RingCentral\Psr7;
 
 require __DIR__ . '/../vendor/autoload.php';
 
-// Note how this example uses the `Server` without the `StreamingRequestMiddleware`.
+// Note how this example uses the `HttpServer` without the `StreamingRequestMiddleware`.
 // This means that this proxy buffers the whole request before "processing" it.
 // As such, this is store-and-forward proxy. This could also use the advanced
 // `StreamingRequestMiddleware` to forward the incoming request as it comes in.
-$server = new Server(function (RequestInterface $request) {
+$http = new React\Http\HttpServer(function (RequestInterface $request) {
     if (strpos($request->getRequestTarget(), '://') === false) {
         return new Response(
             400,
@@ -46,7 +44,7 @@ $server = new Server(function (RequestInterface $request) {
     );
 });
 
-$socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0');
-$server->listen($socket);
+$socket = new React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0');
+$http->listen($socket);
 
 echo 'Listening on ' . str_replace('tcp:', 'http:', $socket->getAddress()) . PHP_EOL;

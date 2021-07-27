@@ -5,7 +5,7 @@ require __DIR__ . '/../vendor/autoload.php';
 // Note how this example uses the advanced `StreamingRequestMiddleware` to allow streaming
 // the incoming HTTP request. This very simple example merely counts the size
 // of the streaming body, it does not otherwise buffer its contents in memory.
-$server = new React\Http\Server(
+$http = new React\Http\HttpServer(
     new React\Http\Middleware\StreamingRequestMiddleware(),
     function (Psr\Http\Message\ServerRequestInterface $request) {
         $body = $request->getBody();
@@ -42,9 +42,9 @@ $server = new React\Http\Server(
     }
 );
 
-$server->on('error', 'printf');
+$http->on('error', 'printf');
 
-$socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0');
-$server->listen($socket);
+$socket = new React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0');
+$http->listen($socket);
 
 echo 'Listening on ' . str_replace('tcp:', 'http:', $socket->getAddress()) . PHP_EOL;
