@@ -30,7 +30,7 @@ class FunctionalBrowserTest extends TestCase
     public function setUpBrowserAndServer()
     {
         $this->loop = $loop = Factory::create();
-        $this->browser = new Browser($this->loop);
+        $this->browser = new Browser(null, $this->loop);
 
         $server = new Server($this->loop, new StreamingRequestMiddleware(), function (ServerRequestInterface $request) use ($loop) {
             $path = $request->getUri()->getPath();
@@ -398,7 +398,7 @@ class FunctionalBrowserTest extends TestCase
             )
         ));
 
-        $browser = new Browser($this->loop, $connector);
+        $browser = new Browser($connector, $this->loop);
 
         $this->setExpectedException('RuntimeException');
         Block\await($browser->get('https://self-signed.badssl.com/'), $this->loop);
@@ -420,7 +420,7 @@ class FunctionalBrowserTest extends TestCase
             )
         ));
 
-        $browser = new Browser($this->loop, $connector);
+        $browser = new Browser($connector, $this->loop);
 
         Block\await($browser->get('https://self-signed.badssl.com/'), $this->loop);
     }

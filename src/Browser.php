@@ -32,11 +32,15 @@ class Browser
      * $browser = new React\Http\Browser();
      * ```
      *
-     * This class takes an optional `LoopInterface|null $loop` parameter that can be used to
-     * pass the event loop instance to use for this object. You can use a `null` value
-     * here in order to use the [default loop](https://github.com/reactphp/event-loop#loop).
-     * This value SHOULD NOT be given unless you're sure you want to explicitly use a
-     * given event loop instance.
+     * This class takes two optional arguments for more advanced usage:
+     *
+     * ```php
+     * // constructor signature as of v1.5.0
+     * $browser = new React\Http\Browser(?ConnectorInterface $connector = null, ?LoopInterface $loop = null);
+     *
+     * // legacy constructor signature before v1.5.0
+     * $browser = new React\Http\Browser(?LoopInterface $loop = null, ?ConnectorInterface $connector = null);
+     * ```
      *
      * If you need custom connector settings (DNS resolution, TLS parameters, timeouts,
      * proxy servers etc.), you can explicitly pass a custom instance of the
@@ -54,15 +58,32 @@ class Browser
      *     )
      * ));
      *
-     * $browser = new React\Http\Browser(null, $connector);
+     * $browser = new React\Http\Browser($connector);
      * ```
      *
-     * @param ?LoopInterface $loop
-     * @param ?ConnectorInterface $connector [optional] Connector to use.
-     *     Should be `null` in order to use default Connector.
+     * This class takes an optional `LoopInterface|null $loop` parameter that can be used to
+     * pass the event loop instance to use for this object. You can use a `null` value
+     * here in order to use the [default loop](https://github.com/reactphp/event-loop#loop).
+     * This value SHOULD NOT be given unless you're sure you want to explicitly use a
+     * given event loop instance.
+     *
+     * @param null|ConnectorInterface|LoopInterface $connector
+     * @param null|LoopInterface|ConnectorInterface $loop
+     * @throws \InvalidArgumentException for invalid arguments
      */
-    public function __construct(LoopInterface $loop = null, ConnectorInterface $connector = null)
+    public function __construct($connector = null, $loop = null)
     {
+        // swap arguments for legacy constructor signature
+        if (($connector instanceof LoopInterface || $connector === null) && ($loop instanceof ConnectorInterface || $loop === null)) {
+            $swap = $loop;
+            $loop = $connector;
+            $connector = $swap;
+        }
+
+        if (($connector !== null && !$connector instanceof ConnectorInterface) || ($loop !== null && !$loop instanceof LoopInterface)) {
+            throw new \InvalidArgumentException('Expected "?ConnectorInterface $connector" and "?LoopInterface $loop" arguments');
+        }
+
         $loop = $loop ?: Loop::get();
         $this->transaction = new Transaction(
             Sender::createFromLoop($loop, $connector),

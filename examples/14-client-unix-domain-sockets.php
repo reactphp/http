@@ -14,7 +14,7 @@ $connector = new FixedUriConnector(
     new UnixConnector()
 );
 
-$browser = new Browser(null, $connector);
+$browser = new Browser($connector);
 
 // demo fetching HTTP headers (or bail out otherwise)
 $browser->get('http://localhost/info')->then(function (ResponseInterface $response) {

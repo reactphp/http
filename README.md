@@ -259,7 +259,6 @@ like this:
 
 ```php
 $browser = new React\Http\Browser(
-    null,
     new React\Socket\Connector(
         null,
         array(
@@ -610,7 +609,7 @@ $connector = new React\Socket\Connector(null, array(
     'dns' => false
 ));
 
-$browser = new React\Http\Browser(null, $connector);
+$browser = new React\Http\Browser($connector);
 ```
 
 See also the [HTTP CONNECT proxy example](examples/11-client-http-connect-proxy.php).
@@ -637,7 +636,7 @@ $connector = new React\Socket\Connector(null, array(
     'dns' => false
 ));
 
-$browser = new React\Http\Browser(null, $connector);
+$browser = new React\Http\Browser($connector);
 ```
 
 See also the [SOCKS proxy example](examples/12-client-socks-proxy.php).
@@ -666,7 +665,7 @@ $connector = new React\Socket\Connector(null, array(
     'dns' => false
 ));
 
-$browser = new React\Http\Browser(null, $connector);
+$browser = new React\Http\Browser($connector);
 ```
 
 See also the [SSH proxy example](examples/13-client-ssh-proxy.php).
@@ -687,7 +686,7 @@ $connector = new React\Socket\FixedUriConnector(
     new React\Socket\UnixConnector()
 );
 
-$browser = new Browser(null, $connector);
+$browser = new React\Http\Browser($connector);
 
 $client->get('http://localhost/info')->then(function (Psr\Http\Message\ResponseInterface $response) {
     var_dump($response->getHeaders(), (string)$response->getBody());
@@ -1869,11 +1868,15 @@ and keeps track of pending incoming HTTP responses.
 $browser = new React\Http\Browser();
 ```
 
-This class takes an optional `LoopInterface|null $loop` parameter that can be used to
-pass the event loop instance to use for this object. You can use a `null` value
-here in order to use the [default loop](https://github.com/reactphp/event-loop#loop).
-This value SHOULD NOT be given unless you're sure you want to explicitly use a
-given event loop instance.
+This class takes two optional arguments for more advanced usage:
+
+```php
+// constructor signature as of v1.5.0
+$browser = new React\Http\Browser(?ConnectorInterface $connector = null, ?LoopInterface $loop = null);
+
+// legacy constructor signature before v1.5.0
+$browser = new React\Http\Browser(?LoopInterface $loop = null, ?ConnectorInterface $connector = null);
+```
 
 If you need custom connector settings (DNS resolution, TLS parameters, timeouts,
 proxy servers etc.), you can explicitly pass a custom instance of the
@@ -1891,8 +1894,14 @@ $connector = new React\Socket\Connector(null, array(
     )
 ));
 
-$browser = new React\Http\Browser(null, $connector);
+$browser = new React\Http\Browser($connector);
 ```
+
+This class takes an optional `LoopInterface|null $loop` parameter that can be used to
+pass the event loop instance to use for this object. You can use a `null` value
+here in order to use the [default loop](https://github.com/reactphp/event-loop#loop).
+This value SHOULD NOT be given unless you're sure you want to explicitly use a
+given event loop instance.
 
 > Note that the browser class is final and shouldn't be extended, it is likely to be marked final in a future release.
 

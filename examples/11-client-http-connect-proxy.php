@@ -21,7 +21,8 @@ $connector = new Connector(null, array(
     'tcp' => $proxy,
     'dns' => false
 ));
-$browser = new Browser(null, $connector);
+
+$browser = new Browser($connector);
 
 // demo fetching HTTP headers (or bail out otherwise)
 $browser->get('https://www.google.com/')->then(function (ResponseInterface $response) {
