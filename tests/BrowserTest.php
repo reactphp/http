@@ -3,8 +3,8 @@
 namespace React\Tests\Http;
 
 use Clue\React\Block;
-use React\Http\Browser;
 use Psr\Http\Message\RequestInterface;
+use React\Http\Browser;
 use React\Promise\Promise;
 use RingCentral\Psr7\Uri;
 
@@ -21,7 +21,7 @@ class BrowserTest extends TestCase
     {
         $this->loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
         $this->sender = $this->getMockBuilder('React\Http\Io\Transaction')->disableOriginalConstructor()->getMock();
-        $this->browser = new Browser($this->loop);
+        $this->browser = new Browser(null, $this->loop);
 
         $ref = new \ReflectionProperty($this->browser, 'transaction');
         $ref->setAccessible(true);
@@ -41,6 +41,114 @@ class BrowserTest extends TestCase
         $loop = $ref->getValue($transaction);
 
         $this->assertInstanceOf('React\EventLoop\LoopInterface', $loop);
+    }
+
+    public function testConstructWithConnectorAssignsGivenConnector()
+    {
+        $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
+
+        $browser = new Browser($connector);
+
+        $ref = new \ReflectionProperty($browser, 'transaction');
+        $ref->setAccessible(true);
+        $transaction = $ref->getValue($browser);
+
+        $ref = new \ReflectionProperty($transaction, 'sender');
+        $ref->setAccessible(true);
+        $sender = $ref->getValue($transaction);
+
+        $ref = new \ReflectionProperty($sender, 'http');
+        $ref->setAccessible(true);
+        $client = $ref->getValue($sender);
+
+        $ref = new \ReflectionProperty($client, 'connector');
+        $ref->setAccessible(true);
+        $ret = $ref->getValue($client);
+
+        $this->assertSame($connector, $ret);
+    }
+
+    public function testConstructWithConnectorWithLegacySignatureAssignsGivenConnector()
+    {
+        $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
+
+        $browser = new Browser(null, $connector);
+
+        $ref = new \ReflectionProperty($browser, 'transaction');
+        $ref->setAccessible(true);
+        $transaction = $ref->getValue($browser);
+
+        $ref = new \ReflectionProperty($transaction, 'sender');
+        $ref->setAccessible(true);
+        $sender = $ref->getValue($transaction);
+
+        $ref = new \ReflectionProperty($sender, 'http');
+        $ref->setAccessible(true);
+        $client = $ref->getValue($sender);
+
+        $ref = new \ReflectionProperty($client, 'connector');
+        $ref->setAccessible(true);
+        $ret = $ref->getValue($client);
+
+        $this->assertSame($connector, $ret);
+    }
+
+    public function testConstructWithLoopAssignsGivenLoop()
+    {
+        $browser = new Browser(null, $this->loop);
+
+        $ref = new \ReflectionProperty($browser, 'transaction');
+        $ref->setAccessible(true);
+        $transaction = $ref->getValue($browser);
+
+        $ref = new \ReflectionProperty($transaction, 'loop');
+        $ref->setAccessible(true);
+        $loop = $ref->getValue($transaction);
+
+        $this->assertSame($this->loop, $loop);
+    }
+
+    public function testConstructWithLoopWithLegacySignatureAssignsGivenLoop()
+    {
+        $browser = new Browser($this->loop);
+
+        $ref = new \ReflectionProperty($browser, 'transaction');
+        $ref->setAccessible(true);
+        $transaction = $ref->getValue($browser);
+
+        $ref = new \ReflectionProperty($transaction, 'loop');
+        $ref->setAccessible(true);
+        $loop = $ref->getValue($transaction);
+
+        $this->assertSame($this->loop, $loop);
+    }
+
+    public function testConstructWithInvalidConnectorThrows()
+    {
+        $this->setExpectedException('InvalidArgumentException');
+        new Browser('foo');
+    }
+
+    public function testConstructWithInvalidLoopThrows()
+    {
+        $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
+
+        $this->setExpectedException('InvalidArgumentException');
+        new Browser($connector, 'foo');
+    }
+
+    public function testConstructWithConnectorTwiceThrows()
+    {
+        $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
+
+        $this->setExpectedException('InvalidArgumentException');
+        new Browser($connector, $connector);
+    }
+
+    public function testConstructWithLoopTwiceThrows()
+    {
+        $this->setExpectedException('InvalidArgumentException');
+        new Browser($this->loop, $this->loop);
     }
 
     public function testGetSendsGetRequest()
@@ -390,7 +498,7 @@ class BrowserTest extends TestCase
         $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
         $connector->expects($this->once())->method('connect')->with('example.com:80')->willReturn($pending);
 
-        $this->browser = new Browser($this->loop, $connector);
+        $this->browser = new Browser($connector, $this->loop);
 
         $promise = $this->browser->get('http://example.com/');
         $promise->cancel();
