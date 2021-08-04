@@ -8,8 +8,8 @@ use React\EventLoop\Factory;
 use React\Http\Client\Client;
 use React\Promise\Deferred;
 use React\Promise\Stream;
-use React\Socket\Server;
 use React\Socket\ConnectionInterface;
+use React\Socket\SocketServer;
 use React\Stream\ReadableStreamInterface;
 use React\Tests\Http\TestCase;
 
@@ -39,13 +39,13 @@ class FunctionalIntegrationTest extends TestCase
     {
         $loop = Factory::create();
 
-        $server = new Server(0, $loop);
-        $server->on('connection', $this->expectCallableOnce());
-        $server->on('connection', function (ConnectionInterface $conn) use ($server) {
+        $socket = new SocketServer('127.0.0.1:0', array(), $loop);
+        $socket->on('connection', $this->expectCallableOnce());
+        $socket->on('connection', function (ConnectionInterface $conn) use ($socket) {
             $conn->end("HTTP/1.1 200 OK\r\n\r\nOk");
-            $server->close();
+            $socket->close();
         });
-        $port = parse_url($server->getAddress(), PHP_URL_PORT);
+        $port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
         $client = new Client($loop);
         $request = $client->request('GET', 'http://localhost:' . $port);
@@ -60,14 +60,14 @@ class FunctionalIntegrationTest extends TestCase
     {
         $loop = Factory::create();
 
-        $server = new Server(0, $loop);
-        $server->on('connection', function (ConnectionInterface $conn) use ($server) {
+        $socket = new SocketServer('127.0.0.1:0', array(), $loop);
+        $socket->on('connection', function (ConnectionInterface $conn) use ($socket) {
             $conn->end("HTTP/1.0 200 OK\n\nbody");
-            $server->close();
+            $socket->close();
         });
 
         $client = new Client($loop);
-        $request = $client->request('GET', str_replace('tcp:', 'http:', $server->getAddress()));
+        $request = $client->request('GET', str_replace('tcp:', 'http:', $socket->getAddress()));
 
         $once = $this->expectCallableOnceWith('body');
         $request->on('response', function (ResponseInterface $response, ReadableStreamInterface $body) use ($once) {

@@ -20,7 +20,7 @@ use React\Stream\WritableStreamInterface;
  * The internal `StreamingServer` class is responsible for handling incoming connections and then
  * processing each incoming HTTP request.
  *
- * Unlike the [`HttpServer`](#server) class, it does not buffer and parse the incoming
+ * Unlike the [`HttpServer`](#httpserver) class, it does not buffer and parse the incoming
  * HTTP request body by default. This means that the request handler will be
  * invoked with a streaming request body. Once the request headers have been
  * received, it will invoke the request handler function. This request handler
@@ -50,13 +50,13 @@ use React\Stream\WritableStreamInterface;
  * In order to process any connections, the server needs to be attached to an
  * instance of `React\Socket\ServerInterface` through the [`listen()`](#listen) method
  * as described in the following chapter. In its most simple form, you can attach
- * this to a [`React\Socket\Server`](https://github.com/reactphp/socket#server)
+ * this to a [`React\Socket\SocketServer`](https://github.com/reactphp/socket#socketserver)
  * in order to start a plaintext HTTP server like this:
  *
  * ```php
  * $server = new StreamingServer($loop, $handler);
  *
- * $socket = new React\Socket\Server('0.0.0.0:8080', $loop);
+ * $socket = new React\Socket\SocketServer('0.0.0.0:8080', array(), $loop);
  * $server->listen($socket);
  * ```
  *

@@ -47,7 +47,7 @@ class Browser
      * [`ConnectorInterface`](https://github.com/reactphp/socket#connectorinterface):
      *
      * ```php
-     * $connector = new React\Socket\Connector(null, array(
+     * $connector = new React\Socket\Connector(array(
      *     'dns' => '127.0.0.1',
      *     'tcp' => array(
      *         'bindto' => '192.168.10.1:0'

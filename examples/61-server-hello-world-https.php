@@ -15,12 +15,14 @@ $http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
     );
 });
 
-$socket = new React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0');
-$socket = new React\Socket\SecureServer($socket, null, array(
-    'local_cert' => isset($argv[2]) ? $argv[2] : __DIR__ . '/localhost.pem'
+$uri = 'tls://' . (isset($argv[1]) ? $argv[1] : '0.0.0.0:0');
+$socket = new React\Socket\SocketServer($uri, array(
+    'tls' => array(
+        'local_cert' => isset($argv[2]) ? $argv[2] : __DIR__ . '/localhost.pem'
+    )
 ));
 $http->listen($socket);
 
-//$socket->on('error', 'printf');
+$socket->on('error', 'printf');
 
 echo 'Listening on ' . str_replace('tls:', 'https:', $socket->getAddress()) . PHP_EOL;

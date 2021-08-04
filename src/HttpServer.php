@@ -54,13 +54,13 @@ use React\Socket\ServerInterface;
  * [`React\Socket\ServerInterface`](https://github.com/reactphp/socket#serverinterface)
  * through the [`listen()`](#listen) method as described in the following
  * chapter. In its most simple form, you can attach this to a
- * [`React\Socket\Server`](https://github.com/reactphp/socket#server) in order
- * to start a plaintext HTTP server like this:
+ * [`React\Socket\SocketServer`](https://github.com/reactphp/socket#socketserver)
+ * in order to start a plaintext HTTP server like this:
  *
  * ```php
  * $http = new React\Http\HttpServer($handler);
  *
- * $socket = new React\Socket\Server('0.0.0.0:8080');
+ * $socket = new React\Socket\SocketServer('0.0.0.0:8080');
  * $http->listen($socket);
  * ```
  *
@@ -263,13 +263,13 @@ final class HttpServer extends EventEmitter
      * HTTP server needs to be attached to it in order to process any
      * connections and pase incoming streaming data as incoming HTTP request
      * messages. In its most common form, you can attach this to a
-     * [`React\Socket\Server`](https://github.com/reactphp/socket#server) in
-     * order to start a plaintext HTTP server like this:
+     * [`React\Socket\SocketServer`](https://github.com/reactphp/socket#socketserver)
+     * in order to start a plaintext HTTP server like this:
      *
      * ```php
      * $http = new React\Http\HttpServer($handler);
      *
-     * $socket = new React\Socket\Server(8080);
+     * $socket = new React\Socket\SocketServer('0.0.0.0:8080');
      * $http->listen($socket);
      * ```
      *
@@ -288,15 +288,17 @@ final class HttpServer extends EventEmitter
      * secure HTTPS requests on default HTTPS port `443` (TLS termination) and
      * only route plaintext requests to this HTTP server. As an alternative, you
      * can also accept secure HTTPS requests with this HTTP server by attaching
-     * this to a [`React\Socket\Server`](https://github.com/reactphp/socket#server)
+     * this to a [`React\Socket\SocketServer`](https://github.com/reactphp/socket#socketserver)
      * using a secure TLS listen address, a certificate file and optional
      * `passphrase` like this:
      *
      * ```php
      * $http = new React\Http\HttpServer($handler);
      *
-     * $socket = new React\Socket\Server('tls://0.0.0.0:8443', null, array(
-     *     'local_cert' => __DIR__ . '/localhost.pem'
+     * $socket = new React\Socket\SocketServer('tls://0.0.0.0:8443', array(
+     *     'tls' => array(
+     *         'local_cert' => __DIR__ . '/localhost.pem'
+     *     )
      * ));
      * $http->listen($socket);
      * ```

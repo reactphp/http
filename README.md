@@ -107,7 +107,7 @@ $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterf
     );
 });
 
-$socket = new React\Socket\Server(8080);
+$socket = new React\Socket\SocketServer('127.0.0.1:8080');
 $http->listen($socket);
 ```
 
@@ -260,7 +260,6 @@ like this:
 ```php
 $browser = new React\Http\Browser(
     new React\Socket\Connector(
-        null,
         array(
             'timeout' => 5
         )
@@ -604,7 +603,7 @@ $proxy = new Clue\React\HttpProxy\ProxyConnector(
     new React\Socket\Connector()
 );
 
-$connector = new React\Socket\Connector(null, array(
+$connector = new React\Socket\Connector(array(
     'tcp' => $proxy,
     'dns' => false
 ));
@@ -631,7 +630,7 @@ $proxy = new Clue\React\Socks\Client(
     new React\Socket\Connector()
 );
 
-$connector = new React\Socket\Connector(null, array(
+$connector = new React\Socket\Connector(array(
     'tcp' => $proxy,
     'dns' => false
 ));
@@ -660,7 +659,7 @@ plain HTTP and TLS-encrypted HTTPS.
 ```php
 $proxy = new Clue\React\SshProxy\SshSocksConnector('me@localhost:22', Loop::get());
 
-$connector = new React\Socket\Connector(null, array(
+$connector = new React\Socket\Connector(array(
     'tcp' => $proxy,
     'dns' => false
 ));
@@ -741,13 +740,13 @@ to be attached to an instance of
 [`React\Socket\ServerInterface`](https://github.com/reactphp/socket#serverinterface)
 through the [`listen()`](#listen) method as described in the following
 chapter. In its most simple form, you can attach this to a
-[`React\Socket\Server`](https://github.com/reactphp/socket#server) in order
-to start a plaintext HTTP server like this:
+[`React\Socket\SocketServer`](https://github.com/reactphp/socket#socketserver)
+in order to start a plaintext HTTP server like this:
 
 ```php
 $http = new React\Http\HttpServer($handler);
 
-$socket = new React\Socket\Server('0.0.0.0:8080');
+$socket = new React\Socket\SocketServer('0.0.0.0:8080');
 $http->listen($socket);
 ```
 
@@ -869,13 +868,13 @@ is responsible for emitting the underlying streaming connections. This
 HTTP server needs to be attached to it in order to process any
 connections and pase incoming streaming data as incoming HTTP request
 messages. In its most common form, you can attach this to a
-[`React\Socket\Server`](https://github.com/reactphp/socket#server) in
-order to start a plaintext HTTP server like this:
+[`React\Socket\SocketServer`](https://github.com/reactphp/socket#socketserver)
+in order to start a plaintext HTTP server like this:
 
 ```php
 $http = new React\Http\HttpServer($handler);
 
-$socket = new React\Socket\Server('0.0.0.0:8080');
+$socket = new React\Socket\SocketServer('0.0.0.0:8080');
 $http->listen($socket);
 ```
 
@@ -894,15 +893,17 @@ Likewise, it's usually recommended to use a reverse proxy setup to accept
 secure HTTPS requests on default HTTPS port `443` (TLS termination) and
 only route plaintext requests to this HTTP server. As an alternative, you
 can also accept secure HTTPS requests with this HTTP server by attaching
-this to a [`React\Socket\Server`](https://github.com/reactphp/socket#server)
+this to a [`React\Socket\SocketServer`](https://github.com/reactphp/socket#socketserver)
 using a secure TLS listen address, a certificate file and optional
 `passphrase` like this:
 
 ```php
 $http = new React\Http\HttpServer($handler);
 
-$socket = new React\Socket\Server('tls://0.0.0.0:8443', null, array(
-    'local_cert' => __DIR__ . '/localhost.pem'
+$socket = new React\Socket\SocketServer('tls://0.0.0.0:8443', array(
+    'tls' => array(
+        'local_cert' => __DIR__ . '/localhost.pem'
+    )
 ));
 $http->listen($socket);
 ```
@@ -1889,7 +1890,7 @@ proxy servers etc.), you can explicitly pass a custom instance of the
 [`ConnectorInterface`](https://github.com/reactphp/socket#connectorinterface):
 
 ```php
-$connector = new React\Socket\Connector(null, array(
+$connector = new React\Socket\Connector(array(
     'dns' => '127.0.0.1',
     'tcp' => array(
         'bindto' => '192.168.10.1:0'
