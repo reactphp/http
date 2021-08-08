@@ -1,16 +1,15 @@
 <?php
 
-use Clue\React\SshProxy\SshSocksConnector;
+// $ ssh_proxy=alice@example.com php examples/13-client-ssh-proxy.php
+
 use Psr\Http\Message\ResponseInterface;
-use React\EventLoop\Loop;
 use React\Http\Browser;
 use React\Socket\Connector;
 
 require __DIR__ . '/../vendor/autoload.php';
 
-// create a new SSH proxy client which connects to a SSH server listening on localhost:22
-// You can pass any SSH server address as first argument, e.g. user@example.com
-$proxy = new SshSocksConnector(isset($argv[1]) ? $argv[1] : 'localhost:22', Loop::get());
+// create a new SSH proxy client which connects to a SSH server listening on alice@localhost
+$proxy = new Clue\React\SshProxy\SshSocksConnector(getenv('ssh_proxy') ?: 'alice@localhost');
 
 // create a Browser object that uses the SSH proxy client for connections
 $connector = new Connector(array(
