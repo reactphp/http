@@ -8,6 +8,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\LoopInterface;
 use React\Http\Message\Response;
 use React\Http\Message\ServerRequest;
+use React\Http\Middleware\InactiveConnectionTimeoutMiddleware;
 use React\Promise;
 use React\Promise\CancellablePromiseInterface;
 use React\Promise\PromiseInterface;
@@ -85,6 +86,7 @@ final class StreamingServer extends EventEmitter
     private $callback;
     private $parser;
     private $loop;
+    private $idleConnectionTimeout;
 
     /**
      * Creates an HTTP server that invokes the given callback for each incoming HTTP request
@@ -96,15 +98,17 @@ final class StreamingServer extends EventEmitter
      *
      * @param LoopInterface $loop
      * @param callable $requestHandler
+     * @param float $idleConnectTimeout
      * @see self::listen()
      */
-    public function __construct(LoopInterface $loop, $requestHandler)
+    public function __construct(LoopInterface $loop, $requestHandler, $idleConnectTimeout = InactiveConnectionTimeoutMiddleware::DEFAULT_TIMEOUT)
     {
         if (!\is_callable($requestHandler)) {
             throw new \InvalidArgumentException('Invalid request handler given');
         }
 
         $this->loop = $loop;
+        $this->idleConnectionTimeout = $idleConnectTimeout;
 
         $this->callback = $requestHandler;
         $this->parser = new RequestHeaderParser();
@@ -134,7 +138,27 @@ final class StreamingServer extends EventEmitter
      */
     public function listen(ServerInterface $socket)
     {
-        $socket->on('connection', array($this->parser, 'handle'));
+        $socket->on('connection', array($this, 'handle'));
+    }
+
+    /** @internal */
+    public function handle(ConnectionInterface $conn)
+    {
+        $timer = $this->loop->addTimer($this->idleConnectionTimeout, function () use ($conn) {
+            $conn->close();
+        });
+        $loop = $this->loop;
+        $conn->once('data', function () use ($loop, $timer) {
+            $loop->cancelTimer($timer);
+        });
+        $conn->on('end', function () use ($loop, $timer) {
+            $loop->cancelTimer($timer);
+        });
+        $conn->on('close', function () use ($loop, $timer) {
+            $loop->cancelTimer($timer);
+        });
+
+        $this->parser->handle($conn);
     }
 
     /** @internal */
@@ -350,7 +374,7 @@ final class StreamingServer extends EventEmitter
 
             // either wait for next request over persistent connection or end connection
             if ($persist) {
-                $this->parser->handle($connection);
+                $this->handle($connection);
             } else {
                 $connection->end();
             }
@@ -371,10 +395,10 @@ final class StreamingServer extends EventEmitter
         // write streaming body and then wait for next request over persistent connection
         if ($persist) {
             $body->pipe($connection, array('end' => false));
-            $parser = $this->parser;
-            $body->on('end', function () use ($connection, $parser, $body) {
+            $that = $this;
+            $body->on('end', function () use ($connection, $that, $body) {
                 $connection->removeListener('close', array($body, 'close'));
-                $parser->handle($connection);
+                $that->handle($connection);
             });
         } else {
             $body->pipe($connection);

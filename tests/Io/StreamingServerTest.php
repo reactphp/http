@@ -58,6 +58,19 @@ class StreamingServerTest extends TestCase
         $this->connection->emit('data', array($data));
     }
 
+    public function testIdleConnectionWillBeClosedAfterConfiguredTimeout()
+    {
+        $this->connection->expects($this->once())->method('close');
+
+        $loop = Factory::create();
+        $server = new StreamingServer($loop, $this->expectCallableNever(), 0.1);
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $loop->run();
+    }
+
     public function testRequestEventIsEmitted()
     {
         $server = new StreamingServer(Factory::create(), $this->expectCallableOnce());
@@ -3196,9 +3209,9 @@ class StreamingServerTest extends TestCase
         // pretend parser just finished parsing
         $server->handleRequest($this->connection, $request);
 
-        $this->assertCount(2, $this->connection->listeners('close'));
+        $this->assertCount(3, $this->connection->listeners('close'));
         $body->end();
-        $this->assertCount(1, $this->connection->listeners('close'));
+        $this->assertCount(3, $this->connection->listeners('close'));
     }
 
     private function createGetRequest()

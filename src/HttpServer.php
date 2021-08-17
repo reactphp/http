@@ -8,6 +8,7 @@ use React\EventLoop\LoopInterface;
 use React\Http\Io\IniUtil;
 use React\Http\Io\MiddlewareRunner;
 use React\Http\Io\StreamingServer;
+use React\Http\Middleware\InactiveConnectionTimeoutMiddleware;
 use React\Http\Middleware\LimitConcurrentRequestsMiddleware;
 use React\Http\Middleware\StreamingRequestMiddleware;
 use React\Http\Middleware\RequestBodyBufferMiddleware;
@@ -219,10 +220,13 @@ final class HttpServer extends EventEmitter
         }
 
         $streaming = false;
+        $idleConnectTimeout = InactiveConnectionTimeoutMiddleware::DEFAULT_TIMEOUT;
         foreach ((array) $requestHandlers as $handler) {
             if ($handler instanceof StreamingRequestMiddleware) {
                 $streaming = true;
-                break;
+            }
+            if ($handler instanceof InactiveConnectionTimeoutMiddleware) {
+                $idleConnectTimeout = $handler->getTimeout();
             }
         }
 
@@ -252,10 +256,10 @@ final class HttpServer extends EventEmitter
          * doing anything with the request.
          */
         $middleware = \array_filter($middleware, function ($handler) {
-            return !($handler instanceof StreamingRequestMiddleware);
+            return !($handler instanceof StreamingRequestMiddleware) && !($handler instanceof InactiveConnectionTimeoutMiddleware);
         });
 
-        $this->streamingServer = new StreamingServer($loop, new MiddlewareRunner($middleware));
+        $this->streamingServer = new StreamingServer($loop, new MiddlewareRunner($middleware), $idleConnectTimeout);
 
         $that = $this;
         $this->streamingServer->on('error', function ($error) use ($that) {
