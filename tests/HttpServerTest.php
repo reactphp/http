@@ -431,4 +431,27 @@ final class HttpServerTest extends TestCase
         $this->assertTrue(is_array($middleware));
         $this->assertInstanceOf('React\Http\Middleware\LimitConcurrentRequestsMiddleware', $middleware[0]);
     }
+
+    public function testConstructFiltersOutConfigurationMiddlewareBefore()
+    {
+        $http = new HttpServer(new StreamingRequestMiddleware(), function () { });
+
+        $ref = new \ReflectionProperty($http, 'streamingServer');
+        $ref->setAccessible(true);
+
+        $streamingServer = $ref->getValue($http);
+
+        $ref = new \ReflectionProperty($streamingServer, 'callback');
+        $ref->setAccessible(true);
+
+        $middlewareRunner = $ref->getValue($streamingServer);
+
+        $ref = new \ReflectionProperty($middlewareRunner, 'middleware');
+        $ref->setAccessible(true);
+
+        $middleware = $ref->getValue($middlewareRunner);
+
+        $this->assertTrue(is_array($middleware));
+        $this->assertCount(1, $middleware);
+    }
 }

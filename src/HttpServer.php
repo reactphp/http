@@ -247,6 +247,14 @@ final class HttpServer extends EventEmitter
 
         $middleware = \array_merge($middleware, $requestHandlers);
 
+        /**
+         * Filter out any configuration middleware, no need to run requests through something that isn't
+         * doing anything with the request.
+         */
+        $middleware = \array_filter($middleware, function ($handler) {
+            return !($handler instanceof StreamingRequestMiddleware);
+        });
+
         $this->streamingServer = new StreamingServer($loop, new MiddlewareRunner($middleware));
 
         $that = $this;
