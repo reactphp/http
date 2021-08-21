@@ -2015,7 +2015,7 @@ $browser->patch($url, array('Content-Length' => '11'), $body);
 
 #### put()
 
-The `put(string $url, array $headers = array()): PromiseInterface<ResponseInterface>` method can be used to
+The `put(string $url, array $headers = array(), string|ReadableStreamInterface $body = ''): PromiseInterface<ResponseInterface>` method can be used to
 send an HTTP PUT request.
 
 ```php
@@ -2049,7 +2049,7 @@ $browser->put($url, array('Content-Length' => '11'), $body);
 
 #### delete()
 
-The `delete(string $url, array $headers = array()): PromiseInterface<ResponseInterface>` method can be used to
+The `delete(string $url, array $headers = array(), string|ReadableStreamInterface $body = ''): PromiseInterface<ResponseInterface>` method can be used to
 send an HTTP DELETE request.
 
 ```php
