@@ -27,4 +27,6 @@ $client->requestStreaming('GET', $url)->then(function (ResponseInterface $respon
     $body = $response->getBody();
     assert($body instanceof ReadableStreamInterface);
     $body->pipe($out);
-}, 'printf');
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
+});

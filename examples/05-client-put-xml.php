@@ -20,4 +20,6 @@ $client->put(
     $xml->asXML()
 )->then(function (ResponseInterface $response) {
     echo (string)$response->getBody();
-}, 'printf');
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
+});

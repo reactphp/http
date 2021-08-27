@@ -21,4 +21,6 @@ echo 'Sending STDIN as POST to ' . $url . '…' . PHP_EOL;
 
 $client->post($url, array(), $in)->then(function (ResponseInterface $response) {
     echo 'Received' . PHP_EOL . Psr7\str($response);
-}, 'printf');
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
+});

@@ -97,6 +97,8 @@ class Browser
      * ```php
      * $browser->get($url)->then(function (Psr\Http\Message\ResponseInterface $response) {
      *     var_dump((string)$response->getBody());
+     * }, function (Exception $e) {
+     *     echo 'Error: ' . $e->getMessage() . PHP_EOL;
      * });
      * ```
      *
@@ -123,6 +125,8 @@ class Browser
      *     json_encode($data)
      * )->then(function (Psr\Http\Message\ResponseInterface $response) {
      *     var_dump(json_decode((string)$response->getBody()));
+     * }, function (Exception $e) {
+     *     echo 'Error: ' . $e->getMessage() . PHP_EOL;
      * });
      * ```
      *
@@ -176,6 +180,8 @@ class Browser
      * ```php
      * $browser->head($url)->then(function (Psr\Http\Message\ResponseInterface $response) {
      *     var_dump($response->getHeaders());
+     * }, function (Exception $e) {
+     *     echo 'Error: ' . $e->getMessage() . PHP_EOL;
      * });
      * ```
      *
@@ -200,6 +206,8 @@ class Browser
      *     json_encode($data)
      * )->then(function (Psr\Http\Message\ResponseInterface $response) {
      *     var_dump(json_decode((string)$response->getBody()));
+     * }, function (Exception $e) {
+     *     echo 'Error: ' . $e->getMessage() . PHP_EOL;
      * });
      * ```
      *
@@ -240,6 +248,8 @@ class Browser
      *     $xml->asXML()
      * )->then(function (Psr\Http\Message\ResponseInterface $response) {
      *     var_dump((string)$response->getBody());
+     * }, function (Exception $e) {
+     *     echo 'Error: ' . $e->getMessage() . PHP_EOL;
      * });
      * ```
      *
@@ -276,6 +286,8 @@ class Browser
      * ```php
      * $browser->delete($url)->then(function (Psr\Http\Message\ResponseInterface $response) {
      *     var_dump((string)$response->getBody());
+     * }, function (Exception $e) {
+     *     echo 'Error: ' . $e->getMessage() . PHP_EOL;
      * });
      * ```
      *
@@ -302,6 +314,8 @@ class Browser
      * ```php
      * $browser->request('OPTIONS', $url)->then(function (Psr\Http\Message\ResponseInterface $response) {
      *     var_dump((string)$response->getBody());
+     * }, function (Exception $e) {
+     *     echo 'Error: ' . $e->getMessage() . PHP_EOL;
      * });
      * ```
      *
@@ -362,13 +376,15 @@ class Browser
      *         echo $chunk;
      *     });
      *
-     *     $body->on('error', function (Exception $error) {
-     *         echo 'Error: ' . $error->getMessage() . PHP_EOL;
+     *     $body->on('error', function (Exception $e) {
+     *         echo 'Error: ' . $e->getMessage() . PHP_EOL;
      *     });
      *
      *     $body->on('close', function () {
      *         echo '[DONE]' . PHP_EOL;
      *     });
+     * }, function (Exception $e) {
+     *     echo 'Error: ' . $e->getMessage() . PHP_EOL;
      * });
      * ```
      *
@@ -472,6 +488,8 @@ class Browser
      * $browser->get($url)->then(function (Psr\Http\Message\ResponseInterface $response) {
      *     // only non-redirected responses will now end up here
      *     var_dump($response->getHeaders());
+     * }, function (Exception $e) {
+     *     echo 'Error: ' . $e->getMessage() . PHP_EOL;
      * });
      * ```
      *
@@ -485,6 +503,8 @@ class Browser
      * $browser->get($url)->then(function (Psr\Http\Message\ResponseInterface $response) {
      *     // any redirects will now end up here
      *     var_dump($response->getHeaderLine('Location'));
+     * }, function (Exception $e) {
+     *     echo 'Error: ' . $e->getMessage() . PHP_EOL;
      * });
      * ```
      *
@@ -525,6 +545,8 @@ class Browser
      * $browser->get($url)->then(function (Psr\Http\Message\ResponseInterface $response) {
      *     // any HTTP response will now end up here
      *     var_dump($response->getStatusCode(), $response->getReasonPhrase());
+     * }, function (Exception $e) {
+     *     echo 'Error: ' . $e->getMessage() . PHP_EOL;
      * });
      * ```
      *
@@ -544,7 +566,7 @@ class Browser
      *         $response = $e->getResponse();
      *         var_dump($response->getStatusCode(), $response->getReasonPhrase());
      *     } else {
-     *         var_dump($e->getMessage());
+     *         echo 'Error: ' . $e->getMessage() . PHP_EOL;
      *     }
      * });
      * ```
@@ -675,6 +697,8 @@ class Browser
      * $browser->get($url)->then(function (Psr\Http\Message\ResponseInterface $response) {
      *     // response body will not exceed 1 MiB
      *     var_dump($response->getHeaders(), (string) $response->getBody());
+     * }, function (Exception $e) {
+     *     echo 'Error: ' . $e->getMessage() . PHP_EOL;
      * });
      * ```
      *

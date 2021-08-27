@@ -19,4 +19,6 @@ $browser = new Browser($connector);
 // demo fetching HTTP headers (or bail out otherwise)
 $browser->get('http://localhost/info')->then(function (ResponseInterface $response) {
     echo Psr7\str($response);
-}, 'printf');
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
+});
