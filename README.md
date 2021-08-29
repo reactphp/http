@@ -123,10 +123,10 @@ offers several methods that resemble the HTTP protocol methods:
 ```php
 $browser->get($url, array $headers = array());
 $browser->head($url, array $headers = array());
-$browser->post($url, array $headers = array(), string|ReadableStreamInterface $contents = '');
-$browser->delete($url, array $headers = array(), string|ReadableStreamInterface $contents = '');
-$browser->put($url, array $headers = array(), string|ReadableStreamInterface $contents = '');
-$browser->patch($url, array $headers = array(), string|ReadableStreamInterface $contents = '');
+$browser->post($url, array $headers = array(), string|ReadableStreamInterface $body = '');
+$browser->delete($url, array $headers = array(), string|ReadableStreamInterface $body = '');
+$browser->put($url, array $headers = array(), string|ReadableStreamInterface $body = '');
+$browser->patch($url, array $headers = array(), string|ReadableStreamInterface $body = '');
 ```
 
 Each of these methods requires a `$url` and some optional parameters to send an
@@ -1921,7 +1921,7 @@ See also [GET request client example](examples/01-client-get-request.php).
 
 #### post()
 
-The `post(string $url, array $headers = array(), string|ReadableStreamInterface $contents = ''): PromiseInterface<ResponseInterface>` method can be used to
+The `post(string $url, array $headers = array(), string|ReadableStreamInterface $body = ''): PromiseInterface<ResponseInterface>` method can be used to
 send an HTTP POST request.
 
 ```php
@@ -1983,7 +1983,7 @@ $browser->head($url)->then(function (Psr\Http\Message\ResponseInterface $respons
 
 #### patch()
 
-The `patch(string $url, array $headers = array(), string|ReadableStreamInterface $contents = ''): PromiseInterface<ResponseInterface>` method can be used to
+The `patch(string $url, array $headers = array(), string|ReadableStreamInterface $body = ''): PromiseInterface<ResponseInterface>` method can be used to
 send an HTTP PATCH request.
 
 ```php
@@ -2015,7 +2015,7 @@ $browser->patch($url, array('Content-Length' => '11'), $body);
 
 #### put()
 
-The `put(string $url, array $headers = array()): PromiseInterface<ResponseInterface>` method can be used to
+The `put(string $url, array $headers = array(), string|ReadableStreamInterface $body = ''): PromiseInterface<ResponseInterface>` method can be used to
 send an HTTP PUT request.
 
 ```php
@@ -2049,7 +2049,7 @@ $browser->put($url, array('Content-Length' => '11'), $body);
 
 #### delete()
 
-The `delete(string $url, array $headers = array()): PromiseInterface<ResponseInterface>` method can be used to
+The `delete(string $url, array $headers = array(), string|ReadableStreamInterface $body = ''): PromiseInterface<ResponseInterface>` method can be used to
 send an HTTP DELETE request.
 
 ```php

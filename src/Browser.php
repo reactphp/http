@@ -162,12 +162,12 @@ class Browser
      *
      * @param string                         $url      URL for the request.
      * @param array                          $headers
-     * @param string|ReadableStreamInterface $contents
+     * @param string|ReadableStreamInterface $body
      * @return PromiseInterface<ResponseInterface>
      */
-    public function post($url, array $headers = array(), $contents = '')
+    public function post($url, array $headers = array(), $body = '')
     {
-        return $this->requestMayBeStreaming('POST', $url, $headers, $contents);
+        return $this->requestMayBeStreaming('POST', $url, $headers, $body);
     }
 
     /**
@@ -220,12 +220,12 @@ class Browser
      *
      * @param string                         $url      URL for the request.
      * @param array                          $headers
-     * @param string|ReadableStreamInterface $contents
+     * @param string|ReadableStreamInterface $body
      * @return PromiseInterface<ResponseInterface>
      */
-    public function patch($url, array $headers = array(), $contents = '')
+    public function patch($url, array $headers = array(), $body = '')
     {
-        return $this->requestMayBeStreaming('PATCH', $url , $headers, $contents);
+        return $this->requestMayBeStreaming('PATCH', $url , $headers, $body);
     }
 
     /**
@@ -262,12 +262,12 @@ class Browser
      *
      * @param string                         $url      URL for the request.
      * @param array                          $headers
-     * @param string|ReadableStreamInterface $contents
+     * @param string|ReadableStreamInterface $body
      * @return PromiseInterface<ResponseInterface>
      */
-    public function put($url, array $headers = array(), $contents = '')
+    public function put($url, array $headers = array(), $body = '')
     {
-        return $this->requestMayBeStreaming('PUT', $url, $headers, $contents);
+        return $this->requestMayBeStreaming('PUT', $url, $headers, $body);
     }
 
     /**
@@ -281,12 +281,12 @@ class Browser
      *
      * @param string                         $url      URL for the request.
      * @param array                          $headers
-     * @param string|ReadableStreamInterface $contents
+     * @param string|ReadableStreamInterface $body
      * @return PromiseInterface<ResponseInterface>
      */
-    public function delete($url, array $headers = array(), $contents = '')
+    public function delete($url, array $headers = array(), $body = '')
     {
-        return $this->requestMayBeStreaming('DELETE', $url, $headers, $contents);
+        return $this->requestMayBeStreaming('DELETE', $url, $headers, $body);
     }
 
     /**
