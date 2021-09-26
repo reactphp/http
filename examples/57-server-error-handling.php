@@ -1,6 +1,5 @@
 <?php
 
-use Fig\Http\Message\StatusCodeInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Message\Response;
 use React\Promise\Promise;
@@ -17,7 +16,7 @@ $http = new React\Http\HttpServer(function (ServerRequestInterface $request) use
         }
 
         $response = new Response(
-            StatusCodeInterface::STATUS_OK,
+            Response::STATUS_OK,
             array(
                 'Content-Type' => 'text/plain'
             ),

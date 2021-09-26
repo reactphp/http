@@ -17,7 +17,6 @@ $ telnet localhost 1080
 < world
 */
 
-use Fig\Http\Message\StatusCodeInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Loop;
 use React\Http\Message\Response;
@@ -31,7 +30,7 @@ require __DIR__ . '/../vendor/autoload.php';
 $http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
     if ($request->getHeaderLine('Upgrade') !== 'echo' || $request->getProtocolVersion() === '1.0') {
         return new Response(
-            StatusCodeInterface::STATUS_UPGRADE_REQUIRED,
+            Response::STATUS_UPGRADE_REQUIRED,
             array(
                 'Upgrade' => 'echo'
             ),
@@ -49,7 +48,7 @@ $http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
     });
 
     return new Response(
-        StatusCodeInterface::STATUS_SWITCHING_PROTOCOLS,
+        Response::STATUS_SWITCHING_PROTOCOLS,
         array(
             'Upgrade' => 'echo'
         ),

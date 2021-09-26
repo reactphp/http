@@ -1,7 +1,5 @@
 <?php
 
-use Fig\Http\Message\StatusCodeInterface;
-
 require __DIR__ . '/../vendor/autoload.php';
 
 // Note how this example uses the advanced `StreamingRequestMiddleware` to allow streaming
@@ -22,7 +20,7 @@ $http = new React\Http\HttpServer(
 
             $body->on('end', function () use ($resolve, &$bytes){
                 $resolve(new React\Http\Message\Response(
-                    StatusCodeInterface::STATUS_OK,
+                    React\Http\Message\Response::STATUS_OK,
                     array(
                         'Content-Type' => 'text/plain'
                     ),
@@ -33,7 +31,7 @@ $http = new React\Http\HttpServer(
             // an error occures e.g. on invalid chunked encoded data or an unexpected 'end' event
             $body->on('error', function (Exception $e) use ($resolve, &$bytes) {
                 $resolve(new React\Http\Message\Response(
-                    StatusCodeInterface::STATUS_BAD_REQUEST,
+                    React\Http\Message\Response::STATUS_BAD_REQUEST,
                     array(
                         'Content-Type' => 'text/plain'
                     ),

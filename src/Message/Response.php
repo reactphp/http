@@ -14,7 +14,7 @@ use RingCentral\Psr7\Response as Psr7Response;
  *
  * ```php
  * $response = new React\Http\Message\Response(
- *     200,
+ *     React\Http\Message\Response::STATUS_OK,
  *     array(
  *         'Content-Type' => 'text/html'
  *     ),
@@ -27,16 +27,23 @@ use RingCentral\Psr7\Response as Psr7Response;
  * which in turn extends the
  * [PSR-7 `MessageInterface`](https://www.php-fig.org/psr/psr-7/#31-psrhttpmessagemessageinterface).
  *
+ * On top of this, this class implements the
+ * [PSR-7 Message Util `StatusCodeInterface`](https://github.com/php-fig/http-message-util/blob/master/src/StatusCodeInterface.php)
+ * which means that most common HTTP status codes are available as class
+ * constants with the `STATUS_*` prefix. For instance, the `200 OK` and
+ * `404 Not Found` status codes can used as `Response::STATUS_OK` and
+ * `Response::STATUS_NOT_FOUND` respectively.
+ *
  * > Internally, this implementation builds on top of an existing incoming
  *   response message and only adds required streaming support. This base class is
  *   considered an implementation detail that may change in the future.
  *
  * @see \Psr\Http\Message\ResponseInterface
  */
-final class Response extends Psr7Response
+final class Response extends Psr7Response implements StatusCodeInterface
 {
     /**
-     * @param int                                            $status  HTTP status code (e.g. 200/404)
+     * @param int                                            $status  HTTP status code (e.g. 200/404), see `self::STATUS_*` constants
      * @param array<string,string|string[]>                  $headers additional response headers
      * @param string|ReadableStreamInterface|StreamInterface $body    response body
      * @param string                                         $version HTTP protocol version (e.g. 1.1/1.0)
@@ -44,7 +51,7 @@ final class Response extends Psr7Response
      * @throws \InvalidArgumentException for an invalid body
      */
     public function __construct(
-        $status = StatusCodeInterface::STATUS_OK,
+        $status = self::STATUS_OK,
         array $headers = array(),
         $body = '',
         $version = '1.1',
