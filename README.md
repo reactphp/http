@@ -95,6 +95,8 @@ $client = new React\Http\Browser();
 
 $client->get('http://www.google.com/')->then(function (Psr\Http\Message\ResponseInterface $response) {
     var_dump($response->getHeaders(), (string)$response->getBody());
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
 ```
 
@@ -179,8 +181,8 @@ $browser->get($url)->then(
     function (Psr\Http\Message\ResponseInterface $response) {
         var_dump('Response received', $response);
     },
-    function (Exception $error) {
-        var_dump('There was an error', $error->getMessage());
+    function (Exception $e) {
+        echo 'Error: ' . $e->getMessage() . PHP_EOL;
     }
 );
 ```
@@ -240,6 +242,8 @@ $browser = $browser->withTimeout(10.0);
 $browser->get($url)->then(function (Psr\Http\Message\ResponseInterface $response) {
     // response received within 10 seconds maximum
     var_dump($response->getHeaders());
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
 ```
 
@@ -327,6 +331,8 @@ The promise will be fulfilled with the last response from the chain of redirects
 $browser->get($url, $headers)->then(function (Psr\Http\Message\ResponseInterface $response) {
     // the final response will end up here
     var_dump($response->getHeaders());
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
 ```
 
@@ -355,6 +361,8 @@ $browser = $browser->withFollowRedirects(false);
 $browser->get($url)->then(function (Psr\Http\Message\ResponseInterface $response) {
     // any redirects will now end up here
     var_dump($response->getHeaders());
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
 ```
 
@@ -418,6 +426,8 @@ from your side.
 foreach ($urls as $url) {
     $browser->get($url)->then(function (Psr\Http\Message\ResponseInterface $response) {
         var_dump($response->getHeaders());
+    }, function (Exception $e) {
+        echo 'Error: ' . $e->getMessage() . PHP_EOL;
     });
 }
 ```
@@ -437,6 +447,8 @@ $q = new Clue\React\Mq\Queue(10, null, function ($url) use ($browser) {
 foreach ($urls as $url) {
     $q($url)->then(function (Psr\Http\Message\ResponseInterface $response) {
         var_dump($response->getHeaders());
+    }, function (Exception $e) {
+        echo 'Error: ' . $e->getMessage() . PHP_EOL;
     });
 }
 ```
@@ -489,13 +501,15 @@ $browser->requestStreaming('GET', $url)->then(function (Psr\Http\Message\Respons
         echo $chunk;
     });
 
-    $body->on('error', function (Exception $error) {
-        echo 'Error: ' . $error->getMessage() . PHP_EOL;
+    $body->on('error', function (Exception $e) {
+        echo 'Error: ' . $e->getMessage() . PHP_EOL;
     });
 
     $body->on('close', function () {
         echo '[DONE]' . PHP_EOL;
     });
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
 ```
 
@@ -557,6 +571,9 @@ $stream = download($browser, $url);
 $stream->on('data', function ($data) {
     echo $data;
 });
+$stream->on('error', function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
+});
 ```
 
 See also the [`requestStreaming()`](#requeststreaming) method for more details.
@@ -573,6 +590,8 @@ to the [request methods](#request-methods) like this:
 ```php
 $browser->post($url, array(), $stream)->then(function (Psr\Http\Message\ResponseInterface $response) {
     echo 'Successfully sent.';
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
 ```
 
@@ -691,6 +710,8 @@ $browser = new React\Http\Browser($connector);
 
 $client->get('http://localhost/info')->then(function (Psr\Http\Message\ResponseInterface $response) {
     var_dump($response->getHeaders(), (string)$response->getBody());
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
 ```
 
@@ -1193,13 +1214,13 @@ $http = new React\Http\HttpServer(
             });
 
             // an error occures e.g. on invalid chunked encoded data or an unexpected 'end' event
-            $body->on('error', function (\Exception $exception) use ($resolve, &$bytes) {
+            $body->on('error', function (Exception $e) use ($resolve, &$bytes) {
                 $resolve(new React\Http\Message\Response(
                     400,
                     array(
                         'Content-Type' => 'text/plain'
                     ),
-                    "Encountered error after $bytes bytes: {$exception->getMessage()}\n"
+                    "Encountered error after $bytes bytes: {$e->getMessage()}\n"
                 ));
             });
         });
@@ -1922,6 +1943,8 @@ send an HTTP GET request.
 ```php
 $browser->get($url)->then(function (Psr\Http\Message\ResponseInterface $response) {
     var_dump((string)$response->getBody());
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
 ```
 
@@ -1941,6 +1964,8 @@ $browser->post(
     json_encode($data)
 )->then(function (Psr\Http\Message\ResponseInterface $response) {
     var_dump(json_decode((string)$response->getBody()));
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
 ```
 
@@ -1986,6 +2011,8 @@ send an HTTP HEAD request.
 ```php
 $browser->head($url)->then(function (Psr\Http\Message\ResponseInterface $response) {
     var_dump($response->getHeaders());
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
 ```
 
@@ -2003,6 +2030,8 @@ $browser->patch(
     json_encode($data)
 )->then(function (Psr\Http\Message\ResponseInterface $response) {
     var_dump(json_decode((string)$response->getBody()));
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
 ```
 
@@ -2035,6 +2064,8 @@ $browser->put(
     $xml->asXML()
 )->then(function (Psr\Http\Message\ResponseInterface $response) {
     var_dump((string)$response->getBody());
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
 ```
 
@@ -2063,6 +2094,8 @@ send an HTTP DELETE request.
 ```php
 $browser->delete($url)->then(function (Psr\Http\Message\ResponseInterface $response) {
     var_dump((string)$response->getBody());
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
 ```
 
@@ -2081,6 +2114,8 @@ can use this method:
 ```php
 $browser->request('OPTIONS', $url)->then(function (Psr\Http\Message\ResponseInterface $response) {
     var_dump((string)$response->getBody());
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
 ```
 
@@ -2132,13 +2167,15 @@ $browser->requestStreaming('GET', $url)->then(function (Psr\Http\Message\Respons
         echo $chunk;
     });
 
-    $body->on('error', function (Exception $error) {
-        echo 'Error: ' . $error->getMessage() . PHP_EOL;
+    $body->on('error', function (Exception $e) {
+        echo 'Error: ' . $e->getMessage() . PHP_EOL;
     });
 
     $body->on('close', function () {
         echo '[DONE]' . PHP_EOL;
     });
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
 ```
 
@@ -2217,6 +2254,8 @@ $browser = $browser->withFollowRedirects(0);
 $browser->get($url)->then(function (Psr\Http\Message\ResponseInterface $response) {
     // only non-redirected responses will now end up here
     var_dump($response->getHeaders());
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
 ```
 
@@ -2230,6 +2269,8 @@ $browser = $browser->withFollowRedirects(false);
 $browser->get($url)->then(function (Psr\Http\Message\ResponseInterface $response) {
     // any redirects will now end up here
     var_dump($response->getHeaderLine('Location'));
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
 ```
 
@@ -2261,6 +2302,8 @@ $browser = $browser->withRejectErrorResponse(false);
 $browser->get($url)->then(function (Psr\Http\Message\ResponseInterface $response) {
     // any HTTP response will now end up here
     var_dump($response->getStatusCode(), $response->getReasonPhrase());
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
 ```
 
@@ -2280,7 +2323,7 @@ $browser->get($url)->then(function (Psr\Http\Message\ResponseInterface $response
         $response = $e->getResponse();
         var_dump($response->getStatusCode(), $response->getReasonPhrase());
     } else {
-        var_dump($e->getMessage());
+        echo 'Error: ' . $e->getMessage() . PHP_EOL;
     }
 });
 ```
@@ -2370,6 +2413,8 @@ $browser = $browser->withResponseBuffer(1024 * 1024);
 $browser->get($url)->then(function (Psr\Http\Message\ResponseInterface $response) {
     // response body will not exceed 1 MiB
     var_dump($response->getHeaders(), (string) $response->getBody());
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
 ```
 

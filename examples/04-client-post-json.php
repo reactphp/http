@@ -23,4 +23,6 @@ $client->post(
     json_encode($data)
 )->then(function (ResponseInterface $response) {
     echo (string)$response->getBody();
-}, 'printf');
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
+});

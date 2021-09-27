@@ -55,4 +55,6 @@ $client->requestStreaming('GET', $url)->then(function (ResponseInterface $respon
 
         echo "\r" . 'Downloaded ' . $bytes . ' bytes in ' . round($time, 3) . 's => ' . round($bytes / $time / 1000000, 1) . ' MB/s' . PHP_EOL;
     });
-}, 'printf');
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
+});

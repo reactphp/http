@@ -38,7 +38,7 @@ $http = new React\Http\HttpServer(function (ServerRequestInterface $request) use
                 $remote
             );
         },
-        function ($e) {
+        function (Exception $e) {
             return new Response(
                 502,
                 array(

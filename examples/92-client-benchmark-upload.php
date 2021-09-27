@@ -116,7 +116,7 @@ $client->post($url, array('Content-Length' => $n * 1000000), $source)->then(func
     printf("\r%d bytes in %0.3fs => %.1f MB/s\n", $source->getPosition(), $now - $start, $source->getPosition() / ($now - $start) / 1000000);
 
     echo rtrim(preg_replace('/x{5,}/','x…', (string) $response->getBody()), PHP_EOL) . PHP_EOL;
-}, function ($e) use ($report) {
+}, function (Exception $e) use ($report) {
     Loop::cancelTimer($report);
     echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });

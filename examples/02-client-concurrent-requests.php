@@ -9,12 +9,18 @@ $client = new Browser();
 
 $client->head('http://www.github.com/clue/http-react')->then(function (ResponseInterface $response) {
     var_dump($response->getHeaders(), (string)$response->getBody());
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
 
 $client->get('http://google.com/')->then(function (ResponseInterface $response) {
     var_dump($response->getHeaders(), (string)$response->getBody());
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
 
 $client->get('http://www.lueck.tv/psocksd')->then(function (ResponseInterface $response) {
     var_dump($response->getHeaders(), (string)$response->getBody());
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });

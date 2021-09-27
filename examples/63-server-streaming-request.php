@@ -29,20 +29,22 @@ $http = new React\Http\HttpServer(
             });
 
             // an error occures e.g. on invalid chunked encoded data or an unexpected 'end' event
-            $body->on('error', function (\Exception $exception) use ($resolve, &$bytes) {
+            $body->on('error', function (Exception $e) use ($resolve, &$bytes) {
                 $resolve(new React\Http\Message\Response(
                     400,
                     array(
                         'Content-Type' => 'text/plain'
                     ),
-                    "Encountered error after $bytes bytes: {$exception->getMessage()}\n"
+                    "Encountered error after $bytes bytes: {$e->getMessage()}\n"
                 ));
             });
         });
     }
 );
 
-$http->on('error', 'printf');
+$http->on('error', function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
+});
 
 $socket = new React\Socket\SocketServer(isset($argv[1]) ? $argv[1] : '0.0.0.0:0');
 $http->listen($socket);

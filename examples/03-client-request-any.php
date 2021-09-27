@@ -26,4 +26,12 @@ React\Promise\any($promises)->then(function (ResponseInterface $response) use ($
 
     var_dump($response->getHeaders());
     echo PHP_EOL . $response->getBody();
+}, function ($e) {
+    // Promise v1 and v2 reject with an array of Exceptions here, Promise v3 will use an Exception object instead
+    if (is_array($e)) {
+        $e = end($e);
+    }
+    assert($e instanceof Exception);
+
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });

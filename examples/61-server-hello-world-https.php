@@ -23,6 +23,8 @@ $socket = new React\Socket\SocketServer($uri, array(
 ));
 $http->listen($socket);
 
-$socket->on('error', 'printf');
+$socket->on('error', function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
+});
 
 echo 'Listening on ' . str_replace('tls:', 'https:', $socket->getAddress()) . PHP_EOL;
