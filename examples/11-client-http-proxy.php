@@ -1,6 +1,6 @@
 <?php
 
-// not already running a HTTP CONNECT proxy server?
+// not already running an HTTP CONNECT proxy server?
 // Try LeProxy.org or this:
 //
 // $ php examples/72-server-http-connect-proxy.php 127.0.0.1:8080
@@ -12,7 +12,7 @@ use React\Socket\Connector;
 
 require __DIR__ . '/../vendor/autoload.php';
 
-// create a new HTTP CONNECT proxy client which connects to a HTTP CONNECT proxy server listening on 127.0.0.1:8080
+// create a new HTTP CONNECT proxy client which connects to an HTTP CONNECT proxy server listening on 127.0.0.1:8080
 $proxy = new Clue\React\HttpProxy\ProxyConnector(getenv('http_proxy') ?: '127.0.0.1:8080');
 
 // create a Browser object that uses the HTTP CONNECT proxy client for connections

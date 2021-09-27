@@ -83,10 +83,14 @@ multiple concurrent HTTP requests without blocking.
 
 ## Quickstart example
 
-Once [installed](#install), you can use the following code to access a
-HTTP webserver and send some simple HTTP GET requests:
+Once [installed](#install), you can use the following code to access an
+HTTP web server and send some simple HTTP GET requests:
 
 ```php
+<?php
+
+require __DIR__ . '/vendor/autoload.php';
+
 $client = new React\Http\Browser();
 
 $client->get('http://www.google.com/')->then(function (Psr\Http\Message\ResponseInterface $response) {
@@ -97,6 +101,10 @@ $client->get('http://www.google.com/')->then(function (Psr\Http\Message\Response
 This is an HTTP server which responds with `Hello World!` to every request.
 
 ```php
+<?php
+
+require __DIR__ . '/vendor/autoload.php';
+
 $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
     return new React\Http\Message\Response(
         200,
@@ -594,7 +602,7 @@ HTTP CONNECT proxy servers (also commonly known as "HTTPS proxy" or "SSL proxy")
 are commonly used to tunnel HTTPS traffic through an intermediary ("proxy"), to
 conceal the origin address (anonymity) or to circumvent address blocking
 (geoblocking). While many (public) HTTP CONNECT proxy servers often limit this
-to HTTPS port`443` only, this can technically be used to tunnel any TCP/IP-based
+to HTTPS port `443` only, this can technically be used to tunnel any TCP/IP-based
 protocol, such as plain HTTP and TLS-encrypted HTTPS.
 
 ```php
@@ -1282,7 +1290,7 @@ Note that (depending on the given `request-target`) certain URI components may
 or may not be present, for example the `getPath(): string` method will return
 an empty string for requests in `asterisk-form` or `authority-form`.
 Its `getHost(): string` method will return the host as determined by the
-effective request URI, which defaults to the local socket address if a HTTP/1.0
+effective request URI, which defaults to the local socket address if an HTTP/1.0
 client did not specify one (i.e. no `Host` header).
 Its `getScheme(): string` method will return `http` or `https` depending
 on whether the request was made over a secure TLS connection to the target host.
@@ -1754,7 +1762,7 @@ As such, this project only bundles a few middleware implementations that are
 required to match PHP's request behavior (see below) and otherwise actively
 encourages [Third-Party Middleware](#third-party-middleware) implementations.
 
-In order to use middleware request handlers, simply pass an array with all
+In order to use middleware request handlers, simply pass a list of all
 callables as defined above to the [`HttpServer`](#httpserver).
 The following example adds a middleware request handler that adds the current time to the request as a 
 header (`Request-Time`) and a final request handler that always returns a 200 code without a body: 

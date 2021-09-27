@@ -24,7 +24,7 @@ $http = new React\Http\HttpServer(function (ServerRequestInterface $request) use
                 'Content-Type' => 'text/plain',
                 'Allow' => 'CONNECT'
             ),
-            'This is a HTTP CONNECT (secure HTTPS) proxy'
+            'This is an HTTP CONNECT (secure HTTPS) proxy'
         );
     }
 
