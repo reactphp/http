@@ -260,23 +260,27 @@ final class StreamingServer extends EventEmitter
             $response = $response->withoutHeader('Date');
         }
 
-        // assign "Content-Length" and "Transfer-Encoding" headers automatically
+        // assign "Content-Length" header automatically
         $chunked = false;
         if (($method === 'CONNECT' && $code >= 200 && $code < 300) || ($code >= 100 && $code < 200) || $code === 204) {
             // 2xx response to CONNECT and 1xx and 204 MUST NOT include Content-Length or Transfer-Encoding header
-            $response = $response->withoutHeader('Content-Length')->withoutHeader('Transfer-Encoding');
+            $response = $response->withoutHeader('Content-Length');
+        } elseif ($code === 304 && ($response->hasHeader('Content-Length') || $body->getSize() === 0)) {
+            // 304 Not Modified: preserve explicit Content-Length and preserve missing header if body is empty
         } elseif ($body->getSize() !== null) {
             // assign Content-Length header when using a "normal" buffered body string
-            $response = $response->withHeader('Content-Length', (string)$body->getSize())->withoutHeader('Transfer-Encoding');
+            $response = $response->withHeader('Content-Length', (string)$body->getSize());
         } elseif (!$response->hasHeader('Content-Length') && $version === '1.1') {
             // assign chunked transfer-encoding if no 'content-length' is given for HTTP/1.1 responses
-            $response = $response->withHeader('Transfer-Encoding', 'chunked');
             $chunked = true;
+        }
+
+        // assign "Transfer-Encoding" header automatically
+        if ($chunked) {
+            $response = $response->withHeader('Transfer-Encoding', 'chunked');
         } else {
             // remove any Transfer-Encoding headers unless automatically enabled above
-            // we do not want to keep connection alive, so pretend we received "Connection: close" request header
             $response = $response->withoutHeader('Transfer-Encoding');
-            $request = $request->withHeader('Connection', 'close');
         }
 
         // assign "Connection" header automatically

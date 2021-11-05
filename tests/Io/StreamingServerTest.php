@@ -1362,6 +1362,70 @@ class StreamingServerTest extends TestCase
         $this->assertNotContainsString("\r\nContent-Length: 3\r\n", $buffer);
     }
 
+    public function testResponseContainsNoContentLengthHeaderForNotModifiedStatus()
+    {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
+            return new Response(
+                304,
+                array(),
+                ''
+            );
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertContainsString("HTTP/1.1 304 Not Modified\r\n", $buffer);
+        $this->assertNotContainsString("\r\nContent-Length: 0\r\n", $buffer);
+    }
+
+    public function testResponseContainsExplicitContentLengthHeaderForNotModifiedStatus()
+    {
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
+            return new Response(
+                304,
+                array('Content-Length' => 3),
+                ''
+            );
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertContainsString("HTTP/1.1 304 Not Modified\r\n", $buffer);
+        $this->assertContainsString("\r\nContent-Length: 3\r\n", $buffer);
+    }
+
     public function testResponseContainsNoResponseBodyForNotModifiedStatus()
     {
         $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) {
