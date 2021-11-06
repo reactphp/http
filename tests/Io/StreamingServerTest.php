@@ -765,7 +765,7 @@ class StreamingServerTest extends TestCase
         $this->assertEquals('', $buffer);
     }
 
-    public function testRespomseBodyStreamAlreadyClosedWillSendEmptyBodyChunkedEncoded()
+    public function testResponseBodyStreamAlreadyClosedWillSendEmptyBodyChunkedEncoded()
     {
         $stream = new ThroughStream();
         $stream->close();
@@ -1255,7 +1255,43 @@ class StreamingServerTest extends TestCase
         $this->connection->emit('data', array($data));
 
         $this->assertContainsString("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertContainsString("\r\nContent-Length: 3\r\n", $buffer);
         $this->assertNotContainsString("bye", $buffer);
+    }
+
+    public function testResponseContainsNoResponseBodyForHeadRequestWithStreamingResponse()
+    {
+        $stream = new ThroughStream();
+        $stream->on('close', $this->expectCallableOnce());
+
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($stream) {
+            return new Response(
+                200,
+                array('Content-Length' => '3'),
+                $stream
+            );
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "HEAD / HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertContainsString("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertContainsString("\r\nContent-Length: 3\r\n", $buffer);
     }
 
     public function testResponseContainsNoResponseBodyAndNoContentLengthForNoContentStatus()
@@ -1287,8 +1323,43 @@ class StreamingServerTest extends TestCase
         $this->connection->emit('data', array($data));
 
         $this->assertContainsString("HTTP/1.1 204 No Content\r\n", $buffer);
-        $this->assertNotContainsString("\r\n\Content-Length: 3\r\n", $buffer);
+        $this->assertNotContainsString("\r\nContent-Length: 3\r\n", $buffer);
         $this->assertNotContainsString("bye", $buffer);
+    }
+
+    public function testResponseContainsNoResponseBodyAndNoContentLengthForNoContentStatusResponseWithStreamingBody()
+    {
+        $stream = new ThroughStream();
+        $stream->on('close', $this->expectCallableOnce());
+
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($stream) {
+            return new Response(
+                204,
+                array('Content-Length' => '3'),
+                $stream
+            );
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "HEAD / HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertContainsString("HTTP/1.1 204 No Content\r\n", $buffer);
+        $this->assertNotContainsString("\r\nContent-Length: 3\r\n", $buffer);
     }
 
     public function testResponseContainsNoResponseBodyForNotModifiedStatus()
@@ -1322,6 +1393,41 @@ class StreamingServerTest extends TestCase
         $this->assertContainsString("HTTP/1.1 304 Not Modified\r\n", $buffer);
         $this->assertContainsString("\r\nContent-Length: 3\r\n", $buffer);
         $this->assertNotContainsString("bye", $buffer);
+    }
+
+    public function testResponseContainsNoResponseBodyForNotModifiedStatusWithStreamingBody()
+    {
+        $stream = new ThroughStream();
+        $stream->on('close', $this->expectCallableOnce());
+
+        $server = new StreamingServer(Factory::create(), function (ServerRequestInterface $request) use ($stream) {
+            return new Response(
+                304,
+                array('Content-Length' => '3'),
+                $stream
+            );
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertContainsString("HTTP/1.1 304 Not Modified\r\n", $buffer);
+        $this->assertContainsString("\r\nContent-Length: 3\r\n", $buffer);
     }
 
     public function testRequestInvalidHttpProtocolVersionWillEmitErrorAndSendErrorResponse()

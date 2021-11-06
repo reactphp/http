@@ -330,6 +330,7 @@ final class StreamingServer extends EventEmitter
         // response to HEAD and 1xx, 204 and 304 responses MUST NOT include a body
         // exclude status 101 (Switching Protocols) here for Upgrade request handling above
         if ($method === 'HEAD' || $code === 100 || ($code > 101 && $code < 200) || $code === 204 || $code === 304) {
+            $body->close();
             $body = '';
         }
 
