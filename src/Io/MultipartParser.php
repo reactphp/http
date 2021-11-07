@@ -3,7 +3,6 @@
 namespace React\Http\Io;
 
 use Psr\Http\Message\ServerRequestInterface;
-use RingCentral\Psr7;
 
 /**
  * [Internal] Parses a string body with "Content-Type: multipart/form-data" into structured data
@@ -190,7 +189,7 @@ final class MultipartParser
             }
 
             return new UploadedFile(
-                Psr7\stream_for(),
+                new BufferedBody(''),
                 $size,
                 \UPLOAD_ERR_NO_FILE,
                 $filename,
@@ -206,7 +205,7 @@ final class MultipartParser
         // file exceeds "upload_max_filesize" ini setting
         if ($size > $this->uploadMaxFilesize) {
             return new UploadedFile(
-                Psr7\stream_for(),
+                new BufferedBody(''),
                 $size,
                 \UPLOAD_ERR_INI_SIZE,
                 $filename,
@@ -217,7 +216,7 @@ final class MultipartParser
         // file exceeds MAX_FILE_SIZE value
         if ($this->maxFileSize !== null && $size > $this->maxFileSize) {
             return new UploadedFile(
-                Psr7\stream_for(),
+                new BufferedBody(''),
                 $size,
                 \UPLOAD_ERR_FORM_SIZE,
                 $filename,
@@ -226,7 +225,7 @@ final class MultipartParser
         }
 
         return new UploadedFile(
-            Psr7\stream_for($contents),
+            new BufferedBody($contents),
             $size,
             \UPLOAD_ERR_OK,
             $filename,

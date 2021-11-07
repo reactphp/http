@@ -9,18 +9,22 @@ use React\Tests\Http\TestCase;
 
 class ResponseTest extends TestCase
 {
-
-    public function testStringBodyWillBePsr7Stream()
+    public function testConstructWithStringBodyWillReturnStreamInstance()
     {
         $response = new Response(200, array(), 'hello');
-        $this->assertInstanceOf('RingCentral\Psr7\Stream', $response->getBody());
+        $body = $response->getBody();
+
+        /** @var \Psr\Http\Message\StreamInterface $body */
+        $this->assertInstanceOf('Psr\Http\Message\StreamInterface', $body);
+        $this->assertEquals('hello', (string) $body);
     }
 
     public function testConstructWithStreamingBodyWillReturnReadableBodyStream()
     {
         $response = new Response(200, array(), new ThroughStream());
-
         $body = $response->getBody();
+
+        /** @var \Psr\Http\Message\StreamInterface $body */
         $this->assertInstanceOf('Psr\Http\Message\StreamInterface', $body);
         $this->assertInstanceof('React\Stream\ReadableStreamInterface', $body);
         $this->assertInstanceOf('React\Http\Io\HttpBodyStream', $body);

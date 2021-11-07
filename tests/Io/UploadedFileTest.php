@@ -2,9 +2,9 @@
 
 namespace React\Tests\Http\Io;
 
+use React\Http\Io\BufferedBody;
 use React\Http\Io\UploadedFile;
 Use React\Tests\Http\TestCase;
-use RingCentral\Psr7\BufferStream;
 
 class UploadedFileTest extends TestCase
 {
@@ -23,7 +23,7 @@ class UploadedFileTest extends TestCase
      */
     public function testFailtyError($error)
     {
-        $stream = new BufferStream();
+        $stream = new BufferedBody('');
 
         $this->setExpectedException('InvalidArgumentException', 'Invalid error code, must be an UPLOAD_ERR_* constant');
         new UploadedFile($stream, 0, $error, 'foo.bar', 'foo/bar');
@@ -31,7 +31,7 @@ class UploadedFileTest extends TestCase
 
     public function testNoMoveFile()
     {
-        $stream = new BufferStream();
+        $stream = new BufferedBody('');
         $uploadedFile = new UploadedFile($stream, 0, UPLOAD_ERR_OK, 'foo.bar', 'foo/bar');
 
         $this->setExpectedException('RuntimeException', 'Not implemented');
@@ -40,7 +40,7 @@ class UploadedFileTest extends TestCase
 
     public function testGetters()
     {
-        $stream = new BufferStream();
+        $stream = new BufferedBody('');
         $uploadedFile = new UploadedFile($stream, 0, UPLOAD_ERR_OK, 'foo.bar', 'foo/bar');
         self::assertSame($stream,       $uploadedFile->getStream());
         self::assertSame(0,             $uploadedFile->getSize());
@@ -51,7 +51,7 @@ class UploadedFileTest extends TestCase
 
     public function testGetStreamOnFailedUpload()
     {
-        $stream = new BufferStream();
+        $stream = new BufferedBody('');
         $uploadedFile = new UploadedFile($stream, 0, UPLOAD_ERR_NO_FILE, 'foo.bar', 'foo/bar');
 
         $this->setExpectedException('RuntimeException', 'Cannot retrieve stream due to upload error');

@@ -5,6 +5,7 @@ namespace React\Http\Message;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
+use React\Http\Io\BufferedBody;
 use React\Http\Io\HttpBodyStream;
 use React\Stream\ReadableStreamInterface;
 use RingCentral\Psr7\Request;
@@ -57,10 +58,12 @@ final class ServerRequest extends Request implements ServerRequestInterface
         $serverParams = array()
     ) {
         $stream = null;
-        if ($body instanceof ReadableStreamInterface && !$body instanceof StreamInterface) {
+        if (\is_string($body)) {
+            $body = new BufferedBody($body);
+        } elseif ($body instanceof ReadableStreamInterface && !$body instanceof StreamInterface) {
             $stream = $body;
             $body = null;
-        } elseif (!\is_string($body) && !$body instanceof StreamInterface) {
+        } elseif (!$body instanceof StreamInterface) {
             throw new \InvalidArgumentException('Invalid server request body given');
         }
 
