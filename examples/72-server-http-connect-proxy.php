@@ -19,7 +19,7 @@ $connector = new Connector();
 $http = new React\Http\HttpServer(function (ServerRequestInterface $request) use ($connector) {
     if ($request->getMethod() !== 'CONNECT') {
         return new Response(
-            405,
+            Response::STATUS_METHOD_NOT_ALLOWED,
             array(
                 'Content-Type' => 'text/plain',
                 'Allow' => 'CONNECT'
@@ -33,14 +33,14 @@ $http = new React\Http\HttpServer(function (ServerRequestInterface $request) use
         function (ConnectionInterface $remote) {
             // connection established => forward data
             return new Response(
-                200,
+                Response::STATUS_OK,
                 array(),
                 $remote
             );
         },
         function (Exception $e) {
             return new Response(
-                502,
+                Response::STATUS_BAD_GATEWAY,
                 array(
                     'Content-Type' => 'text/plain'
                 ),

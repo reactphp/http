@@ -16,7 +16,7 @@ require __DIR__ . '/../vendor/autoload.php';
 $http = new React\Http\HttpServer(function (RequestInterface $request) {
     if (strpos($request->getRequestTarget(), '://') === false) {
         return new Response(
-            400,
+            Response::STATUS_BAD_REQUEST,
             array(
                 'Content-Type' => 'text/plain'
             ),
@@ -36,7 +36,7 @@ $http = new React\Http\HttpServer(function (RequestInterface $request) {
     // left up as an exercise: use an HTTP client to send the outgoing request
     // and forward the incoming response to the original client request
     return new Response(
-        200,
+        Response::STATUS_OK,
         array(
             'Content-Type' => 'text/plain'
         ),

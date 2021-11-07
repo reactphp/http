@@ -8,7 +8,7 @@ require __DIR__ . '/../vendor/autoload.php';
 $counter = 0;
 $http = new React\Http\HttpServer(function (ServerRequestInterface $request) use (&$counter) {
     return new Response(
-        200,
+        Response::STATUS_OK,
         array(
             'Content-Type' => 'text/plain'
         ),

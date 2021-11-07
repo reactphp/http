@@ -16,7 +16,7 @@ $http = new React\Http\HttpServer(function (ServerRequestInterface $request) use
         }
 
         $response = new Response(
-            200,
+            Response::STATUS_OK,
             array(
                 'Content-Type' => 'text/plain'
             ),

@@ -110,7 +110,7 @@ $body
 HTML;
 
     return new Response(
-        200,
+        Response::STATUS_OK,
         array(
             'Content-Type' => 'text/html; charset=UTF-8'
         ),

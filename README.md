@@ -109,7 +109,7 @@ require __DIR__ . '/vendor/autoload.php';
 
 $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
     return new React\Http\Message\Response(
-        200,
+        React\Http\Message\Response::STATUS_OK,
         array(
             'Content-Type' => 'text/plain'
         ),
@@ -735,7 +735,7 @@ object and expects a [response](#server-response) object in return:
 ```php
 $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
     return new React\Http\Message\Response(
-        200,
+        React\Http\Message\Response::STATUS_OK,
         array(
             'Content-Type' => 'text/plain'
         ),
@@ -953,7 +953,7 @@ $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterf
     $body .= "The requested path is: " . $request->getUri()->getPath();
 
     return new React\Http\Message\Response(
-        200,
+        React\Http\Message\Response::STATUS_OK,
         array(
             'Content-Type' => 'text/plain'
         ),
@@ -995,7 +995,7 @@ $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterf
     $body = "Your IP is: " . $request->getServerParams()['REMOTE_ADDR'];
 
     return new React\Http\Message\Response(
-        200,
+        React\Http\Message\Response::STATUS_OK,
         array(
             'Content-Type' => 'text/plain'
         ),
@@ -1027,7 +1027,7 @@ $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterf
     }
 
     return new React\Http\Message\Response(
-        200,
+        React\Http\Message\Response::STATUS_OK,
         array(
             'Content-Type' => 'text/html'
         ),
@@ -1074,7 +1074,7 @@ $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterf
     $name = $request->getParsedBody()['name'] ?? 'anonymous';
 
     return new React\Http\Message\Response(
-        200,
+        React\Http\Message\Response::STATUS_OK,
         array(),
         "Hello $name!\n"
     );
@@ -1099,7 +1099,7 @@ $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterf
     $name = $data->name ?? 'anonymous';
 
     return new React\Http\Message\Response(
-        200,
+        React\Http\Message\Response::STATUS_OK,
         array('Content-Type' => 'application/json'),
         json_encode(['message' => "Hello $name!"])
     );
@@ -1122,7 +1122,7 @@ $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterf
     $name = isset($files['avatar']) ? $files['avatar']->getClientFilename() : 'nothing';
 
     return new React\Http\Message\Response(
-        200,
+        React\Http\Message\Response::STATUS_OK,
         array(),
         "Uploaded $name\n"
     );
@@ -1205,7 +1205,7 @@ $http = new React\Http\HttpServer(
 
             $body->on('end', function () use ($resolve, &$bytes){
                 $resolve(new React\Http\Message\Response(
-                    200,
+                    React\Http\Message\Response::STATUS_OK,
                     array(
                         'Content-Type' => 'text/plain'
                     ),
@@ -1216,7 +1216,7 @@ $http = new React\Http\HttpServer(
             // an error occures e.g. on invalid chunked encoded data or an unexpected 'end' event
             $body->on('error', function (Exception $e) use ($resolve, &$bytes) {
                 $resolve(new React\Http\Message\Response(
-                    400,
+                    React\Http\Message\Response::STATUS_BAD_REQUEST,
                     array(
                         'Content-Type' => 'text/plain'
                     ),
@@ -1272,7 +1272,7 @@ $http = new React\Http\HttpServer(
             $body .= 'This example does not accept chunked transfer encoding.';
 
             return new React\Http\Message\Response(
-                411,
+                React\Http\Message\Response::STATUS_LENGTH_REQUIRED,
                 array(
                     'Content-Type' => 'text/plain'
                 ),
@@ -1281,7 +1281,7 @@ $http = new React\Http\HttpServer(
         }
 
         return new React\Http\Message\Response(
-            200,
+            React\Http\Message\Response::STATUS_OK,
             array(
                 'Content-Type' => 'text/plain'
             ),
@@ -1343,7 +1343,7 @@ $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterf
         $body = "Your cookie value is: " . $request->getCookieParams()[$key];
 
         return new React\Http\Message\Response(
-            200,
+            React\Http\Message\Response::STATUS_OK,
             array(
                 'Content-Type' => 'text/plain'
             ),
@@ -1352,7 +1352,7 @@ $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterf
     }
 
     return new React\Http\Message\Response(
-        200,
+        React\Http\Message\Response::STATUS_OK,
         array(
             'Content-Type' => 'text/plain',
             'Set-Cookie' => urlencode($key) . '=' . urlencode('test;more')
@@ -1410,7 +1410,7 @@ In its most simple form, you can use it like this:
 ```php 
 $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
     return new React\Http\Message\Response(
-        200,
+        React\Http\Message\Response::STATUS_OK,
         array(
             'Content-Type' => 'text/plain'
         ),
@@ -1440,7 +1440,7 @@ $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterf
     return new Promise(function ($resolve, $reject) {
         Loop::addTimer(1.5, function() use ($resolve) {
             $response = new React\Http\Message\Response(
-                200,
+                React\Http\Message\Response::STATUS_OK,
                 array(
                     'Content-Type' => 'text/plain'
                 ),
@@ -1487,7 +1487,7 @@ $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterf
     });
 
     return new React\Http\Message\Response(
-        200,
+        React\Http\Message\Response::STATUS_OK,
         array(
             'Content-Type' => 'text/plain'
         ),
@@ -1568,7 +1568,7 @@ a `string` response body like this:
 ```php 
 $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
     return new React\Http\Message\Response(
-        200,
+        React\Http\Message\Response::STATUS_OK,
         array(
             'Content-Type' => 'text/plain'
         ),
@@ -1593,7 +1593,7 @@ $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterf
     });
 
     return new React\Http\Message\Response(
-        200,
+        React\Http\Message\Response::STATUS_OK,
         array(
             'Content-Length' => '13',
             'Content-Type' => 'text/plain',
@@ -1663,7 +1663,7 @@ a custom `Server` response header like this:
 ```php
 $http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
     return new React\Http\Message\Response(
-        200,
+        React\Http\Message\Response::STATUS_OK,
         array(
             'Server' => 'PHP/3'
         )
@@ -1678,7 +1678,7 @@ string value like this:
 ```php
 $http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
     return new React\Http\Message\Response(
-        200,
+        React\Http\Message\Response::STATUS_OK,
         array(
             'Server' => ''
         )
@@ -1693,7 +1693,7 @@ like this:
 ```php
 $http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
     return new React\Http\Message\Response(
-        200,
+        React\Http\Message\Response::STATUS_OK,
         array(
             'Date' => gmdate('D, d M Y H:i:s \G\M\T')
         )
@@ -1708,7 +1708,7 @@ like this:
 ```php
 $http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
     return new React\Http\Message\Response(
-        200,
+        React\Http\Message\Response::STATUS_OK,
         array(
             'Date' => ''
         )
@@ -1786,7 +1786,7 @@ encourages [Third-Party Middleware](#third-party-middleware) implementations.
 In order to use middleware request handlers, simply pass a list of all
 callables as defined above to the [`HttpServer`](#httpserver).
 The following example adds a middleware request handler that adds the current time to the request as a 
-header (`Request-Time`) and a final request handler that always returns a 200 code without a body: 
+header (`Request-Time`) and a final request handler that always returns a `200 OK` status code without a body: 
 
 ```php
 $http = new React\Http\HttpServer(
@@ -1795,7 +1795,7 @@ $http = new React\Http\HttpServer(
         return $next($request);
     },
     function (Psr\Http\Message\ServerRequestInterface $request) {
-        return new React\Http\Message\Response(200);
+        return new React\Http\Message\Response(React\Http\Message\Response::STATUS_OK);
     }
 );
 ```
@@ -1821,7 +1821,7 @@ $http = new React\Http\HttpServer(
         });
     },
     function (Psr\Http\Message\ServerRequestInterface $request) {
-        return new React\Http\Message\Response(200);
+        return new React\Http\Message\Response(React\Http\Message\Response::STATUS_OK);
     }
 );
 ```
@@ -1842,7 +1842,7 @@ $http = new React\Http\HttpServer(
         });
         return $promise->then(null, function (Exception $e) {
             return new React\Http\Message\Response(
-                500,
+                React\Http\Message\Response::STATUS_INTERNAL_SERVER_ERROR,
                 array(),
                 'Internal error: ' . $e->getMessage()
             );
@@ -1852,7 +1852,7 @@ $http = new React\Http\HttpServer(
         if (mt_rand(0, 1) === 1) {
             throw new RuntimeException('Database error');
         }
-        return new React\Http\Message\Response(200);
+        return new React\Http\Message\Response(React\Http\Message\Response::STATUS_OK);
     }
 );
 ```
@@ -2439,7 +2439,7 @@ represent an outgoing server response message.
 
 ```php
 $response = new React\Http\Message\Response(
-    200,
+    React\Http\Message\Response::STATUS_OK,
     array(
         'Content-Type' => 'text/html'
     ),
@@ -2451,6 +2451,13 @@ This class implements the
 [PSR-7 `ResponseInterface`](https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface)
 which in turn extends the
 [PSR-7 `MessageInterface`](https://www.php-fig.org/psr/psr-7/#31-psrhttpmessagemessageinterface).
+
+On top of this, this class implements the
+[PSR-7 Message Util `StatusCodeInterface`](https://github.com/php-fig/http-message-util/blob/master/src/StatusCodeInterface.php)
+which means that most common HTTP status codes are available as class
+constants with the `STATUS_*` prefix. For instance, the `200 OK` and
+`404 Not Found` status codes can used as `Response::STATUS_OK` and
+`Response::STATUS_NOT_FOUND` respectively.
 
 > Internally, this implementation builds on top of an existing incoming
   response message and only adds required streaming support. This base class is
@@ -2516,7 +2523,7 @@ $http = new React\Http\HttpServer(
             });
             $body->on('close', function () use (&$bytes, $resolve) {
                 $resolve(new React\Http\Message\Response(
-                    200,
+                    React\Http\Message\Response::STATUS_OK,
                     [],
                     "Received $bytes bytes\n"
                 ));
@@ -2653,7 +2660,7 @@ $http = new React\Http\HttpServer(
     new React\Http\Middleware\RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
     function (Psr\Http\Message\ServerRequestInterface $request) {
         // The body from $request->getBody() is now fully available without the need to stream it 
-        return new React\Http\Message\Response(200);
+        return new React\Http\Message\Response(React\Http\Message\Response::STATUS_OK);
     },
 );
 ```
@@ -2700,7 +2707,7 @@ $handler = function (Psr\Http\Message\ServerRequestInterface $request) {
     }
 
     return new React\Http\Message\Response(
-        200,
+        React\Http\Message\Response::STATUS_OK,
         array(
             'Content-Type' => 'text/plain'
         ),

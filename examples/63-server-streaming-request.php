@@ -20,7 +20,7 @@ $http = new React\Http\HttpServer(
 
             $body->on('end', function () use ($resolve, &$bytes){
                 $resolve(new React\Http\Message\Response(
-                    200,
+                    React\Http\Message\Response::STATUS_OK,
                     array(
                         'Content-Type' => 'text/plain'
                     ),
@@ -31,7 +31,7 @@ $http = new React\Http\HttpServer(
             // an error occures e.g. on invalid chunked encoded data or an unexpected 'end' event
             $body->on('error', function (Exception $e) use ($resolve, &$bytes) {
                 $resolve(new React\Http\Message\Response(
-                    400,
+                    React\Http\Message\Response::STATUS_BAD_REQUEST,
                     array(
                         'Content-Type' => 'text/plain'
                     ),

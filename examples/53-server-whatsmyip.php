@@ -9,7 +9,7 @@ $http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
     $body = "Your IP is: " . $request->getServerParams()['REMOTE_ADDR'];
 
     return new Response(
-        200,
+        Response::STATUS_OK,
         array(
             'Content-Type' => 'text/plain'
         ),

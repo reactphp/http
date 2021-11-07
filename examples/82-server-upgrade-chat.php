@@ -38,7 +38,7 @@ $chat = new ThroughStream();
 $http = new React\Http\HttpServer(function (ServerRequestInterface $request) use ($chat) {
     if ($request->getHeaderLine('Upgrade') !== 'chat' || $request->getProtocolVersion() === '1.0') {
         return new Response(
-            426,
+            Response::STATUS_UPGRADE_REQUIRED,
             array(
                 'Upgrade' => 'chat'
             ),
@@ -76,7 +76,7 @@ $http = new React\Http\HttpServer(function (ServerRequestInterface $request) use
     });
 
     return new Response(
-        101,
+        Response::STATUS_SWITCHING_PROTOCOLS,
         array(
             'Upgrade' => 'chat'
         ),

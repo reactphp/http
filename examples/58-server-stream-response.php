@@ -9,7 +9,7 @@ require __DIR__ . '/../vendor/autoload.php';
 
 $http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
     if ($request->getMethod() !== 'GET' || $request->getUri()->getPath() !== '/') {
-        return new Response(404);
+        return new Response(Response::STATUS_NOT_FOUND);
     }
 
     $stream = new ThroughStream();
@@ -30,7 +30,7 @@ $http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
     });
 
     return new Response(
-        200,
+        Response::STATUS_OK,
         array(
             'Content-Type' => 'text/plain'
         ),

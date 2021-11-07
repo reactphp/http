@@ -6,6 +6,7 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use React\EventLoop\LoopInterface;
 use React\Http\Client\Client as HttpClient;
+use React\Http\Message\Response;
 use React\Promise\PromiseInterface;
 use React\Promise\Deferred;
 use React\Socket\ConnectorInterface;
@@ -110,7 +111,7 @@ class Sender
         $requestStream->on('response', function (ResponseInterface $response, ReadableStreamInterface $body) use ($deferred, $request) {
             $length = null;
             $code = $response->getStatusCode();
-            if ($request->getMethod() === 'HEAD' || ($code >= 100 && $code < 200) || $code == 204 || $code == 304) {
+            if ($request->getMethod() === 'HEAD' || ($code >= 100 && $code < 200) || $code == Response::STATUS_NO_CONTENT || $code == Response::STATUS_NOT_MODIFIED) {
                 $length = 0;
             } elseif (\strtolower($response->getHeaderLine('Transfer-Encoding')) === 'chunked') {
                 $body = new ChunkedDecoder($body);

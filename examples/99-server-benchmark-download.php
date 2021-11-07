@@ -94,7 +94,7 @@ $http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
     switch ($request->getUri()->getPath()) {
         case '/':
             return new Response(
-                200,
+                Response::STATUS_OK,
                 array(
                     'Content-Type' => 'text/html'
                 ),
@@ -107,13 +107,13 @@ $http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
             $stream = new ChunkRepeater(str_repeat('.', 1000000), 10000);
             break;
         default:
-            return new Response(404);
+            return new Response(Response::STATUS_NOT_FOUND);
     }
 
     React\EventLoop\Loop::addTimer(0, array($stream, 'resume'));
 
     return new Response(
-        200,
+        Response::STATUS_OK,
         array(
             'Content-Type' => 'application/octet-data',
             'Content-Length' => $stream->getSize()

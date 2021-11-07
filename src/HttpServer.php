@@ -26,7 +26,7 @@ use React\Socket\ServerInterface;
  * ```php
  * $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
  *     return new React\Http\Message\Response(
- *         200,
+ *         React\Http\Message\Response::STATUS_OK,
  *         array(
  *             'Content-Type' => 'text/plain'
  *         ),

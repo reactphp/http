@@ -4,6 +4,7 @@ namespace React\Http\Io;
 
 use Evenement\EventEmitter;
 use Psr\Http\Message\ServerRequestInterface;
+use React\Http\Message\Response;
 use React\Http\Message\ServerRequest;
 use React\Socket\ConnectionInterface;
 use Exception;
@@ -39,7 +40,7 @@ class RequestHeaderParser extends EventEmitter
                 $fn = null;
 
                 $that->emit('error', array(
-                    new \OverflowException("Maximum header size of {$maxSize} exceeded.", 431),
+                    new \OverflowException("Maximum header size of {$maxSize} exceeded.", Response::STATUS_REQUEST_HEADER_FIELDS_TOO_LARGE),
                     $conn
                 ));
                 return;
@@ -127,7 +128,7 @@ class RequestHeaderParser extends EventEmitter
 
         // only support HTTP/1.1 and HTTP/1.0 requests
         if ($start['version'] !== '1.1' && $start['version'] !== '1.0') {
-            throw new \InvalidArgumentException('Received request with invalid protocol version', 505);
+            throw new \InvalidArgumentException('Received request with invalid protocol version', Response::STATUS_VERSION_NOT_SUPPORTED);
         }
 
         // match all request header fields into array, thanks to @kelunik for checking the HTTP specs and coming up with this regex
@@ -256,20 +257,20 @@ class RequestHeaderParser extends EventEmitter
         // ensure message boundaries are valid according to Content-Length and Transfer-Encoding request headers
         if ($request->hasHeader('Transfer-Encoding')) {
             if (\strtolower($request->getHeaderLine('Transfer-Encoding')) !== 'chunked') {
-                throw new \InvalidArgumentException('Only chunked-encoding is allowed for Transfer-Encoding', 501);
+                throw new \InvalidArgumentException('Only chunked-encoding is allowed for Transfer-Encoding', Response::STATUS_NOT_IMPLEMENTED);
             }
 
             // Transfer-Encoding: chunked and Content-Length header MUST NOT be used at the same time
             // as per https://tools.ietf.org/html/rfc7230#section-3.3.3
             if ($request->hasHeader('Content-Length')) {
-                throw new \InvalidArgumentException('Using both `Transfer-Encoding: chunked` and `Content-Length` is not allowed', 400);
+                throw new \InvalidArgumentException('Using both `Transfer-Encoding: chunked` and `Content-Length` is not allowed', Response::STATUS_BAD_REQUEST);
             }
         } elseif ($request->hasHeader('Content-Length')) {
             $string = $request->getHeaderLine('Content-Length');
 
             if ((string)(int)$string !== $string) {
                 // Content-Length value is not an integer or not a single integer
-                throw new \InvalidArgumentException('The value of `Content-Length` is not valid', 400);
+                throw new \InvalidArgumentException('The value of `Content-Length` is not valid', Response::STATUS_BAD_REQUEST);
             }
         }
 
