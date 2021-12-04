@@ -160,7 +160,7 @@ class RequestHeaderParser extends EventEmitter
         );
 
         // scheme is `http` unless TLS is used
-        $localParts = \parse_url($localSocketUri);
+        $localParts = $localSocketUri === null ? array() : \parse_url($localSocketUri);
         if (isset($localParts['scheme']) && $localParts['scheme'] === 'tls') {
             $scheme = 'https://';
             $serverParams['HTTPS'] = 'on';
@@ -242,7 +242,9 @@ class RequestHeaderParser extends EventEmitter
             }
 
             // make sure value does not contain any other URI component
-            unset($parts['scheme'], $parts['host'], $parts['port']);
+            if (\is_array($parts)) {
+                unset($parts['scheme'], $parts['host'], $parts['port']);
+            }
             if ($parts === false || $parts) {
                 throw new \InvalidArgumentException('Invalid Host header value');
             }

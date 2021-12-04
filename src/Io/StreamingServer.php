@@ -196,7 +196,7 @@ final class StreamingServer extends EventEmitter
                     $previous = $error;
                 }
 
-                $exception = new \RuntimeException($message, null, $previous);
+                $exception = new \RuntimeException($message, 0, $previous);
 
                 $that->emit('error', array($exception));
                 return $that->writeError($conn, Response::STATUS_INTERNAL_SERVER_ERROR, $request);

@@ -63,7 +63,6 @@ class IniUtilTest extends TestCase
         return array(
             array('-1G'),
             array('0G'),
-            array(null),
             array('foo'),
             array('fooK'),
             array('1ooL'),
