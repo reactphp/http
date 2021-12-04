@@ -5,7 +5,8 @@
          xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd"
          bootstrap="vendor/autoload.php"
          colors="true"
-         cacheResult="false">
+         cacheResult="false"
+         convertDeprecationsToExceptions="true">
     <testsuites>
         <testsuite name="React Test Suite">
             <directory>./tests/</directory>
