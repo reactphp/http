@@ -1,13 +1,12 @@
 <?php
 
-use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Loop;
 use React\Http\Message\Response;
 use React\Stream\ThroughStream;
 
 require __DIR__ . '/../vendor/autoload.php';
 
-$http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
+$http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
     if ($request->getMethod() !== 'GET' || $request->getUri()->getPath() !== '/') {
         return new Response(Response::STATUS_NOT_FOUND);
     }

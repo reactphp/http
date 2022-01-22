@@ -1,17 +1,10 @@
 <?php
 
-use Psr\Http\Message\ServerRequestInterface;
-use React\Http\Message\Response;
-
 require __DIR__ . '/../vendor/autoload.php';
 
 $counter = 0;
-$http = new React\Http\HttpServer(function (ServerRequestInterface $request) use (&$counter) {
-    return new Response(
-        Response::STATUS_OK,
-        array(
-            'Content-Type' => 'text/plain'
-        ),
+$http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) use (&$counter) {
+    return React\Http\Message\Response::plaintext(
         "Welcome number " . ++$counter . "!\n"
     );
 });

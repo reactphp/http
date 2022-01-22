@@ -112,11 +112,7 @@ This is an HTTP server which responds with `Hello World!` to every request.
 require __DIR__ . '/vendor/autoload.php';
 
 $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
-    return new React\Http\Message\Response(
-        React\Http\Message\Response::STATUS_OK,
-        array(
-            'Content-Type' => 'text/plain'
-        ),
+    return React\Http\Message\Response::plaintext(
         "Hello World!\n"
     );
 });
@@ -738,11 +734,7 @@ object and expects a [response](#server-response) object in return:
 
 ```php
 $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
-    return new React\Http\Message\Response(
-        React\Http\Message\Response::STATUS_OK,
-        array(
-            'Content-Type' => 'text/plain'
-        ),
+    return React\Http\Message\Response::plaintext(
         "Hello World!\n"
     );
 });
@@ -953,14 +945,10 @@ and will be passed to the callback function like this.
 
  ```php 
 $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
-    $body = "The method of the request is: " . $request->getMethod();
-    $body .= "The requested path is: " . $request->getUri()->getPath();
+    $body = "The method of the request is: " . $request->getMethod() . "\n";
+    $body .= "The requested path is: " . $request->getUri()->getPath() . "\n";
 
-    return new React\Http\Message\Response(
-        React\Http\Message\Response::STATUS_OK,
-        array(
-            'Content-Type' => 'text/plain'
-        ),
+    return React\Http\Message\Response::plaintext(
         $body
     );
 });
@@ -996,13 +984,9 @@ The following parameters are currently available:
 
 ```php 
 $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
-    $body = "Your IP is: " . $request->getServerParams()['REMOTE_ADDR'];
+    $body = "Your IP is: " . $request->getServerParams()['REMOTE_ADDR'] . "\n";
 
-    return new React\Http\Message\Response(
-        React\Http\Message\Response::STATUS_OK,
-        array(
-            'Content-Type' => 'text/plain'
-        ),
+    return React\Http\Message\Response::plaintext(
         $body
     );
 });
@@ -1030,11 +1014,7 @@ $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterf
         $body = 'The value of "foo" is: ' . htmlspecialchars($queryParams['foo']);
     }
 
-    return new React\Http\Message\Response(
-        React\Http\Message\Response::STATUS_OK,
-        array(
-            'Content-Type' => 'text/html'
-        ),
+    return React\Http\Message\Response::html(
         $body
     );
 });
@@ -1077,9 +1057,7 @@ request headers (commonly used for `POST` requests for HTML form submission data
 $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
     $name = $request->getParsedBody()['name'] ?? 'anonymous';
 
-    return new React\Http\Message\Response(
-        React\Http\Message\Response::STATUS_OK,
-        array(),
+    return React\Http\Message\Response::plaintext(
         "Hello $name!\n"
     );
 });
@@ -1102,10 +1080,8 @@ $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterf
     $data = json_decode((string)$request->getBody());
     $name = $data->name ?? 'anonymous';
 
-    return new React\Http\Message\Response(
-        React\Http\Message\Response::STATUS_OK,
-        array('Content-Type' => 'application/json'),
-        json_encode(['message' => "Hello $name!"])
+    return React\Http\Message\Response::json(
+        ['message' => "Hello $name!"]
     );
 });
 ```
@@ -1125,9 +1101,7 @@ $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterf
     $files = $request->getUploadedFiles();
     $name = isset($files['avatar']) ? $files['avatar']->getClientFilename() : 'nothing';
 
-    return new React\Http\Message\Response(
-        React\Http\Message\Response::STATUS_OK,
-        array(),
+    return React\Http\Message\Response::plaintext(
         "Uploaded $name\n"
     );
 });
@@ -1208,24 +1182,16 @@ $http = new React\Http\HttpServer(
             });
 
             $body->on('end', function () use ($resolve, &$bytes){
-                $resolve(new React\Http\Message\Response(
-                    React\Http\Message\Response::STATUS_OK,
-                    array(
-                        'Content-Type' => 'text/plain'
-                    ),
+                $resolve(React\Http\Message\Response::plaintext(
                     "Received $bytes bytes\n"
                 ));
             });
 
             // an error occures e.g. on invalid chunked encoded data or an unexpected 'end' event
             $body->on('error', function (Exception $e) use ($resolve, &$bytes) {
-                $resolve(new React\Http\Message\Response(
-                    React\Http\Message\Response::STATUS_BAD_REQUEST,
-                    array(
-                        'Content-Type' => 'text/plain'
-                    ),
+                $resolve(React\Http\Message\Response::plaintext(
                     "Encountered error after $bytes bytes: {$e->getMessage()}\n"
-                ));
+                )->withStatus(React\Http\Message\Response::STATUS_BAD_REQUEST));
             });
         });
     }
@@ -1272,23 +1238,15 @@ $http = new React\Http\HttpServer(
     function (Psr\Http\Message\ServerRequestInterface $request) {
         $size = $request->getBody()->getSize();
         if ($size === null) {
-            $body = 'The request does not contain an explicit length.';
-            $body .= 'This example does not accept chunked transfer encoding.';
+            $body = "The request does not contain an explicit length. ";
+            $body .= "This example does not accept chunked transfer encoding.\n";
 
-            return new React\Http\Message\Response(
-                React\Http\Message\Response::STATUS_LENGTH_REQUIRED,
-                array(
-                    'Content-Type' => 'text/plain'
-                ),
+            return React\Http\Message\Response::plaintext(
                 $body
-            );
+            )->withStatus(React\Http\Message\Response::STATUS_LENGTH_REQUIRED);
         }
 
-        return new React\Http\Message\Response(
-            React\Http\Message\Response::STATUS_OK,
-            array(
-                'Content-Type' => 'text/plain'
-            ),
+        return React\Http\Message\Response::plaintext(
             "Request body size: " . $size . " bytes\n"
         );
     }
@@ -1344,25 +1302,16 @@ $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterf
     $key = 'react\php';
 
     if (isset($request->getCookieParams()[$key])) {
-        $body = "Your cookie value is: " . $request->getCookieParams()[$key];
+        $body = "Your cookie value is: " . $request->getCookieParams()[$key] . "\n";
 
-        return new React\Http\Message\Response(
-            React\Http\Message\Response::STATUS_OK,
-            array(
-                'Content-Type' => 'text/plain'
-            ),
+        return React\Http\Message\Response::plaintext(
             $body
         );
     }
 
-    return new React\Http\Message\Response(
-        React\Http\Message\Response::STATUS_OK,
-        array(
-            'Content-Type' => 'text/plain',
-            'Set-Cookie' => urlencode($key) . '=' . urlencode('test;more')
-        ),
-        "Your cookie has been set."
-    );
+    return React\Http\Message\Response::plaintext(
+        "Your cookie has been set.\n"
+    )->withHeader('Set-Cookie', urlencode($key) . '=' . urlencode('test;more'));
 });
 ```
 
@@ -1413,11 +1362,7 @@ In its most simple form, you can use it like this:
 
 ```php 
 $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
-    return new React\Http\Message\Response(
-        React\Http\Message\Response::STATUS_OK,
-        array(
-            'Content-Type' => 'text/plain'
-        ),
+    return React\Http\Message\Response::plaintext(
         "Hello World!\n"
     );
 });
@@ -1441,17 +1386,16 @@ This example shows how such a long-term action could look like:
 
 ```php
 $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
-    return new Promise(function ($resolve, $reject) {
+    $promise = new Promise(function ($resolve, $reject) {
         Loop::addTimer(1.5, function() use ($resolve) {
-            $response = new React\Http\Message\Response(
-                React\Http\Message\Response::STATUS_OK,
-                array(
-                    'Content-Type' => 'text/plain'
-                ),
-                "Hello world"
-            );
-            $resolve($response);
+            $resolve();
         });
+    });
+
+    return $promise->then(function () { 
+        return React\Http\Message\Response::plaintext(
+            "Hello World!"
+        );
     });
 });
 ```
@@ -1571,11 +1515,7 @@ a `string` response body like this:
 
 ```php 
 $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
-    return new React\Http\Message\Response(
-        React\Http\Message\Response::STATUS_OK,
-        array(
-            'Content-Type' => 'text/plain'
-        ),
+    return React\Http\Message\Response::plaintext(
         "Hello World!\n"
     );
 });
@@ -1845,11 +1785,9 @@ $http = new React\Http\HttpServer(
             $resolve($next($request));
         });
         return $promise->then(null, function (Exception $e) {
-            return new React\Http\Message\Response(
-                React\Http\Message\Response::STATUS_INTERNAL_SERVER_ERROR,
-                array(),
-                'Internal error: ' . $e->getMessage()
-            );
+            return React\Http\Message\Response::plaintext(
+                'Internal error: ' . $e->getMessage() . "\n"
+            )->withStatus(React\Http\Message\Response::STATUS_INTERNAL_SERVER_ERROR);
         });
     },
     function (Psr\Http\Message\ServerRequestInterface $request) {

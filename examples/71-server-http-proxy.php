@@ -3,25 +3,17 @@
 // $ php examples/71-server-http-proxy.php 8080
 // $ curl -v --proxy http://localhost:8080 http://reactphp.org/
 
-use Psr\Http\Message\RequestInterface;
-use React\Http\Message\Response;
-use RingCentral\Psr7;
-
 require __DIR__ . '/../vendor/autoload.php';
 
 // Note how this example uses the `HttpServer` without the `StreamingRequestMiddleware`.
 // This means that this proxy buffers the whole request before "processing" it.
 // As such, this is store-and-forward proxy. This could also use the advanced
 // `StreamingRequestMiddleware` to forward the incoming request as it comes in.
-$http = new React\Http\HttpServer(function (RequestInterface $request) {
+$http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
     if (strpos($request->getRequestTarget(), '://') === false) {
-        return new Response(
-            Response::STATUS_BAD_REQUEST,
-            array(
-                'Content-Type' => 'text/plain'
-            ),
-            'This is a plain HTTP proxy'
-        );
+        return React\Http\Message\Response::plaintext(
+            "This is a plain HTTP proxy\n"
+        )->withStatus(React\Http\Message\Response::STATUS_BAD_REQUEST);
     }
 
     // prepare outgoing client request by updating request-target and Host header
@@ -35,12 +27,8 @@ $http = new React\Http\HttpServer(function (RequestInterface $request) {
     // pseudo code only: simply dump the outgoing request as a string
     // left up as an exercise: use an HTTP client to send the outgoing request
     // and forward the incoming response to the original client request
-    return new Response(
-        Response::STATUS_OK,
-        array(
-            'Content-Type' => 'text/plain'
-        ),
-        Psr7\str($outgoing)
+    return React\Http\Message\Response::plaintext(
+        RingCentral\Psr7\str($outgoing)
     );
 });
 

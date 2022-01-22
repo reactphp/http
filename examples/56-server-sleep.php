@@ -1,24 +1,20 @@
 <?php
 
-use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Loop;
-use React\Http\Message\Response;
-use React\Promise\Promise;
 
 require __DIR__ . '/../vendor/autoload.php';
 
-$http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
-    return new Promise(function ($resolve, $reject) {
+$http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
+    $promise = new React\Promise\Promise(function ($resolve, $reject) {
         Loop::addTimer(1.5, function() use ($resolve) {
-            $response = new Response(
-                Response::STATUS_OK,
-                array(
-                    'Content-Type' => 'text/plain'
-                ),
-                "Hello world"
-            );
-            $resolve($response);
+            $resolve();
         });
+    });
+
+    return $promise->then(function () {
+        return React\Http\Message\Response::plaintext(
+            "Hello world!\n"
+        );
     });
 });
 

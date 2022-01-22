@@ -1,11 +1,8 @@
 <?php
 
-use Psr\Http\Message\ServerRequestInterface;
-use React\Http\Message\Response;
-
 require __DIR__ . '/../vendor/autoload.php';
 
-$http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
+$http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
     $queryParams = $request->getQueryParams();
 
     $body = 'The query parameter "foo" is not set. Click the following link ';
@@ -15,11 +12,7 @@ $http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
         $body = 'The value of "foo" is: ' . htmlspecialchars($queryParams['foo']);
     }
 
-    return new Response(
-        Response::STATUS_OK,
-        array(
-            'Content-Type' => 'text/html'
-        ),
+    return React\Http\Message\Response::html(
         $body
     );
 });

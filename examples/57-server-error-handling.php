@@ -1,30 +1,18 @@
 <?php
 
-use Psr\Http\Message\ServerRequestInterface;
-use React\Http\Message\Response;
-use React\Promise\Promise;
-
 require __DIR__ . '/../vendor/autoload.php';
 
 $count = 0;
-$http = new React\Http\HttpServer(function (ServerRequestInterface $request) use (&$count) {
-    return new Promise(function ($resolve, $reject) use (&$count) {
-        $count++;
+$http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) use (&$count) {
+    $count++;
 
-        if ($count%2 === 0) {
-            throw new Exception('Second call');
-        }
+    if ($count % 2 === 0) {
+        throw new Exception('Second call');
+    }
 
-        $response = new Response(
-            Response::STATUS_OK,
-            array(
-                'Content-Type' => 'text/plain'
-            ),
-            "Hello World!\n"
-        );
-
-        $resolve($response);
-    });
+    return React\Http\Message\Response::plaintext(
+        "Hello World!\n"
+    );
 });
 
 $socket = new React\Socket\SocketServer(isset($argv[1]) ? $argv[1] : '0.0.0.0:0');

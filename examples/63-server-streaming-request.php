@@ -19,24 +19,16 @@ $http = new React\Http\HttpServer(
             });
 
             $body->on('end', function () use ($resolve, &$bytes){
-                $resolve(new React\Http\Message\Response(
-                    React\Http\Message\Response::STATUS_OK,
-                    array(
-                        'Content-Type' => 'text/plain'
-                    ),
+                $resolve(React\Http\Message\Response::plaintext(
                     "Received $bytes bytes\n"
                 ));
             });
 
             // an error occures e.g. on invalid chunked encoded data or an unexpected 'end' event
             $body->on('error', function (Exception $e) use ($resolve, &$bytes) {
-                $resolve(new React\Http\Message\Response(
-                    React\Http\Message\Response::STATUS_BAD_REQUEST,
-                    array(
-                        'Content-Type' => 'text/plain'
-                    ),
+                $resolve(React\Http\Message\Response::plaintext(
                     "Encountered error after $bytes bytes: {$e->getMessage()}\n"
-                ));
+                )->withStatus(React\Http\Message\Response::STATUS_BAD_REQUEST));
             });
         });
     }

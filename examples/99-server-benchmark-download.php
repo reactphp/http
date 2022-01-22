@@ -93,11 +93,7 @@ class ChunkRepeater extends EventEmitter implements ReadableStreamInterface
 $http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
     switch ($request->getUri()->getPath()) {
         case '/':
-            return new Response(
-                Response::STATUS_OK,
-                array(
-                    'Content-Type' => 'text/html'
-                ),
+            return Response::html(
                 '<html><a href="1g.bin">1g.bin</a><br/><a href="10g.bin">10g.bin</a></html>'
             );
         case '/1g.bin':

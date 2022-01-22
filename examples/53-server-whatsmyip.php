@@ -1,18 +1,11 @@
 <?php
 
-use Psr\Http\Message\ServerRequestInterface;
-use React\Http\Message\Response;
-
 require __DIR__ . '/../vendor/autoload.php';
 
-$http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
-    $body = "Your IP is: " . $request->getServerParams()['REMOTE_ADDR'];
+$http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
+    $body = "Your IP is: " . $request->getServerParams()['REMOTE_ADDR'] . "\n";
 
-    return new Response(
-        Response::STATUS_OK,
-        array(
-            'Content-Type' => 'text/plain'
-        ),
+    return React\Http\Message\Response::plaintext(
         $body
     );
 });

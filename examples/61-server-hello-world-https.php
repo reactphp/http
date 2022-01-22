@@ -1,17 +1,10 @@
 <?php
 
-use Psr\Http\Message\ServerRequestInterface;
-use React\Http\Message\Response;
-
 require __DIR__ . '/../vendor/autoload.php';
 
-$http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
-    return new Response(
-        Response::STATUS_OK,
-        array(
-            'Content-Type' => 'text/plain'
-        ),
-        "Hello world!\n"
+$http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
+    return React\Http\Message\Response::plaintext(
+        "Hello World!\n"
     );
 });
 

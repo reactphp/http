@@ -109,11 +109,7 @@ $body
 
 HTML;
 
-    return new Response(
-        Response::STATUS_OK,
-        array(
-            'Content-Type' => 'text/html; charset=UTF-8'
-        ),
+    return Response::html(
         $html
     );
 };
