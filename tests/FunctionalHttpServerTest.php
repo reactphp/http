@@ -302,7 +302,7 @@ class FunctionalHttpServerTest extends TestCase
 
         $loop = Factory::create();
         try {
-            $socket = new SocketServer('127.0.0.1:443', array('tls' => array(
+            $socket = new SocketServer('tls://127.0.0.1:443', array('tls' => array(
                 'local_cert' => __DIR__ . '/../examples/localhost.pem'
             )), $loop);
         } catch (\RuntimeException $e) {
@@ -341,7 +341,7 @@ class FunctionalHttpServerTest extends TestCase
 
         $loop = Factory::create();
         try {
-            $socket = new SocketServer('127.0.0.1:443', array('tls' => array(
+            $socket = new SocketServer('tls://127.0.0.1:443', array('tls' => array(
                 'local_cert' => __DIR__ . '/../examples/localhost.pem'
             )), $loop);
         } catch (\RuntimeException $e) {
@@ -410,7 +410,7 @@ class FunctionalHttpServerTest extends TestCase
 
         $loop = Factory::create();
         try {
-            $socket = new SocketServer('127.0.0.1:80', array('tls' => array(
+            $socket = new SocketServer('tls://127.0.0.1:80', array('tls' => array(
                 'local_cert' => __DIR__ . '/../examples/localhost.pem'
             )), $loop);
         } catch (\RuntimeException $e) {
