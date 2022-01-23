@@ -8,7 +8,7 @@ use Psr\Http\Message\RequestInterface;
 use RingCentral\Psr7\Response;
 use React\Http\Io\Transaction;
 use React\Http\Message\ResponseException;
-use React\EventLoop\Factory;
+use React\EventLoop\Loop;
 use React\Promise;
 use React\Promise\Deferred;
 use React\Stream\ThroughStream;
@@ -383,10 +383,8 @@ class TransactionTest extends TestCase
 
     public function testReceivingStreamingBodyWillResolveWithBufferedResponseByDefault()
     {
-        $loop = Factory::create();
-
         $stream = new ThroughStream();
-        $loop->addTimer(0.001, function () use ($stream) {
+        Loop::addTimer(0.001, function () use ($stream) {
             $stream->emit('data', array('hello world'));
             $stream->close();
         });
@@ -398,10 +396,10 @@ class TransactionTest extends TestCase
         $sender = $this->makeSenderMock();
         $sender->expects($this->once())->method('send')->with($this->equalTo($request))->willReturn(Promise\resolve($response));
 
-        $transaction = new Transaction($sender, $loop);
+        $transaction = new Transaction($sender, Loop::get());
         $promise = $transaction->send($request);
 
-        $response = Block\await($promise, $loop);
+        $response = Block\await($promise);
 
         $this->assertEquals(200, $response->getStatusCode());
         $this->assertEquals('hello world', (string)$response->getBody());
@@ -409,8 +407,6 @@ class TransactionTest extends TestCase
 
     public function testReceivingStreamingBodyWithSizeExceedingMaximumResponseBufferWillRejectAndCloseResponseStream()
     {
-        $loop = Factory::create();
-
         $stream = new ThroughStream();
         $stream->on('close', $this->expectCallableOnce());
 
@@ -422,17 +418,15 @@ class TransactionTest extends TestCase
         $sender = $this->makeSenderMock();
         $sender->expects($this->once())->method('send')->with($this->equalTo($request))->willReturn(Promise\resolve($response));
 
-        $transaction = new Transaction($sender, $loop);
+        $transaction = new Transaction($sender, Loop::get());
         $promise = $transaction->send($request);
 
         $this->setExpectedException('OverflowException');
-        Block\await($promise, $loop, 0.001);
+        Block\await($promise, null, 0.001);
     }
 
     public function testCancelBufferingResponseWillCloseStreamAndReject()
     {
-        $loop = Factory::create();
-
         $stream = $this->getMockBuilder('React\Stream\ReadableStreamInterface')->getMock();
         $stream->expects($this->any())->method('isReadable')->willReturn(true);
         $stream->expects($this->once())->method('close');
@@ -444,12 +438,12 @@ class TransactionTest extends TestCase
         $sender = $this->makeSenderMock();
         $sender->expects($this->once())->method('send')->with($this->equalTo($request))->willReturn(Promise\resolve($response));
 
-        $transaction = new Transaction($sender, $loop);
+        $transaction = new Transaction($sender, Loop::get());
         $promise = $transaction->send($request);
         $promise->cancel();
 
         $this->setExpectedException('RuntimeException');
-        Block\await($promise, $loop, 0.001);
+        Block\await($promise, null, 0.001);
     }
 
     public function testReceivingStreamingBodyWillResolveWithStreamingResponseIfStreamingIsEnabled()

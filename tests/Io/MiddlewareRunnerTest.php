@@ -6,7 +6,6 @@ use Clue\React\Block;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use React\EventLoop\Factory;
 use React\Http\Io\MiddlewareRunner;
 use React\Http\Message\ServerRequest;
 use React\Promise;
@@ -162,7 +161,7 @@ final class MiddlewareRunnerTest extends TestCase
         $response = $middlewareStack($request);
 
         $this->assertTrue($response instanceof PromiseInterface);
-        $response = Block\await($response, Factory::create());
+        $response = Block\await($response);
 
         $this->assertTrue($response instanceof ResponseInterface);
         $this->assertSame(200, $response->getStatusCode());
@@ -229,7 +228,7 @@ final class MiddlewareRunnerTest extends TestCase
 
         $request = new ServerRequest('GET', 'https://example.com/');
 
-        $this->assertSame($response, Block\await($runner($request), Factory::create()));
+        $this->assertSame($response, Block\await($runner($request)));
         $this->assertSame(1, $retryCalled);
         $this->assertSame(2, $called);
         $this->assertSame($exception, $error);
