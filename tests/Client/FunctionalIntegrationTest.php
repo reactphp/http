@@ -4,7 +4,7 @@ namespace React\Tests\Http\Client;
 
 use Clue\React\Block;
 use Psr\Http\Message\ResponseInterface;
-use React\EventLoop\Factory;
+use React\EventLoop\Loop;
 use React\Http\Client\Client;
 use React\Promise\Deferred;
 use React\Promise\Stream;
@@ -37,9 +37,7 @@ class FunctionalIntegrationTest extends TestCase
 
     public function testRequestToLocalhostEmitsSingleRemoteConnection()
     {
-        $loop = Factory::create();
-
-        $socket = new SocketServer('127.0.0.1:0', array(), $loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $socket->on('connection', $this->expectCallableOnce());
         $socket->on('connection', function (ConnectionInterface $conn) use ($socket) {
             $conn->end("HTTP/1.1 200 OK\r\n\r\nOk");
@@ -47,26 +45,24 @@ class FunctionalIntegrationTest extends TestCase
         });
         $port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
-        $client = new Client($loop);
+        $client = new Client(Loop::get());
         $request = $client->request('GET', 'http://localhost:' . $port);
 
         $promise = Stream\first($request, 'close');
         $request->end();
 
-        Block\await($promise, $loop, self::TIMEOUT_LOCAL);
+        Block\await($promise, null, self::TIMEOUT_LOCAL);
     }
 
     public function testRequestLegacyHttpServerWithOnlyLineFeedReturnsSuccessfulResponse()
     {
-        $loop = Factory::create();
-
-        $socket = new SocketServer('127.0.0.1:0', array(), $loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $socket->on('connection', function (ConnectionInterface $conn) use ($socket) {
             $conn->end("HTTP/1.0 200 OK\n\nbody");
             $socket->close();
         });
 
-        $client = new Client($loop);
+        $client = new Client(Loop::get());
         $request = $client->request('GET', str_replace('tcp:', 'http:', $socket->getAddress()));
 
         $once = $this->expectCallableOnceWith('body');
@@ -77,7 +73,7 @@ class FunctionalIntegrationTest extends TestCase
         $promise = Stream\first($request, 'close');
         $request->end();
 
-        Block\await($promise, $loop, self::TIMEOUT_LOCAL);
+        Block\await($promise, null, self::TIMEOUT_LOCAL);
     }
 
     /** @group internet */
@@ -86,8 +82,7 @@ class FunctionalIntegrationTest extends TestCase
         // max_nesting_level was set to 100 for PHP Versions < 5.4 which resulted in failing test for legacy PHP
         ini_set('xdebug.max_nesting_level', 256);
 
-        $loop = Factory::create();
-        $client = new Client($loop);
+        $client = new Client(Loop::get());
 
         $request = $client->request('GET', 'http://www.google.com/');
 
@@ -99,7 +94,7 @@ class FunctionalIntegrationTest extends TestCase
         $promise = Stream\first($request, 'close');
         $request->end();
 
-        Block\await($promise, $loop, self::TIMEOUT_REMOTE);
+        Block\await($promise, null, self::TIMEOUT_REMOTE);
     }
 
     /** @group internet */
@@ -112,8 +107,7 @@ class FunctionalIntegrationTest extends TestCase
         // max_nesting_level was set to 100 for PHP Versions < 5.4 which resulted in failing test for legacy PHP
         ini_set('xdebug.max_nesting_level', 256);
 
-        $loop = Factory::create();
-        $client = new Client($loop);
+        $client = new Client(Loop::get());
 
         $data = str_repeat('.', 33000);
         $request = $client->request('POST', 'https://' . (mt_rand(0, 1) === 0 ? 'eu.' : '') . 'httpbin.org/post', array('Content-Length' => strlen($data)));
@@ -128,7 +122,7 @@ class FunctionalIntegrationTest extends TestCase
 
         $request->end($data);
 
-        $buffer = Block\await($deferred->promise(), $loop, self::TIMEOUT_REMOTE);
+        $buffer = Block\await($deferred->promise(), null, self::TIMEOUT_REMOTE);
 
         $this->assertNotEquals('', $buffer);
 
@@ -145,8 +139,7 @@ class FunctionalIntegrationTest extends TestCase
             $this->markTestSkipped('Not supported on HHVM');
         }
 
-        $loop = Factory::create();
-        $client = new Client($loop);
+        $client = new Client(Loop::get());
 
         $data = json_encode(array('numbers' => range(1, 50)));
         $request = $client->request('POST', 'https://httpbin.org/post', array('Content-Length' => strlen($data), 'Content-Type' => 'application/json'));
@@ -161,7 +154,7 @@ class FunctionalIntegrationTest extends TestCase
 
         $request->end($data);
 
-        $buffer = Block\await($deferred->promise(), $loop, self::TIMEOUT_REMOTE);
+        $buffer = Block\await($deferred->promise(), null, self::TIMEOUT_REMOTE);
 
         $this->assertNotEquals('', $buffer);
 
@@ -176,8 +169,7 @@ class FunctionalIntegrationTest extends TestCase
         // max_nesting_level was set to 100 for PHP Versions < 5.4 which resulted in failing test for legacy PHP
         ini_set('xdebug.max_nesting_level', 256);
 
-        $loop = Factory::create();
-        $client = new Client($loop);
+        $client = new Client(Loop::get());
 
         $request = $client->request('GET', 'http://www.google.com/');
         $request->on('error', $this->expectCallableNever());

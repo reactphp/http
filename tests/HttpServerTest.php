@@ -4,7 +4,7 @@ namespace React\Tests\Http;
 
 use Clue\React\Block;
 use Psr\Http\Message\ServerRequestInterface;
-use React\EventLoop\Factory;
+use React\EventLoop\Loop;
 use React\Http\HttpServer;
 use React\Http\Io\IniUtil;
 use React\Http\Middleware\StreamingRequestMiddleware;
@@ -126,9 +126,8 @@ final class HttpServerTest extends TestCase
 
     public function testPostFormData()
     {
-        $loop = Factory::create();
         $deferred = new Deferred();
-        $http = new HttpServer($loop, function (ServerRequestInterface $request) use ($deferred) {
+        $http = new HttpServer(function (ServerRequestInterface $request) use ($deferred) {
             $deferred->resolve($request);
         });
 
@@ -136,7 +135,7 @@ final class HttpServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
         $this->connection->emit('data', array("POST / HTTP/1.0\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: 7\r\n\r\nfoo=bar"));
 
-        $request = Block\await($deferred->promise(), $loop);
+        $request = Block\await($deferred->promise());
         assert($request instanceof ServerRequestInterface);
 
         $form = $request->getParsedBody();
@@ -155,9 +154,8 @@ final class HttpServerTest extends TestCase
 
     public function testPostFileUpload()
     {
-        $loop = Factory::create();
         $deferred = new Deferred();
-        $http = new HttpServer($loop, function (ServerRequestInterface $request) use ($deferred) {
+        $http = new HttpServer(function (ServerRequestInterface $request) use ($deferred) {
             $deferred->resolve($request);
         });
 
@@ -166,16 +164,16 @@ final class HttpServerTest extends TestCase
 
         $connection = $this->connection;
         $data = $this->createPostFileUploadRequest();
-        $loop->addPeriodicTimer(0.01, function ($timer) use ($loop, &$data, $connection) {
+        Loop::addPeriodicTimer(0.01, function ($timer) use (&$data, $connection) {
             $line = array_shift($data);
             $connection->emit('data', array($line));
 
             if (count($data) === 0) {
-                $loop->cancelTimer($timer);
+                Loop::cancelTimer($timer);
             }
         });
 
-        $request = Block\await($deferred->promise(), $loop);
+        $request = Block\await($deferred->promise());
         assert($request instanceof ServerRequestInterface);
 
         $this->assertEmpty($request->getParsedBody());
@@ -199,9 +197,8 @@ final class HttpServerTest extends TestCase
 
     public function testPostJsonWillNotBeParsedByDefault()
     {
-        $loop = Factory::create();
         $deferred = new Deferred();
-        $http = new HttpServer($loop, function (ServerRequestInterface $request) use ($deferred) {
+        $http = new HttpServer(function (ServerRequestInterface $request) use ($deferred) {
             $deferred->resolve($request);
         });
 
@@ -209,7 +206,7 @@ final class HttpServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
         $this->connection->emit('data', array("POST / HTTP/1.0\r\nContent-Type: application/json\r\nContent-Length: 6\r\n\r\n[true]"));
 
-        $request = Block\await($deferred->promise(), $loop);
+        $request = Block\await($deferred->promise());
         assert($request instanceof ServerRequestInterface);
 
         $this->assertNull($request->getParsedBody());

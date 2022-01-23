@@ -5,7 +5,7 @@ namespace React\Tests\Http;
 use Clue\React\Block;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use React\EventLoop\Factory;
+use React\EventLoop\Loop;
 use React\Http\HttpServer;
 use React\Http\Message\Response;
 use React\Http\Middleware\LimitConcurrentRequestsMiddleware;
@@ -22,14 +22,13 @@ class FunctionalHttpServerTest extends TestCase
 {
     public function testPlainHttpOnRandomPort()
     {
-        $loop = Factory::create();
-        $connector = new Connector(array(), $loop);
+        $connector = new Connector();
 
-        $http = new HttpServer($loop, function (RequestInterface $request) {
+        $http = new HttpServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
-        $socket = new SocketServer('127.0.0.1:0', array(), $loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $http->listen($socket);
 
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
@@ -38,7 +37,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await($result, $loop, 1.0);
+        $response = Block\await($result, null, 1.0);
 
         $this->assertContainsString("HTTP/1.0 200 OK", $response);
         $this->assertContainsString('http://' . noScheme($socket->getAddress()) . '/', $response);
@@ -48,17 +47,15 @@ class FunctionalHttpServerTest extends TestCase
 
     public function testPlainHttpOnRandomPortWithSingleRequestHandlerArray()
     {
-        $loop = Factory::create();
-        $connector = new Connector(array(), $loop);
+        $connector = new Connector();
 
         $http = new HttpServer(
-            $loop,
             function () {
                 return new Response(404);
             }
         );
 
-        $socket = new SocketServer('127.0.0.1:0', array(), $loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $http->listen($socket);
 
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
@@ -67,7 +64,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await($result, $loop, 1.0);
+        $response = Block\await($result, null, 1.0);
 
         $this->assertContainsString("HTTP/1.0 404 Not Found", $response);
 
@@ -76,14 +73,13 @@ class FunctionalHttpServerTest extends TestCase
 
     public function testPlainHttpOnRandomPortWithoutHostHeaderUsesSocketUri()
     {
-        $loop = Factory::create();
-        $connector = new Connector(array(), $loop);
+        $connector = new Connector();
 
-        $http = new HttpServer($loop, function (RequestInterface $request) {
+        $http = new HttpServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
-        $socket = new SocketServer('127.0.0.1:0', array(), $loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $http->listen($socket);
 
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
@@ -92,7 +88,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await($result, $loop, 1.0);
+        $response = Block\await($result, null, 1.0);
 
         $this->assertContainsString("HTTP/1.0 200 OK", $response);
         $this->assertContainsString('http://' . noScheme($socket->getAddress()) . '/', $response);
@@ -102,14 +98,13 @@ class FunctionalHttpServerTest extends TestCase
 
     public function testPlainHttpOnRandomPortWithOtherHostHeaderTakesPrecedence()
     {
-        $loop = Factory::create();
-        $connector = new Connector(array(), $loop);
+        $connector = new Connector();
 
-        $http = new HttpServer($loop, function (RequestInterface $request) {
+        $http = new HttpServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
-        $socket = new SocketServer('127.0.0.1:0', array(), $loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $http->listen($socket);
 
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
@@ -118,7 +113,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await($result, $loop, 1.0);
+        $response = Block\await($result, null, 1.0);
 
         $this->assertContainsString("HTTP/1.0 200 OK", $response);
         $this->assertContainsString('http://localhost:1000/', $response);
@@ -132,18 +127,17 @@ class FunctionalHttpServerTest extends TestCase
             $this->markTestSkipped('Not supported on HHVM');
         }
 
-        $loop = Factory::create();
         $connector = new Connector(array(
             'tls' => array('verify_peer' => false)
-        ), $loop);
+        ));
 
-        $http = new HttpServer($loop, function (RequestInterface $request) {
+        $http = new HttpServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
         $socket = new SocketServer('tls://127.0.0.1:0', array('tls' => array(
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
-        )), $loop);
+        )));
         $http->listen($socket);
 
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
@@ -152,7 +146,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await($result, $loop, 1.0);
+        $response = Block\await($result, null, 1.0);
 
         $this->assertContainsString("HTTP/1.0 200 OK", $response);
         $this->assertContainsString('https://' . noScheme($socket->getAddress()) . '/', $response);
@@ -166,9 +160,7 @@ class FunctionalHttpServerTest extends TestCase
             $this->markTestSkipped('Not supported on HHVM');
         }
 
-        $loop = Factory::create();
-
-        $http = new HttpServer($loop, function (RequestInterface $request) {
+        $http = new HttpServer(function (RequestInterface $request) {
             return new Response(
                 200,
                 array(),
@@ -178,12 +170,12 @@ class FunctionalHttpServerTest extends TestCase
 
         $socket = new SocketServer('tls://127.0.0.1:0', array('tls' => array(
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
-        )), $loop);
+        )));
         $http->listen($socket);
 
         $connector = new Connector(array(
             'tls' => array('verify_peer' => false)
-        ), $loop);
+        ));
 
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\nHost: " . noScheme($conn->getRemoteAddress()) . "\r\n\r\n");
@@ -191,7 +183,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await($result, $loop, 1.0);
+        $response = Block\await($result, null, 1.0);
 
         $this->assertContainsString("HTTP/1.0 200 OK", $response);
         $this->assertContainsString("\r\nContent-Length: 33000\r\n", $response);
@@ -206,18 +198,17 @@ class FunctionalHttpServerTest extends TestCase
             $this->markTestSkipped('Not supported on HHVM');
         }
 
-        $loop = Factory::create();
         $connector = new Connector(array(
             'tls' => array('verify_peer' => false)
-        ), $loop);
+        ));
 
-        $http = new HttpServer($loop, function (RequestInterface $request) {
+        $http = new HttpServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
         $socket = new SocketServer('tls://127.0.0.1:0', array('tls' => array(
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
-        )), $loop);
+        )));
         $http->listen($socket);
 
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
@@ -226,7 +217,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await($result, $loop, 1.0);
+        $response = Block\await($result, null, 1.0);
 
         $this->assertContainsString("HTTP/1.0 200 OK", $response);
         $this->assertContainsString('https://' . noScheme($socket->getAddress()) . '/', $response);
@@ -236,15 +227,14 @@ class FunctionalHttpServerTest extends TestCase
 
     public function testPlainHttpOnStandardPortReturnsUriWithNoPort()
     {
-        $loop = Factory::create();
         try {
-            $socket = new SocketServer('127.0.0.1:80', array(), $loop);
+            $socket = new SocketServer('127.0.0.1:80');
         } catch (\RuntimeException $e) {
             $this->markTestSkipped('Listening on port 80 failed (root and unused?)');
         }
-        $connector = new Connector(array(), $loop);
+        $connector = new Connector();
 
-        $http = new HttpServer($loop, function (RequestInterface $request) {
+        $http = new HttpServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
@@ -256,7 +246,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await($result, $loop, 1.0);
+        $response = Block\await($result, null, 1.0);
 
         $this->assertContainsString("HTTP/1.0 200 OK", $response);
         $this->assertContainsString('http://127.0.0.1/', $response);
@@ -266,15 +256,14 @@ class FunctionalHttpServerTest extends TestCase
 
     public function testPlainHttpOnStandardPortWithoutHostHeaderReturnsUriWithNoPort()
     {
-        $loop = Factory::create();
         try {
-            $socket = new SocketServer('127.0.0.1:80', array(), $loop);
+            $socket = new SocketServer('127.0.0.1:80');
         } catch (\RuntimeException $e) {
             $this->markTestSkipped('Listening on port 80 failed (root and unused?)');
         }
-        $connector = new Connector(array(), $loop);
+        $connector = new Connector();
 
-        $http = new HttpServer($loop, function (RequestInterface $request) {
+        $http = new HttpServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
@@ -286,7 +275,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await($result, $loop, 1.0);
+        $response = Block\await($result, null, 1.0);
 
         $this->assertContainsString("HTTP/1.0 200 OK", $response);
         $this->assertContainsString('http://127.0.0.1/', $response);
@@ -300,20 +289,19 @@ class FunctionalHttpServerTest extends TestCase
             $this->markTestSkipped('Not supported on HHVM');
         }
 
-        $loop = Factory::create();
         try {
-            $socket = new SocketServer('127.0.0.1:443', array('tls' => array(
+            $socket = new SocketServer('tls://127.0.0.1:443', array('tls' => array(
                 'local_cert' => __DIR__ . '/../examples/localhost.pem'
-            )), $loop);
+            )));
         } catch (\RuntimeException $e) {
             $this->markTestSkipped('Listening on port 443 failed (root and unused?)');
         }
 
         $connector = new Connector(array(
             'tls' => array('verify_peer' => false)
-        ), $loop);
+        ));
 
-        $http = new HttpServer($loop, function (RequestInterface $request) {
+        $http = new HttpServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
@@ -325,7 +313,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await($result, $loop, 1.0);
+        $response = Block\await($result, null, 1.0);
 
         $this->assertContainsString("HTTP/1.0 200 OK", $response);
         $this->assertContainsString('https://127.0.0.1/', $response);
@@ -339,20 +327,19 @@ class FunctionalHttpServerTest extends TestCase
             $this->markTestSkipped('Not supported on HHVM');
         }
 
-        $loop = Factory::create();
         try {
-            $socket = new SocketServer('127.0.0.1:443', array('tls' => array(
+            $socket = new SocketServer('tls://127.0.0.1:443', array('tls' => array(
                 'local_cert' => __DIR__ . '/../examples/localhost.pem'
-            )), $loop);
+            )));
         } catch (\RuntimeException $e) {
             $this->markTestSkipped('Listening on port 443 failed (root and unused?)');
         }
 
         $connector = new Connector(array(
             'tls' => array('verify_peer' => false)
-        ), $loop);
+        ));
 
-        $http = new HttpServer($loop, function (RequestInterface $request) {
+        $http = new HttpServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
@@ -364,7 +351,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await($result, $loop, 1.0);
+        $response = Block\await($result, null, 1.0);
 
         $this->assertContainsString("HTTP/1.0 200 OK", $response);
         $this->assertContainsString('https://127.0.0.1/', $response);
@@ -374,15 +361,14 @@ class FunctionalHttpServerTest extends TestCase
 
     public function testPlainHttpOnHttpsStandardPortReturnsUriWithPort()
     {
-        $loop = Factory::create();
         try {
-            $socket = new SocketServer('127.0.0.1:443', array(), $loop);
+            $socket = new SocketServer('127.0.0.1:443');
         } catch (\RuntimeException $e) {
             $this->markTestSkipped('Listening on port 443 failed (root and unused?)');
         }
-        $connector = new Connector(array(), $loop);
+        $connector = new Connector();
 
-        $http = new HttpServer($loop, function (RequestInterface $request) {
+        $http = new HttpServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
@@ -394,7 +380,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await($result, $loop, 1.0);
+        $response = Block\await($result, null, 1.0);
 
         $this->assertContainsString("HTTP/1.0 200 OK", $response);
         $this->assertContainsString('http://127.0.0.1:443/', $response);
@@ -408,20 +394,19 @@ class FunctionalHttpServerTest extends TestCase
             $this->markTestSkipped('Not supported on HHVM');
         }
 
-        $loop = Factory::create();
         try {
-            $socket = new SocketServer('127.0.0.1:80', array('tls' => array(
+            $socket = new SocketServer('tls://127.0.0.1:80', array('tls' => array(
                 'local_cert' => __DIR__ . '/../examples/localhost.pem'
-            )), $loop);
+            )));
         } catch (\RuntimeException $e) {
             $this->markTestSkipped('Listening on port 80 failed (root and unused?)');
         }
 
         $connector = new Connector(array(
             'tls' => array('verify_peer' => false)
-        ), $loop);
+        ));
 
-        $http = new HttpServer($loop, function (RequestInterface $request) {
+        $http = new HttpServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri() . 'x' . $request->getHeaderLine('Host'));
         });
 
@@ -433,7 +418,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await($result, $loop, 1.0);
+        $response = Block\await($result, null, 1.0);
 
         $this->assertContainsString("HTTP/1.0 200 OK", $response);
         $this->assertContainsString('https://127.0.0.1:80/', $response);
@@ -443,17 +428,16 @@ class FunctionalHttpServerTest extends TestCase
 
     public function testClosedStreamFromRequestHandlerWillSendEmptyBody()
     {
-        $loop = Factory::create();
-        $connector = new Connector(array(), $loop);
+        $connector = new Connector();
 
         $stream = new ThroughStream();
         $stream->close();
 
-        $http = new HttpServer($loop, function (RequestInterface $request) use ($stream) {
+        $http = new HttpServer(function (RequestInterface $request) use ($stream) {
             return new Response(200, array(), $stream);
         });
 
-        $socket = new SocketServer('127.0.0.1:0', array(), $loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $http->listen($socket);
 
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
@@ -462,7 +446,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await($result, $loop, 1.0);
+        $response = Block\await($result, null, 1.0);
 
         $this->assertStringStartsWith("HTTP/1.0 200 OK", $response);
         $this->assertStringEndsWith("\r\n\r\n", $response);
@@ -472,62 +456,58 @@ class FunctionalHttpServerTest extends TestCase
 
     public function testRequestHandlerWithStreamingRequestWillReceiveCloseEventIfConnectionClosesWhileSendingBody()
     {
-        $loop = Factory::create();
-        $connector = new Connector(array(), $loop);
+        $connector = new Connector();
 
         $once = $this->expectCallableOnce();
         $http = new HttpServer(
-            $loop,
             new StreamingRequestMiddleware(),
             function (RequestInterface $request) use ($once) {
                 $request->getBody()->on('close', $once);
             }
         );
 
-        $socket = new SocketServer('127.0.0.1:0', array(), $loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $http->listen($socket);
 
-        $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) use ($loop) {
+        $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\nContent-Length: 100\r\n\r\n");
 
-            $loop->addTimer(0.001, function() use ($conn) {
+            Loop::addTimer(0.001, function() use ($conn) {
                 $conn->end();
             });
         });
 
-        Block\sleep(0.1, $loop);
+        Block\sleep(0.1);
 
         $socket->close();
     }
 
     public function testStreamFromRequestHandlerWillBeClosedIfConnectionClosesWhileSendingStreamingRequestBody()
     {
-        $loop = Factory::create();
-        $connector = new Connector(array(), $loop);
+        $connector = new Connector();
 
         $stream = new ThroughStream();
 
         $http = new HttpServer(
-            $loop,
             new StreamingRequestMiddleware(),
             function (RequestInterface $request) use ($stream) {
                 return new Response(200, array(), $stream);
             }
         );
 
-        $socket = new SocketServer('127.0.0.1:0', array(), $loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $http->listen($socket);
 
-        $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) use ($loop) {
+        $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\nContent-Length: 100\r\n\r\n");
 
-            $loop->addTimer(0.001, function() use ($conn) {
+            Loop::addTimer(0.001, function() use ($conn) {
                 $conn->end();
             });
         });
 
         // stream will be closed within 0.1s
-        $ret = Block\await(Stream\first($stream, 'close'), $loop, 0.1);
+        $ret = Block\await(Stream\first($stream, 'close'), null, 0.1);
 
         $socket->close();
 
@@ -536,28 +516,27 @@ class FunctionalHttpServerTest extends TestCase
 
     public function testStreamFromRequestHandlerWillBeClosedIfConnectionCloses()
     {
-        $loop = Factory::create();
-        $connector = new Connector(array(), $loop);
+        $connector = new Connector();
 
         $stream = new ThroughStream();
 
-        $http = new HttpServer($loop, function (RequestInterface $request) use ($stream) {
+        $http = new HttpServer(function (RequestInterface $request) use ($stream) {
             return new Response(200, array(), $stream);
         });
 
-        $socket = new SocketServer('127.0.0.1:0', array(), $loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $http->listen($socket);
 
-        $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) use ($loop) {
+        $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\n\r\n");
 
-            $loop->addTimer(0.1, function () use ($conn) {
+            Loop::addTimer(0.1, function () use ($conn) {
                 $conn->close();
             });
         });
 
         // await response stream to be closed
-        $ret = Block\await(Stream\first($stream, 'close'), $loop, 1.0);
+        $ret = Block\await(Stream\first($stream, 'close'), null, 1.0);
 
         $socket->close();
 
@@ -566,20 +545,19 @@ class FunctionalHttpServerTest extends TestCase
 
     public function testUpgradeWithThroughStreamReturnsDataAsGiven()
     {
-        $loop = Factory::create();
-        $connector = new Connector(array(), $loop);
+        $connector = new Connector();
 
-        $http = new HttpServer($loop, function (RequestInterface $request) use ($loop) {
+        $http = new HttpServer(function (RequestInterface $request) {
             $stream = new ThroughStream();
 
-            $loop->addTimer(0.1, function () use ($stream) {
+            Loop::addTimer(0.1, function () use ($stream) {
                 $stream->end();
             });
 
             return new Response(101, array('Upgrade' => 'echo'), $stream);
         });
 
-        $socket = new SocketServer('127.0.0.1:0', array(), $loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $http->listen($socket);
 
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
@@ -593,7 +571,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await($result, $loop, 1.0);
+        $response = Block\await($result, null, 1.0);
 
         $this->assertStringStartsWith("HTTP/1.1 101 Switching Protocols\r\n", $response);
         $this->assertStringEndsWith("\r\n\r\nhelloworld", $response);
@@ -603,20 +581,19 @@ class FunctionalHttpServerTest extends TestCase
 
     public function testUpgradeWithRequestBodyAndThroughStreamReturnsDataAsGiven()
     {
-        $loop = Factory::create();
-        $connector = new Connector(array(), $loop);
+        $connector = new Connector();
 
-        $http = new HttpServer($loop, function (RequestInterface $request) use ($loop) {
+        $http = new HttpServer(function (RequestInterface $request) {
             $stream = new ThroughStream();
 
-            $loop->addTimer(0.1, function () use ($stream) {
+            Loop::addTimer(0.1, function () use ($stream) {
                 $stream->end();
             });
 
             return new Response(101, array('Upgrade' => 'echo'), $stream);
         });
 
-        $socket = new SocketServer('127.0.0.1:0', array(), $loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $http->listen($socket);
 
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
@@ -631,7 +608,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await($result, $loop, 1.0);
+        $response = Block\await($result, null, 1.0);
 
         $this->assertStringStartsWith("HTTP/1.1 101 Switching Protocols\r\n", $response);
         $this->assertStringEndsWith("\r\n\r\nhelloworld", $response);
@@ -641,20 +618,19 @@ class FunctionalHttpServerTest extends TestCase
 
     public function testConnectWithThroughStreamReturnsDataAsGiven()
     {
-        $loop = Factory::create();
-        $connector = new Connector(array(), $loop);
+        $connector = new Connector();
 
-        $http = new HttpServer($loop, function (RequestInterface $request) use ($loop) {
+        $http = new HttpServer(function (RequestInterface $request) {
             $stream = new ThroughStream();
 
-            $loop->addTimer(0.1, function () use ($stream) {
+            Loop::addTimer(0.1, function () use ($stream) {
                 $stream->end();
             });
 
             return new Response(200, array(), $stream);
         });
 
-        $socket = new SocketServer('127.0.0.1:0', array(), $loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $http->listen($socket);
 
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
@@ -668,7 +644,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await($result, $loop, 1.0);
+        $response = Block\await($result, null, 1.0);
 
         $this->assertStringStartsWith("HTTP/1.1 200 OK\r\n", $response);
         $this->assertStringEndsWith("\r\n\r\nhelloworld", $response);
@@ -678,24 +654,23 @@ class FunctionalHttpServerTest extends TestCase
 
     public function testConnectWithThroughStreamReturnedFromPromiseReturnsDataAsGiven()
     {
-        $loop = Factory::create();
-        $connector = new Connector(array(), $loop);
+        $connector = new Connector();
 
-        $http = new HttpServer($loop, function (RequestInterface $request) use ($loop) {
+        $http = new HttpServer(function (RequestInterface $request) {
             $stream = new ThroughStream();
 
-            $loop->addTimer(0.1, function () use ($stream) {
+            Loop::addTimer(0.1, function () use ($stream) {
                 $stream->end();
             });
 
-            return new Promise\Promise(function ($resolve) use ($loop, $stream) {
-                $loop->addTimer(0.001, function () use ($resolve, $stream) {
+            return new Promise\Promise(function ($resolve) use ($stream) {
+                Loop::addTimer(0.001, function () use ($resolve, $stream) {
                     $resolve(new Response(200, array(), $stream));
                 });
             });
         });
 
-        $socket = new SocketServer('127.0.0.1:0', array(), $loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $http->listen($socket);
 
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
@@ -709,7 +684,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await($result, $loop, 1.0);
+        $response = Block\await($result, null, 1.0);
 
         $this->assertStringStartsWith("HTTP/1.1 200 OK\r\n", $response);
         $this->assertStringEndsWith("\r\n\r\nhelloworld", $response);
@@ -719,17 +694,16 @@ class FunctionalHttpServerTest extends TestCase
 
     public function testConnectWithClosedThroughStreamReturnsNoData()
     {
-        $loop = Factory::create();
-        $connector = new Connector(array(), $loop);
+        $connector = new Connector();
 
-        $http = new HttpServer($loop, function (RequestInterface $request) {
+        $http = new HttpServer(function (RequestInterface $request) {
             $stream = new ThroughStream();
             $stream->close();
 
             return new Response(200, array(), $stream);
         });
 
-        $socket = new SocketServer('127.0.0.1:0', array(), $loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $http->listen($socket);
 
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
@@ -743,7 +717,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await($result, $loop, 1.0);
+        $response = Block\await($result, null, 1.0);
 
         $this->assertStringStartsWith("HTTP/1.1 200 OK\r\n", $response);
         $this->assertStringEndsWith("\r\n\r\n", $response);
@@ -753,16 +727,14 @@ class FunctionalHttpServerTest extends TestCase
 
     public function testLimitConcurrentRequestsMiddlewareRequestStreamPausing()
     {
-        $loop = Factory::create();
-        $connector = new Connector(array(), $loop);
+        $connector = new Connector();
 
         $http = new HttpServer(
-            $loop,
             new LimitConcurrentRequestsMiddleware(5),
             new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
-            function (ServerRequestInterface $request, $next) use ($loop) {
-                return new Promise\Promise(function ($resolve) use ($request, $loop, $next) {
-                    $loop->addTimer(0.1, function () use ($request, $resolve, $next) {
+            function (ServerRequestInterface $request, $next) {
+                return new Promise\Promise(function ($resolve) use ($request, $next) {
+                    Loop::addTimer(0.1, function () use ($request, $resolve, $next) {
                         $resolve($next($request));
                     });
                 });
@@ -772,7 +744,7 @@ class FunctionalHttpServerTest extends TestCase
             }
         );
 
-        $socket = new SocketServer('127.0.0.1:0', array(), $loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $http->listen($socket);
 
         $result = array();
@@ -788,7 +760,7 @@ class FunctionalHttpServerTest extends TestCase
             });
         }
 
-        $responses = Block\await(Promise\all($result), $loop, 1.0);
+        $responses = Block\await(Promise\all($result), null, 1.0);
 
         foreach ($responses as $response) {
             $this->assertContainsString("HTTP/1.0 200 OK", $response, $response);
