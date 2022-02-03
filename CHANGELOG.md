@@ -1,5 +1,47 @@
 # Changelog
 
+## 1.6.0 (2022-02-03)
+
+*   Feature: Add factory methods for common HTML/JSON/plaintext/XML response types.
+    (#439 by @clue)
+
+    ```php
+    $response = React\Http\Response\html("<h1>Hello wörld!</h1>\n");
+    $response = React\Http\Response\json(['message' => 'Hello wörld!']);
+    $response = React\Http\Response\plaintext("Hello wörld!\n");
+    $response = React\Http\Response\xml("<message>Hello wörld!</message>\n");
+    $response = React\Http\Response\redirect('https://reactphp.org/');
+    ```
+
+*   Feature: Expose all status code constants via `Response` class.
+    (#432 by @clue)
+
+    ```php
+    $response = new React\Http\Message\Response(
+        React\Http\Message\Response::STATUS_OK, // 200 OK
+        …
+    );
+    $response = new React\Http\Message\Response(
+        React\Http\Message\Response::STATUS_NOT_FOUND, // 404 Not Found
+        …
+    );
+    ```
+
+*   Feature: Full support for PHP 8.1 release.
+    (#433 by @SimonFrings and #434 by @clue)
+
+*   Feature / Fix: Improve protocol handling for HTTP responses with no body.
+    (#429 and #430 by @clue)
+
+*   Internal refactoring and internal improvements for handling requests and responses.
+    (#422 by @WyriHaximus and #431 by @clue)
+
+*   Improve documentation, update proxy examples, include error reporting in examples.
+    (#420, #424, #426, and #427 by @clue)
+
+*   Update test suite to use default loop.
+    (#438 by @clue)
+
 ## 1.5.0 (2021-08-04)
 
 *   Feature: Update `Browser` signature to take optional `$connector` as first argument and
