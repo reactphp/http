@@ -70,6 +70,10 @@ multiple concurrent HTTP requests without blocking.
         * [withResponseBuffer()](#withresponsebuffer)
     * [React\Http\Message](#reacthttpmessage)
         * [Response](#response)
+            * [html()](#html)
+            * [json()](#json)
+            * [plaintext()](#plaintext)
+            * [xml()](#xml)
         * [ServerRequest](#serverrequest)
         * [ResponseException](#responseexception)
     * [React\Http\Middleware](#reacthttpmiddleware)
@@ -108,11 +112,7 @@ This is an HTTP server which responds with `Hello World!` to every request.
 require __DIR__ . '/vendor/autoload.php';
 
 $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
-    return new React\Http\Message\Response(
-        React\Http\Message\Response::STATUS_OK,
-        array(
-            'Content-Type' => 'text/plain'
-        ),
+    return React\Http\Message\Response::plaintext(
         "Hello World!\n"
     );
 });
@@ -734,11 +734,7 @@ object and expects a [response](#server-response) object in return:
 
 ```php
 $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
-    return new React\Http\Message\Response(
-        React\Http\Message\Response::STATUS_OK,
-        array(
-            'Content-Type' => 'text/plain'
-        ),
+    return React\Http\Message\Response::plaintext(
         "Hello World!\n"
     );
 });
@@ -949,14 +945,10 @@ and will be passed to the callback function like this.
 
  ```php 
 $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
-    $body = "The method of the request is: " . $request->getMethod();
-    $body .= "The requested path is: " . $request->getUri()->getPath();
+    $body = "The method of the request is: " . $request->getMethod() . "\n";
+    $body .= "The requested path is: " . $request->getUri()->getPath() . "\n";
 
-    return new React\Http\Message\Response(
-        React\Http\Message\Response::STATUS_OK,
-        array(
-            'Content-Type' => 'text/plain'
-        ),
+    return React\Http\Message\Response::plaintext(
         $body
     );
 });
@@ -992,13 +984,9 @@ The following parameters are currently available:
 
 ```php 
 $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
-    $body = "Your IP is: " . $request->getServerParams()['REMOTE_ADDR'];
+    $body = "Your IP is: " . $request->getServerParams()['REMOTE_ADDR'] . "\n";
 
-    return new React\Http\Message\Response(
-        React\Http\Message\Response::STATUS_OK,
-        array(
-            'Content-Type' => 'text/plain'
-        ),
+    return React\Http\Message\Response::plaintext(
         $body
     );
 });
@@ -1026,11 +1014,7 @@ $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterf
         $body = 'The value of "foo" is: ' . htmlspecialchars($queryParams['foo']);
     }
 
-    return new React\Http\Message\Response(
-        React\Http\Message\Response::STATUS_OK,
-        array(
-            'Content-Type' => 'text/html'
-        ),
+    return React\Http\Message\Response::html(
         $body
     );
 });
@@ -1073,9 +1057,7 @@ request headers (commonly used for `POST` requests for HTML form submission data
 $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
     $name = $request->getParsedBody()['name'] ?? 'anonymous';
 
-    return new React\Http\Message\Response(
-        React\Http\Message\Response::STATUS_OK,
-        array(),
+    return React\Http\Message\Response::plaintext(
         "Hello $name!\n"
     );
 });
@@ -1098,10 +1080,8 @@ $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterf
     $data = json_decode((string)$request->getBody());
     $name = $data->name ?? 'anonymous';
 
-    return new React\Http\Message\Response(
-        React\Http\Message\Response::STATUS_OK,
-        array('Content-Type' => 'application/json'),
-        json_encode(['message' => "Hello $name!"])
+    return React\Http\Message\Response::json(
+        ['message' => "Hello $name!"]
     );
 });
 ```
@@ -1121,9 +1101,7 @@ $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterf
     $files = $request->getUploadedFiles();
     $name = isset($files['avatar']) ? $files['avatar']->getClientFilename() : 'nothing';
 
-    return new React\Http\Message\Response(
-        React\Http\Message\Response::STATUS_OK,
-        array(),
+    return React\Http\Message\Response::plaintext(
         "Uploaded $name\n"
     );
 });
@@ -1204,24 +1182,16 @@ $http = new React\Http\HttpServer(
             });
 
             $body->on('end', function () use ($resolve, &$bytes){
-                $resolve(new React\Http\Message\Response(
-                    React\Http\Message\Response::STATUS_OK,
-                    array(
-                        'Content-Type' => 'text/plain'
-                    ),
+                $resolve(React\Http\Message\Response::plaintext(
                     "Received $bytes bytes\n"
                 ));
             });
 
             // an error occures e.g. on invalid chunked encoded data or an unexpected 'end' event
             $body->on('error', function (Exception $e) use ($resolve, &$bytes) {
-                $resolve(new React\Http\Message\Response(
-                    React\Http\Message\Response::STATUS_BAD_REQUEST,
-                    array(
-                        'Content-Type' => 'text/plain'
-                    ),
+                $resolve(React\Http\Message\Response::plaintext(
                     "Encountered error after $bytes bytes: {$e->getMessage()}\n"
-                ));
+                )->withStatus(React\Http\Message\Response::STATUS_BAD_REQUEST));
             });
         });
     }
@@ -1268,23 +1238,15 @@ $http = new React\Http\HttpServer(
     function (Psr\Http\Message\ServerRequestInterface $request) {
         $size = $request->getBody()->getSize();
         if ($size === null) {
-            $body = 'The request does not contain an explicit length.';
-            $body .= 'This example does not accept chunked transfer encoding.';
+            $body = "The request does not contain an explicit length. ";
+            $body .= "This example does not accept chunked transfer encoding.\n";
 
-            return new React\Http\Message\Response(
-                React\Http\Message\Response::STATUS_LENGTH_REQUIRED,
-                array(
-                    'Content-Type' => 'text/plain'
-                ),
+            return React\Http\Message\Response::plaintext(
                 $body
-            );
+            )->withStatus(React\Http\Message\Response::STATUS_LENGTH_REQUIRED);
         }
 
-        return new React\Http\Message\Response(
-            React\Http\Message\Response::STATUS_OK,
-            array(
-                'Content-Type' => 'text/plain'
-            ),
+        return React\Http\Message\Response::plaintext(
             "Request body size: " . $size . " bytes\n"
         );
     }
@@ -1340,25 +1302,16 @@ $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterf
     $key = 'react\php';
 
     if (isset($request->getCookieParams()[$key])) {
-        $body = "Your cookie value is: " . $request->getCookieParams()[$key];
+        $body = "Your cookie value is: " . $request->getCookieParams()[$key] . "\n";
 
-        return new React\Http\Message\Response(
-            React\Http\Message\Response::STATUS_OK,
-            array(
-                'Content-Type' => 'text/plain'
-            ),
+        return React\Http\Message\Response::plaintext(
             $body
         );
     }
 
-    return new React\Http\Message\Response(
-        React\Http\Message\Response::STATUS_OK,
-        array(
-            'Content-Type' => 'text/plain',
-            'Set-Cookie' => urlencode($key) . '=' . urlencode('test;more')
-        ),
-        "Your cookie has been set."
-    );
+    return React\Http\Message\Response::plaintext(
+        "Your cookie has been set.\n"
+    )->withHeader('Set-Cookie', urlencode($key) . '=' . urlencode('test;more'));
 });
 ```
 
@@ -1409,11 +1362,7 @@ In its most simple form, you can use it like this:
 
 ```php 
 $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
-    return new React\Http\Message\Response(
-        React\Http\Message\Response::STATUS_OK,
-        array(
-            'Content-Type' => 'text/plain'
-        ),
+    return React\Http\Message\Response::plaintext(
         "Hello World!\n"
     );
 });
@@ -1437,17 +1386,16 @@ This example shows how such a long-term action could look like:
 
 ```php
 $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
-    return new Promise(function ($resolve, $reject) {
+    $promise = new Promise(function ($resolve, $reject) {
         Loop::addTimer(1.5, function() use ($resolve) {
-            $response = new React\Http\Message\Response(
-                React\Http\Message\Response::STATUS_OK,
-                array(
-                    'Content-Type' => 'text/plain'
-                ),
-                "Hello world"
-            );
-            $resolve($response);
+            $resolve();
         });
+    });
+
+    return $promise->then(function () { 
+        return React\Http\Message\Response::plaintext(
+            "Hello World!"
+        );
     });
 });
 ```
@@ -1567,11 +1515,7 @@ a `string` response body like this:
 
 ```php 
 $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
-    return new React\Http\Message\Response(
-        React\Http\Message\Response::STATUS_OK,
-        array(
-            'Content-Type' => 'text/plain'
-        ),
+    return React\Http\Message\Response::plaintext(
         "Hello World!\n"
     );
 });
@@ -1841,11 +1785,9 @@ $http = new React\Http\HttpServer(
             $resolve($next($request));
         });
         return $promise->then(null, function (Exception $e) {
-            return new React\Http\Message\Response(
-                React\Http\Message\Response::STATUS_INTERNAL_SERVER_ERROR,
-                array(),
-                'Internal error: ' . $e->getMessage()
-            );
+            return React\Http\Message\Response::plaintext(
+                'Internal error: ' . $e->getMessage() . "\n"
+            )->withStatus(React\Http\Message\Response::STATUS_INTERNAL_SERVER_ERROR);
         });
     },
     function (Psr\Http\Message\ServerRequestInterface $request) {
@@ -2462,6 +2404,183 @@ constants with the `STATUS_*` prefix. For instance, the `200 OK` and
 > Internally, this implementation builds on top of an existing incoming
   response message and only adds required streaming support. This base class is
   considered an implementation detail that may change in the future.
+
+##### html()
+
+The static `html(string $html): Response` method can be used to
+create an HTML response.
+
+```php
+$html = <<<HTML
+<!doctype html>
+<html>
+<body>Hello wörld!</body>
+</html>
+
+HTML;
+
+$response = React\Http\Message\Response::html($html);
+```
+
+This is a convenient shortcut method that returns the equivalent of this:
+
+```
+$response = new React\Http\Message\Response(
+    React\Http\Message\Response::STATUS_OK,
+    [
+        'Content-Type' => 'text/html; charset=utf-8'
+    ],
+    $html
+);
+```
+
+This method always returns a response with a `200 OK` status code and
+the appropriate `Content-Type` response header for the given HTTP source
+string encoded in UTF-8 (Unicode). It's generally recommended to end the
+given plaintext string with a trailing newline.
+
+If you want to use a different status code or custom HTTP response
+headers, you can manipulate the returned response object using the
+provided PSR-7 methods or directly instantiate a custom HTTP response
+object using the `Response` constructor:
+
+```php
+$response = React\Http\Message\Response::html(
+    "<h1>Error</h1>\n<p>Invalid user name given.</p>\n"
+)->withStatus(React\Http\Message\Response::STATUS_BAD_REQUEST);
+```
+
+##### json()
+
+The static `json(mixed $data): Response` method can be used to
+create a JSON response.
+
+```php
+$response = React\Http\Message\Response::json(['name' => 'Alice']);
+```
+
+This is a convenient shortcut method that returns the equivalent of this:
+
+```
+$response = new React\Http\Message\Response(
+    React\Http\Message\Response::STATUS_OK,
+    [
+        'Content-Type' => 'application/json'
+    ],
+    json_encode(
+        ['name' => 'Alice'],
+        JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION
+    ) . "\n"
+);
+```
+
+This method always returns a response with a `200 OK` status code and
+the appropriate `Content-Type` response header for the given structured
+data encoded as a JSON text.
+
+The given structured data will be encoded as a JSON text. Any `string`
+values in the data must be encoded in UTF-8 (Unicode). If the encoding
+fails, this method will throw an `InvalidArgumentException`.
+
+By default, the given structured data will be encoded with the flags as
+shown above. This includes pretty printing (PHP 5.4+) and preserving
+zero fractions for `float` values (PHP 5.6.6+) to ease debugging. It is
+assumed any additional data overhead is usually compensated by using HTTP
+response compression.
+
+If you want to use a different status code or custom HTTP response
+headers, you can manipulate the returned response object using the
+provided PSR-7 methods or directly instantiate a custom HTTP response
+object using the `Response` constructor:
+
+```php
+$response = React\Http\Message\Response::json(
+    ['error' => 'Invalid user name given']
+)->withStatus(React\Http\Message\Response::STATUS_BAD_REQUEST);
+```
+
+##### plaintext()
+
+The static `plaintext(string $text): Response` method can be used to
+create a plaintext response.
+
+```php
+$response = React\Http\Message\Response::plaintext("Hello wörld!\n");
+```
+
+This is a convenient shortcut method that returns the equivalent of this:
+
+```
+$response = new React\Http\Message\Response(
+    React\Http\Message\Response::STATUS_OK,
+    [
+        'Content-Type' => 'text/plain; charset=utf-8'
+    ],
+    "Hello wörld!\n"
+);
+```
+
+This method always returns a response with a `200 OK` status code and
+the appropriate `Content-Type` response header for the given plaintext
+string encoded in UTF-8 (Unicode). It's generally recommended to end the
+given plaintext string with a trailing newline.
+
+If you want to use a different status code or custom HTTP response
+headers, you can manipulate the returned response object using the
+provided PSR-7 methods or directly instantiate a custom HTTP response
+object using the `Response` constructor:
+
+```php
+$response = React\Http\Message\Response::plaintext(
+    "Error: Invalid user name given.\n"
+)->withStatus(React\Http\Message\Response::STATUS_BAD_REQUEST);
+```
+
+##### xml()
+
+The static `xml(string $xml): Response` method can be used to
+create an XML response.
+
+```php
+$xml = <<<XML
+<?xml version="1.0" encoding="utf-8"?>
+<body>
+    <greeting>Hello wörld!</greeting>
+</body>
+
+XML;
+
+$response = React\Http\Message\Response::xml($xml);
+```
+
+This is a convenient shortcut method that returns the equivalent of this:
+
+```
+$response = new React\Http\Message\Response(
+    React\Http\Message\Response::STATUS_OK,
+    [
+        'Content-Type' => 'application/xml'
+    ],
+    $xml
+);
+```
+
+This method always returns a response with a `200 OK` status code and
+the appropriate `Content-Type` response header for the given XML source
+string. It's generally recommended to use UTF-8 (Unicode) and specify
+this as part of the leading XML declaration and to end the given XML
+source string with a trailing newline.
+
+If you want to use a different status code or custom HTTP response
+headers, you can manipulate the returned response object using the
+provided PSR-7 methods or directly instantiate a custom HTTP response
+object using the `Response` constructor:
+
+```php
+$response = React\Http\Message\Response::xml(
+    "<error><message>Invalid user name given.</message></error>\n"
+)->withStatus(React\Http\Message\Response::STATUS_BAD_REQUEST);
+```
 
 #### ServerRequest
 
