@@ -404,7 +404,9 @@ final class HttpServerTest extends TestCase
     public function testConstructServerWithMemoryLimitDoesLimitConcurrency()
     {
         $old = ini_get('memory_limit');
-        ini_set('memory_limit', '100M');
+        if (@ini_set('memory_limit', '128M') === false) {
+            $this->markTestSkipped('Unable to change memory limit');
+        }
 
         $http = new HttpServer(function () { });
 
