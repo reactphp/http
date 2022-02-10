@@ -247,7 +247,7 @@ class Transaction
         // resolve location relative to last request URI
         $location = Uri::resolve($request->getUri(), $response->getHeaderLine('Location'));
 
-        $request = $this->makeRedirectRequest($request, $location);
+        $request = $this->makeRedirectRequest($response, $request, $location);
         $this->progress('redirect', array($request));
 
         if ($deferred->numRequests >= $this->maxRedirects) {
@@ -262,7 +262,7 @@ class Transaction
      * @param UriInterface $location
      * @return RequestInterface
      */
-    private function makeRedirectRequest(RequestInterface $request, UriInterface $location)
+    private function makeRedirectRequest(ResponseInterface $response, RequestInterface $request, UriInterface $location)
     {
         $originalHost = $request->getUri()->getHost();
         $request = $request
@@ -275,10 +275,20 @@ class Transaction
             $request = $request->withoutHeader('Authorization');
         }
 
-        // naïve approach..
-        $method = ($request->getMethod() === 'HEAD') ? 'HEAD' : 'GET';
+        $method = $this->applyMethodOnRedirect($response, $request);
 
         return new Request($method, $location, $request->getHeaders());
+    }
+
+    /**
+     * @param ResponseInterface $response
+     * @param RequestInterface  $request
+     * @return string
+     */
+    private function applyMethodOnRedirect(ResponseInterface $response, RequestInterface $request)
+    {
+        // 303 See Other should change the method to GET all other redirects should leave it unchanged
+        return ($response->getStatusCode() === 303) ? 'GET' : $request->getMethod();
     }
 
     private function progress($name, array $args = array())
