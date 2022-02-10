@@ -288,7 +288,6 @@ class Transaction
     private function applyMethodOnRedirect(ResponseInterface $response, RequestInterface $request)
     {
         // 303 See Other should change the method to GET all other redirects should leave it unchanged
-
         return ($response->getStatusCode() === 303) ? 'GET' : $request->getMethod();
     }
 
