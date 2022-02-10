@@ -666,6 +666,76 @@ class TransactionTest extends TestCase
         $transaction->send($requestWithCustomHeaders);
     }
 
+    public function testRequestMethodShouldBeChangedWhenRedirectingWithSeeOther()
+    {
+        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+
+        $customHeaders = array(
+            'Content-Type' => 'text/html; charset=utf-8',
+            'Content-Length' => '111',
+        );
+
+        $request = new Request('POST', 'http://example.com', $customHeaders);
+        $sender = $this->makeSenderMock();
+
+        // mock sender to resolve promise with the given $redirectResponse in
+        // response to the given $request
+        $redirectResponse = new Response(303, array('Location' => 'http://example.com/new'));
+
+        // mock sender to resolve promise with the given $okResponse in
+        // response to the given $request
+        $okResponse = new Response(200);
+        $that = $this;
+        $sender->expects($this->exactly(2))->method('send')->withConsecutive(
+            array($this->anything()),
+            array($this->callback(function (RequestInterface $request) use ($that) {
+                $that->assertEquals('GET', $request->getMethod());
+                return true;
+            }))
+        )->willReturnOnConsecutiveCalls(
+            Promise\resolve($redirectResponse),
+            Promise\resolve($okResponse)
+        );
+
+        $transaction = new Transaction($sender, $loop);
+        $transaction->send($request);
+    }
+
+    public function testRequestMethodShouldNotBeChangedWhenRedirectingWithAnythingElse()
+    {
+        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+
+        $customHeaders = array(
+            'Content-Type' => 'text/html; charset=utf-8',
+            'Content-Length' => '111',
+        );
+
+        $request = new Request('POST', 'http://example.com', $customHeaders);
+        $sender = $this->makeSenderMock();
+
+        // mock sender to resolve promise with the given $redirectResponse in
+        // response to the given $request
+        $redirectResponse = new Response(301, array('Location' => 'http://example.com/new'));
+
+        // mock sender to resolve promise with the given $okResponse in
+        // response to the given $request
+        $okResponse = new Response(200);
+        $that = $this;
+        $sender->expects($this->exactly(2))->method('send')->withConsecutive(
+            array($this->anything()),
+            array($this->callback(function (RequestInterface $request) use ($that) {
+                $that->assertEquals('POST', $request->getMethod());
+                return true;
+            }))
+        )->willReturnOnConsecutiveCalls(
+            Promise\resolve($redirectResponse),
+            Promise\resolve($okResponse)
+        );
+
+        $transaction = new Transaction($sender, $loop);
+        $transaction->send($request);
+    }
+
     public function testCancelTransactionWillCancelRequest()
     {
         $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
