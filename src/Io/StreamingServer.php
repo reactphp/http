@@ -265,6 +265,8 @@ final class StreamingServer extends EventEmitter
         if (($method === 'CONNECT' && $code >= 200 && $code < 300) || ($code >= 100 && $code < 200) || $code === Response::STATUS_NO_CONTENT) {
             // 2xx response to CONNECT and 1xx and 204 MUST NOT include Content-Length or Transfer-Encoding header
             $response = $response->withoutHeader('Content-Length');
+        } elseif ($method === 'HEAD' && $response->hasHeader('Content-Length')) {
+            // HEAD Request: preserve explicit Content-Length
         } elseif ($code === Response::STATUS_NOT_MODIFIED && ($response->hasHeader('Content-Length') || $body->getSize() === 0)) {
             // 304 Not Modified: preserve explicit Content-Length and preserve missing header if body is empty
         } elseif ($body->getSize() !== null) {

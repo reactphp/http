@@ -1426,6 +1426,38 @@ class StreamingServerTest extends TestCase
         $this->assertContainsString("\r\nContent-Length: 3\r\n", $buffer);
     }
 
+    public function testResponseContainsExplicitContentLengthHeaderForHeadRequests()
+    {
+        $server = new StreamingServer(Loop::get(), function (ServerRequestInterface $request) {
+            return new Response(
+                200,
+                array('Content-Length' => 3),
+                ''
+            );
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = "HEAD / HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        $this->connection->emit('data', array($data));
+
+        $this->assertContainsString("HTTP/1.1 200 OK\r\n", $buffer);
+        $this->assertContainsString("\r\nContent-Length: 3\r\n", $buffer);
+    }
+
     public function testResponseContainsNoResponseBodyForNotModifiedStatus()
     {
         $server = new StreamingServer(Loop::get(), function (ServerRequestInterface $request) {
