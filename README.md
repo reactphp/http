@@ -389,7 +389,7 @@ try {
     $response = Block\await($promise, Loop::get());
     // response successfully received
 } catch (Exception $e) {
-    // an error occured while performing the request
+    // an error occurred while performing the request
 }
 ```
 
