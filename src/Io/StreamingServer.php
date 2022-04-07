@@ -20,7 +20,7 @@ use React\Stream\WritableStreamInterface;
  * The internal `StreamingServer` class is responsible for handling incoming connections and then
  * processing each incoming HTTP request.
  *
- * Unlike the [`Server`](#server) class, it does not buffer and parse the incoming
+ * Unlike the [`HttpServer`](#httpserver) class, it does not buffer and parse the incoming
  * HTTP request body by default. This means that the request handler will be
  * invoked with a streaming request body. Once the request headers have been
  * received, it will invoke the request handler function. This request handler
@@ -31,7 +31,7 @@ use React\Stream\WritableStreamInterface;
  * ```php
  * $server = new StreamingServer($loop, function (ServerRequestInterface $request) {
  *     return new Response(
- *         200,
+ *         Response::STATUS_OK,
  *         array(
  *             'Content-Type' => 'text/plain'
  *         ),
@@ -50,20 +50,20 @@ use React\Stream\WritableStreamInterface;
  * In order to process any connections, the server needs to be attached to an
  * instance of `React\Socket\ServerInterface` through the [`listen()`](#listen) method
  * as described in the following chapter. In its most simple form, you can attach
- * this to a [`React\Socket\Server`](https://github.com/reactphp/socket#server)
+ * this to a [`React\Socket\SocketServer`](https://github.com/reactphp/socket#socketserver)
  * in order to start a plaintext HTTP server like this:
  *
  * ```php
  * $server = new StreamingServer($loop, $handler);
  *
- * $socket = new React\Socket\Server('0.0.0.0:8080', $loop);
+ * $socket = new React\Socket\SocketServer('0.0.0.0:8080', array(), $loop);
  * $server->listen($socket);
  * ```
  *
  * See also the [`listen()`](#listen) method and the [first example](examples) for more details.
  *
  * The `StreamingServer` class is considered advanced usage and unless you know
- * what you're doing, you're recommended to use the [`Server`](#server) class
+ * what you're doing, you're recommended to use the [`HttpServer`](#httpserver) class
  * instead. The `StreamingServer` class is specifically designed to help with
  * more advanced use cases where you want to have full control over consuming
  * the incoming HTTP request body and concurrency settings.
@@ -75,7 +75,7 @@ use React\Stream\WritableStreamInterface;
  * handler function may not be fully compatible with PSR-7. See also
  * [streaming request](#streaming-request) below for more details.
  *
- * @see \React\Http\Server
+ * @see \React\Http\HttpServer
  * @see \React\Http\Message\Response
  * @see self::listen()
  * @internal
@@ -120,7 +120,7 @@ final class StreamingServer extends EventEmitter
             // parsing failed => assume dummy request and send appropriate error
             $that->writeError(
                 $conn,
-                $e->getCode() !== 0 ? $e->getCode() : 400,
+                $e->getCode() !== 0 ? $e->getCode() : Response::STATUS_BAD_REQUEST,
                 new ServerRequest('GET', '/')
             );
         });
@@ -130,7 +130,7 @@ final class StreamingServer extends EventEmitter
      * Starts listening for HTTP requests on the given socket server instance
      *
      * @param ServerInterface $socket
-     * @see \React\Http\Server::listen()
+     * @see \React\Http\HttpServer::listen()
      */
     public function listen(ServerInterface $socket)
     {
@@ -182,7 +182,7 @@ final class StreamingServer extends EventEmitter
                     $exception = new \RuntimeException($message);
 
                     $that->emit('error', array($exception));
-                    return $that->writeError($conn, 500, $request);
+                    return $that->writeError($conn, Response::STATUS_INTERNAL_SERVER_ERROR, $request);
                 }
                 $that->handleResponse($conn, $request, $response);
             },
@@ -196,10 +196,10 @@ final class StreamingServer extends EventEmitter
                     $previous = $error;
                 }
 
-                $exception = new \RuntimeException($message, null, $previous);
+                $exception = new \RuntimeException($message, 0, $previous);
 
                 $that->emit('error', array($exception));
-                return $that->writeError($conn, 500, $request);
+                return $that->writeError($conn, Response::STATUS_INTERNAL_SERVER_ERROR, $request);
             }
         );
     }
@@ -210,7 +210,8 @@ final class StreamingServer extends EventEmitter
         $response = new Response(
             $code,
             array(
-                'Content-Type' => 'text/plain'
+                'Content-Type' => 'text/plain',
+                'Connection' => 'close' // we do not want to keep the connection open after an error
             ),
             'Error ' . $code
         );
@@ -259,31 +260,48 @@ final class StreamingServer extends EventEmitter
             $response = $response->withoutHeader('Date');
         }
 
-        // assign "Content-Length" and "Transfer-Encoding" headers automatically
+        // assign "Content-Length" header automatically
         $chunked = false;
-        if (($method === 'CONNECT' && $code >= 200 && $code < 300) || ($code >= 100 && $code < 200) || $code === 204) {
+        if (($method === 'CONNECT' && $code >= 200 && $code < 300) || ($code >= 100 && $code < 200) || $code === Response::STATUS_NO_CONTENT) {
             // 2xx response to CONNECT and 1xx and 204 MUST NOT include Content-Length or Transfer-Encoding header
-            $response = $response->withoutHeader('Content-Length')->withoutHeader('Transfer-Encoding');
+            $response = $response->withoutHeader('Content-Length');
+        } elseif ($method === 'HEAD' && $response->hasHeader('Content-Length')) {
+            // HEAD Request: preserve explicit Content-Length
+        } elseif ($code === Response::STATUS_NOT_MODIFIED && ($response->hasHeader('Content-Length') || $body->getSize() === 0)) {
+            // 304 Not Modified: preserve explicit Content-Length and preserve missing header if body is empty
         } elseif ($body->getSize() !== null) {
             // assign Content-Length header when using a "normal" buffered body string
-            $response = $response->withHeader('Content-Length', (string)$body->getSize())->withoutHeader('Transfer-Encoding');
+            $response = $response->withHeader('Content-Length', (string)$body->getSize());
         } elseif (!$response->hasHeader('Content-Length') && $version === '1.1') {
             // assign chunked transfer-encoding if no 'content-length' is given for HTTP/1.1 responses
-            $response = $response->withHeader('Transfer-Encoding', 'chunked');
             $chunked = true;
+        }
+
+        // assign "Transfer-Encoding" header automatically
+        if ($chunked) {
+            $response = $response->withHeader('Transfer-Encoding', 'chunked');
         } else {
             // remove any Transfer-Encoding headers unless automatically enabled above
             $response = $response->withoutHeader('Transfer-Encoding');
         }
 
         // assign "Connection" header automatically
-        if ($code === 101) {
+        $persist = false;
+        if ($code === Response::STATUS_SWITCHING_PROTOCOLS) {
             // 101 (Switching Protocols) response uses Connection: upgrade header
+            // This implies that this stream now uses another protocol and we
+            // may not persist this connection for additional requests.
             $response = $response->withHeader('Connection', 'upgrade');
-        } elseif ($version === '1.1') {
-            // HTTP/1.1 assumes persistent connection support by default
-            // we do not support persistent connections, so let the client know
+        } elseif (\strtolower($request->getHeaderLine('Connection')) === 'close' || \strtolower($response->getHeaderLine('Connection')) === 'close') {
+            // obey explicit "Connection: close" request header or response header if present
             $response = $response->withHeader('Connection', 'close');
+        } elseif ($version === '1.1') {
+            // HTTP/1.1 assumes persistent connection support by default, so we don't need to inform client
+            $persist = true;
+        } elseif (strtolower($request->getHeaderLine('Connection')) === 'keep-alive') {
+            // obey explicit "Connection: keep-alive" request header and inform client
+            $persist = true;
+            $response = $response->withHeader('Connection', 'keep-alive');
         } else {
             // remove any Connection headers unless automatically enabled above
             $response = $response->withoutHeader('Connection');
@@ -291,7 +309,7 @@ final class StreamingServer extends EventEmitter
 
         // 101 (Switching Protocols) response (for Upgrade request) forwards upgraded data through duplex stream
         // 2xx (Successful) response to CONNECT forwards tunneled application data through duplex stream
-        if (($code === 101 || ($method === 'CONNECT' && $code >= 200 && $code < 300)) && $body instanceof HttpBodyStream && $body->input instanceof WritableStreamInterface) {
+        if (($code === Response::STATUS_SWITCHING_PROTOCOLS || ($method === 'CONNECT' && $code >= 200 && $code < 300)) && $body instanceof HttpBodyStream && $body->input instanceof WritableStreamInterface) {
             if ($request->getBody()->isReadable()) {
                 // request is still streaming => wait for request close before forwarding following data from connection
                 $request->getBody()->on('close', function () use ($connection, $body) {
@@ -317,7 +335,8 @@ final class StreamingServer extends EventEmitter
 
         // response to HEAD and 1xx, 204 and 304 responses MUST NOT include a body
         // exclude status 101 (Switching Protocols) here for Upgrade request handling above
-        if ($method === 'HEAD' || $code === 100 || ($code > 101 && $code < 200) || $code === 204 || $code === 304) {
+        if ($method === 'HEAD' || ($code >= 100 && $code < 200 && $code !== Response::STATUS_SWITCHING_PROTOCOLS) || $code === Response::STATUS_NO_CONTENT || $code === Response::STATUS_NOT_MODIFIED) {
+            $body->close();
             $body = '';
         }
 
@@ -328,9 +347,15 @@ final class StreamingServer extends EventEmitter
                 $body = "0\r\n\r\n";
             }
 
-            // end connection after writing response headers and body
+            // write response headers and body
             $connection->write($headers . "\r\n" . $body);
-            $connection->end();
+
+            // either wait for next request over persistent connection or end connection
+            if ($persist) {
+                $this->parser->handle($connection);
+            } else {
+                $connection->end();
+            }
             return;
         }
 
@@ -345,6 +370,16 @@ final class StreamingServer extends EventEmitter
         // in particular this may only fire on a later read/write attempt.
         $connection->on('close', array($body, 'close'));
 
-        $body->pipe($connection);
+        // write streaming body and then wait for next request over persistent connection
+        if ($persist) {
+            $body->pipe($connection, array('end' => false));
+            $parser = $this->parser;
+            $body->on('end', function () use ($connection, $parser, $body) {
+                $connection->removeListener('close', array($body, 'close'));
+                $parser->handle($connection);
+            });
+        } else {
+            $body->pipe($connection);
+        }
     }
 }

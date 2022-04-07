@@ -193,7 +193,7 @@ class Transaction
         $maximumSize = $this->maximumSize;
         $promise = \React\Promise\Stream\buffer($stream, $maximumSize)->then(
             function ($body) use ($response) {
-                return $response->withBody(\RingCentral\Psr7\stream_for($body));
+                return $response->withBody(new BufferedBody($body));
             },
             function ($e) use ($stream, $maximumSize) {
                 // try to close stream if buffering fails (or is cancelled)

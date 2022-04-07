@@ -4,7 +4,7 @@ namespace React\Tests\Http\Middleware;
 
 use Clue\React\Block;
 use Psr\Http\Message\ServerRequestInterface;
-use React\EventLoop\Factory;
+use React\EventLoop\Loop;
 use React\Http\Io\HttpBodyStream;
 use React\Http\Message\Response;
 use React\Http\Message\ServerRequest;
@@ -118,8 +118,6 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
 
     public function testKnownExcessiveSizedBodyIsDisgardedTheRequestIsPassedDownToTheNextMiddleware()
     {
-        $loop = Factory::create();
-
         $stream = new ThroughStream();
         $stream->end('aa');
         $serverRequest = new ServerRequest(
@@ -135,7 +133,7 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
             function (ServerRequestInterface $request) {
                 return new Response(200, array(), $request->getBody()->getContents());
             }
-        ), $loop);
+        ));
 
         $this->assertSame(200, $response->getStatusCode());
         $this->assertSame('', $response->getBody()->getContents());
@@ -143,10 +141,8 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
 
     public function testKnownExcessiveSizedWithIniLikeSize()
     {
-        $loop = Factory::create();
-
         $stream = new ThroughStream();
-        $loop->addTimer(0.001, function () use ($stream) {
+        Loop::addTimer(0.001, function () use ($stream) {
             $stream->end(str_repeat('a', 2048));
         });
         $serverRequest = new ServerRequest(
@@ -162,7 +158,7 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
             function (ServerRequestInterface $request) {
                 return new Response(200, array(), $request->getBody()->getContents());
             }
-        ), $loop);
+        ));
 
         $this->assertSame(200, $response->getStatusCode());
         $this->assertSame('', $response->getBody()->getContents());
@@ -192,8 +188,6 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
 
     public function testExcessiveSizeBodyIsDiscardedAndTheRequestIsPassedDownToTheNextMiddleware()
     {
-        $loop = Factory::create();
-
         $stream = new ThroughStream();
         $serverRequest = new ServerRequest(
             'GET',
@@ -215,7 +209,7 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
         $exposedResponse = Block\await($promise->then(
             null,
             $this->expectCallableNever()
-        ), $loop);
+        ));
 
         $this->assertSame(200, $exposedResponse->getStatusCode());
         $this->assertSame('', $exposedResponse->getBody()->getContents());
@@ -223,8 +217,6 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
 
     public function testBufferingErrorThrows()
     {
-        $loop = Factory::create();
-
         $stream = new ThroughStream();
         $serverRequest = new ServerRequest(
             'GET',
@@ -244,7 +236,7 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
         $stream->emit('error', array(new \RuntimeException()));
 
         $this->setExpectedException('RuntimeException');
-        Block\await($promise, $loop);
+        Block\await($promise);
     }
 
     public function testFullBodyStreamedBeforeCallingNextMiddleware()

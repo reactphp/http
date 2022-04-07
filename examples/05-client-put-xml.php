@@ -5,8 +5,7 @@ use Psr\Http\Message\ResponseInterface;
 
 require __DIR__ . '/../vendor/autoload.php';
 
-$loop = React\EventLoop\Factory::create();
-$client = new Browser($loop);
+$client = new Browser();
 
 $xml = new SimpleXMLElement('<users></users>');
 $child = $xml->addChild('user');
@@ -21,6 +20,6 @@ $client->put(
     $xml->asXML()
 )->then(function (ResponseInterface $response) {
     echo (string)$response->getBody();
-}, 'printf');
-
-$loop->run();
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
+});

@@ -4,6 +4,7 @@ namespace React\Http\Io;
 
 use Evenement\EventEmitter;
 use Psr\Http\Message\ServerRequestInterface;
+use React\Http\Message\Response;
 use React\Http\Message\ServerRequest;
 use React\Socket\ConnectionInterface;
 use Exception;
@@ -39,7 +40,7 @@ class RequestHeaderParser extends EventEmitter
                 $fn = null;
 
                 $that->emit('error', array(
-                    new \OverflowException("Maximum header size of {$maxSize} exceeded.", 431),
+                    new \OverflowException("Maximum header size of {$maxSize} exceeded.", Response::STATUS_REQUEST_HEADER_FIELDS_TOO_LARGE),
                     $conn
                 ));
                 return;
@@ -106,10 +107,6 @@ class RequestHeaderParser extends EventEmitter
                 $stream->close();
             }
         });
-
-        $conn->on('close', function () use (&$buffer, &$fn) {
-            $fn = $buffer = null;
-        });
     }
 
     /**
@@ -131,7 +128,7 @@ class RequestHeaderParser extends EventEmitter
 
         // only support HTTP/1.1 and HTTP/1.0 requests
         if ($start['version'] !== '1.1' && $start['version'] !== '1.0') {
-            throw new \InvalidArgumentException('Received request with invalid protocol version', 505);
+            throw new \InvalidArgumentException('Received request with invalid protocol version', Response::STATUS_VERSION_NOT_SUPPORTED);
         }
 
         // match all request header fields into array, thanks to @kelunik for checking the HTTP specs and coming up with this regex
@@ -163,7 +160,7 @@ class RequestHeaderParser extends EventEmitter
         );
 
         // scheme is `http` unless TLS is used
-        $localParts = \parse_url($localSocketUri);
+        $localParts = $localSocketUri === null ? array() : \parse_url($localSocketUri);
         if (isset($localParts['scheme']) && $localParts['scheme'] === 'tls') {
             $scheme = 'https://';
             $serverParams['HTTPS'] = 'on';
@@ -172,6 +169,7 @@ class RequestHeaderParser extends EventEmitter
         }
 
         // default host if unset comes from local socket address or defaults to localhost
+        $hasHost = $host !== null;
         if ($host === null) {
             $host = isset($localParts['host'], $localParts['port']) ? $localParts['host'] . ':' . $localParts['port'] : '127.0.0.1';
         }
@@ -234,8 +232,8 @@ class RequestHeaderParser extends EventEmitter
             $request = $request->withRequestTarget($start['target']);
         }
 
-        // Optional Host header value MUST be valid (host and optional port)
-        if ($request->hasHeader('Host')) {
+        if ($hasHost) {
+            // Optional Host request header value MUST be valid (host and optional port)
             $parts = \parse_url('http://' . $request->getHeaderLine('Host'));
 
             // make sure value contains valid host component (IP or hostname)
@@ -244,34 +242,39 @@ class RequestHeaderParser extends EventEmitter
             }
 
             // make sure value does not contain any other URI component
-            unset($parts['scheme'], $parts['host'], $parts['port']);
+            if (\is_array($parts)) {
+                unset($parts['scheme'], $parts['host'], $parts['port']);
+            }
             if ($parts === false || $parts) {
                 throw new \InvalidArgumentException('Invalid Host header value');
             }
+        } elseif (!$hasHost && $start['version'] === '1.1' && $start['method'] !== 'CONNECT') {
+            // require Host request header for HTTP/1.1 (except for CONNECT method)
+            throw new \InvalidArgumentException('Missing required Host request header');
+        } elseif (!$hasHost) {
+            // remove default Host request header for HTTP/1.0 when not explicitly given
+            $request = $request->withoutHeader('Host');
         }
 
         // ensure message boundaries are valid according to Content-Length and Transfer-Encoding request headers
         if ($request->hasHeader('Transfer-Encoding')) {
             if (\strtolower($request->getHeaderLine('Transfer-Encoding')) !== 'chunked') {
-                throw new \InvalidArgumentException('Only chunked-encoding is allowed for Transfer-Encoding', 501);
+                throw new \InvalidArgumentException('Only chunked-encoding is allowed for Transfer-Encoding', Response::STATUS_NOT_IMPLEMENTED);
             }
 
             // Transfer-Encoding: chunked and Content-Length header MUST NOT be used at the same time
             // as per https://tools.ietf.org/html/rfc7230#section-3.3.3
             if ($request->hasHeader('Content-Length')) {
-                throw new \InvalidArgumentException('Using both `Transfer-Encoding: chunked` and `Content-Length` is not allowed', 400);
+                throw new \InvalidArgumentException('Using both `Transfer-Encoding: chunked` and `Content-Length` is not allowed', Response::STATUS_BAD_REQUEST);
             }
         } elseif ($request->hasHeader('Content-Length')) {
             $string = $request->getHeaderLine('Content-Length');
 
             if ((string)(int)$string !== $string) {
                 // Content-Length value is not an integer or not a single integer
-                throw new \InvalidArgumentException('The value of `Content-Length` is not valid', 400);
+                throw new \InvalidArgumentException('The value of `Content-Length` is not valid', Response::STATUS_BAD_REQUEST);
             }
         }
-
-        // always sanitize Host header because it contains critical routing information
-        $request = $request->withUri($request->getUri()->withUserInfo('u')->withUserInfo(''));
 
         return $request;
     }

@@ -11,8 +11,9 @@
 // b2) run HTTP client receiving a 10 GB download:
 // $ php examples/91-client-benchmark-download.php http://localhost:8080/10g.bin
 
-use React\Http\Browser;
 use Psr\Http\Message\ResponseInterface;
+use React\EventLoop\Loop;
+use React\Http\Browser;
 use React\Stream\ReadableStreamInterface;
 
 $url = isset($argv[1]) ? $argv[1] : 'http://google.com/';
@@ -23,12 +24,11 @@ if (extension_loaded('xdebug')) {
     echo 'NOTICE: The "xdebug" extension is loaded, this has a major impact on performance.' . PHP_EOL;
 }
 
-$loop = React\EventLoop\Factory::create();
-$client = new Browser($loop);
+$client = new Browser();
 
 echo 'Requesting ' . $url . '…' . PHP_EOL;
 
-$client->requestStreaming('GET', $url)->then(function (ResponseInterface $response) use ($loop) {
+$client->requestStreaming('GET', $url)->then(function (ResponseInterface $response) {
     echo 'Headers received' . PHP_EOL;
     echo RingCentral\Psr7\str($response);
 
@@ -42,19 +42,19 @@ $client->requestStreaming('GET', $url)->then(function (ResponseInterface $respon
     });
 
     // report progress every 0.1s
-    $timer = $loop->addPeriodicTimer(0.1, function () use (&$bytes) {
+    $timer = Loop::addPeriodicTimer(0.1, function () use (&$bytes) {
         echo "\rDownloaded " . $bytes . " bytes…";
     });
 
     // report results once the stream closes
     $time = microtime(true);
-    $stream->on('close', function() use (&$bytes, $timer, $loop, $time) {
-        $loop->cancelTimer($timer);
+    $stream->on('close', function() use (&$bytes, $timer, $time) {
+        Loop::cancelTimer($timer);
 
         $time = microtime(true) - $time;
 
         echo "\r" . 'Downloaded ' . $bytes . ' bytes in ' . round($time, 3) . 's => ' . round($bytes / $time / 1000000, 1) . ' MB/s' . PHP_EOL;
     });
-}, 'printf');
-
-$loop->run();
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
+});

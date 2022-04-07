@@ -1,23 +1,26 @@
 <?php
 
+// A simple HTTP web server that can be used to benchmark requests per second and download speed
+//
 // $ php examples/99-server-benchmark-download.php 8080
+//
+// This example runs the web server on a single CPU core in order to measure the
+// per core performance.
+//
 // $ curl http://localhost:8080/10g.bin > /dev/null
 // $ wget http://localhost:8080/10g.bin -O /dev/null
-// $ ab -n10 -c10 http://localhost:8080/1g.bin
-// $ docker run -it --rm --net=host jordi/ab -n100000 -c10 http://localhost:8080/
-// $ docker run -it --rm --net=host jordi/ab -n10 -c10 http://localhost:8080/1g.bin
+// $ ab -n10 -c10 -k http://localhost:8080/1g.bin
+// $ docker run -it --rm --net=host jordi/ab -n100000 -c10 -k http://localhost:8080/
+// $ docker run -it --rm --net=host jordi/ab -n10 -c10 -k http://localhost:8080/1g.bin
+// $ docker run -it --rm --net=host skandyla/wrk -t8 -c10 -d20 http://localhost:8080/
 
 use Evenement\EventEmitter;
 use Psr\Http\Message\ServerRequestInterface;
-use React\EventLoop\Factory;
 use React\Http\Message\Response;
-use React\Http\Server;
 use React\Stream\ReadableStreamInterface;
 use React\Stream\WritableStreamInterface;
 
 require __DIR__ . '/../vendor/autoload.php';
-
-$loop = Factory::create();
 
 /** A readable stream that can emit a lot of data */
 class ChunkRepeater extends EventEmitter implements ReadableStreamInterface
@@ -87,14 +90,10 @@ class ChunkRepeater extends EventEmitter implements ReadableStreamInterface
     }
 }
 
-$server = new Server($loop, function (ServerRequestInterface $request) use ($loop) {
+$http = new React\Http\HttpServer(function (ServerRequestInterface $request) {
     switch ($request->getUri()->getPath()) {
         case '/':
-            return new Response(
-                200,
-                array(
-                    'Content-Type' => 'text/html'
-                ),
+            return Response::html(
                 '<html><a href="1g.bin">1g.bin</a><br/><a href="10g.bin">10g.bin</a></html>'
             );
         case '/1g.bin':
@@ -104,13 +103,13 @@ $server = new Server($loop, function (ServerRequestInterface $request) use ($loo
             $stream = new ChunkRepeater(str_repeat('.', 1000000), 10000);
             break;
         default:
-            return new Response(404);
+            return new Response(Response::STATUS_NOT_FOUND);
     }
 
-    $loop->addTimer(0, array($stream, 'resume'));
+    React\EventLoop\Loop::addTimer(0, array($stream, 'resume'));
 
     return new Response(
-        200,
+        Response::STATUS_OK,
         array(
             'Content-Type' => 'application/octet-data',
             'Content-Length' => $stream->getSize()
@@ -119,9 +118,7 @@ $server = new Server($loop, function (ServerRequestInterface $request) use ($loo
     );
 });
 
-$socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop, array('tcp' => array('backlog' => 511)));
-$server->listen($socket);
+$socket = new React\Socket\SocketServer(isset($argv[1]) ? $argv[1] : '0.0.0.0:0');
+$http->listen($socket);
 
 echo 'Listening on ' . str_replace('tcp:', 'http:', $socket->getAddress()) . PHP_EOL;
-
-$loop->run();

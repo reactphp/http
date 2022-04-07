@@ -37,20 +37,6 @@ class TestCase extends BaseTestCase
         return $mock;
     }
 
-    protected function expectCallableConsecutive($numberOfCalls, array $with)
-    {
-        $mock = $this->createCallableMock();
-
-        for ($i = 0; $i < $numberOfCalls; $i++) {
-            $mock
-                ->expects($this->at($i))
-                ->method('__invoke')
-                ->with($this->equalTo($with[$i]));
-        }
-
-        return $mock;
-    }
-
     protected function createCallableMock()
     {
         if (method_exists('PHPUnit\Framework\MockObject\MockBuilder', 'addMethods')) {

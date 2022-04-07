@@ -146,16 +146,15 @@ class Request extends EventEmitter implements WritableStreamInterface
         // buffer until double CRLF (or double LF for compatibility with legacy servers)
         if (false !== strpos($this->buffer, "\r\n\r\n") || false !== strpos($this->buffer, "\n\n")) {
             try {
-                $psrResponse = gPsr\parse_response($this->buffer);
+                $response = gPsr\parse_response($this->buffer);
+                $bodyChunk = (string) $response->getBody();
 
-                if ($this->responseIsAnUpgradeResponse($psrResponse)) {
+                if ($this->responseIsAnUpgradeResponse($response)) {
                     $this->stream->removeListener('data', array($this, 'handleData'));
 
-                    $this->emit('upgrade', array($this->stream, $psrResponse, $this));
+                    $this->emit('upgrade', array($this->stream, $response, $this));
                     return;
                 }
-
-                list($response, $bodyChunk) = $this->parseResponse($psrResponse);
             } catch (\InvalidArgumentException $exception) {
                 $this->emit('error', array($exception));
             }
@@ -172,17 +171,9 @@ class Request extends EventEmitter implements WritableStreamInterface
                 return;
             }
 
-            $response->on('close', array($this, 'close'));
-            $that = $this;
-            $response->on('error', function (\Exception $error) use ($that) {
-                $that->closeError(new \RuntimeException(
-                    "An error occured in the response",
-                    0,
-                    $error
-                ));
-            });
+            $this->stream->on('close', array($this, 'handleClose'));
 
-            $this->emit('response', array($response, $this));
+            $this->emit('response', array($response, $this->stream));
 
             $this->stream->emit('data', array($bodyChunk));
         }
@@ -239,29 +230,6 @@ class Request extends EventEmitter implements WritableStreamInterface
         $this->removeAllListeners();
     }
 
-    protected function parseResponse($psrResponse)
-    {
-        $headers = array_map(function($val) {
-            if (1 === count($val)) {
-                $val = $val[0];
-            }
-
-            return $val;
-        }, $psrResponse->getHeaders());
-
-        $factory = $this->getResponseFactory();
-
-        $response = $factory(
-            'HTTP',
-            $psrResponse->getProtocolVersion(),
-            $psrResponse->getStatusCode(),
-            $psrResponse->getReasonPhrase(),
-            $headers
-        );
-
-        return array($response, (string)($psrResponse->getBody()));
-    }
-
     protected function connect()
     {
         $scheme = $this->requestData->getScheme();
@@ -280,37 +248,5 @@ class Request extends EventEmitter implements WritableStreamInterface
 
         return $this->connector
             ->connect($host . ':' . $port);
-    }
-
-    public function setResponseFactory($factory)
-    {
-        $this->responseFactory = $factory;
-    }
-
-    public function getResponseFactory()
-    {
-        if (null === $factory = $this->responseFactory) {
-            $stream = $this->stream;
-
-            $factory = function ($protocol, $version, $code, $reasonPhrase, $headers) use ($stream) {
-                return new Response(
-                    $stream,
-                    $protocol,
-                    $version,
-                    $code,
-                    $reasonPhrase,
-                    $headers
-                );
-            };
-
-            $this->responseFactory = $factory;
-        }
-
-        return $factory;
-    }
-
-    public function getRequestData()
-    {
-        return $this->requestData;
     }
 }

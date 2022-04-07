@@ -4,10 +4,10 @@ namespace React\Http\Middleware;
 
 use OverflowException;
 use Psr\Http\Message\ServerRequestInterface;
+use React\Http\Io\BufferedBody;
 use React\Http\Io\IniUtil;
 use React\Promise\Stream;
 use React\Stream\ReadableStreamInterface;
-use RingCentral\Psr7\BufferStream;
 
 final class RequestBodyBufferMiddleware
 {
@@ -38,7 +38,7 @@ final class RequestBodyBufferMiddleware
         if ($size === 0 || !$body instanceof ReadableStreamInterface) {
             // replace with empty body if body is streaming (or buffered size exceeds limit)
             if ($body instanceof ReadableStreamInterface || $size > $this->sizeLimit) {
-                $request = $request->withBody(new BufferStream(0));
+                $request = $request->withBody(new BufferedBody(''));
             }
 
             return $stack($request);
@@ -51,9 +51,7 @@ final class RequestBodyBufferMiddleware
         }
 
         return Stream\buffer($body, $sizeLimit)->then(function ($buffer) use ($request, $stack) {
-            $stream = new BufferStream(\strlen($buffer));
-            $stream->write($buffer);
-            $request = $request->withBody($stream);
+            $request = $request->withBody(new BufferedBody($buffer));
 
             return $stack($request);
         }, function ($error) use ($stack, $request, $body) {

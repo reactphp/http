@@ -1,5 +1,142 @@
 # Changelog
 
+## 1.6.0 (2022-02-03)
+
+*   Feature: Add factory methods for common HTML/JSON/plaintext/XML response types.
+    (#439 by @clue)
+
+    ```php
+    $response = React\Http\Response\html("<h1>Hello wörld!</h1>\n");
+    $response = React\Http\Response\json(['message' => 'Hello wörld!']);
+    $response = React\Http\Response\plaintext("Hello wörld!\n");
+    $response = React\Http\Response\xml("<message>Hello wörld!</message>\n");
+    $response = React\Http\Response\redirect('https://reactphp.org/');
+    ```
+
+*   Feature: Expose all status code constants via `Response` class.
+    (#432 by @clue)
+
+    ```php
+    $response = new React\Http\Message\Response(
+        React\Http\Message\Response::STATUS_OK, // 200 OK
+        …
+    );
+    $response = new React\Http\Message\Response(
+        React\Http\Message\Response::STATUS_NOT_FOUND, // 404 Not Found
+        …
+    );
+    ```
+
+*   Feature: Full support for PHP 8.1 release.
+    (#433 by @SimonFrings and #434 by @clue)
+
+*   Feature / Fix: Improve protocol handling for HTTP responses with no body.
+    (#429 and #430 by @clue)
+
+*   Internal refactoring and internal improvements for handling requests and responses.
+    (#422 by @WyriHaximus and #431 by @clue)
+
+*   Improve documentation, update proxy examples, include error reporting in examples.
+    (#420, #424, #426, and #427 by @clue)
+
+*   Update test suite to use default loop.
+    (#438 by @clue)
+
+## 1.5.0 (2021-08-04)
+
+*   Feature: Update `Browser` signature to take optional `$connector` as first argument and
+    to match new Socket API without nullable loop arguments.
+    (#418 and #419 by @clue)
+
+    ```php
+    // unchanged
+    $browser = new React\Http\Browser();
+
+    // deprecated
+    $browser = new React\Http\Browser(null, $connector);
+    $browser = new React\Http\Browser($loop, $connector);
+
+    // new
+    $browser = new React\Http\Browser($connector);
+    $browser = new React\Http\Browser($connector, $loop);
+    ```
+
+*   Feature: Rename `Server` to `HttpServer` to avoid class name collisions and
+    to avoid any ambiguities with regards to the new `SocketServer` API.
+    (#417 and #419 by @clue)
+
+    ```php
+    // deprecated
+    $server = new React\Http\Server($handler);
+    $server->listen(new React\Socket\Server(8080));
+
+    // new
+    $http = new React\Http\HttpServer($handler);
+    $http->listen(new React\Socket\SocketServer('127.0.0.1:8080'));
+    ```
+
+## 1.4.0 (2021-07-11)
+
+A major new feature release, see [**release announcement**](https://clue.engineering/2021/announcing-reactphp-default-loop).
+
+*   Feature: Simplify usage by supporting new [default loop](https://reactphp.org/event-loop/#loop).
+    (#410 by @clue)
+
+    ```php
+    // old (still supported)
+    $browser = new React\Http\Browser($loop);
+    $server = new React\Http\Server($loop, $handler);
+
+    // new (using default loop)
+    $browser = new React\Http\Browser();
+    $server = new React\Http\Server($handler);
+    ```
+
+## 1.3.0 (2021-04-11)
+
+*   Feature: Support persistent connections (`Connection: keep-alive`).
+    (#405 by @clue)
+
+    This shows a noticeable performance improvement especially when benchmarking
+    using persistent connections (which is the default pretty much everywhere).
+    Together with other changes in this release, this improves benchmarking
+    performance by around 100%.
+
+*   Feature: Require `Host` request header for HTTP/1.1 requests.
+    (#404 by @clue)
+
+*   Minor documentation improvements.
+    (#398 by @fritz-gerneth and #399 and #400 by @pavog)
+
+*   Improve test suite, use GitHub actions for continuous integration (CI).
+    (#402 by @SimonFrings)
+
+## 1.2.0 (2020-12-04)
+
+*   Feature: Keep request body in memory also after consuming request body.
+    (#395 by @clue)
+
+    This means consumers can now always access the complete request body as
+    detailed in the documentation. This allows building custom parsers and more
+    advanced processing models without having to mess with the default parsers.
+
+## 1.1.0 (2020-09-11)
+
+*   Feature: Support upcoming PHP 8 release, update to reactphp/socket v1.6 and adjust type checks for invalid chunk headers.
+    (#391 by @clue)
+
+*   Feature: Consistently resolve base URL according to HTTP specs.
+    (#379 by @clue)
+
+*   Feature / Fix: Expose `Transfer-Encoding: chunked` response header and fix chunked responses for `HEAD` requests.
+    (#381 by @clue)
+
+*   Internal refactoring to remove unneeded `MessageFactory` and `Response` classes.
+    (#380 and #389 by @clue)
+
+*   Minor documentation improvements and improve test suite, update to support PHPUnit 9.3.
+    (#385 by @clue and #393 by @SimonFrings)
+
 ## 1.0.0 (2020-07-11)
 
 A major new feature release, see [**release announcement**](https://clue.engineering/2020/announcing-reactphp-http).
@@ -84,7 +221,7 @@ minutes. See below for more details:
 
     This improves default concurrency to 1024 requests and caps the default request buffer at 64K.
     The previous defaults resulted in just 4 concurrent requests with a request buffer of 8M.
-    See [`Server`](../README.md#server) for details on how to override these defaults.
+    See [`Server`](README.md#server) for details on how to override these defaults.
 
 *   Feature: Expose ReactPHP in `User-Agent` client-side request header and in `Server` server-side response header.
     (#374 by @clue)

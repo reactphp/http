@@ -8,6 +8,8 @@ use React\Tests\Http\TestCase;
 
 class ChunkedDecoderTest extends TestCase
 {
+    private $input;
+    private $parser;
 
     /**
      * @before
@@ -29,11 +31,17 @@ class ChunkedDecoderTest extends TestCase
 
     public function testTwoChunks()
     {
-        $this->parser->on('data', $this->expectCallableConsecutive(2, array('hello', 'bla')));
+        $buffer = array();
+        $this->parser->on('data', function ($data) use (&$buffer) {
+            $buffer[] = $data;
+        });
+
         $this->parser->on('end', $this->expectCallableNever());
         $this->parser->on('close', $this->expectCallableNever());
 
         $this->input->emit('data', array("5\r\nhello\r\n3\r\nbla\r\n"));
+
+        $this->assertEquals(array('hello', 'bla'), $buffer);
     }
 
     public function testEnd()
@@ -47,12 +55,18 @@ class ChunkedDecoderTest extends TestCase
 
     public function testParameterWithEnd()
     {
-        $this->parser->on('data', $this->expectCallableConsecutive(2, array('hello', 'bla')));
+        $buffer = array();
+        $this->parser->on('data', function ($data) use (&$buffer) {
+            $buffer[] = $data;
+        });
+
         $this->parser->on('end', $this->expectCallableOnce());
         $this->parser->on('close', $this->expectCallableOnce());
         $this->parser->on('error', $this->expectCallableNever());
 
         $this->input->emit('data', array("5\r\nhello\r\n3\r\nbla\r\n0\r\n\r\n"));
+
+        $this->assertEquals(array('hello', 'bla'), $buffer);
     }
 
     public function testInvalidChunk()
@@ -101,7 +115,6 @@ class ChunkedDecoderTest extends TestCase
         $this->parser->on('end', $this->expectCallableNever());#
         $this->parser->on('error', $this->expectCallableNever());
 
-
         $this->input->emit('data', array("4"));
         $this->input->emit('data', array("\r\nwelt\r\n"));
     }
@@ -120,7 +133,11 @@ class ChunkedDecoderTest extends TestCase
 
     public function testCompletlySplitted()
     {
-        $this->parser->on('data', $this->expectCallableConsecutive(2, array('we', 'lt')));
+        $buffer = array();
+        $this->parser->on('data', function ($data) use (&$buffer) {
+            $buffer[] = $data;
+        });
+
         $this->parser->on('close', $this->expectCallableNever());
         $this->parser->on('end', $this->expectCallableNever());
         $this->parser->on('error', $this->expectCallableNever());
@@ -129,25 +146,36 @@ class ChunkedDecoderTest extends TestCase
         $this->input->emit('data', array("\r\n"));
         $this->input->emit('data', array("we"));
         $this->input->emit('data', array("lt\r\n"));
+
+        $this->assertEquals(array('we', 'lt'), $buffer);
     }
 
     public function testMixed()
     {
-        $this->parser->on('data', $this->expectCallableConsecutive(3, array('we', 'lt', 'hello')));
+        $buffer = array();
+        $this->parser->on('data', function ($data) use (&$buffer) {
+            $buffer[] = $data;
+        });
+
         $this->parser->on('close', $this->expectCallableNever());
         $this->parser->on('end', $this->expectCallableNever());
         $this->parser->on('error', $this->expectCallableNever());
 
         $this->input->emit('data', array("4"));
         $this->input->emit('data', array("\r\n"));
-        $this->input->emit('data', array("we"));
-        $this->input->emit('data', array("lt\r\n"));
+        $this->input->emit('data', array("welt\r\n"));
         $this->input->emit('data', array("5\r\nhello\r\n"));
+
+        $this->assertEquals(array('welt', 'hello'), $buffer);
     }
 
     public function testBigger()
     {
-        $this->parser->on('data', $this->expectCallableConsecutive(2, array('abcdeabcdeabcdea', 'hello')));
+        $buffer = array();
+        $this->parser->on('data', function ($data) use (&$buffer) {
+            $buffer[] = $data;
+        });
+
         $this->parser->on('close', $this->expectCallableNever());
         $this->parser->on('end', $this->expectCallableNever());
         $this->parser->on('error', $this->expectCallableNever());
@@ -157,11 +185,17 @@ class ChunkedDecoderTest extends TestCase
         $this->input->emit('data', array("\r\n"));
         $this->input->emit('data', array("abcdeabcdeabcdea\r\n"));
         $this->input->emit('data', array("5\r\nhello\r\n"));
+
+        $this->assertEquals(array('abcdeabcdeabcdea', 'hello'), $buffer);
     }
 
     public function testOneUnfinished()
     {
-        $this->parser->on('data', $this->expectCallableConsecutive(2, array('bla', 'hello')));
+        $buffer = array();
+        $this->parser->on('data', function ($data) use (&$buffer) {
+            $buffer[] = $data;
+        });
+
         $this->parser->on('close', $this->expectCallableNever());
         $this->parser->on('end', $this->expectCallableNever());
         $this->parser->on('error', $this->expectCallableNever());
@@ -169,6 +203,8 @@ class ChunkedDecoderTest extends TestCase
         $this->input->emit('data', array("3\r\n"));
         $this->input->emit('data', array("bla\r\n"));
         $this->input->emit('data', array("5\r\nhello"));
+
+        $this->assertEquals(array('bla', 'hello'), $buffer);
     }
 
     public function testChunkIsBiggerThenExpected()
@@ -328,7 +364,10 @@ class ChunkedDecoderTest extends TestCase
 
     public function testEmitSingleCharacter()
     {
-        $this->parser->on('data', $this->expectCallableConsecutive(4, array('t', 'e', 's', 't')));
+        $buffer = array();
+        $this->parser->on('data', function ($data) use (&$buffer) {
+            $buffer[] = $data;
+        });
         $this->parser->on('close', $this->expectCallableOnce());
         $this->parser->on('end', $this->expectCallableOnce());
         $this->parser->on('error', $this->expectCallableNever());
@@ -338,6 +377,8 @@ class ChunkedDecoderTest extends TestCase
         foreach ($array as $character) {
             $this->input->emit('data', array($character));
         }
+
+        $this->assertEquals(array('t', 'e', 's', 't'), $buffer);
     }
 
     public function testHandleError()
@@ -404,13 +445,19 @@ class ChunkedDecoderTest extends TestCase
 
     public function testLeadingZerosWillBeIgnored()
     {
-        $this->parser->on('data', $this->expectCallableConsecutive(2, array('hello', 'hello world')));
+        $buffer = array();
+        $this->parser->on('data', function ($data) use (&$buffer) {
+            $buffer[] = $data;
+        });
+
         $this->parser->on('error', $this->expectCallableNever());
         $this->parser->on('end', $this->expectCallableNever());
         $this->parser->on('close', $this->expectCallableNever());
 
         $this->input->emit('data', array("00005\r\nhello\r\n"));
         $this->input->emit('data', array("0000b\r\nhello world\r\n"));
+
+        $this->assertEquals(array('hello', 'hello world'), $buffer);
     }
 
     public function testLeadingZerosInEndChunkWillBeIgnored()
@@ -421,6 +468,36 @@ class ChunkedDecoderTest extends TestCase
         $this->parser->on('close', $this->expectCallableOnce());
 
         $this->input->emit('data', array("0000\r\n\r\n"));
+    }
+
+    public function testAdditionalWhitespaceInEndChunkWillBeIgnored()
+    {
+        $this->parser->on('data', $this->expectCallableNever());
+        $this->parser->on('error', $this->expectCallableNever());
+        $this->parser->on('end', $this->expectCallableOnce());
+        $this->parser->on('close', $this->expectCallableOnce());
+
+        $this->input->emit('data', array(" 0 \r\n\r\n"));
+    }
+
+    public function testEndChunkWithTrailersWillBeIgnored()
+    {
+        $this->parser->on('data', $this->expectCallableNever());
+        $this->parser->on('error', $this->expectCallableNever());
+        $this->parser->on('end', $this->expectCallableOnce());
+        $this->parser->on('close', $this->expectCallableOnce());
+
+        $this->input->emit('data', array("0\r\nFoo: bar\r\n\r\n"));
+    }
+
+    public function testEndChunkWithMultipleTrailersWillBeIgnored()
+    {
+        $this->parser->on('data', $this->expectCallableNever());
+        $this->parser->on('error', $this->expectCallableNever());
+        $this->parser->on('end', $this->expectCallableOnce());
+        $this->parser->on('close', $this->expectCallableOnce());
+
+        $this->input->emit('data', array("0\r\nFoo: a\r\nBar: b\r\nBaz: c\r\n\r\n"));
     }
 
     public function testLeadingZerosInInvalidChunk()

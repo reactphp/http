@@ -116,14 +116,14 @@ class ChunkedDecoder extends EventEmitter implements ReadableStreamInterface
                 }
 
                 if ($hexValue !== '') {
-                    $hexValue = \ltrim($hexValue, "0");
+                    $hexValue = \ltrim(\trim($hexValue), "0");
                     if ($hexValue === '') {
                         $hexValue = "0";
                     }
                 }
 
                 $this->chunkSize = @\hexdec($hexValue);
-                if (\dechex($this->chunkSize) !== $hexValue) {
+                if (!\is_int($this->chunkSize) || \dechex($this->chunkSize) !== $hexValue) {
                     $this->handleError(new Exception($hexValue . ' is not a valid hexadecimal number'));
                     return;
                 }
@@ -155,16 +155,19 @@ class ChunkedDecoder extends EventEmitter implements ReadableStreamInterface
                 $this->headerCompleted = false;
                 $this->transferredSize = 0;
                 $this->buffer = (string)\substr($this->buffer, 2);
+            } elseif ($this->chunkSize === 0) {
+                // end chunk received, skip all trailer data
+                $this->buffer = (string)\substr($this->buffer, $positionCrlf);
             }
 
-            if ($positionCrlf !== 0 && $this->chunkSize === $this->transferredSize && \strlen($this->buffer) > 2) {
-                // the first 2 characters are not CLRF, send error event
-                $this->handleError(new Exception('Chunk does not end with a CLRF'));
+            if ($positionCrlf !== 0 && $this->chunkSize !== 0 && $this->chunkSize === $this->transferredSize && \strlen($this->buffer) > 2) {
+                // the first 2 characters are not CRLF, send error event
+                $this->handleError(new Exception('Chunk does not end with a CRLF'));
                 return;
             }
 
             if ($positionCrlf !== 0 && \strlen($this->buffer) < 2) {
-                // No CLRF found, wait for additional data which could be a CLRF
+                // No CRLF found, wait for additional data which could be a CRLF
                 return;
             }
         }

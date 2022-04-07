@@ -4,30 +4,27 @@
 // $ curl -v --proxy http://localhost:8080 https://reactphp.org/
 
 use Psr\Http\Message\ServerRequestInterface;
-use React\EventLoop\Factory;
 use React\Http\Message\Response;
-use React\Http\Server;
 use React\Socket\Connector;
 use React\Socket\ConnectionInterface;
 
 require __DIR__ . '/../vendor/autoload.php';
 
-$loop = Factory::create();
-$connector = new Connector($loop);
+$connector = new Connector();
 
-// Note how this example uses the `Server` without the `StreamingRequestMiddleware`.
+// Note how this example uses the `HttpServer` without the `StreamingRequestMiddleware`.
 // Unlike the plain HTTP proxy, the CONNECT method does not contain a body
 // and we establish an end-to-end connection over the stream object, so this
 // doesn't have to store any payload data in memory at all.
-$server = new Server($loop, function (ServerRequestInterface $request) use ($connector) {
+$http = new React\Http\HttpServer(function (ServerRequestInterface $request) use ($connector) {
     if ($request->getMethod() !== 'CONNECT') {
         return new Response(
-            405,
+            Response::STATUS_METHOD_NOT_ALLOWED,
             array(
                 'Content-Type' => 'text/plain',
                 'Allow' => 'CONNECT'
             ),
-            'This is a HTTP CONNECT (secure HTTPS) proxy'
+            'This is an HTTP CONNECT (secure HTTPS) proxy'
         );
     }
 
@@ -36,14 +33,14 @@ $server = new Server($loop, function (ServerRequestInterface $request) use ($con
         function (ConnectionInterface $remote) {
             // connection established => forward data
             return new Response(
-                200,
+                Response::STATUS_OK,
                 array(),
                 $remote
             );
         },
-        function ($e) {
+        function (Exception $e) {
             return new Response(
-                502,
+                Response::STATUS_BAD_GATEWAY,
                 array(
                     'Content-Type' => 'text/plain'
                 ),
@@ -53,9 +50,7 @@ $server = new Server($loop, function (ServerRequestInterface $request) use ($con
     );
 });
 
-$socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
-$server->listen($socket);
+$socket = new React\Socket\SocketServer(isset($argv[1]) ? $argv[1] : '0.0.0.0:0');
+$http->listen($socket);
 
 echo 'Listening on ' . str_replace('tcp:', 'http:', $socket->getAddress()) . PHP_EOL;
-
-$loop->run();

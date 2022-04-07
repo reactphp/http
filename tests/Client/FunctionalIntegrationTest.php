@@ -3,13 +3,14 @@
 namespace React\Tests\Http\Client;
 
 use Clue\React\Block;
-use React\EventLoop\Factory;
+use Psr\Http\Message\ResponseInterface;
+use React\EventLoop\Loop;
 use React\Http\Client\Client;
-use React\Http\Client\Response;
 use React\Promise\Deferred;
 use React\Promise\Stream;
-use React\Socket\Server;
 use React\Socket\ConnectionInterface;
+use React\Socket\SocketServer;
+use React\Stream\ReadableStreamInterface;
 use React\Tests\Http\TestCase;
 
 class FunctionalIntegrationTest extends TestCase
@@ -36,66 +37,64 @@ class FunctionalIntegrationTest extends TestCase
 
     public function testRequestToLocalhostEmitsSingleRemoteConnection()
     {
-        $loop = Factory::create();
-
-        $server = new Server(0, $loop);
-        $server->on('connection', $this->expectCallableOnce());
-        $server->on('connection', function (ConnectionInterface $conn) use ($server) {
+        $socket = new SocketServer('127.0.0.1:0');
+        $socket->on('connection', $this->expectCallableOnce());
+        $socket->on('connection', function (ConnectionInterface $conn) use ($socket) {
             $conn->end("HTTP/1.1 200 OK\r\n\r\nOk");
-            $server->close();
+            $socket->close();
         });
-        $port = parse_url($server->getAddress(), PHP_URL_PORT);
+        $port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
-        $client = new Client($loop);
+        $client = new Client(Loop::get());
         $request = $client->request('GET', 'http://localhost:' . $port);
 
         $promise = Stream\first($request, 'close');
         $request->end();
 
-        Block\await($promise, $loop, self::TIMEOUT_LOCAL);
+        Block\await($promise, null, self::TIMEOUT_LOCAL);
     }
 
     public function testRequestLegacyHttpServerWithOnlyLineFeedReturnsSuccessfulResponse()
     {
-        $loop = Factory::create();
-
-        $server = new Server(0, $loop);
-        $server->on('connection', function (ConnectionInterface $conn) use ($server) {
+        $socket = new SocketServer('127.0.0.1:0');
+        $socket->on('connection', function (ConnectionInterface $conn) use ($socket) {
             $conn->end("HTTP/1.0 200 OK\n\nbody");
-            $server->close();
+            $socket->close();
         });
 
-        $client = new Client($loop);
-        $request = $client->request('GET', str_replace('tcp:', 'http:', $server->getAddress()));
+        $client = new Client(Loop::get());
+        $request = $client->request('GET', str_replace('tcp:', 'http:', $socket->getAddress()));
 
         $once = $this->expectCallableOnceWith('body');
-        $request->on('response', function (Response $response) use ($once) {
-            $response->on('data', $once);
+        $request->on('response', function (ResponseInterface $response, ReadableStreamInterface $body) use ($once) {
+            $body->on('data', $once);
         });
 
         $promise = Stream\first($request, 'close');
         $request->end();
 
-        Block\await($promise, $loop, self::TIMEOUT_LOCAL);
+        Block\await($promise, null, self::TIMEOUT_LOCAL);
     }
 
     /** @group internet */
     public function testSuccessfulResponseEmitsEnd()
     {
-        $loop = Factory::create();
-        $client = new Client($loop);
+        // max_nesting_level was set to 100 for PHP Versions < 5.4 which resulted in failing test for legacy PHP
+        ini_set('xdebug.max_nesting_level', 256);
+
+        $client = new Client(Loop::get());
 
         $request = $client->request('GET', 'http://www.google.com/');
 
         $once = $this->expectCallableOnce();
-        $request->on('response', function (Response $response) use ($once) {
-            $response->on('end', $once);
+        $request->on('response', function (ResponseInterface $response, ReadableStreamInterface $body) use ($once) {
+            $body->on('end', $once);
         });
 
         $promise = Stream\first($request, 'close');
         $request->end();
 
-        Block\await($promise, $loop, self::TIMEOUT_REMOTE);
+        Block\await($promise, null, self::TIMEOUT_REMOTE);
     }
 
     /** @group internet */
@@ -105,15 +104,17 @@ class FunctionalIntegrationTest extends TestCase
             $this->markTestSkipped('Not supported on HHVM');
         }
 
-        $loop = Factory::create();
-        $client = new Client($loop);
+        // max_nesting_level was set to 100 for PHP Versions < 5.4 which resulted in failing test for legacy PHP
+        ini_set('xdebug.max_nesting_level', 256);
+
+        $client = new Client(Loop::get());
 
         $data = str_repeat('.', 33000);
         $request = $client->request('POST', 'https://' . (mt_rand(0, 1) === 0 ? 'eu.' : '') . 'httpbin.org/post', array('Content-Length' => strlen($data)));
 
         $deferred = new Deferred();
-        $request->on('response', function (Response $response) use ($deferred) {
-            $deferred->resolve(Stream\buffer($response));
+        $request->on('response', function (ResponseInterface $response, ReadableStreamInterface $body) use ($deferred) {
+            $deferred->resolve(Stream\buffer($body));
         });
 
         $request->on('error', 'printf');
@@ -121,7 +122,7 @@ class FunctionalIntegrationTest extends TestCase
 
         $request->end($data);
 
-        $buffer = Block\await($deferred->promise(), $loop, self::TIMEOUT_REMOTE);
+        $buffer = Block\await($deferred->promise(), null, self::TIMEOUT_REMOTE);
 
         $this->assertNotEquals('', $buffer);
 
@@ -138,15 +139,14 @@ class FunctionalIntegrationTest extends TestCase
             $this->markTestSkipped('Not supported on HHVM');
         }
 
-        $loop = Factory::create();
-        $client = new Client($loop);
+        $client = new Client(Loop::get());
 
         $data = json_encode(array('numbers' => range(1, 50)));
         $request = $client->request('POST', 'https://httpbin.org/post', array('Content-Length' => strlen($data), 'Content-Type' => 'application/json'));
 
         $deferred = new Deferred();
-        $request->on('response', function (Response $response) use ($deferred) {
-            $deferred->resolve(Stream\buffer($response));
+        $request->on('response', function (ResponseInterface $response, ReadableStreamInterface $body) use ($deferred) {
+            $deferred->resolve(Stream\buffer($body));
         });
 
         $request->on('error', 'printf');
@@ -154,7 +154,7 @@ class FunctionalIntegrationTest extends TestCase
 
         $request->end($data);
 
-        $buffer = Block\await($deferred->promise(), $loop, self::TIMEOUT_REMOTE);
+        $buffer = Block\await($deferred->promise(), null, self::TIMEOUT_REMOTE);
 
         $this->assertNotEquals('', $buffer);
 
@@ -166,8 +166,10 @@ class FunctionalIntegrationTest extends TestCase
     /** @group internet */
     public function testCancelPendingConnectionEmitsClose()
     {
-        $loop = Factory::create();
-        $client = new Client($loop);
+        // max_nesting_level was set to 100 for PHP Versions < 5.4 which resulted in failing test for legacy PHP
+        ini_set('xdebug.max_nesting_level', 256);
+
+        $client = new Client(Loop::get());
 
         $request = $client->request('GET', 'http://www.google.com/');
         $request->on('error', $this->expectCallableNever());

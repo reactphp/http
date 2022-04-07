@@ -3,29 +3,17 @@
 // $ php examples/71-server-http-proxy.php 8080
 // $ curl -v --proxy http://localhost:8080 http://reactphp.org/
 
-use Psr\Http\Message\RequestInterface;
-use React\EventLoop\Factory;
-use React\Http\Message\Response;
-use React\Http\Server;
-use RingCentral\Psr7;
-
 require __DIR__ . '/../vendor/autoload.php';
 
-$loop = Factory::create();
-
-// Note how this example uses the `Server` without the `StreamingRequestMiddleware`.
+// Note how this example uses the `HttpServer` without the `StreamingRequestMiddleware`.
 // This means that this proxy buffers the whole request before "processing" it.
 // As such, this is store-and-forward proxy. This could also use the advanced
 // `StreamingRequestMiddleware` to forward the incoming request as it comes in.
-$server = new Server($loop, function (RequestInterface $request) {
+$http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
     if (strpos($request->getRequestTarget(), '://') === false) {
-        return new Response(
-            400,
-            array(
-                'Content-Type' => 'text/plain'
-            ),
-            'This is a plain HTTP proxy'
-        );
+        return React\Http\Message\Response::plaintext(
+            "This is a plain HTTP proxy\n"
+        )->withStatus(React\Http\Message\Response::STATUS_BAD_REQUEST);
     }
 
     // prepare outgoing client request by updating request-target and Host header
@@ -39,18 +27,12 @@ $server = new Server($loop, function (RequestInterface $request) {
     // pseudo code only: simply dump the outgoing request as a string
     // left up as an exercise: use an HTTP client to send the outgoing request
     // and forward the incoming response to the original client request
-    return new Response(
-        200,
-        array(
-            'Content-Type' => 'text/plain'
-        ),
-        Psr7\str($outgoing)
+    return React\Http\Message\Response::plaintext(
+        RingCentral\Psr7\str($outgoing)
     );
 });
 
-$socket = new \React\Socket\Server(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', $loop);
-$server->listen($socket);
+$socket = new React\Socket\SocketServer(isset($argv[1]) ? $argv[1] : '0.0.0.0:0');
+$http->listen($socket);
 
 echo 'Listening on ' . str_replace('tcp:', 'http:', $socket->getAddress()) . PHP_EOL;
-
-$loop->run();
