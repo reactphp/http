@@ -18,14 +18,16 @@ $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterf
         $stream->write(microtime(true) . PHP_EOL);
     });
 
-    // demo for ending stream after a few seconds
-    Loop::addTimer(5.0, function() use ($stream) {
+    // end stream after a few seconds
+    $timeout = Loop::addTimer(5.0, function() use ($stream, $timer) {
+        Loop::cancelTimer($timer);
         $stream->end();
     });
 
     // stop timer if stream is closed (such as when connection is closed)
-    $stream->on('close', function () use ($timer) {
+    $stream->on('close', function () use ($timer, $timeout) {
         Loop::cancelTimer($timer);
+        Loop::cancelTimer($timeout);
     });
 
     return new Response(

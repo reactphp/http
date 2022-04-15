@@ -1426,13 +1426,21 @@ may only support strings.
 $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
     $stream = new ThroughStream();
 
+    // send some data every once in a while with periodic timer
     $timer = Loop::addPeriodicTimer(0.5, function () use ($stream) {
         $stream->write(microtime(true) . PHP_EOL);
     });
 
-    Loop::addTimer(5, function() use ($timer, $stream) {
+    // end stream after a few seconds
+    $timeout = Loop::addTimer(5.0, function() use ($stream, $timer) {
         Loop::cancelTimer($timer);
         $stream->end();
+    });
+
+    // stop timer if stream is closed (such as when connection is closed)
+    $stream->on('close', function () use ($timer, $timeout) {
+        Loop::cancelTimer($timer);
+        Loop::cancelTimer($timeout);
     });
 
     return new React\Http\Message\Response(
