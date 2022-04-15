@@ -1,6 +1,6 @@
 # HTTP
 
-[![CI status](https://github.com/reactphp/http/workflows/CI/badge.svg)](https://github.com/reactphp/http/actions)
+[![CI status](https://github.com/reactphp/http/actions/workflows/ci.yml/badge.svg)](https://github.com/reactphp/http/actions)
 [![installs on Packagist](https://img.shields.io/packagist/dt/react/http?color=blue&label=installs%20on%20Packagist)](https://packagist.org/packages/react/http)
 
 Event-driven, streaming HTTP client and server implementation for [ReactPHP](https://reactphp.org/).
