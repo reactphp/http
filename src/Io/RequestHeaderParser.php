@@ -24,6 +24,14 @@ class RequestHeaderParser extends EventEmitter
 {
     private $maxSize = 8192;
 
+    /** @var Clock */
+    private $clock;
+
+    public function __construct(Clock $clock)
+    {
+        $this->clock = $clock;
+    }
+
     public function handle(ConnectionInterface $conn)
     {
         $buffer = '';
@@ -155,8 +163,8 @@ class RequestHeaderParser extends EventEmitter
         // create new obj implementing ServerRequestInterface by preserving all
         // previous properties and restoring original request-target
         $serverParams = array(
-            'REQUEST_TIME' => \time(),
-            'REQUEST_TIME_FLOAT' => \microtime(true)
+            'REQUEST_TIME' => (int) ($now = $this->clock->now()),
+            'REQUEST_TIME_FLOAT' => $now
         );
 
         // scheme is `http` unless TLS is used

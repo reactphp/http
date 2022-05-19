@@ -84,7 +84,9 @@ final class StreamingServer extends EventEmitter
 {
     private $callback;
     private $parser;
-    private $loop;
+
+    /** @var Clock */
+    private $clock;
 
     /**
      * Creates an HTTP server that invokes the given callback for each incoming HTTP request
@@ -104,10 +106,9 @@ final class StreamingServer extends EventEmitter
             throw new \InvalidArgumentException('Invalid request handler given');
         }
 
-        $this->loop = $loop;
-
         $this->callback = $requestHandler;
-        $this->parser = new RequestHeaderParser();
+        $this->clock = new Clock($loop);
+        $this->parser = new RequestHeaderParser($this->clock);
 
         $that = $this;
         $this->parser->on('headers', function (ServerRequestInterface $request, ConnectionInterface $conn) use ($that) {
@@ -255,7 +256,7 @@ final class StreamingServer extends EventEmitter
         // assign default "Date" header from current time automatically
         if (!$response->hasHeader('Date')) {
             // IMF-fixdate  = day-name "," SP date1 SP time-of-day SP GMT
-            $response = $response->withHeader('Date', gmdate('D, d M Y H:i:s') . ' GMT');
+            $response = $response->withHeader('Date', gmdate('D, d M Y H:i:s', (int) $this->clock->now()) . ' GMT');
         } elseif ($response->getHeaderLine('Date') === ''){
             $response = $response->withoutHeader('Date');
         }

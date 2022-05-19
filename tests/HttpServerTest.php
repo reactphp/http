@@ -54,9 +54,13 @@ final class HttpServerTest extends TestCase
         $ref->setAccessible(true);
         $streamingServer = $ref->getValue($http);
 
-        $ref = new \ReflectionProperty($streamingServer, 'loop');
+        $ref = new \ReflectionProperty($streamingServer, 'clock');
         $ref->setAccessible(true);
-        $loop = $ref->getValue($streamingServer);
+        $clock = $ref->getValue($streamingServer);
+
+        $ref = new \ReflectionProperty($clock, 'loop');
+        $ref->setAccessible(true);
+        $loop = $ref->getValue($clock);
 
         $this->assertInstanceOf('React\EventLoop\LoopInterface', $loop);
     }
