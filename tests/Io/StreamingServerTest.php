@@ -2292,11 +2292,19 @@ class StreamingServerTest extends TestCase
         $this->assertContainsString("5\r\nhello\r\n", $buffer);
     }
 
-    public function testResponseWithoutExplicitDateHeaderWillAddCurrentDate()
+    public function testResponseWithoutExplicitDateHeaderWillAddCurrentDateFromClock()
     {
         $server = new StreamingServer(Loop::get(), function (ServerRequestInterface $request) {
             return new Response();
         });
+
+        $ref = new \ReflectionProperty($server, 'clock');
+        $ref->setAccessible(true);
+        $clock = $ref->getValue($server);
+
+        $ref = new \ReflectionProperty($clock, 'now');
+        $ref->setAccessible(true);
+        $ref->setValue($clock, 1652972091.3958);
 
         $buffer = '';
             $this->connection
@@ -2318,11 +2326,11 @@ class StreamingServerTest extends TestCase
         $this->connection->emit('data', array($data));
 
         $this->assertContainsString("HTTP/1.1 200 OK\r\n", $buffer);
-        $this->assertContainsString("Date:", $buffer);
+        $this->assertContainsString("Date: Thu, 19 May 2022 14:54:51 GMT\r\n", $buffer);
         $this->assertContainsString("\r\n\r\n", $buffer);
     }
 
-    public function testResponseWIthCustomDateHeaderOverwritesDefault()
+    public function testResponseWithCustomDateHeaderOverwritesDefault()
     {
         $server = new StreamingServer(Loop::get(), function (ServerRequestInterface $request) {
             return new Response(
@@ -3022,7 +3030,8 @@ class StreamingServerTest extends TestCase
         $this->assertEquals(array('hello' => 'world', 'test' => 'abc'), $requestValidation->getCookieParams());
     }
 
-    public function testRequestCookieWithCommaValueWillBeAddedToServerRequest() {
+    public function testRequestCookieWithCommaValueWillBeAddedToServerRequest()
+    {
         $requestValidation = null;
         $server = new StreamingServer(Loop::get(), function (ServerRequestInterface $request) use (&$requestValidation) {
             $requestValidation = $request;
@@ -3045,7 +3054,7 @@ class StreamingServerTest extends TestCase
     {
         $server = new StreamingServer(Loop::get(), $this->expectCallableNever());
 
-        $parser = $this->getMockBuilder('React\Http\Io\RequestHeaderParser')->getMock();
+        $parser = $this->getMockBuilder('React\Http\Io\RequestHeaderParser')->disableOriginalConstructor()->getMock();
         $parser->expects($this->once())->method('handle');
 
         $ref = new \ReflectionProperty($server, 'parser');
@@ -3062,7 +3071,7 @@ class StreamingServerTest extends TestCase
 
         $server = new StreamingServer(Loop::get(), $this->expectCallableOnceWith($request));
 
-        $parser = $this->getMockBuilder('React\Http\Io\RequestHeaderParser')->getMock();
+        $parser = $this->getMockBuilder('React\Http\Io\RequestHeaderParser')->disableOriginalConstructor()->getMock();
         $parser->expects($this->once())->method('handle');
 
         $ref = new \ReflectionProperty($server, 'parser');
@@ -3085,7 +3094,7 @@ class StreamingServerTest extends TestCase
 
         $server = new StreamingServer(Loop::get(), $this->expectCallableOnceWith($request));
 
-        $parser = $this->getMockBuilder('React\Http\Io\RequestHeaderParser')->getMock();
+        $parser = $this->getMockBuilder('React\Http\Io\RequestHeaderParser')->disableOriginalConstructor()->getMock();
         $parser->expects($this->once())->method('handle');
 
         $ref = new \ReflectionProperty($server, 'parser');
@@ -3110,7 +3119,7 @@ class StreamingServerTest extends TestCase
             return new Response(200, array('Connection' => 'close'));
         });
 
-        $parser = $this->getMockBuilder('React\Http\Io\RequestHeaderParser')->getMock();
+        $parser = $this->getMockBuilder('React\Http\Io\RequestHeaderParser')->disableOriginalConstructor()->getMock();
         $parser->expects($this->once())->method('handle');
 
         $ref = new \ReflectionProperty($server, 'parser');
@@ -3135,7 +3144,7 @@ class StreamingServerTest extends TestCase
             return new Response();
         });
 
-        $parser = $this->getMockBuilder('React\Http\Io\RequestHeaderParser')->getMock();
+        $parser = $this->getMockBuilder('React\Http\Io\RequestHeaderParser')->disableOriginalConstructor()->getMock();
         $parser->expects($this->exactly(2))->method('handle');
 
         $ref = new \ReflectionProperty($server, 'parser');
@@ -3160,7 +3169,7 @@ class StreamingServerTest extends TestCase
             return new Response();
         });
 
-        $parser = $this->getMockBuilder('React\Http\Io\RequestHeaderParser')->getMock();
+        $parser = $this->getMockBuilder('React\Http\Io\RequestHeaderParser')->disableOriginalConstructor()->getMock();
         $parser->expects($this->exactly(2))->method('handle');
 
         $ref = new \ReflectionProperty($server, 'parser');
@@ -3186,7 +3195,7 @@ class StreamingServerTest extends TestCase
             return new Response(200, array(), $body);
         });
 
-        $parser = $this->getMockBuilder('React\Http\Io\RequestHeaderParser')->getMock();
+        $parser = $this->getMockBuilder('React\Http\Io\RequestHeaderParser')->disableOriginalConstructor()->getMock();
         $parser->expects($this->once())->method('handle');
 
         $ref = new \ReflectionProperty($server, 'parser');
@@ -3212,7 +3221,7 @@ class StreamingServerTest extends TestCase
             return new Response(200, array(), $body);
         });
 
-        $parser = $this->getMockBuilder('React\Http\Io\RequestHeaderParser')->getMock();
+        $parser = $this->getMockBuilder('React\Http\Io\RequestHeaderParser')->disableOriginalConstructor()->getMock();
         $parser->expects($this->exactly(2))->method('handle');
 
         $ref = new \ReflectionProperty($server, 'parser');
