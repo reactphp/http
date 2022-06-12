@@ -436,11 +436,14 @@ class TransactionTest extends TestCase
         $response = new Response(200, array(), new ReadableBodyStream($stream));
 
         // mock sender to resolve promise with the given $response in response to the given $request
+        $deferred = new Deferred();
         $sender = $this->makeSenderMock();
-        $sender->expects($this->once())->method('send')->with($this->equalTo($request))->willReturn(Promise\resolve($response));
+        $sender->expects($this->once())->method('send')->with($this->equalTo($request))->willReturn($deferred->promise());
 
         $transaction = new Transaction($sender, Loop::get());
         $promise = $transaction->send($request);
+
+        $deferred->resolve($response);
         $promise->cancel();
 
         $this->setExpectedException('RuntimeException');
@@ -778,12 +781,15 @@ class TransactionTest extends TestCase
         $body = new ThroughStream();
         $body->on('close', $this->expectCallableOnce());
 
-        // mock sender to resolve promise with the given $redirectResponse in
-        $redirectResponse = new Response(301, array('Location' => 'http://example.com/new'), new ReadableBodyStream($body));
-        $sender->expects($this->once())->method('send')->willReturn(Promise\resolve($redirectResponse));
+        // mock sender to resolve promise with the given $redirectResponse
+        $deferred = new Deferred();
+        $sender->expects($this->once())->method('send')->willReturn($deferred->promise());
 
         $transaction = new Transaction($sender, $loop);
         $promise = $transaction->send($request);
+
+        $redirectResponse = new Response(301, array('Location' => 'http://example.com/new'), new ReadableBodyStream($body));
+        $deferred->resolve($redirectResponse);
 
         $promise->cancel();
     }

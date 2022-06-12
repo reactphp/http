@@ -726,6 +726,10 @@ class FunctionalHttpServerTest extends TestCase
 
     public function testLimitConcurrentRequestsMiddlewareRequestStreamPausing()
     {
+        if (defined('HHVM_VERSION') && !interface_exists('React\Promise\PromisorInterface')) {
+            $this->markTestSkipped('Not supported on legacy HHVM with Promise v3');
+        }
+
         $connector = new Connector();
 
         $http = new HttpServer(

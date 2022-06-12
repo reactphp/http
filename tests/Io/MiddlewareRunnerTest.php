@@ -8,7 +8,6 @@ use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Io\MiddlewareRunner;
 use React\Http\Message\ServerRequest;
 use React\Promise;
-use React\Promise\CancellablePromiseInterface;
 use React\Promise\PromiseInterface;
 use React\Tests\Http\Middleware\ProcessStack;
 use React\Tests\Http\TestCase;
@@ -479,7 +478,7 @@ final class MiddlewareRunnerTest extends TestCase
 
         $promise = $middleware($request);
 
-        $this->assertTrue($promise instanceof CancellablePromiseInterface);
+        $this->assertTrue($promise instanceof PromiseInterface && \method_exists($promise, 'cancel'));
         $promise->cancel();
     }
 }

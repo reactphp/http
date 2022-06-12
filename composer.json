@@ -31,16 +31,16 @@
         "fig/http-message-util": "^1.1",
         "psr/http-message": "^1.0",
         "react/event-loop": "^1.2",
-        "react/promise": "^2.3 || ^1.2.1",
-        "react/promise-stream": "^1.1",
-        "react/socket": "^1.9",
+        "react/promise": "^3@dev || ^2.3 || ^1.2.1",
+        "react/promise-stream": "^1.4",
+        "react/socket": "^1.12",
         "react/stream": "^1.2",
         "ringcentral/psr7": "^1.2"
     },
     "require-dev": {
-        "clue/http-proxy-react": "^1.7",
-        "clue/reactphp-ssh-proxy": "^1.3",
-        "clue/socks-react": "^1.3",
+        "clue/http-proxy-react": "dev-promise-v3 as 1.8.0",
+        "clue/reactphp-ssh-proxy": "dev-promise-v3 as 1.4.0",
+        "clue/socks-react": "dev-promise-v3 as 1.4.0",
         "phpunit/phpunit": "^9.3 || ^5.7 || ^4.8.35",
         "react/async": "^4 || ^3 || ^2",
         "react/promise-timer": "^1.9"
@@ -50,5 +50,19 @@
     },
     "autoload-dev": {
         "psr-4": { "React\\Tests\\Http\\": "tests" }
-    }
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/clue-labs/reactphp-http-proxy"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/clue-labs/reactphp-socks"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/clue-labs/reactphp-ssh-proxy"
+        }
+    ]
 }
