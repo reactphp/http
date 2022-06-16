@@ -27,6 +27,9 @@ class RequestHeaderParser extends EventEmitter
     /** @var Clock */
     private $clock;
 
+    /** @var array<string|int,array<string,string>> */
+    private $connectionParams = array();
+
     public function __construct(Clock $clock)
     {
         $this->clock = $clock;
@@ -66,8 +69,7 @@ class RequestHeaderParser extends EventEmitter
             try {
                 $request = $that->parseRequest(
                     (string)\substr($buffer, 0, $endOfHeader + 2),
-                    $conn->getRemoteAddress(),
-                    $conn->getLocalAddress()
+                    $conn
                 );
             } catch (Exception $exception) {
                 $buffer = '';
@@ -119,13 +121,12 @@ class RequestHeaderParser extends EventEmitter
 
     /**
      * @param string $headers buffer string containing request headers only
-     * @param ?string $remoteSocketUri
-     * @param ?string $localSocketUri
+     * @param ConnectionInterface $connection
      * @return ServerRequestInterface
      * @throws \InvalidArgumentException
      * @internal
      */
-    public function parseRequest($headers, $remoteSocketUri, $localSocketUri)
+    public function parseRequest($headers, ConnectionInterface $connection)
     {
         // additional, stricter safe-guard for request line
         // because request parser doesn't properly cope with invalid ones
@@ -160,26 +161,59 @@ class RequestHeaderParser extends EventEmitter
             }
         }
 
+        // reuse same connection params for all server params for this connection
+        $cid = \PHP_VERSION_ID < 70200 ? \spl_object_hash($connection) : \spl_object_id($connection);
+        if (isset($this->connectionParams[$cid])) {
+            $serverParams = $this->connectionParams[$cid];
+        } else {
+            // assign new server params for new connection
+            $serverParams = array();
+
+            // scheme is `http` unless TLS is used
+            $localSocketUri = $connection->getLocalAddress();
+            $localParts = $localSocketUri === null ? array() : \parse_url($localSocketUri);
+            if (isset($localParts['scheme']) && $localParts['scheme'] === 'tls') {
+                $serverParams['HTTPS'] = 'on';
+            }
+
+            // apply SERVER_ADDR and SERVER_PORT if server address is known
+            // address should always be known, even for Unix domain sockets (UDS)
+            // but skip UDS as it doesn't have a concept of host/port.
+            if ($localSocketUri !== null && isset($localParts['host'], $localParts['port'])) {
+                $serverParams['SERVER_ADDR'] = $localParts['host'];
+                $serverParams['SERVER_PORT'] = $localParts['port'];
+            }
+
+            // apply REMOTE_ADDR and REMOTE_PORT if source address is known
+            // address should always be known, unless this is over Unix domain sockets (UDS)
+            $remoteSocketUri = $connection->getRemoteAddress();
+            if ($remoteSocketUri !== null) {
+                $remoteAddress = \parse_url($remoteSocketUri);
+                $serverParams['REMOTE_ADDR'] = $remoteAddress['host'];
+                $serverParams['REMOTE_PORT'] = $remoteAddress['port'];
+            }
+
+            // remember server params for all requests from this connection, reset on connection close
+            $this->connectionParams[$cid] = $serverParams;
+            $params =& $this->connectionParams;
+            $connection->on('close', function () use (&$params, $cid) {
+                assert(\is_array($params));
+                unset($params[$cid]);
+            });
+        }
+
         // create new obj implementing ServerRequestInterface by preserving all
         // previous properties and restoring original request-target
-        $serverParams = array(
-            'REQUEST_TIME' => (int) ($now = $this->clock->now()),
-            'REQUEST_TIME_FLOAT' => $now
-        );
+        $serverParams['REQUEST_TIME'] = (int) ($now = $this->clock->now());
+        $serverParams['REQUEST_TIME_FLOAT'] = $now;
 
         // scheme is `http` unless TLS is used
-        $localParts = $localSocketUri === null ? array() : \parse_url($localSocketUri);
-        if (isset($localParts['scheme']) && $localParts['scheme'] === 'tls') {
-            $scheme = 'https://';
-            $serverParams['HTTPS'] = 'on';
-        } else {
-            $scheme = 'http://';
-        }
+        $scheme = isset($serverParams['HTTPS']) ? 'https://' : 'http://';
 
         // default host if unset comes from local socket address or defaults to localhost
         $hasHost = $host !== null;
         if ($host === null) {
-            $host = isset($localParts['host'], $localParts['port']) ? $localParts['host'] . ':' . $localParts['port'] : '127.0.0.1';
+            $host = isset($serverParams['SERVER_ADDR'], $serverParams['SERVER_PORT']) ? $serverParams['SERVER_ADDR'] . ':' . $serverParams['SERVER_PORT'] : '127.0.0.1';
         }
 
         if ($start['method'] === 'OPTIONS' && $start['target'] === '*') {
@@ -208,22 +242,6 @@ class RequestHeaderParser extends EventEmitter
 
                 $uri = $start['target'];
             }
-        }
-
-        // apply REMOTE_ADDR and REMOTE_PORT if source address is known
-        // address should always be known, unless this is over Unix domain sockets (UDS)
-        if ($remoteSocketUri !== null) {
-            $remoteAddress = \parse_url($remoteSocketUri);
-            $serverParams['REMOTE_ADDR'] = $remoteAddress['host'];
-            $serverParams['REMOTE_PORT'] = $remoteAddress['port'];
-        }
-
-        // apply SERVER_ADDR and SERVER_PORT if server address is known
-        // address should always be known, even for Unix domain sockets (UDS)
-        // but skip UDS as it doesn't have a concept of host/port.
-        if ($localSocketUri !== null && isset($localParts['host'], $localParts['port'])) {
-            $serverParams['SERVER_ADDR'] = $localParts['host'];
-            $serverParams['SERVER_PORT'] = $localParts['port'];
         }
 
         $request = new ServerRequest(
