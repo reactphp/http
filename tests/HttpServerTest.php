@@ -17,6 +17,9 @@ final class HttpServerTest extends TestCase
     private $connection;
     private $socket;
 
+    /** @var ?int */
+    private $called = null;
+
     /**
      * @before
      */
