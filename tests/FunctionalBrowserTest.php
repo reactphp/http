@@ -531,7 +531,7 @@ class FunctionalBrowserTest extends TestCase
         $response = Block\await($this->browser->get($this->base . 'get', array()));
         $this->assertEquals('hello', (string)$response->getBody());
 
-        $ret = Block\await($closed->promise(), null, 0.1);
+        $ret = Block\await(\React\Promise\Timer\timeout($closed->promise(), 0.1));
         $this->assertTrue($ret);
 
         $socket->close();

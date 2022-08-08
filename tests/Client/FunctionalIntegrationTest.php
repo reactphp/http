@@ -51,7 +51,7 @@ class FunctionalIntegrationTest extends TestCase
         $promise = Stream\first($request, 'close');
         $request->end();
 
-        Block\await($promise, null, self::TIMEOUT_LOCAL);
+        Block\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT_LOCAL));
     }
 
     public function testRequestLegacyHttpServerWithOnlyLineFeedReturnsSuccessfulResponse()
@@ -73,7 +73,7 @@ class FunctionalIntegrationTest extends TestCase
         $promise = Stream\first($request, 'close');
         $request->end();
 
-        Block\await($promise, null, self::TIMEOUT_LOCAL);
+        Block\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT_LOCAL));
     }
 
     /** @group internet */
@@ -94,7 +94,7 @@ class FunctionalIntegrationTest extends TestCase
         $promise = Stream\first($request, 'close');
         $request->end();
 
-        Block\await($promise, null, self::TIMEOUT_REMOTE);
+        Block\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT_REMOTE));
     }
 
     /** @group internet */
@@ -122,7 +122,7 @@ class FunctionalIntegrationTest extends TestCase
 
         $request->end($data);
 
-        $buffer = Block\await($deferred->promise(), null, self::TIMEOUT_REMOTE);
+        $buffer = Block\await(\React\Promise\Timer\timeout($deferred->promise(), self::TIMEOUT_REMOTE));
 
         $this->assertNotEquals('', $buffer);
 
@@ -154,7 +154,7 @@ class FunctionalIntegrationTest extends TestCase
 
         $request->end($data);
 
-        $buffer = Block\await($deferred->promise(), null, self::TIMEOUT_REMOTE);
+        $buffer = Block\await(\React\Promise\Timer\timeout($deferred->promise(), self::TIMEOUT_REMOTE));
 
         $this->assertNotEquals('', $buffer);
 

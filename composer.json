@@ -42,7 +42,8 @@
         "clue/http-proxy-react": "^1.7",
         "clue/reactphp-ssh-proxy": "^1.3",
         "clue/socks-react": "^1.3",
-        "phpunit/phpunit": "^9.3 || ^5.7 || ^4.8.35"
+        "phpunit/phpunit": "^9.3 || ^5.7 || ^4.8.35",
+        "react/promise-timer": "^1.9"
     },
     "autoload": {
         "psr-4": { "React\\Http\\": "src" }

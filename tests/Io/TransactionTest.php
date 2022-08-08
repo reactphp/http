@@ -424,7 +424,7 @@ class TransactionTest extends TestCase
         $promise = $transaction->send($request);
 
         $this->setExpectedException('OverflowException');
-        Block\await($promise, null, 0.001);
+        Block\await(\React\Promise\Timer\timeout($promise, 0.001));
     }
 
     public function testCancelBufferingResponseWillCloseStreamAndReject()
@@ -445,7 +445,7 @@ class TransactionTest extends TestCase
         $promise->cancel();
 
         $this->setExpectedException('RuntimeException');
-        Block\await($promise, null, 0.001);
+        Block\await(\React\Promise\Timer\timeout($promise, 0.001));
     }
 
     public function testReceivingStreamingBodyWillResolveWithStreamingResponseIfStreamingIsEnabled()
