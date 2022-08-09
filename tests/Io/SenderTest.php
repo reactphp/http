@@ -2,7 +2,6 @@
 
 namespace React\Tests\Http\Io;
 
-use Clue\React\Block;
 use React\Http\Client\Client as HttpClient;
 use React\Http\Client\RequestData;
 use React\Http\Io\ReadableBodyStream;

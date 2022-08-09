@@ -2,7 +2,6 @@
 
 namespace React\Tests\Http;
 
-use Clue\React\Block;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Loop;
 use React\Http\HttpServer;
@@ -142,7 +141,7 @@ final class HttpServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
         $this->connection->emit('data', array("POST / HTTP/1.0\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: 7\r\n\r\nfoo=bar"));
 
-        $request = Block\await($deferred->promise());
+        $request = \React\Async\await($deferred->promise());
         assert($request instanceof ServerRequestInterface);
 
         $form = $request->getParsedBody();
@@ -180,7 +179,7 @@ final class HttpServerTest extends TestCase
             }
         });
 
-        $request = Block\await($deferred->promise());
+        $request = \React\Async\await($deferred->promise());
         assert($request instanceof ServerRequestInterface);
 
         $this->assertEmpty($request->getParsedBody());
@@ -213,7 +212,7 @@ final class HttpServerTest extends TestCase
         $this->socket->emit('connection', array($this->connection));
         $this->connection->emit('data', array("POST / HTTP/1.0\r\nContent-Type: application/json\r\nContent-Length: 6\r\n\r\n[true]"));
 
-        $request = Block\await($deferred->promise());
+        $request = \React\Async\await($deferred->promise());
         assert($request instanceof ServerRequestInterface);
 
         $this->assertNull($request->getParsedBody());

@@ -2,7 +2,6 @@
 
 namespace React\Tests\Http;
 
-use Clue\React\Block;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Loop;
@@ -37,7 +36,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await(\React\Promise\Timer\timeout($result, 1.0));
+        $response = \React\Async\await(\React\Promise\Timer\timeout($result, 1.0));
 
         $this->assertContainsString("HTTP/1.0 200 OK", $response);
         $this->assertContainsString('http://' . noScheme($socket->getAddress()) . '/', $response);
@@ -64,7 +63,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await(\React\Promise\Timer\timeout($result, 1.0));
+        $response = \React\Async\await(\React\Promise\Timer\timeout($result, 1.0));
 
         $this->assertContainsString("HTTP/1.0 404 Not Found", $response);
 
@@ -88,7 +87,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await(\React\Promise\Timer\timeout($result, 1.0));
+        $response = \React\Async\await(\React\Promise\Timer\timeout($result, 1.0));
 
         $this->assertContainsString("HTTP/1.0 200 OK", $response);
         $this->assertContainsString('http://' . noScheme($socket->getAddress()) . '/', $response);
@@ -113,7 +112,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await(\React\Promise\Timer\timeout($result, 1.0));
+        $response = \React\Async\await(\React\Promise\Timer\timeout($result, 1.0));
 
         $this->assertContainsString("HTTP/1.0 200 OK", $response);
         $this->assertContainsString('http://localhost:1000/', $response);
@@ -146,7 +145,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await(\React\Promise\Timer\timeout($result, 1.0));
+        $response = \React\Async\await(\React\Promise\Timer\timeout($result, 1.0));
 
         $this->assertContainsString("HTTP/1.0 200 OK", $response);
         $this->assertContainsString('https://' . noScheme($socket->getAddress()) . '/', $response);
@@ -183,7 +182,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await(\React\Promise\Timer\timeout($result, 1.0));
+        $response = \React\Async\await(\React\Promise\Timer\timeout($result, 1.0));
 
         $this->assertContainsString("HTTP/1.0 200 OK", $response);
         $this->assertContainsString("\r\nContent-Length: 33000\r\n", $response);
@@ -217,7 +216,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await(\React\Promise\Timer\timeout($result, 1.0));
+        $response = \React\Async\await(\React\Promise\Timer\timeout($result, 1.0));
 
         $this->assertContainsString("HTTP/1.0 200 OK", $response);
         $this->assertContainsString('https://' . noScheme($socket->getAddress()) . '/', $response);
@@ -246,7 +245,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await(\React\Promise\Timer\timeout($result, 1.0));
+        $response = \React\Async\await(\React\Promise\Timer\timeout($result, 1.0));
 
         $this->assertContainsString("HTTP/1.0 200 OK", $response);
         $this->assertContainsString('http://127.0.0.1/', $response);
@@ -275,7 +274,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await(\React\Promise\Timer\timeout($result, 1.0));
+        $response = \React\Async\await(\React\Promise\Timer\timeout($result, 1.0));
 
         $this->assertContainsString("HTTP/1.0 200 OK", $response);
         $this->assertContainsString('http://127.0.0.1/', $response);
@@ -313,7 +312,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await(\React\Promise\Timer\timeout($result, 1.0));
+        $response = \React\Async\await(\React\Promise\Timer\timeout($result, 1.0));
 
         $this->assertContainsString("HTTP/1.0 200 OK", $response);
         $this->assertContainsString('https://127.0.0.1/', $response);
@@ -351,7 +350,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await(\React\Promise\Timer\timeout($result, 1.0));
+        $response = \React\Async\await(\React\Promise\Timer\timeout($result, 1.0));
 
         $this->assertContainsString("HTTP/1.0 200 OK", $response);
         $this->assertContainsString('https://127.0.0.1/', $response);
@@ -380,7 +379,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await(\React\Promise\Timer\timeout($result, 1.0));
+        $response = \React\Async\await(\React\Promise\Timer\timeout($result, 1.0));
 
         $this->assertContainsString("HTTP/1.0 200 OK", $response);
         $this->assertContainsString('http://127.0.0.1:443/', $response);
@@ -418,7 +417,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await(\React\Promise\Timer\timeout($result, 1.0));
+        $response = \React\Async\await(\React\Promise\Timer\timeout($result, 1.0));
 
         $this->assertContainsString("HTTP/1.0 200 OK", $response);
         $this->assertContainsString('https://127.0.0.1:80/', $response);
@@ -446,7 +445,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await(\React\Promise\Timer\timeout($result, 1.0));
+        $response = \React\Async\await(\React\Promise\Timer\timeout($result, 1.0));
 
         $this->assertStringStartsWith("HTTP/1.0 200 OK", $response);
         $this->assertStringEndsWith("\r\n\r\n", $response);
@@ -477,7 +476,7 @@ class FunctionalHttpServerTest extends TestCase
             });
         });
 
-        \Clue\React\Block\await(\React\Promise\Timer\sleep(0.1));
+        \React\Async\await(\React\Promise\Timer\sleep(0.1));
 
         $socket->close();
     }
@@ -507,7 +506,7 @@ class FunctionalHttpServerTest extends TestCase
         });
 
         // stream will be closed within 0.1s
-        $ret = Block\await(\React\Promise\Timer\timeout(Stream\first($stream, 'close'), 0.1));
+        $ret = \React\Async\await(\React\Promise\Timer\timeout(Stream\first($stream, 'close'), 0.1));
 
         $socket->close();
 
@@ -536,7 +535,7 @@ class FunctionalHttpServerTest extends TestCase
         });
 
         // await response stream to be closed
-        $ret = Block\await(\React\Promise\Timer\timeout(Stream\first($stream, 'close'), 1.0));
+        $ret = \React\Async\await(\React\Promise\Timer\timeout(Stream\first($stream, 'close'), 1.0));
 
         $socket->close();
 
@@ -571,7 +570,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await(\React\Promise\Timer\timeout($result, 1.0));
+        $response = \React\Async\await(\React\Promise\Timer\timeout($result, 1.0));
 
         $this->assertStringStartsWith("HTTP/1.1 101 Switching Protocols\r\n", $response);
         $this->assertStringEndsWith("\r\n\r\nhelloworld", $response);
@@ -608,7 +607,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await(\React\Promise\Timer\timeout($result, 1.0));
+        $response = \React\Async\await(\React\Promise\Timer\timeout($result, 1.0));
 
         $this->assertStringStartsWith("HTTP/1.1 101 Switching Protocols\r\n", $response);
         $this->assertStringEndsWith("\r\n\r\nhelloworld", $response);
@@ -644,7 +643,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await(\React\Promise\Timer\timeout($result, 1.0));
+        $response = \React\Async\await(\React\Promise\Timer\timeout($result, 1.0));
 
         $this->assertStringStartsWith("HTTP/1.1 200 OK\r\n", $response);
         $this->assertStringEndsWith("\r\n\r\nhelloworld", $response);
@@ -684,7 +683,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await(\React\Promise\Timer\timeout($result, 1.0));
+        $response = \React\Async\await(\React\Promise\Timer\timeout($result, 1.0));
 
         $this->assertStringStartsWith("HTTP/1.1 200 OK\r\n", $response);
         $this->assertStringEndsWith("\r\n\r\nhelloworld", $response);
@@ -717,7 +716,7 @@ class FunctionalHttpServerTest extends TestCase
             return Stream\buffer($conn);
         });
 
-        $response = Block\await(\React\Promise\Timer\timeout($result, 1.0));
+        $response = \React\Async\await(\React\Promise\Timer\timeout($result, 1.0));
 
         $this->assertStringStartsWith("HTTP/1.1 200 OK\r\n", $response);
         $this->assertStringEndsWith("\r\n\r\n", $response);
@@ -760,7 +759,7 @@ class FunctionalHttpServerTest extends TestCase
             });
         }
 
-        $responses = Block\await(\React\Promise\Timer\timeout(Promise\all($result), 1.0));
+        $responses = \React\Async\await(\React\Promise\Timer\timeout(Promise\all($result), 1.0));
 
         foreach ($responses as $response) {
             $this->assertContainsString("HTTP/1.0 200 OK", $response, $response);

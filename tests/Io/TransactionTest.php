@@ -2,7 +2,6 @@
 
 namespace React\Tests\Http\Io;
 
-use Clue\React\Block;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -401,7 +400,7 @@ class TransactionTest extends TestCase
         $transaction = new Transaction($sender, Loop::get());
         $promise = $transaction->send($request);
 
-        $response = Block\await($promise);
+        $response = \React\Async\await($promise);
 
         $this->assertEquals(200, $response->getStatusCode());
         $this->assertEquals('hello world', (string)$response->getBody());
@@ -424,7 +423,7 @@ class TransactionTest extends TestCase
         $promise = $transaction->send($request);
 
         $this->setExpectedException('OverflowException');
-        Block\await(\React\Promise\Timer\timeout($promise, 0.001));
+        \React\Async\await(\React\Promise\Timer\timeout($promise, 0.001));
     }
 
     public function testCancelBufferingResponseWillCloseStreamAndReject()
@@ -445,7 +444,7 @@ class TransactionTest extends TestCase
         $promise->cancel();
 
         $this->setExpectedException('RuntimeException');
-        Block\await(\React\Promise\Timer\timeout($promise, 0.001));
+        \React\Async\await(\React\Promise\Timer\timeout($promise, 0.001));
     }
 
     public function testReceivingStreamingBodyWillResolveWithStreamingResponseIfStreamingIsEnabled()

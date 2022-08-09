@@ -2,7 +2,6 @@
 
 namespace React\Tests\Http\Client;
 
-use Clue\React\Block;
 use Psr\Http\Message\ResponseInterface;
 use React\EventLoop\Loop;
 use React\Http\Client\Client;
@@ -51,7 +50,7 @@ class FunctionalIntegrationTest extends TestCase
         $promise = Stream\first($request, 'close');
         $request->end();
 
-        Block\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT_LOCAL));
+        \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT_LOCAL));
     }
 
     public function testRequestLegacyHttpServerWithOnlyLineFeedReturnsSuccessfulResponse()
@@ -73,7 +72,7 @@ class FunctionalIntegrationTest extends TestCase
         $promise = Stream\first($request, 'close');
         $request->end();
 
-        Block\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT_LOCAL));
+        \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT_LOCAL));
     }
 
     /** @group internet */
@@ -94,7 +93,7 @@ class FunctionalIntegrationTest extends TestCase
         $promise = Stream\first($request, 'close');
         $request->end();
 
-        Block\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT_REMOTE));
+        \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT_REMOTE));
     }
 
     /** @group internet */
@@ -122,7 +121,7 @@ class FunctionalIntegrationTest extends TestCase
 
         $request->end($data);
 
-        $buffer = Block\await(\React\Promise\Timer\timeout($deferred->promise(), self::TIMEOUT_REMOTE));
+        $buffer = \React\Async\await(\React\Promise\Timer\timeout($deferred->promise(), self::TIMEOUT_REMOTE));
 
         $this->assertNotEquals('', $buffer);
 
@@ -154,7 +153,7 @@ class FunctionalIntegrationTest extends TestCase
 
         $request->end($data);
 
-        $buffer = Block\await(\React\Promise\Timer\timeout($deferred->promise(), self::TIMEOUT_REMOTE));
+        $buffer = \React\Async\await(\React\Promise\Timer\timeout($deferred->promise(), self::TIMEOUT_REMOTE));
 
         $this->assertNotEquals('', $buffer);
 
