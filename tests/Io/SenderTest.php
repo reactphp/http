@@ -42,8 +42,12 @@ class SenderTest extends TestCase
 
         $promise = $sender->send($request);
 
-        $this->setExpectedException('InvalidArgumentException');
-        Block\await($promise, $this->loop);
+        $exception = null;
+        $promise->then(null, function ($e) use (&$exception) {
+            $exception = $e;
+        });
+
+        $this->assertInstanceOf('InvalidArgumentException', $exception);
     }
 
     public function testSenderConnectorRejection()
@@ -57,8 +61,12 @@ class SenderTest extends TestCase
 
         $promise = $sender->send($request);
 
-        $this->setExpectedException('RuntimeException');
-        Block\await($promise, $this->loop);
+        $exception = null;
+        $promise->then(null, function ($e) use (&$exception) {
+            $exception = $e;
+        });
+
+        $this->assertInstanceOf('RuntimeException', $exception);
     }
 
     public function testSendPostWillAutomaticallySendContentLengthHeader()
@@ -318,8 +326,12 @@ class SenderTest extends TestCase
         $promise = $sender->send($request);
         $promise->cancel();
 
-        $this->setExpectedException('RuntimeException');
-        Block\await($promise, $this->loop);
+        $exception = null;
+        $promise->then(null, function ($e) use (&$exception) {
+            $exception = $e;
+        });
+
+        $this->assertInstanceOf('RuntimeException', $exception);
     }
 
     public function testCancelRequestWillCloseConnection()
@@ -337,8 +349,12 @@ class SenderTest extends TestCase
         $promise = $sender->send($request);
         $promise->cancel();
 
-        $this->setExpectedException('RuntimeException');
-        Block\await($promise, $this->loop);
+        $exception = null;
+        $promise->then(null, function ($e) use (&$exception) {
+            $exception = $e;
+        });
+
+        $this->assertInstanceOf('RuntimeException', $exception);
     }
 
     public function provideRequestProtocolVersion()

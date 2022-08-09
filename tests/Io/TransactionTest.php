@@ -5,7 +5,8 @@ namespace React\Tests\Http\Io;
 use Clue\React\Block;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Http\Message\RequestInterface;
-use RingCentral\Psr7\Response;
+use Psr\Http\Message\ResponseInterface;
+use React\Http\Io\ReadableBodyStream;
 use React\Http\Io\Transaction;
 use React\Http\Message\ResponseException;
 use React\EventLoop\Loop;
@@ -14,7 +15,7 @@ use React\Promise\Deferred;
 use React\Stream\ThroughStream;
 use React\Tests\Http\TestCase;
 use RingCentral\Psr7\Request;
-use React\Http\Io\ReadableBodyStream;
+use RingCentral\Psr7\Response;
 
 class TransactionTest extends TestCase
 {
@@ -372,13 +373,14 @@ class TransactionTest extends TestCase
         $transaction = $transaction->withOptions(array('timeout' => -1));
         $promise = $transaction->send($request);
 
-        try {
-            Block\await($promise, $loop);
-            $this->fail();
-        } catch (ResponseException $exception) {
-            $this->assertEquals(404, $exception->getCode());
-            $this->assertSame($response, $exception->getResponse());
-        }
+        $exception = null;
+        $promise->then(null, function ($reason) use (&$exception) {
+            $exception = $reason;
+        });
+
+        assert($exception instanceof ResponseException);
+        $this->assertEquals(404, $exception->getCode());
+        $this->assertSame($response, $exception->getResponse());
     }
 
     public function testReceivingStreamingBodyWillResolveWithBufferedResponseByDefault()
@@ -461,8 +463,12 @@ class TransactionTest extends TestCase
         $transaction = $transaction->withOptions(array('streaming' => true, 'timeout' => -1));
         $promise = $transaction->send($request);
 
-        $response = Block\await($promise, $loop);
+        $response = null;
+        $promise->then(function ($value) use (&$response) {
+            $response = $value;
+        });
 
+        assert($response instanceof ResponseInterface);
         $this->assertEquals(200, $response->getStatusCode());
         $this->assertEquals('', (string)$response->getBody());
     }

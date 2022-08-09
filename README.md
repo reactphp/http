@@ -386,7 +386,7 @@ $browser = new React\Http\Browser();
 $promise = $browser->get('http://example.com/');
 
 try {
-    $response = Block\await($promise, Loop::get());
+    $response = Block\await($promise);
     // response successfully received
 } catch (Exception $e) {
     // an error occurred while performing the request
@@ -401,7 +401,7 @@ $promises = array(
     $browser->get('http://www.example.org/'),
 );
 
-$responses = Block\awaitAll($promises, Loop::get());
+$responses = Block\awaitAll($promises);
 ```
 
 Please refer to [clue/reactphp-block](https://github.com/clue/reactphp-block#readme) for more details.
