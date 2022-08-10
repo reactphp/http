@@ -2,7 +2,6 @@
 
 namespace React\Tests\Http\Io;
 
-use Clue\React\Block;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -161,7 +160,7 @@ final class MiddlewareRunnerTest extends TestCase
         $response = $middlewareStack($request);
 
         $this->assertTrue($response instanceof PromiseInterface);
-        $response = Block\await($response);
+        $response = \React\Async\await($response);
 
         $this->assertTrue($response instanceof ResponseInterface);
         $this->assertSame(200, $response->getStatusCode());
@@ -228,7 +227,7 @@ final class MiddlewareRunnerTest extends TestCase
 
         $request = new ServerRequest('GET', 'https://example.com/');
 
-        $this->assertSame($response, Block\await($runner($request)));
+        $this->assertSame($response, \React\Async\await($runner($request)));
         $this->assertSame(1, $retryCalled);
         $this->assertSame(2, $called);
         $this->assertSame($exception, $error);

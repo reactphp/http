@@ -2,7 +2,6 @@
 
 namespace React\Tests\Http;
 
-use Clue\React\Block;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Loop;
@@ -23,6 +22,9 @@ class FunctionalBrowserTest extends TestCase
 {
     private $browser;
     private $base;
+
+    /** @var ?SocketServer */
+    private $socket;
 
     /**
      * @before
@@ -88,14 +90,17 @@ class FunctionalBrowserTest extends TestCase
             }
 
             if ($path === '/delay/10') {
-                return new Promise(function ($resolve) {
-                    Loop::addTimer(10, function () use ($resolve) {
+                $timer = null;
+                return new Promise(function ($resolve) use (&$timer) {
+                    $timer = Loop::addTimer(10, function () use ($resolve) {
                         $resolve(new Response(
                             200,
                             array(),
                             'hello'
                         ));
                     });
+                }, function () use (&$timer) {
+                    Loop::cancelTimer($timer);
                 });
             }
 
@@ -140,10 +145,20 @@ class FunctionalBrowserTest extends TestCase
 
             var_dump($path);
         });
-        $socket = new SocketServer('127.0.0.1:0');
-        $http->listen($socket);
 
-        $this->base = str_replace('tcp:', 'http:', $socket->getAddress()) . '/';
+        $this->socket = new SocketServer('127.0.0.1:0');
+        $http->listen($this->socket);
+
+        $this->base = str_replace('tcp:', 'http:', $this->socket->getAddress()) . '/';
+    }
+
+    /**
+     * @after
+     */
+    public function cleanUpSocketServer()
+    {
+        $this->socket->close();
+        $this->socket = null;
     }
 
     /**
@@ -151,7 +166,7 @@ class FunctionalBrowserTest extends TestCase
      */
     public function testSimpleRequest()
     {
-        Block\await($this->browser->get($this->base . 'get'));
+        \React\Async\await($this->browser->get($this->base . 'get'));
     }
 
     public function testGetRequestWithRelativeAddressRejects()
@@ -159,7 +174,7 @@ class FunctionalBrowserTest extends TestCase
         $promise = $this->browser->get('delay');
 
         $this->setExpectedException('InvalidArgumentException', 'Invalid request URL given');
-        Block\await($promise);
+        \React\Async\await($promise);
     }
 
     /**
@@ -167,7 +182,7 @@ class FunctionalBrowserTest extends TestCase
      */
     public function testGetRequestWithBaseAndRelativeAddressResolves()
     {
-        Block\await($this->browser->withBase($this->base)->get('get'));
+        \React\Async\await($this->browser->withBase($this->base)->get('get'));
     }
 
     /**
@@ -175,7 +190,7 @@ class FunctionalBrowserTest extends TestCase
      */
     public function testGetRequestWithBaseAndFullAddressResolves()
     {
-        Block\await($this->browser->withBase('http://example.com/')->get($this->base . 'get'));
+        \React\Async\await($this->browser->withBase('http://example.com/')->get($this->base . 'get'));
     }
 
     public function testCancelGetRequestWillRejectRequest()
@@ -184,7 +199,7 @@ class FunctionalBrowserTest extends TestCase
         $promise->cancel();
 
         $this->setExpectedException('RuntimeException');
-        Block\await($promise);
+        \React\Async\await($promise);
     }
 
     public function testCancelRequestWithPromiseFollowerWillRejectRequest()
@@ -195,13 +210,13 @@ class FunctionalBrowserTest extends TestCase
         $promise->cancel();
 
         $this->setExpectedException('RuntimeException');
-        Block\await($promise);
+        \React\Async\await($promise);
     }
 
     public function testRequestWithoutAuthenticationFails()
     {
         $this->setExpectedException('RuntimeException');
-        Block\await($this->browser->get($this->base . 'basic-auth/user/pass'));
+        \React\Async\await($this->browser->get($this->base . 'basic-auth/user/pass'));
     }
 
     /**
@@ -211,7 +226,7 @@ class FunctionalBrowserTest extends TestCase
     {
         $base = str_replace('://', '://user:pass@', $this->base);
 
-        Block\await($this->browser->get($base . 'basic-auth/user/pass'));
+        \React\Async\await($this->browser->get($base . 'basic-auth/user/pass'));
     }
 
     /**
@@ -225,7 +240,7 @@ class FunctionalBrowserTest extends TestCase
     {
         $target = str_replace('://', '://user:pass@', $this->base) . 'basic-auth/user/pass';
 
-        Block\await($this->browser->get($this->base . 'redirect-to?url=' . urlencode($target)));
+        \React\Async\await($this->browser->get($this->base . 'redirect-to?url=' . urlencode($target)));
     }
 
     /**
@@ -240,7 +255,7 @@ class FunctionalBrowserTest extends TestCase
         $base = str_replace('://', '://unknown:invalid@', $this->base);
         $target = str_replace('://', '://user:pass@', $this->base) . 'basic-auth/user/pass';
 
-        Block\await($this->browser->get($base . 'redirect-to?url=' . urlencode($target)));
+        \React\Async\await($this->browser->get($base . 'redirect-to?url=' . urlencode($target)));
     }
 
     public function testCancelRedirectedRequestShouldReject()
@@ -252,7 +267,7 @@ class FunctionalBrowserTest extends TestCase
         });
 
         $this->setExpectedException('RuntimeException', 'Request cancelled');
-        Block\await($promise);
+        \React\Async\await($promise);
     }
 
     public function testTimeoutDelayedResponseShouldReject()
@@ -260,7 +275,7 @@ class FunctionalBrowserTest extends TestCase
         $promise = $this->browser->withTimeout(0.1)->get($this->base . 'delay/10');
 
         $this->setExpectedException('RuntimeException', 'Request timed out after 0.1 seconds');
-        Block\await($promise);
+        \React\Async\await($promise);
     }
 
     public function testTimeoutDelayedResponseAfterStreamingRequestShouldReject()
@@ -270,7 +285,7 @@ class FunctionalBrowserTest extends TestCase
         $stream->end();
 
         $this->setExpectedException('RuntimeException', 'Request timed out after 0.1 seconds');
-        Block\await($promise);
+        \React\Async\await($promise);
     }
 
     /**
@@ -278,7 +293,7 @@ class FunctionalBrowserTest extends TestCase
      */
     public function testTimeoutFalseShouldResolveSuccessfully()
     {
-        Block\await($this->browser->withTimeout(false)->get($this->base . 'get'));
+        \React\Async\await($this->browser->withTimeout(false)->get($this->base . 'get'));
     }
 
     /**
@@ -286,7 +301,7 @@ class FunctionalBrowserTest extends TestCase
      */
     public function testRedirectRequestRelative()
     {
-        Block\await($this->browser->get($this->base . 'redirect-to?url=get'));
+        \React\Async\await($this->browser->get($this->base . 'redirect-to?url=get'));
     }
 
     /**
@@ -294,7 +309,7 @@ class FunctionalBrowserTest extends TestCase
      */
     public function testRedirectRequestAbsolute()
     {
-        Block\await($this->browser->get($this->base . 'redirect-to?url=' . urlencode($this->base . 'get')));
+        \React\Async\await($this->browser->get($this->base . 'redirect-to?url=' . urlencode($this->base . 'get')));
     }
 
     /**
@@ -304,7 +319,7 @@ class FunctionalBrowserTest extends TestCase
     {
         $browser = $this->browser->withFollowRedirects(false);
 
-        Block\await($browser->get($this->base . 'redirect-to?url=get'));
+        \React\Async\await($browser->get($this->base . 'redirect-to?url=get'));
     }
 
     public function testFollowRedirectsZeroRejectsOnRedirect()
@@ -312,12 +327,12 @@ class FunctionalBrowserTest extends TestCase
         $browser = $this->browser->withFollowRedirects(0);
 
         $this->setExpectedException('RuntimeException');
-        Block\await($browser->get($this->base . 'redirect-to?url=get'));
+        \React\Async\await($browser->get($this->base . 'redirect-to?url=get'));
     }
 
     public function testResponseStatus204ShouldResolveWithEmptyBody()
     {
-        $response = Block\await($this->browser->get($this->base . 'status/204'));
+        $response = \React\Async\await($this->browser->get($this->base . 'status/204'));
         $this->assertFalse($response->hasHeader('Content-Length'));
 
         $body = $response->getBody();
@@ -327,7 +342,7 @@ class FunctionalBrowserTest extends TestCase
 
     public function testResponseStatus304ShouldResolveWithEmptyBodyButContentLengthResponseHeader()
     {
-        $response = Block\await($this->browser->get($this->base . 'status/304'));
+        $response = \React\Async\await($this->browser->get($this->base . 'status/304'));
         $this->assertEquals('12', $response->getHeaderLine('Content-Length'));
 
         $body = $response->getBody();
@@ -342,7 +357,7 @@ class FunctionalBrowserTest extends TestCase
     {
         $promise = $this->browser->withResponseBuffer(5)->get($this->base . 'get');
 
-        Block\await($promise);
+        \React\Async\await($promise);
     }
 
     public function testGetRequestWithResponseBufferExceededRejects()
@@ -354,7 +369,7 @@ class FunctionalBrowserTest extends TestCase
             'Response body size of 5 bytes exceeds maximum of 4 bytes',
             defined('SOCKET_EMSGSIZE') ? SOCKET_EMSGSIZE : 0
         );
-        Block\await($promise);
+        \React\Async\await($promise);
     }
 
     public function testGetRequestWithResponseBufferExceededDuringStreamingRejects()
@@ -366,7 +381,7 @@ class FunctionalBrowserTest extends TestCase
             'Response body size exceeds maximum of 4 bytes',
             defined('SOCKET_EMSGSIZE') ? SOCKET_EMSGSIZE : 0
         );
-        Block\await($promise);
+        \React\Async\await($promise);
     }
 
     /**
@@ -379,7 +394,7 @@ class FunctionalBrowserTest extends TestCase
             $this->markTestSkipped('Not supported on HHVM');
         }
 
-        Block\await($this->browser->get('https://www.google.com/'));
+        \React\Async\await($this->browser->get('https://www.google.com/'));
     }
 
     /**
@@ -400,7 +415,7 @@ class FunctionalBrowserTest extends TestCase
         $browser = new Browser($connector);
 
         $this->setExpectedException('RuntimeException');
-        Block\await($browser->get('https://self-signed.badssl.com/'));
+        \React\Async\await($browser->get('https://self-signed.badssl.com/'));
     }
 
     /**
@@ -421,7 +436,7 @@ class FunctionalBrowserTest extends TestCase
 
         $browser = new Browser($connector);
 
-        Block\await($browser->get('https://self-signed.badssl.com/'));
+        \React\Async\await($browser->get('https://self-signed.badssl.com/'));
     }
 
     /**
@@ -430,13 +445,13 @@ class FunctionalBrowserTest extends TestCase
     public function testInvalidPort()
     {
         $this->setExpectedException('RuntimeException');
-        Block\await($this->browser->get('http://www.google.com:443/'));
+        \React\Async\await($this->browser->get('http://www.google.com:443/'));
     }
 
     public function testErrorStatusCodeRejectsWithResponseException()
     {
         try {
-            Block\await($this->browser->get($this->base . 'status/404'));
+            \React\Async\await($this->browser->get($this->base . 'status/404'));
             $this->fail();
         } catch (ResponseException $e) {
             $this->assertEquals(404, $e->getCode());
@@ -448,14 +463,14 @@ class FunctionalBrowserTest extends TestCase
 
     public function testErrorStatusCodeDoesNotRejectWithRejectErrorResponseFalse()
     {
-        $response = Block\await($this->browser->withRejectErrorResponse(false)->get($this->base . 'status/404'));
+        $response = \React\Async\await($this->browser->withRejectErrorResponse(false)->get($this->base . 'status/404'));
 
         $this->assertEquals(404, $response->getStatusCode());
     }
 
     public function testPostString()
     {
-        $response = Block\await($this->browser->post($this->base . 'post', array(), 'hello world'));
+        $response = \React\Async\await($this->browser->post($this->base . 'post', array(), 'hello world'));
         $data = json_decode((string)$response->getBody(), true);
 
         $this->assertEquals('hello world', $data['data']);
@@ -463,7 +478,7 @@ class FunctionalBrowserTest extends TestCase
 
     public function testRequestStreamReturnsResponseBodyUntilConnectionsEndsForHttp10()
     {
-        $response = Block\await($this->browser->withProtocolVersion('1.0')->get($this->base . 'stream/1'));
+        $response = \React\Async\await($this->browser->withProtocolVersion('1.0')->get($this->base . 'stream/1'));
 
         $this->assertEquals('1.0', $response->getProtocolVersion());
         $this->assertFalse($response->hasHeader('Transfer-Encoding'));
@@ -474,7 +489,7 @@ class FunctionalBrowserTest extends TestCase
 
     public function testRequestStreamReturnsResponseWithTransferEncodingChunkedAndResponseBodyDecodedForHttp11()
     {
-        $response = Block\await($this->browser->get($this->base . 'stream/1'));
+        $response = \React\Async\await($this->browser->get($this->base . 'stream/1'));
 
         $this->assertEquals('1.1', $response->getProtocolVersion());
 
@@ -486,7 +501,7 @@ class FunctionalBrowserTest extends TestCase
 
     public function testRequestStreamWithHeadRequestReturnsEmptyResponseBodWithTransferEncodingChunkedForHttp11()
     {
-        $response = Block\await($this->browser->head($this->base . 'stream/1'));
+        $response = \React\Async\await($this->browser->head($this->base . 'stream/1'));
 
         $this->assertEquals('1.1', $response->getProtocolVersion());
 
@@ -505,7 +520,9 @@ class FunctionalBrowserTest extends TestCase
 
         $this->base = str_replace('tcp:', 'http:', $socket->getAddress()) . '/';
 
-        $response = Block\await($this->browser->get($this->base . 'stream/1'));
+        $response = \React\Async\await($this->browser->get($this->base . 'stream/1'));
+
+        $socket->close();
 
         $this->assertEquals('1.1', $response->getProtocolVersion());
 
@@ -528,10 +545,10 @@ class FunctionalBrowserTest extends TestCase
 
         $this->base = str_replace('tcp:', 'http:', $socket->getAddress()) . '/';
 
-        $response = Block\await($this->browser->get($this->base . 'get', array()));
+        $response = \React\Async\await($this->browser->get($this->base . 'get', array()));
         $this->assertEquals('hello', (string)$response->getBody());
 
-        $ret = Block\await($closed->promise(), null, 0.1);
+        $ret = \React\Async\await(\React\Promise\Timer\timeout($closed->promise(), 0.1));
         $this->assertTrue($ret);
 
         $socket->close();
@@ -545,7 +562,7 @@ class FunctionalBrowserTest extends TestCase
             $stream->end('hello world');
         });
 
-        $response = Block\await($this->browser->post($this->base . 'post', array(), $stream));
+        $response = \React\Async\await($this->browser->post($this->base . 'post', array(), $stream));
         $data = json_decode((string)$response->getBody(), true);
 
         $this->assertEquals('hello world', $data['data']);
@@ -561,7 +578,7 @@ class FunctionalBrowserTest extends TestCase
             $stream->end('hello world');
         });
 
-        $response = Block\await($this->browser->post($this->base . 'post', array('Content-Length' => 11), $stream));
+        $response = \React\Async\await($this->browser->post($this->base . 'post', array('Content-Length' => 11), $stream));
         $data = json_decode((string)$response->getBody(), true);
 
         $this->assertEquals('hello world', $data['data']);
@@ -581,7 +598,7 @@ class FunctionalBrowserTest extends TestCase
         $this->base = str_replace('tcp:', 'http:', $socket->getAddress()) . '/';
 
         $stream = new ThroughStream();
-        Block\await($this->browser->post($this->base . 'post', array(), $stream));
+        \React\Async\await($this->browser->post($this->base . 'post', array(), $stream));
 
         $socket->close();
     }
@@ -591,7 +608,7 @@ class FunctionalBrowserTest extends TestCase
         $stream = new ThroughStream();
         $stream->close();
 
-        $response = Block\await($this->browser->post($this->base . 'post', array(), $stream));
+        $response = \React\Async\await($this->browser->post($this->base . 'post', array(), $stream));
         $data = json_decode((string)$response->getBody(), true);
 
         $this->assertEquals('', $data['data']);
@@ -611,7 +628,7 @@ class FunctionalBrowserTest extends TestCase
 
         $this->base = str_replace('tcp:', 'http:', $socket->getAddress()) . '/';
 
-        $response = Block\await($this->browser->get($this->base));
+        $response = \React\Async\await($this->browser->get($this->base));
         $this->assertEquals('1.1', (string)$response->getBody());
 
         $socket->close();
@@ -631,7 +648,7 @@ class FunctionalBrowserTest extends TestCase
 
         $this->base = str_replace('tcp:', 'http:', $socket->getAddress()) . '/';
 
-        $response = Block\await($this->browser->withProtocolVersion('1.0')->get($this->base));
+        $response = \React\Async\await($this->browser->withProtocolVersion('1.0')->get($this->base));
         $this->assertEquals('1.0', (string)$response->getBody());
 
         $socket->close();
@@ -639,7 +656,7 @@ class FunctionalBrowserTest extends TestCase
 
     public function testHeadRequestReceivesResponseWithEmptyBodyButWithContentLengthResponseHeader()
     {
-        $response = Block\await($this->browser->head($this->base . 'get'));
+        $response = \React\Async\await($this->browser->head($this->base . 'get'));
         $this->assertEquals('5', $response->getHeaderLine('Content-Length'));
 
         $body = $response->getBody();
@@ -649,7 +666,7 @@ class FunctionalBrowserTest extends TestCase
 
     public function testRequestStreamingGetReceivesResponseWithStreamingBodyAndKnownSize()
     {
-        $response = Block\await($this->browser->requestStreaming('GET', $this->base . 'get'));
+        $response = \React\Async\await($this->browser->requestStreaming('GET', $this->base . 'get'));
         $this->assertEquals('5', $response->getHeaderLine('Content-Length'));
 
         $body = $response->getBody();
@@ -660,7 +677,7 @@ class FunctionalBrowserTest extends TestCase
 
     public function testRequestStreamingGetReceivesResponseWithStreamingBodyAndUnknownSizeFromStreamingEndpoint()
     {
-        $response = Block\await($this->browser->requestStreaming('GET', $this->base . 'stream/1'));
+        $response = \React\Async\await($this->browser->requestStreaming('GET', $this->base . 'stream/1'));
         $this->assertFalse($response->hasHeader('Content-Length'));
 
         $body = $response->getBody();
@@ -671,7 +688,7 @@ class FunctionalBrowserTest extends TestCase
 
     public function testRequestStreamingGetReceivesStreamingResponseBody()
     {
-        $buffer = Block\await(
+        $buffer = \React\Async\await(
             $this->browser->requestStreaming('GET', $this->base . 'get')->then(function (ResponseInterface $response) {
                 return Stream\buffer($response->getBody());
             })
@@ -682,7 +699,7 @@ class FunctionalBrowserTest extends TestCase
 
     public function testRequestStreamingGetReceivesStreamingResponseBodyEvenWhenResponseBufferExceeded()
     {
-        $buffer = Block\await(
+        $buffer = \React\Async\await(
             $this->browser->withResponseBuffer(4)->requestStreaming('GET', $this->base . 'get')->then(function (ResponseInterface $response) {
                 return Stream\buffer($response->getBody());
             })

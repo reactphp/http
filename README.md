@@ -373,20 +373,19 @@ See also [`withFollowRedirects()`](#withfollowredirects) for more details.
 
 As stated above, this library provides you a powerful, async API by default.
 
-If, however, you want to integrate this into your traditional, blocking environment,
-you should look into also using [clue/reactphp-block](https://github.com/clue/reactphp-block).
-
-The resulting blocking code could look something like this:
+You can also integrate this into your traditional, blocking environment by using
+[reactphp/async](https://github.com/reactphp/async). This allows you to simply
+await async HTTP requests like this:
 
 ```php
-use Clue\React\Block;
+use function React\Async\await;
 
 $browser = new React\Http\Browser();
 
 $promise = $browser->get('http://example.com/');
 
 try {
-    $response = Block\await($promise, Loop::get());
+    $response = await($promise);
     // response successfully received
 } catch (Exception $e) {
     // an error occurred while performing the request
@@ -396,15 +395,20 @@ try {
 Similarly, you can also process multiple requests concurrently and await an array of `Response` objects:
 
 ```php
+use function React\Async\await;
+use function React\Promise\all;
+
 $promises = array(
     $browser->get('http://example.com/'),
     $browser->get('http://www.example.org/'),
 );
 
-$responses = Block\awaitAll($promises, Loop::get());
+$responses = await(all($promises));
 ```
 
-Please refer to [clue/reactphp-block](https://github.com/clue/reactphp-block#readme) for more details.
+This is made possible thanks to fibers available in PHP 8.1+ and our
+compatibility API that also works on all supported PHP versions.
+Please refer to [reactphp/async](https://github.com/reactphp/async#readme) for more details.
 
 Keep in mind the above remark about buffering the whole response message in memory.
 As an alternative, you may also see one of the following chapters for the

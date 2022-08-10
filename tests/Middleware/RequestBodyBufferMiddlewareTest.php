@@ -2,7 +2,6 @@
 
 namespace React\Tests\Http\Middleware;
 
-use Clue\React\Block;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Loop;
 use React\Http\Io\HttpBodyStream;
@@ -128,7 +127,7 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
         );
 
         $buffer = new RequestBodyBufferMiddleware(1);
-        $response = Block\await($buffer(
+        $response = \React\Async\await($buffer(
             $serverRequest,
             function (ServerRequestInterface $request) {
                 return new Response(200, array(), $request->getBody()->getContents());
@@ -153,7 +152,7 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
         );
 
         $buffer = new RequestBodyBufferMiddleware('1K');
-        $response = Block\await($buffer(
+        $response = \React\Async\await($buffer(
             $serverRequest,
             function (ServerRequestInterface $request) {
                 return new Response(200, array(), $request->getBody()->getContents());
@@ -206,7 +205,7 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
 
         $stream->end('aa');
 
-        $exposedResponse = Block\await($promise->then(
+        $exposedResponse = \React\Async\await($promise->then(
             null,
             $this->expectCallableNever()
         ));
@@ -236,7 +235,7 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
         $stream->emit('error', array(new \RuntimeException()));
 
         $this->setExpectedException('RuntimeException');
-        Block\await($promise);
+        \React\Async\await($promise);
     }
 
     public function testFullBodyStreamedBeforeCallingNextMiddleware()

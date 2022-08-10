@@ -38,11 +38,12 @@
         "ringcentral/psr7": "^1.2"
     },
     "require-dev": {
-        "clue/block-react": "^1.5",
         "clue/http-proxy-react": "^1.7",
         "clue/reactphp-ssh-proxy": "^1.3",
         "clue/socks-react": "^1.3",
-        "phpunit/phpunit": "^9.3 || ^5.7 || ^4.8.35"
+        "phpunit/phpunit": "^9.3 || ^5.7 || ^4.8.35",
+        "react/async": "^4 || ^3 || ^2",
+        "react/promise-timer": "^1.9"
     },
     "autoload": {
         "psr-4": { "React\\Http\\": "src" }

@@ -2,7 +2,6 @@
 
 namespace React\Tests\Http;
 
-use Clue\React\Block;
 use Psr\Http\Message\RequestInterface;
 use React\Http\Browser;
 use React\Promise\Promise;
