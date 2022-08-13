@@ -6,6 +6,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
 use React\Http\Io\BufferedBody;
+use React\Http\Io\CookieParser;
 use React\Http\Io\HttpBodyStream;
 use React\Stream\ReadableStreamInterface;
 use RingCentral\Psr7\Request;
@@ -88,7 +89,7 @@ final class ServerRequest extends Request implements ServerRequestInterface
         $cookieHeaders = $this->getHeader("Cookie");
 
         if (count($cookieHeaders) === 1) {
-            $this->cookies = $this->parseCookie($cookieHeaders[0]);
+            $this->cookies = CookieParser::parse($cookieHeaders[0]);
         }
     }
 
@@ -170,28 +171,5 @@ final class ServerRequest extends Request implements ServerRequestInterface
         $new = clone $this;
         unset($new->attributes[$name]);
         return $new;
-    }
-
-    /**
-     * @param string $cookie
-     * @return array
-     */
-    private function parseCookie($cookie)
-    {
-        $cookieArray = \explode(';', $cookie);
-        $result = array();
-
-        foreach ($cookieArray as $pair) {
-            $pair = \trim($pair);
-            $nameValuePair = \explode('=', $pair, 2);
-
-            if (\count($nameValuePair) === 2) {
-                $key = \urldecode($nameValuePair[0]);
-                $value = \urldecode($nameValuePair[1]);
-                $result[$key] = $value;
-            }
-        }
-
-        return $result;
     }
 }

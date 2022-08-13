@@ -134,30 +134,6 @@ class ServerRequestTest extends TestCase
         $this->assertEquals('127.0.0.1', $serverParams['SERVER_ADDR']);
     }
 
-    public function testParseSingleCookieNameValuePairWillReturnValidArray()
-    {
-        $this->request = new ServerRequest(
-            'GET',
-            'http://localhost',
-            array('Cookie' => 'hello=world')
-        );
-
-        $cookies = $this->request->getCookieParams();
-        $this->assertEquals(array('hello' => 'world'), $cookies);
-    }
-
-    public function testParseMultipleCookieNameValuePairWillReturnValidArray()
-    {
-        $this->request = new ServerRequest(
-            'GET',
-            'http://localhost',
-            array('Cookie' => 'hello=world; test=abc')
-        );
-
-        $cookies = $this->request->getCookieParams();
-        $this->assertEquals(array('hello' => 'world', 'test' => 'abc'), $cookies);
-    }
-
     public function testParseMultipleCookieHeadersAreNotAllowedAndWillReturnEmptyArray()
     {
         $this->request = new ServerRequest(
@@ -168,78 +144,6 @@ class ServerRequestTest extends TestCase
 
         $cookies = $this->request->getCookieParams();
         $this->assertEquals(array(), $cookies);
-    }
-
-    public function testMultipleCookiesWithSameNameWillReturnLastValue()
-    {
-        $this->request = new ServerRequest(
-            'GET',
-            'http://localhost',
-            array('Cookie' => 'hello=world; hello=abc')
-        );
-
-        $cookies = $this->request->getCookieParams();
-        $this->assertEquals(array('hello' => 'abc'), $cookies);
-    }
-
-    public function testOtherEqualSignsWillBeAddedToValueAndWillReturnValidArray()
-    {
-        $this->request = new ServerRequest(
-            'GET',
-            'http://localhost',
-            array('Cookie' => 'hello=world=test=php')
-        );
-
-        $cookies = $this->request->getCookieParams();
-        $this->assertEquals(array('hello' => 'world=test=php'), $cookies);
-    }
-
-    public function testSingleCookieValueInCookiesReturnsEmptyArray()
-    {
-        $this->request = new ServerRequest(
-            'GET',
-            'http://localhost',
-            array('Cookie' => 'world')
-        );
-
-        $cookies = $this->request->getCookieParams();
-        $this->assertEquals(array(), $cookies);
-    }
-
-    public function testSingleMutlipleCookieValuesReturnsEmptyArray()
-    {
-        $this->request = new ServerRequest(
-            'GET',
-            'http://localhost',
-            array('Cookie' => 'world; test')
-        );
-
-        $cookies = $this->request->getCookieParams();
-        $this->assertEquals(array(), $cookies);
-    }
-
-    public function testSingleValueIsValidInMultipleValueCookieWillReturnValidArray()
-    {
-        $this->request = new ServerRequest(
-            'GET',
-            'http://localhost',
-            array('Cookie' => 'world; test=php')
-        );
-
-        $cookies = $this->request->getCookieParams();
-        $this->assertEquals(array('test' => 'php'), $cookies);
-    }
-
-    public function testUrlEncodingForValueWillReturnValidArray()
-    {
-        $this->request = new ServerRequest(
-            'GET',
-            'http://localhost',
-            array('Cookie' => 'hello=world%21; test=100%25%20coverage')
-        );
-
-        $cookies = $this->request->getCookieParams();
-        $this->assertEquals(array('hello' => 'world!', 'test' => '100% coverage'), $cookies);
     }
 
     public function testUrlEncodingForKeyWillReturnValidArray()
