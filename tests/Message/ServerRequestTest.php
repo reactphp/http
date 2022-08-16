@@ -251,7 +251,7 @@ class ServerRequestTest extends TestCase
         );
 
         $cookies = $this->request->getCookieParams();
-        $this->assertEquals(array('react;php' => 'is great'), $cookies);
+        $this->assertEquals(array('react%3Bphp' => 'is great'), $cookies);
     }
 
     public function testCookieWithoutSpaceAfterSeparatorWillBeAccepted()
