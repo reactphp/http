@@ -2,9 +2,9 @@
 
 namespace React\Tests\Http\Io;
 
+use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Io\RequestHeaderParser;
 use React\Tests\Http\TestCase;
-use Psr\Http\Message\ServerRequestInterface;
 
 class RequestHeaderParserTest extends TestCase
 {
@@ -806,6 +806,62 @@ class RequestHeaderParserTest extends TestCase
 
         $this->assertArrayNotHasKey('REMOTE_ADDR', $serverParams);
         $this->assertArrayNotHasKey('REMOTE_PORT', $serverParams);
+    }
+
+    public function testServerParamsWillBeReusedForMultipleRequestsFromSameConnection()
+    {
+        $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
+        $clock->expects($this->exactly(2))->method('now')->willReturn(1652972091.3958);
+
+        $parser = new RequestHeaderParser($clock);
+
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('getLocalAddress', 'getRemoteAddress'))->getMock();
+        $connection->expects($this->once())->method('getLocalAddress')->willReturn('tcp://127.1.1.1:8000');
+        $connection->expects($this->once())->method('getRemoteAddress')->willReturn('tcp://192.168.1.1:8001');
+
+        $parser->handle($connection);
+        $connection->emit('data', array("GET /foo HTTP/1.0\r\nHost: example.com\r\n\r\n"));
+
+        $request = null;
+        $parser->on('headers', function ($parsedRequest) use (&$request) {
+            $request = $parsedRequest;
+        });
+
+        $parser->handle($connection);
+        $connection->emit('data', array("GET /foo HTTP/1.0\r\nHost: example.com\r\n\r\n"));
+
+        assert($request instanceof ServerRequestInterface);
+        $serverParams = $request->getServerParams();
+
+        $this->assertArrayNotHasKey('HTTPS', $serverParams);
+        $this->assertEquals(1652972091, $serverParams['REQUEST_TIME']);
+        $this->assertEquals(1652972091.3958, $serverParams['REQUEST_TIME_FLOAT']);
+
+        $this->assertEquals('127.1.1.1', $serverParams['SERVER_ADDR']);
+        $this->assertEquals('8000', $serverParams['SERVER_PORT']);
+
+        $this->assertEquals('192.168.1.1', $serverParams['REMOTE_ADDR']);
+        $this->assertEquals('8001', $serverParams['REMOTE_PORT']);
+    }
+
+    public function testServerParamsWillBeRememberedUntilConnectionIsClosed()
+    {
+        $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
+
+        $parser = new RequestHeaderParser($clock);
+
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('getLocalAddress', 'getRemoteAddress'))->getMock();
+
+        $parser->handle($connection);
+        $connection->emit('data', array("GET /foo HTTP/1.0\r\nHost: example.com\r\n\r\n"));
+
+        $ref = new \ReflectionProperty($parser, 'connectionParams');
+        $ref->setAccessible(true);
+
+        $this->assertCount(1, $ref->getValue($parser));
+
+        $connection->emit('close');
+        $this->assertEquals(array(), $ref->getValue($parser));
     }
 
     public function testQueryParmetersWillBeSet()
