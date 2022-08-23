@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.7.0 (2022-08-23)
+
+This is a **SECURITY** and feature release for the 1.x series of ReactPHP's HTTP component.
+
+*   Security fix: This release fixes a medium severity security issue in ReactPHP's HTTP server component
+    that affects all versions between `v0.7.0` and `v1.6.0`. All users are encouraged to upgrade immediately.
+    Special thanks to Marco Squarcina (TU Wien) for reporting this and working with us to coordinate this release.
+    (CVE-2022-36032 reported by @lavish and fixed by @clue)
+
+*   Feature: Improve HTTP server performance by ~20%, reuse syscall values for clock time and socket addresses.
+    (#457 and #467 by @clue)
+
+*   Feature: Full PHP 8.2+ compatibility, refactor internal `Transaction` to avoid assigning dynamic properties.
+    (#459 by @clue and #466 by @WyriHaximus)
+
+*   Feature / Fix: Allow explicit `Content-Length` response header on `HEAD` requests.
+    (#444 by @mrsimonbennett)
+
+*   Minor documentation improvements.
+    (#452 by @clue, #458 by @nhedger, #448 by @jorrit and #446 by @SimonFrings
+
+*   Improve test suite, update to use new reactphp/async package instead of clue/reactphp-block,
+    skip memory tests when lowering memory limit fails and fix legacy HHVM build.
+    (#464 and #440 by @clue and #450 by @SimonFrings)
+
 ## 1.6.0 (2022-02-03)
 
 *   Feature: Add factory methods for common HTML/JSON/plaintext/XML response types.
@@ -10,7 +35,6 @@
     $response = React\Http\Response\json(['message' => 'Hello wörld!']);
     $response = React\Http\Response\plaintext("Hello wörld!\n");
     $response = React\Http\Response\xml("<message>Hello wörld!</message>\n");
-    $response = React\Http\Response\redirect('https://reactphp.org/');
     ```
 
 *   Feature: Expose all status code constants via `Response` class.
