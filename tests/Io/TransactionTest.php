@@ -406,7 +406,7 @@ class TransactionTest extends TestCase
         $this->assertEquals('hello world', (string)$response->getBody());
     }
 
-    public function testReceivingStreamingBodyWithSizeExceedingMaximumResponseBufferWillRejectAndCloseResponseStream()
+    public function testReceivingStreamingBodyWithContentLengthExceedingMaximumResponseBufferWillRejectAndCloseResponseStreamImmediately()
     {
         $stream = new ThroughStream();
         $stream->on('close', $this->expectCallableOnce());
@@ -420,10 +420,86 @@ class TransactionTest extends TestCase
         $sender->expects($this->once())->method('send')->with($this->equalTo($request))->willReturn(Promise\resolve($response));
 
         $transaction = new Transaction($sender, Loop::get());
+
         $promise = $transaction->send($request);
 
-        $this->setExpectedException('OverflowException');
-        \React\Async\await(\React\Promise\Timer\timeout($promise, 0.001));
+        $exception = null;
+        $promise->then(null, function ($e) use (&$exception) {
+            $exception = $e;
+        });
+
+        $this->assertFalse($stream->isWritable());
+
+        assert($exception instanceof \OverflowException);
+        $this->assertInstanceOf('OverflowException', $exception);
+        $this->assertEquals('Response body size of 100000000 bytes exceeds maximum of 16777216 bytes', $exception->getMessage());
+        $this->assertEquals(defined('SOCKET_EMSGSIZE') ? \SOCKET_EMSGSIZE : 90, $exception->getCode());
+        $this->assertNull($exception->getPrevious());
+    }
+
+    public function testReceivingStreamingBodyWithContentsExceedingMaximumResponseBufferWillRejectAndCloseResponseStreamWhenBufferExceedsLimit()
+    {
+        $stream = new ThroughStream();
+        $stream->on('close', $this->expectCallableOnce());
+
+        $request = $this->getMockBuilder('Psr\Http\Message\RequestInterface')->getMock();
+
+        $response = new Response(200, array(), new ReadableBodyStream($stream));
+
+        // mock sender to resolve promise with the given $response in response to the given $request
+        $sender = $this->makeSenderMock();
+        $sender->expects($this->once())->method('send')->with($this->equalTo($request))->willReturn(Promise\resolve($response));
+
+        $transaction = new Transaction($sender, Loop::get());
+        $transaction = $transaction->withOptions(array('maximumSize' => 10));
+        $promise = $transaction->send($request);
+
+        $exception = null;
+        $promise->then(null, function ($e) use (&$exception) {
+            $exception = $e;
+        });
+
+        $this->assertTrue($stream->isWritable());
+        $stream->write('hello wörld');
+        $this->assertFalse($stream->isWritable());
+
+        assert($exception instanceof \OverflowException);
+        $this->assertInstanceOf('OverflowException', $exception);
+        $this->assertEquals('Response body size exceeds maximum of 10 bytes', $exception->getMessage());
+        $this->assertEquals(defined('SOCKET_EMSGSIZE') ? \SOCKET_EMSGSIZE : 90, $exception->getCode());
+        $this->assertNull($exception->getPrevious());
+    }
+
+    public function testReceivingStreamingBodyWillRejectWhenStreamEmitsError()
+    {
+        $stream = new ThroughStream(function ($data) {
+            throw new \UnexpectedValueException('Unexpected ' . $data, 42);
+        });
+
+        $request = $this->getMockBuilder('Psr\Http\Message\RequestInterface')->getMock();
+        $response = new Response(200, array(), new ReadableBodyStream($stream));
+
+        // mock sender to resolve promise with the given $response in response to the given $request
+        $sender = $this->makeSenderMock();
+        $sender->expects($this->once())->method('send')->with($this->equalTo($request))->willReturn(Promise\resolve($response));
+
+        $transaction = new Transaction($sender, Loop::get());
+        $promise = $transaction->send($request);
+
+        $exception = null;
+        $promise->then(null, function ($e) use (&$exception) {
+            $exception = $e;
+        });
+
+        $this->assertTrue($stream->isWritable());
+        $stream->write('Foo');
+        $this->assertFalse($stream->isWritable());
+
+        assert($exception instanceof \RuntimeException);
+        $this->assertInstanceOf('RuntimeException', $exception);
+        $this->assertEquals('Error while buffering response body: Unexpected Foo', $exception->getMessage());
+        $this->assertEquals(42, $exception->getCode());
+        $this->assertInstanceOf('UnexpectedValueException', $exception->getPrevious());
     }
 
     public function testCancelBufferingResponseWillCloseStreamAndReject()
@@ -446,8 +522,16 @@ class TransactionTest extends TestCase
         $deferred->resolve($response);
         $promise->cancel();
 
-        $this->setExpectedException('RuntimeException');
-        \React\Async\await(\React\Promise\Timer\timeout($promise, 0.001));
+        $exception = null;
+        $promise->then(null, function ($e) use (&$exception) {
+            $exception = $e;
+        });
+
+        assert($exception instanceof \RuntimeException);
+        $this->assertInstanceOf('RuntimeException', $exception);
+        $this->assertEquals('Cancelled buffering response body', $exception->getMessage());
+        $this->assertEquals(0, $exception->getCode());
+        $this->assertNull($exception->getPrevious());
     }
 
     public function testReceivingStreamingBodyWillResolveWithStreamingResponseIfStreamingIsEnabled()
