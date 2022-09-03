@@ -9,7 +9,6 @@ use React\EventLoop\LoopInterface;
 use React\Http\Message\Response;
 use React\Http\Message\ServerRequest;
 use React\Promise;
-use React\Promise\CancellablePromiseInterface;
 use React\Promise\PromiseInterface;
 use React\Socket\ConnectionInterface;
 use React\Socket\ServerInterface;
@@ -158,7 +157,7 @@ final class StreamingServer extends EventEmitter
         }
 
         // cancel pending promise once connection closes
-        if ($response instanceof CancellablePromiseInterface) {
+        if ($response instanceof PromiseInterface && \method_exists($response, 'cancel')) {
             $conn->on('close', function () use ($response) {
                 $response->cancel();
             });

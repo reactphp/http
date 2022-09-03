@@ -79,7 +79,7 @@ final class LimitConcurrentRequestsMiddlewareTest extends TestCase
         /**
          * Ensure resolve frees up a slot
          */
-        $deferredA->resolve();
+        $deferredA->resolve(null);
 
         $this->assertTrue($calledA);
         $this->assertTrue($calledB);
@@ -88,7 +88,7 @@ final class LimitConcurrentRequestsMiddlewareTest extends TestCase
         /**
          * Ensure reject also frees up a slot
          */
-        $deferredB->reject();
+        $deferredB->reject(new \RuntimeException());
 
         $this->assertTrue($calledA);
         $this->assertTrue($calledB);
@@ -194,7 +194,7 @@ final class LimitConcurrentRequestsMiddlewareTest extends TestCase
 
         $limitHandlers(new ServerRequest('GET', 'https://example.com/', array(), $body), function () {});
 
-        $deferred->reject();
+        $deferred->reject(new \RuntimeException());
     }
 
     public function testReceivesBufferedRequestSameInstance()
@@ -452,7 +452,7 @@ final class LimitConcurrentRequestsMiddlewareTest extends TestCase
             $req = $request;
         });
 
-        $deferred->reject();
+        $deferred->reject(new \RuntimeException());
 
         $this->assertNotSame($request, $req);
         $this->assertInstanceOf('Psr\Http\Message\ServerRequestInterface', $req);
