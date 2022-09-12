@@ -23,6 +23,9 @@ class Browser
     private $transaction;
     private $baseUrl;
     private $protocolVersion = '1.1';
+    private $defaultHeaders = array(
+        'User-Agent' => 'ReactPHP/1'
+    );
 
     /**
      * The `Browser` is responsible for sending HTTP requests to your HTTP server
@@ -726,6 +729,62 @@ class Browser
     }
 
     /**
+     * Add a request header for all following requests.
+     *
+     * ```php
+     * $browser = $browser->withHeader('User-Agent', 'ACME');
+     *
+     * $browser->get($url)->then(…);
+     * ```
+     *
+     * Note that the new header will overwrite any headers previously set with
+     * the same name (case-insensitive). Following requests will use these headers
+     * by default unless they are explicitly set for any requests.
+     *
+     * @param string $header
+     * @param string $value
+     * @return Browser
+     */
+    public function withHeader($header, $value)
+    {
+        $browser = $this->withoutHeader($header);
+        $browser->defaultHeaders[$header] = $value;
+
+        return $browser;
+    }
+
+    /**
+     * Remove any default request headers previously set via
+     * the [`withHeader()` method](#withheader).
+     *
+     * ```php
+     * $browser = $browser->withoutHeader('User-Agent');
+     *
+     * $browser->get($url)->then(…);
+     * ```
+     *
+     * Note that this method only affects the headers which were set with the
+     * method `withHeader(string $header, string $value): Browser`
+     *
+     * @param string $header
+     * @return Browser
+     */
+    public function withoutHeader($header)
+    {
+        $browser = clone $this;
+
+        /** @var string|int $key */
+        foreach (\array_keys($browser->defaultHeaders) as $key) {
+            if (\strcasecmp($key, $header) === 0) {
+                unset($browser->defaultHeaders[$key]);
+                break;
+            }
+        }
+
+        return $browser;
+    }
+
+    /**
      * Changes the [options](#options) to use:
      *
      * The [`Browser`](#browser) class exposes several options for the handling of
@@ -781,6 +840,19 @@ class Browser
 
         if ($body instanceof ReadableStreamInterface) {
             $body = new ReadableBodyStream($body);
+        }
+
+        foreach ($this->defaultHeaders as $key => $value) {
+            $explicitHeaderExists = false;
+            foreach (\array_keys($headers) as $headerKey) {
+                if (\strcasecmp($headerKey, $key) === 0) {
+                    $explicitHeaderExists = true;
+                    break;
+                }
+            }
+            if (!$explicitHeaderExists) {
+                $headers[$key] = $value;
+            }
         }
 
         return $this->transaction->send(

@@ -69,6 +69,8 @@ multiple concurrent HTTP requests without blocking.
         * [withBase()](#withbase)
         * [withProtocolVersion()](#withprotocolversion)
         * [withResponseBuffer()](#withresponsebuffer)
+        * [withHeader()](#withheader)
+        * [withoutHeader()](#withoutheader)
     * [React\Http\Message](#reacthttpmessage)
         * [Response](#response)
             * [html()](#html)
@@ -2380,6 +2382,36 @@ this maximum buffer size setting has no effect on streaming responses.
 Notice that the [`Browser`](#browser) is an immutable object, i.e. this
 method actually returns a *new* [`Browser`](#browser) instance with the
 given setting applied.
+
+#### withHeader()
+
+The `withHeader(string $header, string $value): Browser` method can be used to
+add a request header for all following requests.
+
+```php
+$browser = $browser->withHeader('User-Agent', 'ACME');
+
+$browser->get($url)->then(…);
+```
+
+Note that the new header will overwrite any headers previously set with
+the same name (case-insensitive). Following requests will use these headers
+by default unless they are explicitly set for any requests.
+
+#### withoutHeader()
+
+The `withoutHeader(string $header): Browser` method can be used to
+remove any default request headers previously set via
+the [`withHeader()` method](#withheader).
+
+```php
+$browser = $browser->withoutHeader('User-Agent');
+
+$browser->get($url)->then(…);
+```
+
+Note that this method only affects the headers which were set with the
+method `withHeader(string $header, string $value): Browser`
 
 ### React\Http\Message
 
