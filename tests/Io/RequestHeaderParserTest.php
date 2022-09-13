@@ -864,7 +864,7 @@ class RequestHeaderParserTest extends TestCase
         $this->assertEquals(array(), $ref->getValue($parser));
     }
 
-    public function testQueryParmetersWillBeSet()
+    public function testQueryParametersWillBeSet()
     {
         $request = null;
 
