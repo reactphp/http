@@ -502,4 +502,101 @@ class BrowserTest extends TestCase
         $promise = $this->browser->get('http://example.com/');
         $promise->cancel();
     }
+
+    public function testWithHeaderShouldOverwriteExistingHeader()
+    {
+        $this->browser = $this->browser->withHeader('User-Agent', 'ACMC'); //should be overwritten
+        $this->browser = $this->browser->withHeader('user-agent', 'ABC'); //should be the user-agent
+
+        $that = $this;
+        $this->sender->expects($this->once())->method('send')->with($this->callback(function (RequestInterface $request) use ($that) {
+            $that->assertEquals(array('ABC'), $request->getHeader('UsEr-AgEnT'));
+            return true;
+        }))->willReturn(new Promise(function () { }));
+
+        $this->browser->get('http://example.com/');
+    }
+
+    public function testWithHeaderShouldBeOverwrittenByExplicitHeaderInGetMethod()
+    {
+        $this->browser = $this->browser->withHeader('User-Agent', 'ACMC');
+
+        $that = $this;
+        $this->sender->expects($this->once())->method('send')->with($this->callback(function (RequestInterface $request) use ($that) {
+            $that->assertEquals(array('ABC'), $request->getHeader('UsEr-AgEnT'));
+            return true;
+        }))->willReturn(new Promise(function () { }));
+
+        $this->browser->get('http://example.com/', array('user-Agent' => 'ABC')); //should win
+    }
+
+    public function testWithMultipleHeadersShouldBeMergedCorrectlyWithMultipleDefaultHeaders()
+    {
+        $this->browser = $this->browser->withHeader('User-Agent', 'ACMC');
+        $this->browser = $this->browser->withHeader('User-Test', 'Test');
+        $this->browser = $this->browser->withHeader('Custom-HEADER', 'custom');
+        $this->browser = $this->browser->withHeader('just-a-header', 'header-value');
+
+        $that = $this;
+        $this->sender->expects($this->once())->method('send')->with($this->callback(function (RequestInterface $request) use ($that) {
+            $expectedHeaders = array(
+                'Host' => array('example.com'),
+
+                'User-Test' => array('Test'),
+                'just-a-header' => array('header-value'),
+
+                'user-Agent' => array('ABC'),
+                'another-header' => array('value'),
+                'custom-header' => array('data'),
+            );
+
+            $that->assertEquals($expectedHeaders, $request->getHeaders());
+            return true;
+        }))->willReturn(new Promise(function () { }));
+
+        $headers = array(
+            'user-Agent' => 'ABC', //should overwrite: 'User-Agent', 'ACMC'
+            'another-header' => 'value',
+            'custom-header' => 'data', //should overwrite: 'Custom-header', 'custom'
+        );
+        $this->browser->get('http://example.com/', $headers);
+    }
+
+    public function testWithoutHeaderShouldRemoveExistingHeader()
+    {
+        $this->browser = $this->browser->withHeader('User-Agent', 'ACMC');
+        $this->browser = $this->browser->withoutHeader('UsEr-AgEnT'); //should remove case-insensitive header
+
+        $that = $this;
+        $this->sender->expects($this->once())->method('send')->with($this->callback(function (RequestInterface $request) use ($that) {
+            $that->assertEquals(array(), $request->getHeader('user-agent'));
+            return true;
+        }))->willReturn(new Promise(function () { }));
+
+        $this->browser->get('http://example.com/');
+    }
+
+    public function testBrowserShouldSendDefaultUserAgentHeader()
+    {
+        $that = $this;
+        $this->sender->expects($this->once())->method('send')->with($this->callback(function (RequestInterface $request) use ($that) {
+            $that->assertEquals(array(0 => 'ReactPHP/1'), $request->getHeader('user-agent'));
+            return true;
+        }))->willReturn(new Promise(function () { }));
+
+        $this->browser->get('http://example.com/');
+    }
+
+    public function testBrowserShouldNotSendDefaultUserAgentHeaderIfWithoutHeaderRemovesUserAgent()
+    {
+        $this->browser = $this->browser->withoutHeader('UsEr-AgEnT');
+
+        $that = $this;
+        $this->sender->expects($this->once())->method('send')->with($this->callback(function (RequestInterface $request) use ($that) {
+            $that->assertEquals(array(), $request->getHeader('User-Agent'));
+            return true;
+        }))->willReturn(new Promise(function () { }));
+
+        $this->browser->get('http://example.com/');
+    }
 }

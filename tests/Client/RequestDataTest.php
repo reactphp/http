@@ -14,7 +14,6 @@ class RequestDataTest extends TestCase
 
         $expected = "GET / HTTP/1.0\r\n" .
             "Host: www.example.com\r\n" .
-            "User-Agent: ReactPHP/1\r\n" .
             "\r\n";
 
         $this->assertSame($expected, $requestData->__toString());
@@ -27,7 +26,6 @@ class RequestDataTest extends TestCase
 
         $expected = "GET /path?hello=world HTTP/1.0\r\n" .
             "Host: www.example.com\r\n" .
-            "User-Agent: ReactPHP/1\r\n" .
             "\r\n";
 
         $this->assertSame($expected, $requestData->__toString());
@@ -40,7 +38,6 @@ class RequestDataTest extends TestCase
 
         $expected = "GET /?0 HTTP/1.0\r\n" .
             "Host: www.example.com\r\n" .
-            "User-Agent: ReactPHP/1\r\n" .
             "\r\n";
 
         $this->assertSame($expected, $requestData->__toString());
@@ -53,7 +50,6 @@ class RequestDataTest extends TestCase
 
         $expected = "OPTIONS / HTTP/1.0\r\n" .
             "Host: www.example.com\r\n" .
-            "User-Agent: ReactPHP/1\r\n" .
             "\r\n";
 
         $this->assertSame($expected, $requestData->__toString());
@@ -66,7 +62,6 @@ class RequestDataTest extends TestCase
 
         $expected = "OPTIONS * HTTP/1.0\r\n" .
             "Host: www.example.com\r\n" .
-            "User-Agent: ReactPHP/1\r\n" .
             "\r\n";
 
         $this->assertSame($expected, $requestData->__toString());
@@ -80,7 +75,6 @@ class RequestDataTest extends TestCase
 
         $expected = "GET / HTTP/1.1\r\n" .
             "Host: www.example.com\r\n" .
-            "User-Agent: ReactPHP/1\r\n" .
             "Connection: close\r\n" .
             "\r\n";
 
@@ -131,7 +125,6 @@ class RequestDataTest extends TestCase
 
         $expected = "GET / HTTP/1.1\r\n" .
             "Host: www.example.com\r\n" .
-            "User-Agent: ReactPHP/1\r\n" .
             "Connection: close\r\n" .
             "\r\n";
 
@@ -145,7 +138,6 @@ class RequestDataTest extends TestCase
 
         $expected = "GET / HTTP/1.0\r\n" .
             "Host: www.example.com\r\n" .
-            "User-Agent: ReactPHP/1\r\n" .
             "Authorization: Basic am9objpkdW1teQ==\r\n" .
             "\r\n";
 

@@ -181,7 +181,7 @@ class RequestTest extends TestCase
         $this->stream
             ->expects($this->once())
             ->method('write')
-            ->with($this->matchesRegularExpression("#^POST / HTTP/1\.0\r\nHost: www.example.com\r\nUser-Agent:.*\r\n\r\nsome post data$#"));
+            ->with($this->matchesRegularExpression("#^POST / HTTP/1\.0\r\nHost: www.example.com\r\n\r\nsome post data$#"));
 
         $request->end('some post data');
 
@@ -199,7 +199,7 @@ class RequestTest extends TestCase
         $this->successfulConnectionMock();
 
         $this->stream->expects($this->exactly(3))->method('write')->withConsecutive(
-            array($this->matchesRegularExpression("#^POST / HTTP/1\.0\r\nHost: www.example.com\r\nUser-Agent:.*\r\n\r\nsome$#")),
+            array($this->matchesRegularExpression("#^POST / HTTP/1\.0\r\nHost: www.example.com\r\n\r\nsome$#")),
             array($this->identicalTo("post")),
             array($this->identicalTo("data"))
         );
@@ -222,7 +222,7 @@ class RequestTest extends TestCase
         $resolveConnection = $this->successfulAsyncConnectionMock();
 
         $this->stream->expects($this->exactly(2))->method('write')->withConsecutive(
-            array($this->matchesRegularExpression("#^POST / HTTP/1\.0\r\nHost: www.example.com\r\nUser-Agent:.*\r\n\r\nsomepost$#")),
+            array($this->matchesRegularExpression("#^POST / HTTP/1\.0\r\nHost: www.example.com\r\n\r\nsomepost$#")),
             array($this->identicalTo("data"))
         )->willReturn(
             true
@@ -258,7 +258,7 @@ class RequestTest extends TestCase
         $resolveConnection = $this->successfulAsyncConnectionMock();
 
         $this->stream->expects($this->exactly(2))->method('write')->withConsecutive(
-            array($this->matchesRegularExpression("#^POST / HTTP/1\.0\r\nHost: www.example.com\r\nUser-Agent:.*\r\n\r\nsomepost$#")),
+            array($this->matchesRegularExpression("#^POST / HTTP/1\.0\r\nHost: www.example.com\r\n\r\nsomepost$#")),
             array($this->identicalTo("data"))
         )->willReturn(
             false
@@ -290,7 +290,7 @@ class RequestTest extends TestCase
         $this->successfulConnectionMock();
 
         $this->stream->expects($this->exactly(3))->method('write')->withConsecutive(
-            array($this->matchesRegularExpression("#^POST / HTTP/1\.0\r\nHost: www.example.com\r\nUser-Agent:.*\r\n\r\nsome$#")),
+            array($this->matchesRegularExpression("#^POST / HTTP/1\.0\r\nHost: www.example.com\r\n\r\nsome$#")),
             array($this->identicalTo("post")),
             array($this->identicalTo("data"))
         );

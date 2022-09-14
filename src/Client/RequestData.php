@@ -29,7 +29,6 @@ class RequestData
         $defaults = array_merge(
             array(
                 'Host'          => $this->getHost().$port,
-                'User-Agent'    => 'ReactPHP/1',
             ),
             $connectionHeaders,
             $authHeaders
