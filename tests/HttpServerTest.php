@@ -6,6 +6,8 @@ use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Loop;
 use React\Http\HttpServer;
 use React\Http\Io\IniUtil;
+use React\Http\Io\StreamingServer;
+use React\Http\Middleware\InactiveConnectionTimeoutMiddleware;
 use React\Http\Middleware\StreamingRequestMiddleware;
 use React\Promise;
 use React\Promise\Deferred;
@@ -50,7 +52,7 @@ final class HttpServerTest extends TestCase
 
     public function testConstructWithoutLoopAssignsLoopAutomatically()
     {
-        $http = new HttpServer(function () { });
+        $http = $this->createServer(function () { });
 
         $ref = new \ReflectionProperty($http, 'streamingServer');
         $ref->setAccessible(true);
@@ -59,6 +61,10 @@ final class HttpServerTest extends TestCase
         $ref = new \ReflectionProperty($streamingServer, 'clock');
         $ref->setAccessible(true);
         $clock = $ref->getValue($streamingServer);
+
+        $ref = new \ReflectionProperty($streamingServer, 'parser');
+        $ref->setAccessible(true);
+        $parser = $ref->getValue($streamingServer);
 
         $ref = new \ReflectionProperty($clock, 'loop');
         $ref->setAccessible(true);
@@ -70,13 +76,13 @@ final class HttpServerTest extends TestCase
     public function testInvalidCallbackFunctionLeadsToException()
     {
         $this->setExpectedException('InvalidArgumentException');
-        new HttpServer('invalid');
+        $this->createServer('invalid');
     }
 
     public function testSimpleRequestCallsRequestHandlerOnce()
     {
         $called = null;
-        $http = new HttpServer(function (ServerRequestInterface $request) use (&$called) {
+        $http = $this->createServer(function (ServerRequestInterface $request) use (&$called) {
             ++$called;
         });
 
@@ -93,7 +99,7 @@ final class HttpServerTest extends TestCase
     public function testSimpleRequestCallsArrayRequestHandlerOnce()
     {
         $this->called = null;
-        $http = new HttpServer(array($this, 'helperCallableOnce'));
+        $http = $this->createServer(array($this, 'helperCallableOnce'));
 
         $http->listen($this->socket);
         $this->socket->emit('connection', array($this->connection));
@@ -110,7 +116,7 @@ final class HttpServerTest extends TestCase
     public function testSimpleRequestWithMiddlewareArrayProcessesMiddlewareStack()
     {
         $called = null;
-        $http = new HttpServer(
+        $http = $this->createServer(
             function (ServerRequestInterface $request, $next) use (&$called) {
                 $called = 'before';
                 $ret = $next($request->withHeader('Demo', 'ok'));
@@ -133,7 +139,7 @@ final class HttpServerTest extends TestCase
     public function testPostFormData()
     {
         $deferred = new Deferred();
-        $http = new HttpServer(function (ServerRequestInterface $request) use ($deferred) {
+        $http = $this->createServer(function (ServerRequestInterface $request) use ($deferred) {
             $deferred->resolve($request);
         });
 
@@ -161,7 +167,7 @@ final class HttpServerTest extends TestCase
     public function testPostFileUpload()
     {
         $deferred = new Deferred();
-        $http = new HttpServer(function (ServerRequestInterface $request) use ($deferred) {
+        $http = $this->createServer(function (ServerRequestInterface $request) use ($deferred) {
             $deferred->resolve($request);
         });
 
@@ -204,7 +210,7 @@ final class HttpServerTest extends TestCase
     public function testPostJsonWillNotBeParsedByDefault()
     {
         $deferred = new Deferred();
-        $http = new HttpServer(function (ServerRequestInterface $request) use ($deferred) {
+        $http = $this->createServer(function (ServerRequestInterface $request) use ($deferred) {
             $deferred->resolve($request);
         });
 
@@ -229,7 +235,7 @@ final class HttpServerTest extends TestCase
     public function testServerReceivesBufferedRequestByDefault()
     {
         $streaming = null;
-        $http = new HttpServer(function (ServerRequestInterface $request) use (&$streaming) {
+        $http = $this->createServer(function (ServerRequestInterface $request) use (&$streaming) {
             $streaming = $request->getBody() instanceof ReadableStreamInterface;
         });
 
@@ -243,7 +249,7 @@ final class HttpServerTest extends TestCase
     public function testServerWithStreamingRequestMiddlewareReceivesStreamingRequest()
     {
         $streaming = null;
-        $http = new HttpServer(
+        $http = $this->createServer(
             new StreamingRequestMiddleware(),
             function (ServerRequestInterface $request) use (&$streaming) {
                 $streaming = $request->getBody() instanceof ReadableStreamInterface;
@@ -257,11 +263,27 @@ final class HttpServerTest extends TestCase
         $this->assertEquals(true, $streaming);
     }
 
+    public function testIdleConnectionWillBeClosedAfterConfiguredTimeout()
+    {
+        $startTime = time();
+        $this->connection->expects($this->once())->method('close');
+
+        $http = $this->createServer($this->expectCallableNever());
+
+        $http->listen($this->socket);
+
+        $this->socket->emit('connection', array($this->connection));
+
+        Loop::run();
+
+        $this->assertLessThan(1.2, time() - $startTime);
+    }
+
     public function testForwardErrors()
     {
         $exception = new \Exception();
         $capturedException = null;
-        $http = new HttpServer(function () use ($exception) {
+        $http = $this->createServer(function () use ($exception) {
             return Promise\reject($exception);
         });
         $http->on('error', function ($error) use (&$capturedException) {
@@ -329,7 +351,7 @@ final class HttpServerTest extends TestCase
      */
     public function testServerConcurrency($memory_limit, $post_max_size, $expectedConcurrency)
     {
-        $http = new HttpServer(function () { });
+        $http = $this->createServer(function () { });
 
         $ref = new \ReflectionMethod($http, 'getConcurrentRequestsLimit');
         $ref->setAccessible(true);
@@ -341,7 +363,7 @@ final class HttpServerTest extends TestCase
 
     public function testServerGetPostMaxSizeReturnsSizeFromGivenIniSetting()
     {
-        $http = new HttpServer(function () { });
+        $http = $this->createServer(function () { });
 
         $ref = new \ReflectionMethod($http, 'getMaxRequestSize');
         $ref->setAccessible(true);
@@ -353,7 +375,7 @@ final class HttpServerTest extends TestCase
 
     public function testServerGetPostMaxSizeReturnsSizeCappedFromGivenIniSetting()
     {
-        $http = new HttpServer(function () { });
+        $http = $this->createServer(function () { });
 
         $ref = new \ReflectionMethod($http, 'getMaxRequestSize');
         $ref->setAccessible(true);
@@ -369,7 +391,7 @@ final class HttpServerTest extends TestCase
             $this->markTestSkipped();
         }
 
-        $http = new HttpServer(function () { });
+        $http = $this->createServer(function () { });
 
         $ref = new \ReflectionMethod($http, 'getMaxRequestSize');
         $ref->setAccessible(true);
@@ -384,7 +406,7 @@ final class HttpServerTest extends TestCase
         $old = ini_get('memory_limit');
         ini_set('memory_limit', '-1');
 
-        $http = new HttpServer(function () { });
+        $http = $this->createServer(function () { });
 
         ini_set('memory_limit', $old);
 
@@ -414,7 +436,7 @@ final class HttpServerTest extends TestCase
             $this->markTestSkipped('Unable to change memory limit');
         }
 
-        $http = new HttpServer(function () { });
+        $http = $this->createServer(function () { });
 
         ini_set('memory_limit', $old);
 
@@ -439,7 +461,7 @@ final class HttpServerTest extends TestCase
 
     public function testConstructFiltersOutConfigurationMiddlewareBefore()
     {
-        $http = new HttpServer(new StreamingRequestMiddleware(), function () { });
+        $http = $this->createServer(new InactiveConnectionTimeoutMiddleware(0), new StreamingRequestMiddleware(), function () { });
 
         $ref = new \ReflectionProperty($http, 'streamingServer');
         $ref->setAccessible(true);
@@ -458,5 +480,14 @@ final class HttpServerTest extends TestCase
 
         $this->assertTrue(is_array($middleware));
         $this->assertCount(1, $middleware);
+    }
+
+    private function createServer()
+    {
+        $args = \func_get_args();
+        array_unshift($args, new InactiveConnectionTimeoutMiddleware(1));
+        $serverReflection = new \ReflectionClass('React\Http\HttpServer');
+
+        return $serverReflection->newInstanceArgs($args);
     }
 }
