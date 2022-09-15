@@ -87,6 +87,12 @@ final class StreamingServer extends EventEmitter
     /** @var Clock */
     private $clock;
 
+    /** @var LoopInterface */
+    private $loop;
+
+    /** @var int */
+    private $idleConnectionTimeout;
+
     /**
      * Creates an HTTP server that invokes the given callback for each incoming HTTP request
      *
@@ -95,19 +101,21 @@ final class StreamingServer extends EventEmitter
      * connections in order to then parse incoming data as HTTP.
      * See also [listen()](#listen) for more details.
      *
-     * @param LoopInterface $loop
      * @param callable $requestHandler
+     * @param int $idleConnectionTimeout
      * @see self::listen()
      */
-    public function __construct(LoopInterface $loop, $requestHandler)
+    public function __construct(LoopInterface $loop, $requestHandler, $idleConnectionTimeout)
     {
         if (!\is_callable($requestHandler)) {
             throw new \InvalidArgumentException('Invalid request handler given');
         }
 
+        $this->loop = $loop;
         $this->callback = $requestHandler;
         $this->clock = new Clock($loop);
         $this->parser = new RequestHeaderParser($this->clock);
+        $this->idleConnectionTimeout = $idleConnectionTimeout;
 
         $that = $this;
         $this->parser->on('headers', function (ServerRequestInterface $request, ConnectionInterface $conn) use ($that) {
@@ -134,7 +142,35 @@ final class StreamingServer extends EventEmitter
      */
     public function listen(ServerInterface $socket)
     {
-        $socket->on('connection', array($this->parser, 'handle'));
+        $socket->on('connection', array($this, 'handleConnection'));
+    }
+
+    /** @internal */
+    public function handleConnection(ConnectionInterface $connection)
+    {
+        $idleConnectionTimeout = $this->idleConnectionTimeout;
+        $loop = $this->loop;
+        $idleConnectionTimeoutHandler = function () use ($connection, &$closeEventHandler, &$dataEventHandler) {
+            $connection->removeListener('close', $closeEventHandler);
+            $connection->removeListener('data', $dataEventHandler);
+
+            $connection->close();
+        };
+        $timer = $this->loop->addTimer($idleConnectionTimeout, $idleConnectionTimeoutHandler);
+        $closeEventHandler = function () use ($connection, &$closeEventHandler, &$dataEventHandler, $loop, &$timer) {
+            $connection->removeListener('close', $closeEventHandler);
+            $connection->removeListener('data', $dataEventHandler);
+
+            $loop->cancelTimer($timer);
+        };
+        $dataEventHandler = function () use ($loop, $idleConnectionTimeout, $idleConnectionTimeoutHandler, &$timer) {
+            $loop->cancelTimer($timer);
+            $timer = $loop->addTimer($idleConnectionTimeout, $idleConnectionTimeoutHandler);
+        };
+        $connection->on('close', $closeEventHandler);
+        $connection->on('data', $dataEventHandler);
+
+        $this->parseRequest($connection);
     }
 
     /** @internal */
@@ -359,7 +395,7 @@ final class StreamingServer extends EventEmitter
 
             // either wait for next request over persistent connection or end connection
             if ($persist) {
-                $this->parser->handle($connection);
+                $this->parseRequest($connection);
             } else {
                 $connection->end();
             }
@@ -380,13 +416,46 @@ final class StreamingServer extends EventEmitter
         // write streaming body and then wait for next request over persistent connection
         if ($persist) {
             $body->pipe($connection, array('end' => false));
-            $parser = $this->parser;
-            $body->on('end', function () use ($connection, $parser, $body) {
+            $that = $this;
+            $body->on('end', function () use ($connection, $body, &$that) {
                 $connection->removeListener('close', array($body, 'close'));
-                $parser->handle($connection);
+                $that->parseRequest($connection);
             });
         } else {
             $body->pipe($connection);
         }
+    }
+
+    /**
+     * @internal
+     */
+    public function parseRequest(ConnectionInterface $connection)
+    {
+        $idleConnectionTimeout = $this->idleConnectionTimeout;
+        $loop = $this->loop;
+        $parser = $this->parser;
+        $idleConnectionTimeoutHandler = function () use ($connection, $parser, &$removeTimerHandler) {
+            $parser->removeListener('headers', $removeTimerHandler);
+            $parser->removeListener('error', $removeTimerHandler);
+
+            $parser->emit('error', array(
+                new \RuntimeException('Request timed out', Response::STATUS_REQUEST_TIMEOUT),
+                $connection
+            ));
+        };
+        $timer = $this->loop->addTimer($idleConnectionTimeout, $idleConnectionTimeoutHandler);
+        $removeTimerHandler = function ($_, $conn) use ($loop, $timer, $parser, $connection, &$removeTimerHandler) {
+            if ($conn !== $connection) {
+                return;
+            }
+
+            $loop->cancelTimer($timer);
+            $parser->removeListener('headers', $removeTimerHandler);
+            $parser->removeListener('error', $removeTimerHandler);
+        };
+        $this->parser->on('headers', $removeTimerHandler);
+        $this->parser->on('error', $removeTimerHandler);
+
+        $this->parser->handle($connection);
     }
 }
