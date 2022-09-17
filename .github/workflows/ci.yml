@@ -50,7 +50,7 @@ jobs:
 
   PHPStan:
     name: PHPStan
-    runs-on: ubuntu-20.04
+    runs-on: macos-latest
     strategy:
       matrix:
         php: [ 8.1 ]
