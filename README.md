@@ -342,9 +342,10 @@ $browser->get($url, $headers)->then(function (Psr\Http\Message\ResponseInterface
 Any redirected requests will follow the semantics of the original request and
 will include the same request headers as the original request except for those
 listed below.
-If the original request contained a request body, this request body will never
-be passed to the redirected request. Accordingly, each redirected request will
-remove any `Content-Length` and `Content-Type` request headers.
+If the original request is a temporary (307) or a permanent (308) redirect, request
+body and headers will be passed to the redirected request. Otherwise, the request 
+body will never be passed to the redirected request. Accordingly, each redirected 
+request will remove any `Content-Length` and `Content-Type` request headers.
 
 If the original request used HTTP authentication with an `Authorization` request
 header, this request header will only be passed as part of the redirected

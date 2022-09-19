@@ -663,7 +663,7 @@ class TransactionTest extends TestCase
             array($this->callback(function (RequestInterface $request) use ($that) {
                 $that->assertFalse($request->hasHeader('Content-Type'));
                 $that->assertFalse($request->hasHeader('Content-Length'));
-                return true;;
+                return true;
             }))
         )->willReturnOnConsecutiveCalls(
             Promise\resolve($redirectResponse),
@@ -672,6 +672,122 @@ class TransactionTest extends TestCase
 
         $transaction = new Transaction($sender, $loop);
         $transaction->send($requestWithCustomHeaders);
+    }
+
+    public function testRequestMethodShouldBeChangedWhenRedirectingWithSeeOther()
+    {
+        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+
+        $customHeaders = array(
+            'Content-Type' => 'text/html; charset=utf-8',
+            'Content-Length' => '111',
+        );
+
+        $request = new Request('POST', 'http://example.com', $customHeaders);
+        $sender = $this->makeSenderMock();
+
+        // mock sender to resolve promise with the given $redirectResponse in
+        // response to the given $request
+        $redirectResponse = new Response(303, array('Location' => 'http://example.com/new'));
+
+        // mock sender to resolve promise with the given $okResponse in
+        // response to the given $request
+        $okResponse = new Response(200);
+        $that = $this;
+        $sender->expects($this->exactly(2))->method('send')->withConsecutive(
+            array($this->anything()),
+            array($this->callback(function (RequestInterface $request) use ($that) {
+                $that->assertEquals('GET', $request->getMethod());
+                $that->assertFalse($request->hasHeader('Content-Type'));
+                $that->assertFalse($request->hasHeader('Content-Length'));
+                return true;
+            }))
+        )->willReturnOnConsecutiveCalls(
+            Promise\resolve($redirectResponse),
+            Promise\resolve($okResponse)
+        );
+
+        $transaction = new Transaction($sender, $loop);
+        $transaction->send($request);
+    }
+
+    public function testRequestMethodAndBodyShouldNotBeChangedWhenRedirectingWith307Or308()
+    {
+        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+
+        $customHeaders = array(
+            'Content-Type' => 'text/html; charset=utf-8',
+            'Content-Length' => '111',
+        );
+
+        $request = new Request('POST', 'http://example.com', $customHeaders, '{"key":"value"}');
+        $sender = $this->makeSenderMock();
+
+        // mock sender to resolve promise with the given $redirectResponse in
+        // response to the given $request
+        $redirectResponse = new Response(307, array('Location' => 'http://example.com/new'));
+
+        // mock sender to resolve promise with the given $okResponse in
+        // response to the given $request
+        $okResponse = new Response(200);
+        $that = $this;
+        $sender->expects($this->exactly(2))->method('send')->withConsecutive(
+            array($this->anything()),
+            array($this->callback(function (RequestInterface $request) use ($that) {
+                $that->assertEquals('POST', $request->getMethod());
+                $that->assertEquals('{"key":"value"}', (string)$request->getBody());
+                $that->assertEquals(
+                    array(
+                        'Content-Type' => array('text/html; charset=utf-8'),
+                        'Content-Length' => array('111'),
+                        'Host' => array('example.com')
+                    ),
+                    $request->getHeaders()
+                );
+                return true;
+            }))
+        )->willReturnOnConsecutiveCalls(
+            Promise\resolve($redirectResponse),
+            Promise\resolve($okResponse)
+        );
+
+        $transaction = new Transaction($sender, $loop);
+        $transaction->send($request);
+    }
+
+    public function testRedirectingStreamingBodyWith307Or308ShouldThrowCantRedirectStreamException()
+    {
+        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+
+        $customHeaders = array(
+            'Content-Type' => 'text/html; charset=utf-8',
+            'Content-Length' => '111',
+        );
+
+        $stream = new ThroughStream();
+        $request = new Request('POST', 'http://example.com', $customHeaders, new ReadableBodyStream($stream));
+        $sender = $this->makeSenderMock();
+
+        // mock sender to resolve promise with the given $redirectResponse in
+        // response to the given $request
+        $redirectResponse = new Response(307, array('Location' => 'http://example.com/new'));
+
+        $sender->expects($this->once())->method('send')->withConsecutive(
+            array($this->anything())
+        )->willReturnOnConsecutiveCalls(
+            Promise\resolve($redirectResponse)
+        );
+
+        $transaction = new Transaction($sender, $loop);
+        $promise = $transaction->send($request);
+
+        $exception = null;
+        $promise->then(null, function ($reason) use (&$exception) {
+            $exception = $reason;
+        });
+
+        assert($exception instanceof \RuntimeException);
+        $this->assertEquals('Unable to redirect request with streaming body', $exception->getMessage());
     }
 
     public function testCancelTransactionWillCancelRequest()
