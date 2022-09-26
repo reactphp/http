@@ -23,10 +23,11 @@ final class RequestBodyBufferMiddleware
     public function __construct($sizeLimit = null)
     {
         if ($sizeLimit === null) {
-            $sizeLimit = \ini_get('post_max_size');
+            $iniSizeLimit = \ini_get('post_max_size');
+            $sizeLimit = $iniSizeLimit !== '0' ? $iniSizeLimit : null;
         }
 
-        $this->sizeLimit = IniUtil::iniSizeToBytes($sizeLimit);
+        $this->sizeLimit = $sizeLimit !== null ? IniUtil::iniSizeToBytes($sizeLimit) : null;
     }
 
     public function __invoke(ServerRequestInterface $request, $stack)
@@ -37,7 +38,7 @@ final class RequestBodyBufferMiddleware
         // happy path: skip if body is known to be empty (or is already buffered)
         if ($size === 0 || !$body instanceof ReadableStreamInterface) {
             // replace with empty body if body is streaming (or buffered size exceeds limit)
-            if ($body instanceof ReadableStreamInterface || $size > $this->sizeLimit) {
+            if ($body instanceof ReadableStreamInterface || ($this->sizeLimit !== null && $size > $this->sizeLimit)) {
                 $request = $request->withBody(new BufferedBody(''));
             }
 
@@ -46,7 +47,7 @@ final class RequestBodyBufferMiddleware
 
         // request body of known size exceeding limit
         $sizeLimit = $this->sizeLimit;
-        if ($size > $this->sizeLimit) {
+        if ($this->sizeLimit !== null && $size > $this->sizeLimit) {
             $sizeLimit = 0;
         }
 
