@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.8.0 (2022-09-29)
+
+*   Feature: Support for default request headers.
+    (#461 by @51imyy)
+
+    ```php
+    $browser = new React\Http\Browser();
+    $browser = $browser->withHeader('User-Agent', 'ACME');
+
+    $browser->get($url)->then(…);
+    ```
+
+*   Feature: Forward compatibility with upcoming Promise v3.
+    (#460 by @clue)
+
 ## 1.7.0 (2022-08-23)
 
 This is a **SECURITY** and feature release for the 1.x series of ReactPHP's HTTP component.
@@ -19,7 +34,7 @@ This is a **SECURITY** and feature release for the 1.x series of ReactPHP's HTTP
     (#444 by @mrsimonbennett)
 
 *   Minor documentation improvements.
-    (#452 by @clue, #458 by @nhedger, #448 by @jorrit and #446 by @SimonFrings
+    (#452 by @clue, #458 by @nhedger, #448 by @jorrit and #446 by @SimonFrings)
 
 *   Improve test suite, update to use new reactphp/async package instead of clue/reactphp-block,
     skip memory tests when lowering memory limit fails and fix legacy HHVM build.
