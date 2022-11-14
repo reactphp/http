@@ -41,14 +41,18 @@
         "clue/http-proxy-react": "^1.8",
         "clue/reactphp-ssh-proxy": "^1.4",
         "clue/socks-react": "^1.4",
-        "phpunit/phpunit": "^9.3 || ^5.7 || ^4.8.35",
+        "phpunit/phpunit": "^9.5 || ^5.7 || ^4.8.35",
         "react/async": "^4 || ^3 || ^2",
         "react/promise-timer": "^1.9"
     },
     "autoload": {
-        "psr-4": { "React\\Http\\": "src" }
+        "psr-4": {
+            "React\\Http\\": "src/"
+        }
     },
     "autoload-dev": {
-        "psr-4": { "React\\Tests\\Http\\": "tests" }
+        "psr-4": {
+            "React\\Tests\\Http\\": "tests/"
+        }
     }
 }
