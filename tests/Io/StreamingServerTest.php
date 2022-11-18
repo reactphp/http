@@ -1567,9 +1567,9 @@ class StreamingServerTest extends TestCase
 
         $this->assertInstanceOf('InvalidArgumentException', $error);
 
-        $this->assertContainsString("HTTP/1.1 505 HTTP Version not supported\r\n", $buffer);
+        $this->assertContainsString("HTTP/1.1 505 HTTP Version Not Supported\r\n", $buffer);
         $this->assertContainsString("\r\n\r\n", $buffer);
-        $this->assertContainsString("Error 505: HTTP Version not supported", $buffer);
+        $this->assertContainsString("Error 505: HTTP Version Not Supported", $buffer);
     }
 
     public function testRequestOverflowWillEmitErrorAndSendErrorResponse()

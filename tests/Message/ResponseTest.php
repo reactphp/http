@@ -54,6 +54,39 @@ class ResponseTest extends TestCase
         new Response(200, array(), tmpfile());
     }
 
+    public function testWithStatusReturnsNewInstanceWhenStatusIsChanged()
+    {
+        $response = new Response(200);
+
+        $new = $response->withStatus(404);
+        $this->assertNotSame($response, $new);
+        $this->assertEquals(404, $new->getStatusCode());
+        $this->assertEquals('Not Found', $new->getReasonPhrase());
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals('OK', $response->getReasonPhrase());
+    }
+
+    public function testWithStatusReturnsSameInstanceWhenStatusIsUnchanged()
+    {
+        $response = new Response(200);
+
+        $new = $response->withStatus(200);
+        $this->assertSame($response, $new);
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals('OK', $response->getReasonPhrase());
+    }
+
+    public function testWithStatusReturnsNewInstanceWhenStatusIsUnchangedButReasonIsChanged()
+    {
+        $response = new Response(200);
+
+        $new = $response->withStatus(200, 'Quite Ok');
+        $this->assertNotSame($response, $new);
+        $this->assertEquals(200, $new->getStatusCode());
+        $this->assertEquals('Quite Ok', $new->getReasonPhrase());
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals('OK', $response->getReasonPhrase());
+    }
 
     public function testHtmlMethodReturnsHtmlResponse()
     {
