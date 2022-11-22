@@ -8,7 +8,7 @@ use Psr\Http\Message\UriInterface;
 use React\Http\Io\BufferedBody;
 use React\Http\Io\HttpBodyStream;
 use React\Stream\ReadableStreamInterface;
-use RingCentral\Psr7\Request;
+use RingCentral\Psr7\Request as BaseRequest;
 
 /**
  * Respresents an incoming server request message.
@@ -30,7 +30,7 @@ use RingCentral\Psr7\Request;
  *
  * @see ServerRequestInterface
  */
-final class ServerRequest extends Request implements ServerRequestInterface
+final class ServerRequest extends BaseRequest implements ServerRequestInterface
 {
     private $attributes = array();
 

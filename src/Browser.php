@@ -3,13 +3,12 @@
 namespace React\Http;
 
 use Psr\Http\Message\ResponseInterface;
-use RingCentral\Psr7\Request;
 use RingCentral\Psr7\Uri;
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
-use React\Http\Io\ReadableBodyStream;
 use React\Http\Io\Sender;
 use React\Http\Io\Transaction;
+use React\Http\Message\Request;
 use React\Promise\PromiseInterface;
 use React\Socket\ConnectorInterface;
 use React\Stream\ReadableStreamInterface;
@@ -836,10 +835,6 @@ class Browser
         if ($this->baseUrl !== null) {
             // ensure we're actually below the base URL
             $url = Uri::resolve($this->baseUrl, $url);
-        }
-
-        if ($body instanceof ReadableStreamInterface) {
-            $body = new ReadableBodyStream($body);
         }
 
         foreach ($this->defaultHeaders as $key => $value) {

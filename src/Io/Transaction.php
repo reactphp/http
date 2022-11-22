@@ -5,14 +5,13 @@ namespace React\Http\Io;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
-use React\Http\Message\Response;
-use RingCentral\Psr7\Request;
-use RingCentral\Psr7\Uri;
 use React\EventLoop\LoopInterface;
+use React\Http\Message\Response;
 use React\Http\Message\ResponseException;
 use React\Promise\Deferred;
 use React\Promise\PromiseInterface;
 use React\Stream\ReadableStreamInterface;
+use RingCentral\Psr7\Uri;
 
 /**
  * @internal
