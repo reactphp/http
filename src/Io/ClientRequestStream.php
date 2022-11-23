@@ -1,8 +1,9 @@
 <?php
 
-namespace React\Http\Client;
+namespace React\Http\Io;
 
 use Evenement\EventEmitter;
+use React\Http\Client\RequestData;
 use React\Promise;
 use React\Socket\ConnectionInterface;
 use React\Socket\ConnectorInterface;
@@ -16,7 +17,7 @@ use RingCentral\Psr7 as gPsr;
  * @event end
  * @internal
  */
-class Request extends EventEmitter implements WritableStreamInterface
+class ClientRequestStream extends EventEmitter implements WritableStreamInterface
 {
     const STATE_INIT = 0;
     const STATE_WRITING_HEAD = 1;
@@ -70,7 +71,7 @@ class Request extends EventEmitter implements WritableStreamInterface
 
                 $more = $stream->write($headers . $pendingWrites);
 
-                $stateRef = Request::STATE_HEAD_WRITTEN;
+                $stateRef = ClientRequestStream::STATE_HEAD_WRITTEN;
 
                 // clear pending writes if non-empty
                 if ($pendingWrites !== '') {

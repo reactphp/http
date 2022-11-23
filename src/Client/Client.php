@@ -3,8 +3,9 @@
 namespace React\Http\Client;
 
 use React\EventLoop\LoopInterface;
-use React\Socket\ConnectorInterface;
+use React\Http\Io\ClientRequestStream;
 use React\Socket\Connector;
+use React\Socket\ConnectorInterface;
 
 /**
  * @internal
@@ -22,10 +23,11 @@ class Client
         $this->connector = $connector;
     }
 
+    /** @return ClientRequestStream */
     public function request($method, $url, array $headers = array(), $protocolVersion = '1.0')
     {
         $requestData = new RequestData($method, $url, $headers, $protocolVersion);
 
-        return new Request($this->connector, $requestData);
+        return new ClientRequestStream($this->connector, $requestData);
     }
 }
