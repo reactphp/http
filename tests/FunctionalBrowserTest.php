@@ -7,16 +7,15 @@ use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Loop;
 use React\Http\Browser;
 use React\Http\HttpServer;
+use React\Http\Message\Response;
 use React\Http\Message\ResponseException;
 use React\Http\Middleware\StreamingRequestMiddleware;
-use React\Http\Message\Response;
 use React\Promise\Promise;
 use React\Promise\Stream;
 use React\Socket\Connector;
 use React\Socket\SocketServer;
 use React\Stream\ReadableStreamInterface;
 use React\Stream\ThroughStream;
-use RingCentral\Psr7\Request;
 
 class FunctionalBrowserTest extends TestCase
 {

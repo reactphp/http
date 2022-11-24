@@ -7,14 +7,14 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use React\Http\Io\ReadableBodyStream;
 use React\Http\Io\Transaction;
+use React\Http\Message\Request;
+use React\Http\Message\Response;
 use React\Http\Message\ResponseException;
 use React\EventLoop\Loop;
 use React\Promise;
 use React\Promise\Deferred;
 use React\Stream\ThroughStream;
 use React\Tests\Http\TestCase;
-use RingCentral\Psr7\Request;
-use RingCentral\Psr7\Response;
 
 class TransactionTest extends TestCase
 {

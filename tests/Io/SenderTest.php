@@ -6,10 +6,10 @@ use React\Http\Client\Client as HttpClient;
 use React\Http\Client\RequestData;
 use React\Http\Io\ReadableBodyStream;
 use React\Http\Io\Sender;
+use React\Http\Message\Request;
 use React\Promise;
 use React\Stream\ThroughStream;
 use React\Tests\Http\TestCase;
-use RingCentral\Psr7\Request;
 
 class SenderTest extends TestCase
 {

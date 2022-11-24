@@ -77,6 +77,7 @@ multiple concurrent HTTP requests without blocking.
             * [json()](#json)
             * [plaintext()](#plaintext)
             * [xml()](#xml)
+        * [Request](#request-1)
         * [ServerRequest](#serverrequest)
         * [ResponseException](#responseexception)
     * [React\Http\Middleware](#reacthttpmiddleware)
@@ -2627,6 +2628,24 @@ $response = React\Http\Message\Response::xml(
     "<error><message>Invalid user name given.</message></error>\n"
 )->withStatus(React\Http\Message\Response::STATUS_BAD_REQUEST);
 ```
+
+#### Request
+
+The `React\Http\Message\Request` class can be used to
+respresent an outgoing HTTP request message.
+
+This class implements the
+[PSR-7 `RequestInterface`](https://www.php-fig.org/psr/psr-7/#32-psrhttpmessagerequestinterface)
+which extends the
+[PSR-7 `MessageInterface`](https://www.php-fig.org/psr/psr-7/#31-psrhttpmessagemessageinterface).
+
+This is mostly used internally to represent each outgoing HTTP request
+message for the HTTP client implementation. Likewise, you can also use this
+class with other HTTP client implementations and for tests.
+
+> Internally, this implementation builds on top of an existing outgoing
+  request message and only adds support for streaming. This base class is
+  considered an implementation detail that may change in the future.
 
 #### ServerRequest
 
