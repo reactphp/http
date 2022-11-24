@@ -2,12 +2,11 @@
 
 namespace React\Tests\Http\Io;
 
-use React\Http\Client\RequestData;
 use React\Http\Io\ClientRequestStream;
-use React\Stream\DuplexResourceStream;
-use React\Promise\RejectedPromise;
+use React\Http\Message\Request;
 use React\Promise\Deferred;
 use React\Promise\Promise;
+use React\Stream\DuplexResourceStream;
 use React\Tests\Http\TestCase;
 
 class ClientRequestStreamTest extends TestCase
@@ -31,7 +30,7 @@ class ClientRequestStreamTest extends TestCase
     /** @test */
     public function requestShouldBindToStreamEventsAndUseconnector()
     {
-        $requestData = new RequestData('GET', 'http://www.example.com');
+        $requestData = new Request('GET', 'http://www.example.com');
         $request = new ClientRequestStream($this->connector, $requestData);
 
         $this->successfulConnectionMock();
@@ -66,7 +65,7 @@ class ClientRequestStreamTest extends TestCase
      */
     public function requestShouldConnectViaTlsIfUrlUsesHttpsScheme()
     {
-        $requestData = new RequestData('GET', 'https://www.example.com');
+        $requestData = new Request('GET', 'https://www.example.com');
         $request = new ClientRequestStream($this->connector, $requestData);
 
         $this->connector->expects($this->once())->method('connect')->with('tls://www.example.com:443')->willReturn(new Promise(function () { }));
@@ -77,7 +76,7 @@ class ClientRequestStreamTest extends TestCase
     /** @test */
     public function requestShouldEmitErrorIfConnectionFails()
     {
-        $requestData = new RequestData('GET', 'http://www.example.com');
+        $requestData = new Request('GET', 'http://www.example.com');
         $request = new ClientRequestStream($this->connector, $requestData);
 
         $this->connector->expects($this->once())->method('connect')->willReturn(\React\Promise\reject(new \RuntimeException()));
@@ -93,7 +92,7 @@ class ClientRequestStreamTest extends TestCase
     /** @test */
     public function requestShouldEmitErrorIfConnectionClosesBeforeResponseIsParsed()
     {
-        $requestData = new RequestData('GET', 'http://www.example.com');
+        $requestData = new Request('GET', 'http://www.example.com');
         $request = new ClientRequestStream($this->connector, $requestData);
 
         $this->successfulConnectionMock();
@@ -110,7 +109,7 @@ class ClientRequestStreamTest extends TestCase
     /** @test */
     public function requestShouldEmitErrorIfConnectionEmitsError()
     {
-        $requestData = new RequestData('GET', 'http://www.example.com');
+        $requestData = new Request('GET', 'http://www.example.com');
         $request = new ClientRequestStream($this->connector, $requestData);
 
         $this->successfulConnectionMock();
@@ -127,7 +126,7 @@ class ClientRequestStreamTest extends TestCase
     /** @test */
     public function requestShouldEmitErrorIfRequestParserThrowsException()
     {
-        $requestData = new RequestData('GET', 'http://www.example.com');
+        $requestData = new Request('GET', 'http://www.example.com');
         $request = new ClientRequestStream($this->connector, $requestData);
 
         $this->successfulConnectionMock();
@@ -143,7 +142,7 @@ class ClientRequestStreamTest extends TestCase
      */
     public function requestShouldEmitErrorIfUrlIsInvalid()
     {
-        $requestData = new RequestData('GET', 'ftp://www.example.com');
+        $requestData = new Request('GET', 'ftp://www.example.com');
         $request = new ClientRequestStream($this->connector, $requestData);
 
         $request->on('error', $this->expectCallableOnceWith($this->isInstanceOf('InvalidArgumentException')));
@@ -159,7 +158,7 @@ class ClientRequestStreamTest extends TestCase
      */
     public function requestShouldEmitErrorIfUrlHasNoScheme()
     {
-        $requestData = new RequestData('GET', 'www.example.com');
+        $requestData = new Request('GET', 'www.example.com');
         $request = new ClientRequestStream($this->connector, $requestData);
 
         $request->on('error', $this->expectCallableOnceWith($this->isInstanceOf('InvalidArgumentException')));
@@ -171,9 +170,49 @@ class ClientRequestStreamTest extends TestCase
     }
 
     /** @test */
+    public function getRequestShouldSendAGetRequest()
+    {
+        $requestData = new Request('GET', 'http://www.example.com', array(), '', '1.0');
+        $request = new ClientRequestStream($this->connector, $requestData);
+
+        $this->successfulConnectionMock();
+
+        $this->stream->expects($this->once())->method('write')->with("GET / HTTP/1.0\r\nHost: www.example.com\r\n\r\n");
+
+        $request->end();
+    }
+
+    /** @test */
+    public function getHttp11RequestShouldSendAGetRequestWithGivenConnectionCloseHeader()
+    {
+        $requestData = new Request('GET', 'http://www.example.com', array('Connection' => 'close'), '', '1.1');
+        $request = new ClientRequestStream($this->connector, $requestData);
+
+        $this->successfulConnectionMock();
+
+        $this->stream->expects($this->once())->method('write')->with("GET / HTTP/1.1\r\nHost: www.example.com\r\nConnection: close\r\n\r\n");
+
+        $request->end();
+    }
+
+    /** @test */
+    public function getOptionsAsteriskShouldSendAOptionsRequestAsteriskRequestTarget()
+    {
+        $requestData = new Request('OPTIONS', 'http://www.example.com', array('Connection' => 'close'), '', '1.1');
+        $requestData = $requestData->withRequestTarget('*');
+        $request = new ClientRequestStream($this->connector, $requestData);
+
+        $this->successfulConnectionMock();
+
+        $this->stream->expects($this->once())->method('write')->with("OPTIONS * HTTP/1.1\r\nHost: www.example.com\r\nConnection: close\r\n\r\n");
+
+        $request->end();
+    }
+
+    /** @test */
     public function postRequestShouldSendAPostRequest()
     {
-        $requestData = new RequestData('POST', 'http://www.example.com');
+        $requestData = new Request('POST', 'http://www.example.com', array(), '', '1.0');
         $request = new ClientRequestStream($this->connector, $requestData);
 
         $this->successfulConnectionMock();
@@ -193,7 +232,7 @@ class ClientRequestStreamTest extends TestCase
     /** @test */
     public function writeWithAPostRequestShouldSendToTheStream()
     {
-        $requestData = new RequestData('POST', 'http://www.example.com');
+        $requestData = new Request('POST', 'http://www.example.com', array(), '', '1.0');
         $request = new ClientRequestStream($this->connector, $requestData);
 
         $this->successfulConnectionMock();
@@ -216,7 +255,7 @@ class ClientRequestStreamTest extends TestCase
     /** @test */
     public function writeWithAPostRequestShouldSendBodyAfterHeadersAndEmitDrainEvent()
     {
-        $requestData = new RequestData('POST', 'http://www.example.com');
+        $requestData = new Request('POST', 'http://www.example.com', array(), '', '1.0');
         $request = new ClientRequestStream($this->connector, $requestData);
 
         $resolveConnection = $this->successfulAsyncConnectionMock();
@@ -247,7 +286,7 @@ class ClientRequestStreamTest extends TestCase
     /** @test */
     public function writeWithAPostRequestShouldForwardDrainEventIfFirstChunkExceedsBuffer()
     {
-        $requestData = new RequestData('POST', 'http://www.example.com');
+        $requestData = new Request('POST', 'http://www.example.com', array(), '', '1.0');
         $request = new ClientRequestStream($this->connector, $requestData);
 
         $this->stream = $this->getMockBuilder('React\Socket\Connection')
@@ -284,7 +323,7 @@ class ClientRequestStreamTest extends TestCase
     /** @test */
     public function pipeShouldPipeDataIntoTheRequestBody()
     {
-        $requestData = new RequestData('POST', 'http://www.example.com');
+        $requestData = new Request('POST', 'http://www.example.com', array(), '', '1.0');
         $request = new ClientRequestStream($this->connector, $requestData);
 
         $this->successfulConnectionMock();
@@ -317,7 +356,7 @@ class ClientRequestStreamTest extends TestCase
      */
     public function writeShouldStartConnecting()
     {
-        $requestData = new RequestData('POST', 'http://www.example.com');
+        $requestData = new Request('POST', 'http://www.example.com');
         $request = new ClientRequestStream($this->connector, $requestData);
 
         $this->connector->expects($this->once())
@@ -333,7 +372,7 @@ class ClientRequestStreamTest extends TestCase
      */
     public function endShouldStartConnectingAndChangeStreamIntoNonWritableMode()
     {
-        $requestData = new RequestData('POST', 'http://www.example.com');
+        $requestData = new Request('POST', 'http://www.example.com');
         $request = new ClientRequestStream($this->connector, $requestData);
 
         $this->connector->expects($this->once())
@@ -351,7 +390,7 @@ class ClientRequestStreamTest extends TestCase
      */
     public function closeShouldEmitCloseEvent()
     {
-        $requestData = new RequestData('POST', 'http://www.example.com');
+        $requestData = new Request('POST', 'http://www.example.com');
         $request = new ClientRequestStream($this->connector, $requestData);
 
         $request->on('close', $this->expectCallableOnce());
@@ -363,7 +402,7 @@ class ClientRequestStreamTest extends TestCase
      */
     public function writeAfterCloseReturnsFalse()
     {
-        $requestData = new RequestData('POST', 'http://www.example.com');
+        $requestData = new Request('POST', 'http://www.example.com');
         $request = new ClientRequestStream($this->connector, $requestData);
 
         $request->close();
@@ -377,7 +416,7 @@ class ClientRequestStreamTest extends TestCase
      */
     public function endAfterCloseIsNoOp()
     {
-        $requestData = new RequestData('POST', 'http://www.example.com');
+        $requestData = new Request('POST', 'http://www.example.com');
         $request = new ClientRequestStream($this->connector, $requestData);
 
         $this->connector->expects($this->never())
@@ -392,7 +431,7 @@ class ClientRequestStreamTest extends TestCase
      */
     public function closeShouldCancelPendingConnectionAttempt()
     {
-        $requestData = new RequestData('POST', 'http://www.example.com');
+        $requestData = new Request('POST', 'http://www.example.com');
         $request = new ClientRequestStream($this->connector, $requestData);
 
         $promise = new Promise(function () {}, function () {
@@ -416,7 +455,7 @@ class ClientRequestStreamTest extends TestCase
     /** @test */
     public function requestShouldRemoveAllListenerAfterClosed()
     {
-        $requestData = new RequestData('GET', 'http://www.example.com');
+        $requestData = new Request('GET', 'http://www.example.com');
         $request = new ClientRequestStream($this->connector, $requestData);
 
         $request->on('close', function () {});
@@ -450,7 +489,7 @@ class ClientRequestStreamTest extends TestCase
     /** @test */
     public function multivalueHeader()
     {
-        $requestData = new RequestData('GET', 'http://www.example.com');
+        $requestData = new Request('GET', 'http://www.example.com');
         $request = new ClientRequestStream($this->connector, $requestData);
 
         $this->successfulConnectionMock();

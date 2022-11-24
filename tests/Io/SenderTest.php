@@ -2,8 +2,8 @@
 
 namespace React\Tests\Http\Io;
 
+use Psr\Http\Message\RequestInterface;
 use React\Http\Client\Client as HttpClient;
-use React\Http\Client\RequestData;
 use React\Http\Io\ReadableBodyStream;
 use React\Http\Io\Sender;
 use React\Http\Message\Request;
@@ -71,12 +71,9 @@ class SenderTest extends TestCase
     public function testSendPostWillAutomaticallySendContentLengthHeader()
     {
         $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
-        $client->expects($this->once())->method('request')->with(
-            'POST',
-            'http://www.google.com/',
-            array('Host' => 'www.google.com', 'Content-Length' => '5'),
-            '1.1'
-        )->willReturn($this->getMockBuilder('React\Http\Io\ClientRequestStream')->disableOriginalConstructor()->getMock());
+        $client->expects($this->once())->method('request')->with($this->callback(function (RequestInterface $request) {
+            return $request->getHeaderLine('Content-Length') === '5';
+        }))->willReturn($this->getMockBuilder('React\Http\Io\ClientRequestStream')->disableOriginalConstructor()->getMock());
 
         $sender = new Sender($client);
 
@@ -87,12 +84,9 @@ class SenderTest extends TestCase
     public function testSendPostWillAutomaticallySendContentLengthZeroHeaderForEmptyRequestBody()
     {
         $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
-        $client->expects($this->once())->method('request')->with(
-            'POST',
-            'http://www.google.com/',
-            array('Host' => 'www.google.com', 'Content-Length' => '0'),
-            '1.1'
-        )->willReturn($this->getMockBuilder('React\Http\Io\ClientRequestStream')->disableOriginalConstructor()->getMock());
+        $client->expects($this->once())->method('request')->with($this->callback(function (RequestInterface $request) {
+            return $request->getHeaderLine('Content-Length') === '0';
+        }))->willReturn($this->getMockBuilder('React\Http\Io\ClientRequestStream')->disableOriginalConstructor()->getMock());
 
         $sender = new Sender($client);
 
@@ -106,12 +100,9 @@ class SenderTest extends TestCase
         $outgoing->expects($this->once())->method('write')->with("");
 
         $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
-        $client->expects($this->once())->method('request')->with(
-            'POST',
-            'http://www.google.com/',
-            array('Host' => 'www.google.com', 'Transfer-Encoding' => 'chunked'),
-            '1.1'
-        )->willReturn($outgoing);
+        $client->expects($this->once())->method('request')->with($this->callback(function (RequestInterface $request) {
+            return $request->getHeaderLine('Transfer-Encoding') === 'chunked';
+        }))->willReturn($outgoing);
 
         $sender = new Sender($client);
 
@@ -247,12 +238,9 @@ class SenderTest extends TestCase
     public function testSendPostStreamWithExplicitContentLengthWillSendHeaderAsIs()
     {
         $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
-        $client->expects($this->once())->method('request')->with(
-            'POST',
-            'http://www.google.com/',
-            array('Host' => 'www.google.com', 'Content-Length' => '100'),
-            '1.1'
-        )->willReturn($this->getMockBuilder('React\Http\Io\ClientRequestStream')->disableOriginalConstructor()->getMock());
+        $client->expects($this->once())->method('request')->with($this->callback(function (RequestInterface $request) {
+            return $request->getHeaderLine('Content-Length') === '100';
+        }))->willReturn($this->getMockBuilder('React\Http\Io\ClientRequestStream')->disableOriginalConstructor()->getMock());
 
         $sender = new Sender($client);
 
@@ -264,12 +252,9 @@ class SenderTest extends TestCase
     public function testSendGetWillNotPassContentLengthHeaderForEmptyRequestBody()
     {
         $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
-        $client->expects($this->once())->method('request')->with(
-            'GET',
-            'http://www.google.com/',
-            array('Host' => 'www.google.com'),
-            '1.1'
-        )->willReturn($this->getMockBuilder('React\Http\Io\ClientRequestStream')->disableOriginalConstructor()->getMock());
+        $client->expects($this->once())->method('request')->with($this->callback(function (RequestInterface $request) {
+            return !$request->hasHeader('Content-Length');
+        }))->willReturn($this->getMockBuilder('React\Http\Io\ClientRequestStream')->disableOriginalConstructor()->getMock());
 
         $sender = new Sender($client);
 
@@ -280,12 +265,9 @@ class SenderTest extends TestCase
     public function testSendCustomMethodWillNotPassContentLengthHeaderForEmptyRequestBody()
     {
         $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
-        $client->expects($this->once())->method('request')->with(
-            'CUSTOM',
-            'http://www.google.com/',
-            array('Host' => 'www.google.com'),
-            '1.1'
-        )->willReturn($this->getMockBuilder('React\Http\Io\ClientRequestStream')->disableOriginalConstructor()->getMock());
+        $client->expects($this->once())->method('request')->with($this->callback(function (RequestInterface $request) {
+            return !$request->hasHeader('Content-Length');
+        }))->willReturn($this->getMockBuilder('React\Http\Io\ClientRequestStream')->disableOriginalConstructor()->getMock());
 
         $sender = new Sender($client);
 
@@ -296,16 +278,83 @@ class SenderTest extends TestCase
     public function testSendCustomMethodWithExplicitContentLengthZeroWillBePassedAsIs()
     {
         $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
-        $client->expects($this->once())->method('request')->with(
-            'CUSTOM',
-            'http://www.google.com/',
-            array('Host' => 'www.google.com', 'Content-Length' => '0'),
-            '1.1'
-        )->willReturn($this->getMockBuilder('React\Http\Io\ClientRequestStream')->disableOriginalConstructor()->getMock());
+        $client->expects($this->once())->method('request')->with($this->callback(function (RequestInterface $request) {
+            return $request->getHeaderLine('Content-Length') === '0';
+        }))->willReturn($this->getMockBuilder('React\Http\Io\ClientRequestStream')->disableOriginalConstructor()->getMock());
 
         $sender = new Sender($client);
 
         $request = new Request('CUSTOM', 'http://www.google.com/', array('Content-Length' => '0'));
+        $sender->send($request);
+    }
+
+    /** @test */
+    public function getHttp10RequestShouldSendAGetRequestWithoutConnectionHeaderByDefault()
+    {
+        $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
+        $client->expects($this->once())->method('request')->with($this->callback(function (RequestInterface $request) {
+            return !$request->hasHeader('Connection');
+        }))->willReturn($this->getMockBuilder('React\Http\Io\ClientRequestStream')->disableOriginalConstructor()->getMock());
+
+        $sender = new Sender($client);
+
+        $request = new Request('GET', 'http://www.example.com', array(), '', '1.0');
+        $sender->send($request);
+    }
+
+    /** @test */
+    public function getHttp11RequestShouldSendAGetRequestWithConnectionCloseHeaderByDefault()
+    {
+        $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
+        $client->expects($this->once())->method('request')->with($this->callback(function (RequestInterface $request) {
+            return $request->getHeaderLine('Connection') === 'close';
+        }))->willReturn($this->getMockBuilder('React\Http\Io\ClientRequestStream')->disableOriginalConstructor()->getMock());
+
+        $sender = new Sender($client);
+
+        $request = new Request('GET', 'http://www.example.com', array(), '', '1.1');
+        $sender->send($request);
+    }
+
+    /** @test */
+    public function getHttp11RequestShouldSendAGetRequestWithGivenConnectionUpgradeHeader()
+    {
+        $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
+        $client->expects($this->once())->method('request')->with($this->callback(function (RequestInterface $request) {
+            return $request->getHeaderLine('Connection') === 'upgrade';
+        }))->willReturn($this->getMockBuilder('React\Http\Io\ClientRequestStream')->disableOriginalConstructor()->getMock());
+
+        $sender = new Sender($client);
+
+        $request = new Request('GET', 'http://www.example.com', array('Connection' => 'upgrade'), '', '1.1');
+        $sender->send($request);
+    }
+
+    /** @test */
+    public function getRequestWithUserAndPassShouldSendAGetRequestWithBasicAuthorizationHeader()
+    {
+        $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
+        $client->expects($this->once())->method('request')->with($this->callback(function (RequestInterface $request) {
+            return $request->getHeaderLine('Authorization') === 'Basic am9objpkdW1teQ==';
+        }))->willReturn($this->getMockBuilder('React\Http\Io\ClientRequestStream')->disableOriginalConstructor()->getMock());
+
+        $sender = new Sender($client);
+
+        $request = new Request('GET', 'http://john:dummy@www.example.com');
+        $sender->send($request);
+    }
+
+    /** @test */
+    public function getRequestWithUserAndPassShouldSendAGetRequestWithGivenAuthorizationHeaderBasicAuthorizationHeader()
+    {
+        $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
+        $client->expects($this->once())->method('request')->with($this->callback(function (RequestInterface $request) {
+            return $request->getHeaderLine('Authorization') === 'bearer abc123';
+        }))->willReturn($this->getMockBuilder('React\Http\Io\ClientRequestStream')->disableOriginalConstructor()->getMock());
+
+        $sender = new Sender($client);
+
+        $request = new Request('GET', 'http://john:dummy@www.example.com', array('Authorization' => 'bearer abc123'));
         $sender->send($request);
     }
 
@@ -354,55 +403,5 @@ class SenderTest extends TestCase
         });
 
         $this->assertInstanceOf('RuntimeException', $exception);
-    }
-
-    public function provideRequestProtocolVersion()
-    {
-        return array(
-            array(
-                new Request('GET', 'http://www.google.com/'),
-                'GET',
-                'http://www.google.com/',
-                array(
-                    'Host' => 'www.google.com',
-                ),
-                '1.1',
-            ),
-            array(
-                new Request('GET', 'http://www.google.com/', array(), '', '1.0'),
-                'GET',
-                'http://www.google.com/',
-                array(
-                    'Host' => 'www.google.com',
-                ),
-                '1.0',
-            ),
-        );
-    }
-
-    /**
-     * @dataProvider provideRequestProtocolVersion
-     */
-    public function testRequestProtocolVersion(Request $Request, $method, $uri, $headers, $protocolVersion)
-    {
-        $http = $this->getMockBuilder('React\Http\Client\Client')
-                    ->setMethods(array(
-                        'request',
-                    ))
-                    ->setConstructorArgs(array(
-                        $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock(),
-                    ))->getMock();
-
-        $request = $this->getMockBuilder('React\Http\Io\ClientRequestStream')
-                        ->setMethods(array())
-                        ->setConstructorArgs(array(
-                            $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock(),
-                            new RequestData($method, $uri, $headers, $protocolVersion),
-                        ))->getMock();
-
-        $http->expects($this->once())->method('request')->with($method, $uri, $headers, $protocolVersion)->willReturn($request);
-
-        $sender = new Sender($http);
-        $sender->send($Request);
     }
 }

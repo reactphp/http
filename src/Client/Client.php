@@ -2,6 +2,7 @@
 
 namespace React\Http\Client;
 
+use Psr\Http\Message\RequestInterface;
 use React\EventLoop\LoopInterface;
 use React\Http\Io\ClientRequestStream;
 use React\Socket\Connector;
@@ -24,10 +25,8 @@ class Client
     }
 
     /** @return ClientRequestStream */
-    public function request($method, $url, array $headers = array(), $protocolVersion = '1.0')
+    public function request(RequestInterface $request)
     {
-        $requestData = new RequestData($method, $url, $headers, $protocolVersion);
-
-        return new ClientRequestStream($this->connector, $requestData);
+        return new ClientRequestStream($this->connector, $request);
     }
 }

@@ -5,6 +5,7 @@ namespace React\Tests\Http\Client;
 use Psr\Http\Message\ResponseInterface;
 use React\EventLoop\Loop;
 use React\Http\Client\Client;
+use React\Http\Message\Request;
 use React\Promise\Deferred;
 use React\Promise\Stream;
 use React\Socket\ConnectionInterface;
@@ -45,7 +46,7 @@ class FunctionalIntegrationTest extends TestCase
         $port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
         $client = new Client(Loop::get());
-        $request = $client->request('GET', 'http://localhost:' . $port);
+        $request = $client->request(new Request('GET', 'http://localhost:' . $port, array(), '', '1.0'));
 
         $promise = Stream\first($request, 'close');
         $request->end();
@@ -62,7 +63,7 @@ class FunctionalIntegrationTest extends TestCase
         });
 
         $client = new Client(Loop::get());
-        $request = $client->request('GET', str_replace('tcp:', 'http:', $socket->getAddress()));
+        $request = $client->request(new Request('GET', str_replace('tcp:', 'http:', $socket->getAddress()), array(), '', '1.0'));
 
         $once = $this->expectCallableOnceWith('body');
         $request->on('response', function (ResponseInterface $response, ReadableStreamInterface $body) use ($once) {
@@ -83,7 +84,7 @@ class FunctionalIntegrationTest extends TestCase
 
         $client = new Client(Loop::get());
 
-        $request = $client->request('GET', 'http://www.google.com/');
+        $request = $client->request(new Request('GET', 'http://www.google.com/', array(), '', '1.0'));
 
         $once = $this->expectCallableOnce();
         $request->on('response', function (ResponseInterface $response, ReadableStreamInterface $body) use ($once) {
@@ -109,7 +110,7 @@ class FunctionalIntegrationTest extends TestCase
         $client = new Client(Loop::get());
 
         $data = str_repeat('.', 33000);
-        $request = $client->request('POST', 'https://' . (mt_rand(0, 1) === 0 ? 'eu.' : '') . 'httpbin.org/post', array('Content-Length' => strlen($data)));
+        $request = $client->request(new Request('POST', 'https://' . (mt_rand(0, 1) === 0 ? 'eu.' : '') . 'httpbin.org/post', array('Content-Length' => strlen($data)), '', '1.0'));
 
         $deferred = new Deferred();
         $request->on('response', function (ResponseInterface $response, ReadableStreamInterface $body) use ($deferred) {
@@ -141,7 +142,7 @@ class FunctionalIntegrationTest extends TestCase
         $client = new Client(Loop::get());
 
         $data = json_encode(array('numbers' => range(1, 50)));
-        $request = $client->request('POST', 'https://httpbin.org/post', array('Content-Length' => strlen($data), 'Content-Type' => 'application/json'));
+        $request = $client->request(new Request('POST', 'https://httpbin.org/post', array('Content-Length' => strlen($data), 'Content-Type' => 'application/json'), '', '1.0'));
 
         $deferred = new Deferred();
         $request->on('response', function (ResponseInterface $response, ReadableStreamInterface $body) use ($deferred) {
@@ -170,7 +171,7 @@ class FunctionalIntegrationTest extends TestCase
 
         $client = new Client(Loop::get());
 
-        $request = $client->request('GET', 'http://www.google.com/');
+        $request = $client->request(new Request('GET', 'http://www.google.com/', array(), '', '1.0'));
         $request->on('error', $this->expectCallableNever());
         $request->on('close', $this->expectCallableOnce());
         $request->end();
