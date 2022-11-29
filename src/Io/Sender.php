@@ -74,6 +74,9 @@ class Sender
      */
     public function send(RequestInterface $request)
     {
+        // support HTTP/1.1 and HTTP/1.0 only, ensured by `Browser` already
+        assert(\in_array($request->getProtocolVersion(), array('1.0', '1.1'), true));
+
         $body = $request->getBody();
         $size = $body->getSize();
 
@@ -91,12 +94,17 @@ class Sender
             $size = 0;
         }
 
-        $headers = array();
-        foreach ($request->getHeaders() as $name => $values) {
-            $headers[$name] = implode(', ', $values);
+        // automatically add `Connection: close` request header for HTTP/1.1 requests to avoid connection reuse
+        if ($request->getProtocolVersion() === '1.1' && !$request->hasHeader('Connection')) {
+            $request = $request->withHeader('Connection', 'close');
         }
 
-        $requestStream = $this->http->request($request->getMethod(), (string)$request->getUri(), $headers, $request->getProtocolVersion());
+        // automatically add `Authorization: Basic …` request header if URL includes `user:pass@host`
+        if ($request->getUri()->getUserInfo() !== '' && !$request->hasHeader('Authorization')) {
+            $request = $request->withHeader('Authorization', 'Basic ' . \base64_encode($request->getUri()->getUserInfo()));
+        }
+
+        $requestStream = $this->http->request($request);
 
         $deferred = new Deferred(function ($_, $reject) use ($requestStream) {
             // close request stream if request is cancelled

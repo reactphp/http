@@ -1,8 +1,9 @@
 <?php
 
-namespace React\Http\Client;
+namespace React\Http\Io;
 
 use Evenement\EventEmitter;
+use Psr\Http\Message\RequestInterface;
 use React\Promise;
 use React\Socket\ConnectionInterface;
 use React\Socket\ConnectorInterface;
@@ -16,17 +17,22 @@ use RingCentral\Psr7 as gPsr;
  * @event end
  * @internal
  */
-class Request extends EventEmitter implements WritableStreamInterface
+class ClientRequestStream extends EventEmitter implements WritableStreamInterface
 {
     const STATE_INIT = 0;
     const STATE_WRITING_HEAD = 1;
     const STATE_HEAD_WRITTEN = 2;
     const STATE_END = 3;
 
+    /** @var ConnectorInterface */
     private $connector;
-    private $requestData;
 
+    /** @var RequestInterface */
+    private $request;
+
+    /** @var ?ConnectionInterface */
     private $stream;
+
     private $buffer;
     private $responseFactory;
     private $state = self::STATE_INIT;
@@ -34,10 +40,10 @@ class Request extends EventEmitter implements WritableStreamInterface
 
     private $pendingWrites = '';
 
-    public function __construct(ConnectorInterface $connector, RequestData $requestData)
+    public function __construct(ConnectorInterface $connector, RequestInterface $request)
     {
         $this->connector = $connector;
-        $this->requestData = $requestData;
+        $this->request = $request;
     }
 
     public function isWritable()
@@ -49,7 +55,7 @@ class Request extends EventEmitter implements WritableStreamInterface
     {
         $this->state = self::STATE_WRITING_HEAD;
 
-        $requestData = $this->requestData;
+        $request = $this->request;
         $streamRef = &$this->stream;
         $stateRef = &$this->state;
         $pendingWrites = &$this->pendingWrites;
@@ -57,8 +63,9 @@ class Request extends EventEmitter implements WritableStreamInterface
 
         $promise = $this->connect();
         $promise->then(
-            function (ConnectionInterface $stream) use ($requestData, &$streamRef, &$stateRef, &$pendingWrites, $that) {
+            function (ConnectionInterface $stream) use ($request, &$streamRef, &$stateRef, &$pendingWrites, $that) {
                 $streamRef = $stream;
+                assert($streamRef instanceof ConnectionInterface);
 
                 $stream->on('drain', array($that, 'handleDrain'));
                 $stream->on('data', array($that, 'handleData'));
@@ -66,11 +73,18 @@ class Request extends EventEmitter implements WritableStreamInterface
                 $stream->on('error', array($that, 'handleError'));
                 $stream->on('close', array($that, 'handleClose'));
 
-                $headers = (string) $requestData;
+                assert($request instanceof RequestInterface);
+                $headers = "{$request->getMethod()} {$request->getRequestTarget()} HTTP/{$request->getProtocolVersion()}\r\n";
+                foreach ($request->getHeaders() as $name => $values) {
+                    foreach ($values as $value) {
+                        $headers .= "$name: $value\r\n";
+                    }
+                }
 
-                $more = $stream->write($headers . $pendingWrites);
+                $more = $stream->write($headers . "\r\n" . $pendingWrites);
 
-                $stateRef = Request::STATE_HEAD_WRITTEN;
+                assert($stateRef === ClientRequestStream::STATE_WRITING_HEAD);
+                $stateRef = ClientRequestStream::STATE_HEAD_WRITTEN;
 
                 // clear pending writes if non-empty
                 if ($pendingWrites !== '') {
@@ -217,18 +231,22 @@ class Request extends EventEmitter implements WritableStreamInterface
 
     protected function connect()
     {
-        $scheme = $this->requestData->getScheme();
+        $scheme = $this->request->getUri()->getScheme();
         if ($scheme !== 'https' && $scheme !== 'http') {
             return Promise\reject(
                 new \InvalidArgumentException('Invalid request URL given')
             );
         }
 
-        $host = $this->requestData->getHost();
-        $port = $this->requestData->getPort();
+        $host = $this->request->getUri()->getHost();
+        $port = $this->request->getUri()->getPort();
 
         if ($scheme === 'https') {
             $host = 'tls://' . $host;
+        }
+
+        if ($port === null) {
+            $port = $scheme === 'https' ? 443 : 80;
         }
 
         return $this->connector
