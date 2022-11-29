@@ -9,6 +9,7 @@ use React\EventLoop\LoopInterface;
 use React\Http\Message\Response;
 use React\Http\Message\ResponseException;
 use React\Promise\Deferred;
+use React\Promise\Promise;
 use React\Promise\PromiseInterface;
 use React\Stream\ReadableStreamInterface;
 use RingCentral\Psr7\Uri;
@@ -165,46 +166,67 @@ class Transaction
      */
     public function bufferResponse(ResponseInterface $response, Deferred $deferred, ClientRequestState $state)
     {
-        $stream = $response->getBody();
+        $body = $response->getBody();
+        $size = $body->getSize();
 
-        $size = $stream->getSize();
         if ($size !== null && $size > $this->maximumSize) {
-            $stream->close();
+            $body->close();
             return \React\Promise\reject(new \OverflowException(
                 'Response body size of ' . $size . ' bytes exceeds maximum of ' . $this->maximumSize . ' bytes',
-                \defined('SOCKET_EMSGSIZE') ? \SOCKET_EMSGSIZE : 0
+                \defined('SOCKET_EMSGSIZE') ? \SOCKET_EMSGSIZE : 90
             ));
         }
 
         // body is not streaming => already buffered
-        if (!$stream instanceof ReadableStreamInterface) {
+        if (!$body instanceof ReadableStreamInterface) {
             return \React\Promise\resolve($response);
         }
 
-        // buffer stream and resolve with buffered body
+        /** @var ?\Closure $closer */
+        $closer = null;
         $maximumSize = $this->maximumSize;
-        $promise = \React\Promise\Stream\buffer($stream, $maximumSize)->then(
-            function ($body) use ($response) {
-                return $response->withBody(new BufferedBody($body));
-            },
-            function ($e) use ($stream, $maximumSize) {
-                // try to close stream if buffering fails (or is cancelled)
-                $stream->close();
 
-                if ($e instanceof \OverflowException) {
-                    $e = new \OverflowException(
+        return $state->pending = new Promise(function ($resolve, $reject) use ($body, $maximumSize, $response, &$closer) {
+            // resolve with current buffer when stream closes successfully
+            $buffer = '';
+            $body->on('close', $closer = function () use (&$buffer, $response, $maximumSize, $resolve, $reject) {
+                $resolve($response->withBody(new BufferedBody($buffer)));
+            });
+
+            // buffer response body data in memory
+            $body->on('data', function ($data) use (&$buffer, $maximumSize, $body, $closer, $reject) {
+                $buffer .= $data;
+
+                // close stream and reject promise if limit is exceeded
+                if (isset($buffer[$maximumSize])) {
+                    $buffer = '';
+                    assert($closer instanceof \Closure);
+                    $body->removeListener('close', $closer);
+                    $body->close();
+
+                    $reject(new \OverflowException(
                         'Response body size exceeds maximum of ' . $maximumSize . ' bytes',
-                        \defined('SOCKET_EMSGSIZE') ? \SOCKET_EMSGSIZE : 0
-                    );
+                        \defined('SOCKET_EMSGSIZE') ? \SOCKET_EMSGSIZE : 90
+                    ));
                 }
+            });
 
-                throw $e;
-            }
-        );
+            // reject buffering if body emits error
+            $body->on('error', function (\Exception $e) use ($reject) {
+                $reject(new \RuntimeException(
+                    'Error while buffering response body: ' . $e->getMessage(),
+                    $e->getCode(),
+                    $e
+                ));
+            });
+        }, function () use ($body, &$closer) {
+            // cancelled buffering: remove close handler to avoid resolving, then close and reject
+            assert($closer instanceof \Closure);
+            $body->removeListener('close', $closer);
+            $body->close();
 
-        $state->pending = $promise;
-
-        return $promise;
+            throw new \RuntimeException('Cancelled buffering response body');
+        });
     }
 
     /**

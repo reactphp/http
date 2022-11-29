@@ -115,10 +115,34 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
         $this->assertSame($body, $exposedRequest->getBody());
     }
 
-    public function testKnownExcessiveSizedBodyIsDisgardedTheRequestIsPassedDownToTheNextMiddleware()
+    public function testClosedStreamResolvesImmediatelyWithEmptyBody()
     {
         $stream = new ThroughStream();
-        $stream->end('aa');
+        $stream->close();
+
+        $serverRequest = new ServerRequest(
+            'GET',
+            'https://example.com/',
+            array(),
+            new HttpBodyStream($stream, 2)
+        );
+
+        $exposedRequest = null;
+        $buffer = new RequestBodyBufferMiddleware(1);
+        $buffer(
+            $serverRequest,
+            function (ServerRequestInterface $request) use (&$exposedRequest) {
+                $exposedRequest = $request;
+            }
+        );
+
+        $this->assertSame(0, $exposedRequest->getBody()->getSize());
+        $this->assertSame('', $exposedRequest->getBody()->getContents());
+    }
+
+    public function testKnownExcessiveSizedBodyIsDiscardedAndRequestIsPassedDownToTheNextMiddleware()
+    {
+        $stream = new ThroughStream();
         $serverRequest = new ServerRequest(
             'GET',
             'https://example.com/',
@@ -127,12 +151,17 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
         );
 
         $buffer = new RequestBodyBufferMiddleware(1);
-        $response = \React\Async\await($buffer(
+
+        $promise = $buffer(
             $serverRequest,
             function (ServerRequestInterface $request) {
                 return new Response(200, array(), $request->getBody()->getContents());
             }
-        ));
+        );
+
+        $stream->end('aa');
+
+        $response = \React\Async\await($promise);
 
         $this->assertSame(200, $response->getStatusCode());
         $this->assertSame('', $response->getBody()->getContents());
@@ -214,9 +243,85 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
         $this->assertSame('', $exposedResponse->getBody()->getContents());
     }
 
-    public function testBufferingErrorThrows()
+    public function testBufferingRejectsWhenNextHandlerThrowsWhenStreamEnds()
     {
         $stream = new ThroughStream();
+
+        $serverRequest = new ServerRequest(
+            'GET',
+            'https://example.com/',
+            array(),
+            new HttpBodyStream($stream, null)
+        );
+
+        $buffer = new RequestBodyBufferMiddleware(100);
+        $promise = $buffer(
+            $serverRequest,
+            function (ServerRequestInterface $request) {
+                throw new \RuntimeException('Buffered ' . $request->getBody()->getSize(), 42);
+            }
+        );
+
+        $exception = null;
+        $promise->then(null, function ($e) use (&$exception) {
+            $exception = $e;
+        });
+
+        $this->assertTrue($stream->isWritable());
+        $stream->end('Foo');
+        $this->assertFalse($stream->isWritable());
+
+        assert($exception instanceof \RuntimeException);
+        $this->assertInstanceOf('RuntimeException', $exception);
+        $this->assertEquals('Buffered 3', $exception->getMessage());
+        $this->assertEquals(42, $exception->getCode());
+        $this->assertNull($exception->getPrevious());
+    }
+
+    /**
+     * @requires PHP 7
+     */
+    public function testBufferingRejectsWhenNextHandlerThrowsErrorWhenStreamEnds()
+    {
+        $stream = new ThroughStream();
+
+        $serverRequest = new ServerRequest(
+            'GET',
+            'https://example.com/',
+            array(),
+            new HttpBodyStream($stream, null)
+        );
+
+        $buffer = new RequestBodyBufferMiddleware(100);
+        $promise = $buffer(
+            $serverRequest,
+            function (ServerRequestInterface $request) {
+                throw new \Error('Buffered ' . $request->getBody()->getSize(), 42);
+            }
+        );
+
+        $exception = null;
+        $promise->then(null, function ($e) use (&$exception) {
+            $exception = $e;
+        });
+
+        $this->assertTrue($stream->isWritable());
+        $stream->end('Foo');
+        $this->assertFalse($stream->isWritable());
+
+        assert($exception instanceof \Error);
+        $this->assertInstanceOf('Error', $exception);
+        $this->assertEquals('Buffered 3', $exception->getMessage());
+        $this->assertEquals(42, $exception->getCode());
+        $this->assertNull($exception->getPrevious());
+    }
+
+    public function testBufferingRejectsWhenStreamEmitsError()
+    {
+        $stream = new ThroughStream(function ($data) {
+            throw new \UnexpectedValueException('Unexpected ' . $data, 42);
+        });
+
         $serverRequest = new ServerRequest(
             'GET',
             'https://example.com/',
@@ -227,15 +332,23 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
         $buffer = new RequestBodyBufferMiddleware(1);
         $promise = $buffer(
             $serverRequest,
-            function (ServerRequestInterface $request) {
-                return $request;
-            }
+            $this->expectCallableNever()
         );
 
-        $stream->emit('error', array(new \RuntimeException()));
+        $exception = null;
+        $promise->then(null, function ($e) use (&$exception) {
+            $exception = $e;
+        });
 
-        $this->setExpectedException('RuntimeException');
-        \React\Async\await($promise);
+        $this->assertTrue($stream->isWritable());
+        $stream->write('Foo');
+        $this->assertFalse($stream->isWritable());
+
+        assert($exception instanceof \RuntimeException);
+        $this->assertInstanceOf('RuntimeException', $exception);
+        $this->assertEquals('Error while buffering request body: Unexpected Foo', $exception->getMessage());
+        $this->assertEquals(42, $exception->getCode());
+        $this->assertInstanceOf('UnexpectedValueException', $exception->getPrevious());
     }
 
     public function testFullBodyStreamedBeforeCallingNextMiddleware()
@@ -262,5 +375,36 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
         $this->assertFalse($promiseResolved);
         $stream->end('aaa');
         $this->assertTrue($promiseResolved);
+    }
+
+    public function testCancelBufferingClosesStreamAndRejectsPromise()
+    {
+        $stream = new ThroughStream();
+        $stream->on('close', $this->expectCallableOnce());
+
+        $serverRequest = new ServerRequest(
+            'GET',
+            'https://example.com/',
+            array(),
+            new HttpBodyStream($stream, 2)
+        );
+
+        $buffer = new RequestBodyBufferMiddleware(2);
+
+        $promise = $buffer($serverRequest, $this->expectCallableNever());
+        $promise->cancel();
+
+        $this->assertFalse($stream->isReadable());
+
+        $exception = null;
+        $promise->then(null, function ($e) use (&$exception) {
+            $exception = $e;
+        });
+
+        assert($exception instanceof \RuntimeException);
+        $this->assertInstanceOf('RuntimeException', $exception);
+        $this->assertEquals('Cancelled buffering request body', $exception->getMessage());
+        $this->assertEquals(0, $exception->getCode());
+        $this->assertNull($exception->getPrevious());
     }
 }
