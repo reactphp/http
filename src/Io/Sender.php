@@ -8,6 +8,7 @@ use React\EventLoop\LoopInterface;
 use React\Http\Client\Client as HttpClient;
 use React\Promise\PromiseInterface;
 use React\Promise\Deferred;
+use React\Socket\Connector;
 use React\Socket\ConnectorInterface;
 use React\Stream\ReadableStreamInterface;
 
@@ -49,7 +50,11 @@ class Sender
      */
     public static function createFromLoop(LoopInterface $loop, ConnectorInterface $connector = null)
     {
-        return new self(new HttpClient($loop, $connector));
+        if ($connector === null) {
+            $connector = new Connector(array(), $loop);
+        }
+
+        return new self(new HttpClient(new ClientConnectionManager($connector)));
     }
 
     private $http;

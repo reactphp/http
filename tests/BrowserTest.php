@@ -60,9 +60,13 @@ class BrowserTest extends TestCase
         $ref->setAccessible(true);
         $client = $ref->getValue($sender);
 
-        $ref = new \ReflectionProperty($client, 'connector');
+        $ref = new \ReflectionProperty($client, 'connectionManager');
         $ref->setAccessible(true);
-        $ret = $ref->getValue($client);
+        $connectionManager = $ref->getValue($client);
+
+        $ref = new \ReflectionProperty($connectionManager, 'connector');
+        $ref->setAccessible(true);
+        $ret = $ref->getValue($connectionManager);
 
         $this->assertSame($connector, $ret);
     }
@@ -85,9 +89,13 @@ class BrowserTest extends TestCase
         $ref->setAccessible(true);
         $client = $ref->getValue($sender);
 
-        $ref = new \ReflectionProperty($client, 'connector');
+        $ref = new \ReflectionProperty($client, 'connectionManager');
         $ref->setAccessible(true);
-        $ret = $ref->getValue($client);
+        $connectionManager = $ref->getValue($client);
+
+        $ref = new \ReflectionProperty($connectionManager, 'connector');
+        $ref->setAccessible(true);
+        $ret = $ref->getValue($connectionManager);
 
         $this->assertSame($connector, $ret);
     }
