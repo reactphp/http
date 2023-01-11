@@ -14,11 +14,20 @@ use React\Tests\Http\TestCase;
 
 class SenderTest extends TestCase
 {
+    /** @var \React\EventLoop\LoopInterface */
+    private $loop;
+
+    /**
+     * @before
+     */
+    public function setUpLoop()
+    {
+        $this->loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+    }
+
     public function testCreateFromLoop()
     {
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
-
-        $sender = Sender::createFromLoop($loop, null);
+        $sender = Sender::createFromLoop($this->loop, null);
 
         $this->assertInstanceOf('React\Http\Io\Sender', $sender);
     }
@@ -28,7 +37,7 @@ class SenderTest extends TestCase
         $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
         $connector->expects($this->never())->method('connect');
 
-        $sender = new Sender(new HttpClient(new ClientConnectionManager($connector)));
+        $sender = new Sender(new HttpClient(new ClientConnectionManager($connector, $this->loop)));
 
         $request = new Request('GET', 'www.google.com');
 
@@ -47,7 +56,7 @@ class SenderTest extends TestCase
         $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
         $connector->expects($this->once())->method('connect')->willReturn(Promise\reject(new \RuntimeException('Rejected')));
 
-        $sender = new Sender(new HttpClient(new ClientConnectionManager($connector)));
+        $sender = new Sender(new HttpClient(new ClientConnectionManager($connector, $this->loop)));
 
         $request = new Request('GET', 'http://www.google.com/');
 
@@ -374,7 +383,7 @@ class SenderTest extends TestCase
         $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
         $connector->expects($this->once())->method('connect')->willReturn($promise);
 
-        $sender = new Sender(new HttpClient(new ClientConnectionManager($connector)));
+        $sender = new Sender(new HttpClient(new ClientConnectionManager($connector, $this->loop)));
 
         $request = new Request('GET', 'http://www.google.com/');
 
@@ -397,7 +406,7 @@ class SenderTest extends TestCase
         $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
         $connector->expects($this->once())->method('connect')->willReturn(Promise\resolve($connection));
 
-        $sender = new Sender(new HttpClient(new ClientConnectionManager($connector)));
+        $sender = new Sender(new HttpClient(new ClientConnectionManager($connector, $this->loop)));
 
         $request = new Request('GET', 'http://www.google.com/');
 

@@ -488,7 +488,7 @@ class ClientRequestStreamTest extends TestCase
 
         $connectionManager = $this->getMockBuilder('React\Http\Io\ClientConnectionManager')->disableOriginalConstructor()->getMock();
         $connectionManager->expects($this->once())->method('connect')->willReturn(\React\Promise\resolve($connection));
-        $connectionManager->expects($this->once())->method('handBack')->with($connection);
+        $connectionManager->expects($this->once())->method('keepAlive')->with(new Uri('http://www.example.com'), $connection);
 
         $requestData = new Request('GET', 'http://www.example.com', array(), '', '1.1');
         $request = new ClientRequestStream($connectionManager, $requestData);
@@ -569,7 +569,7 @@ class ClientRequestStreamTest extends TestCase
 
         $connectionManager = $this->getMockBuilder('React\Http\Io\ClientConnectionManager')->disableOriginalConstructor()->getMock();
         $connectionManager->expects($this->once())->method('connect')->willReturn(\React\Promise\resolve($connection));
-        $connectionManager->expects($this->once())->method('handBack')->with($connection);
+        $connectionManager->expects($this->once())->method('keepAlive')->with(new Uri('http://www.example.com'), $connection);
 
         $requestData = new Request('GET', 'http://www.example.com', array('Connection' => 'keep-alive'), '', '1.0');
         $request = new ClientRequestStream($connectionManager, $requestData);
@@ -590,7 +590,7 @@ class ClientRequestStreamTest extends TestCase
 
         $connectionManager = $this->getMockBuilder('React\Http\Io\ClientConnectionManager')->disableOriginalConstructor()->getMock();
         $connectionManager->expects($this->once())->method('connect')->willReturn(\React\Promise\resolve($connection));
-        $connectionManager->expects($this->once())->method('handBack')->with($connection);
+        $connectionManager->expects($this->once())->method('keepAlive')->with(new Uri('http://www.example.com'), $connection);
 
         $requestData = new Request('GET', 'http://www.example.com', array('Connection' => 'FOO, KEEP-ALIVE, BAR'), '', '1.0');
         $request = new ClientRequestStream($connectionManager, $requestData);
@@ -681,7 +681,7 @@ class ClientRequestStreamTest extends TestCase
 
         $connectionManager = $this->getMockBuilder('React\Http\Io\ClientConnectionManager')->disableOriginalConstructor()->getMock();
         $connectionManager->expects($this->once())->method('connect')->willReturn(\React\Promise\resolve($connection));
-        $connectionManager->expects($this->once())->method('handBack')->with($connection);
+        $connectionManager->expects($this->once())->method('keepAlive')->with(new Uri('http://www.example.com'), $connection);
 
         $requestData = new Request('GET', 'http://www.example.com', array(), '', '1.1');
         $request = new ClientRequestStream($connectionManager, $requestData);

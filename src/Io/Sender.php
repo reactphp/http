@@ -54,7 +54,7 @@ class Sender
             $connector = new Connector(array(), $loop);
         }
 
-        return new self(new HttpClient(new ClientConnectionManager($connector)));
+        return new self(new HttpClient(new ClientConnectionManager($connector, $loop)));
     }
 
     private $http;

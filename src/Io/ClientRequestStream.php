@@ -181,7 +181,7 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
             $input->on('close', function () use ($connection, $that, $connectionManager, $request, $response, &$successfulEndReceived) {
                 // only reuse connection after successful response and both request and response allow keep alive
                 if ($successfulEndReceived && $connection->isReadable() && $that->hasMessageKeepAliveEnabled($response) && $that->hasMessageKeepAliveEnabled($request)) {
-                    $connectionManager->handBack($connection);
+                    $connectionManager->keepAlive($request->getUri(), $connection);
                 } else {
                     $connection->close();
                 }
