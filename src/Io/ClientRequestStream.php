@@ -4,6 +4,8 @@ namespace React\Http\Io;
 
 use Evenement\EventEmitter;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use React\Http\Message\Response;
 use React\Promise;
 use React\Socket\ConnectionInterface;
 use React\Socket\ConnectorInterface;
@@ -172,8 +174,26 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
 
             $this->stream->on('close', array($this, 'handleClose'));
 
-            $this->emit('response', array($response, $this->stream));
+            assert($response instanceof ResponseInterface);
+            assert($this->stream instanceof ConnectionInterface);
+            $body = $this->stream;
 
+            // determine length of response body
+            $length = null;
+            $code = $response->getStatusCode();
+            if ($this->request->getMethod() === 'HEAD' || ($code >= 100 && $code < 200) || $code == Response::STATUS_NO_CONTENT || $code == Response::STATUS_NOT_MODIFIED) {
+                $length = 0;
+            } elseif (\strtolower($response->getHeaderLine('Transfer-Encoding')) === 'chunked') {
+                $body = new ChunkedDecoder($body);
+            } elseif ($response->hasHeader('Content-Length')) {
+                $length = (int) $response->getHeaderLine('Content-Length');
+            }
+            $response = $response->withBody($body = new ReadableBodyStream($body, $length));
+
+            // emit response with streaming response body (see `Sender`)
+            $this->emit('response', array($response, $body));
+
+            // re-emit HTTP response body to trigger body parsing if parts of it are buffered
             $this->stream->emit('data', array($bodyChunk));
         }
     }

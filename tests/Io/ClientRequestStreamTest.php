@@ -35,11 +35,12 @@ class ClientRequestStreamTest extends TestCase
 
         $this->successfulConnectionMock();
 
-        $this->stream->expects($this->exactly(6))->method('on')->withConsecutive(
+        $this->stream->expects($this->atLeast(6))->method('on')->withConsecutive(
             array('drain', $this->identicalTo(array($request, 'handleDrain'))),
             array('data', $this->identicalTo(array($request, 'handleData'))),
             array('end', $this->identicalTo(array($request, 'handleEnd'))),
             array('error', $this->identicalTo(array($request, 'handleError'))),
+            array('close', $this->identicalTo(array($request, 'handleClose'))),
             array('close', $this->identicalTo(array($request, 'handleClose')))
         );
 
