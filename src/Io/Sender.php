@@ -94,8 +94,10 @@ class Sender
         }
 
         // automatically add `Connection: close` request header for HTTP/1.1 requests to avoid connection reuse
-        if ($request->getProtocolVersion() === '1.1' && !$request->hasHeader('Connection')) {
+        if ($request->getProtocolVersion() === '1.1') {
             $request = $request->withHeader('Connection', 'close');
+        } else {
+            $request = $request->withoutHeader('Connection');
         }
 
         // automatically add `Authorization: Basic …` request header if URL includes `user:pass@host`

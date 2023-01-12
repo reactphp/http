@@ -303,6 +303,20 @@ class SenderTest extends TestCase
     }
 
     /** @test */
+    public function getHttp10RequestShouldSendAGetRequestWithoutConnectionHeaderEvenWhenConnectionKeepAliveHeaderIsSpecified()
+    {
+        $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
+        $client->expects($this->once())->method('request')->with($this->callback(function (RequestInterface $request) {
+            return !$request->hasHeader('Connection');
+        }))->willReturn($this->getMockBuilder('React\Http\Io\ClientRequestStream')->disableOriginalConstructor()->getMock());
+
+        $sender = new Sender($client);
+
+        $request = new Request('GET', 'http://www.example.com', array('Connection' => 'keep-alive'), '', '1.0');
+        $sender->send($request);
+    }
+
+    /** @test */
     public function getHttp11RequestShouldSendAGetRequestWithConnectionCloseHeaderByDefault()
     {
         $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
@@ -317,16 +331,16 @@ class SenderTest extends TestCase
     }
 
     /** @test */
-    public function getHttp11RequestShouldSendAGetRequestWithGivenConnectionUpgradeHeader()
+    public function getHttp11RequestShouldSendAGetRequestWithConnectionCloseHeaderEvenWhenConnectionKeepAliveHeaderIsSpecified()
     {
         $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
         $client->expects($this->once())->method('request')->with($this->callback(function (RequestInterface $request) {
-            return $request->getHeaderLine('Connection') === 'upgrade';
+            return $request->getHeaderLine('Connection') === 'close';
         }))->willReturn($this->getMockBuilder('React\Http\Io\ClientRequestStream')->disableOriginalConstructor()->getMock());
 
         $sender = new Sender($client);
 
-        $request = new Request('GET', 'http://www.example.com', array('Connection' => 'upgrade'), '', '1.1');
+        $request = new Request('GET', 'http://www.example.com', array('Connection' => 'keep-alive'), '', '1.1');
         $sender->send($request);
     }
 
