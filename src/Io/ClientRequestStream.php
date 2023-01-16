@@ -16,7 +16,7 @@ use RingCentral\Psr7 as gPsr;
  * @event response
  * @event drain
  * @event error
- * @event end
+ * @event close
  * @internal
  */
 class ClientRequestStream extends EventEmitter implements WritableStreamInterface
@@ -33,9 +33,11 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
     private $request;
 
     /** @var ?ConnectionInterface */
-    private $stream;
+    private $connection;
 
-    private $buffer;
+    /** @var string */
+    private $buffer = '';
+
     private $responseFactory;
     private $state = self::STATE_INIT;
     private $ended = false;
@@ -58,22 +60,22 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
         $this->state = self::STATE_WRITING_HEAD;
 
         $request = $this->request;
-        $streamRef = &$this->stream;
+        $connectionRef = &$this->connection;
         $stateRef = &$this->state;
         $pendingWrites = &$this->pendingWrites;
         $that = $this;
 
         $promise = $this->connect();
         $promise->then(
-            function (ConnectionInterface $stream) use ($request, &$streamRef, &$stateRef, &$pendingWrites, $that) {
-                $streamRef = $stream;
-                assert($streamRef instanceof ConnectionInterface);
+            function (ConnectionInterface $connection) use ($request, &$connectionRef, &$stateRef, &$pendingWrites, $that) {
+                $connectionRef = $connection;
+                assert($connectionRef instanceof ConnectionInterface);
 
-                $stream->on('drain', array($that, 'handleDrain'));
-                $stream->on('data', array($that, 'handleData'));
-                $stream->on('end', array($that, 'handleEnd'));
-                $stream->on('error', array($that, 'handleError'));
-                $stream->on('close', array($that, 'handleClose'));
+                $connection->on('drain', array($that, 'handleDrain'));
+                $connection->on('data', array($that, 'handleData'));
+                $connection->on('end', array($that, 'handleEnd'));
+                $connection->on('error', array($that, 'handleError'));
+                $connection->on('close', array($that, 'close'));
 
                 assert($request instanceof RequestInterface);
                 $headers = "{$request->getMethod()} {$request->getRequestTarget()} HTTP/{$request->getProtocolVersion()}\r\n";
@@ -83,7 +85,7 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
                     }
                 }
 
-                $more = $stream->write($headers . "\r\n" . $pendingWrites);
+                $more = $connection->write($headers . "\r\n" . $pendingWrites);
 
                 assert($stateRef === ClientRequestStream::STATE_WRITING_HEAD);
                 $stateRef = ClientRequestStream::STATE_HEAD_WRITTEN;
@@ -113,7 +115,7 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
 
         // write directly to connection stream if already available
         if (self::STATE_HEAD_WRITTEN <= $this->state) {
-            return $this->stream->write($data);
+            return $this->connection->write($data);
         }
 
         // otherwise buffer and try to establish connection
@@ -157,26 +159,28 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
                 $response = gPsr\parse_response($this->buffer);
                 $bodyChunk = (string) $response->getBody();
             } catch (\InvalidArgumentException $exception) {
-                $this->emit('error', array($exception));
-            }
-
-            $this->buffer = null;
-
-            $this->stream->removeListener('drain', array($this, 'handleDrain'));
-            $this->stream->removeListener('data', array($this, 'handleData'));
-            $this->stream->removeListener('end', array($this, 'handleEnd'));
-            $this->stream->removeListener('error', array($this, 'handleError'));
-            $this->stream->removeListener('close', array($this, 'handleClose'));
-
-            if (!isset($response)) {
+                $this->closeError($exception);
                 return;
             }
 
-            $this->stream->on('close', array($this, 'handleClose'));
+            // response headers successfully received => remove listeners for connection events
+            $connection = $this->connection;
+            assert($connection instanceof ConnectionInterface);
+            $connection->removeListener('drain', array($this, 'handleDrain'));
+            $connection->removeListener('data', array($this, 'handleData'));
+            $connection->removeListener('end', array($this, 'handleEnd'));
+            $connection->removeListener('error', array($this, 'handleError'));
+            $connection->removeListener('close', array($this, 'close'));
+            $this->connection = null;
+            $this->buffer = '';
 
-            assert($response instanceof ResponseInterface);
-            assert($this->stream instanceof ConnectionInterface);
-            $body = $this->stream;
+            // take control over connection handling and close connection once response body closes
+            $that = $this;
+            $input = $body = new CloseProtectionStream($connection);
+            $input->on('close', function () use ($connection, $that) {
+                $connection->close();
+                $that->close();
+            });
 
             // determine length of response body
             $length = null;
@@ -194,7 +198,11 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
             $this->emit('response', array($response, $body));
 
             // re-emit HTTP response body to trigger body parsing if parts of it are buffered
-            $this->stream->emit('data', array($bodyChunk));
+            if ($bodyChunk !== '') {
+                $input->handleData($bodyChunk);
+            } elseif ($length === 0) {
+                $input->handleEnd();
+            }
         }
     }
 
@@ -217,12 +225,6 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
     }
 
     /** @internal */
-    public function handleClose()
-    {
-        $this->close();
-    }
-
-    /** @internal */
     public function closeError(\Exception $error)
     {
         if (self::STATE_END <= $this->state) {
@@ -240,9 +242,11 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
 
         $this->state = self::STATE_END;
         $this->pendingWrites = '';
+        $this->buffer = '';
 
-        if ($this->stream) {
-            $this->stream->close();
+        if ($this->connection instanceof ConnectionInterface) {
+            $this->connection->close();
+            $this->connection = null;
         }
 
         $this->emit('close');

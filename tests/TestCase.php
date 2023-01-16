@@ -6,7 +6,7 @@ use PHPUnit\Framework\TestCase as BaseTestCase;
 
 class TestCase extends BaseTestCase
 {
-    protected function expectCallableOnce()
+    public function expectCallableOnce() // protected (PHP 5.4+)
     {
         $mock = $this->createCallableMock();
         $mock
@@ -16,7 +16,7 @@ class TestCase extends BaseTestCase
         return $mock;
     }
 
-    protected function expectCallableOnceWith($value)
+    public function expectCallableOnceWith($value) // protected (PHP 5.4+)
     {
         $mock = $this->createCallableMock();
         $mock
@@ -27,7 +27,7 @@ class TestCase extends BaseTestCase
         return $mock;
     }
 
-    protected function expectCallableNever()
+    public function expectCallableNever() // protected (PHP 5.4+)
     {
         $mock = $this->createCallableMock();
         $mock
