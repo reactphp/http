@@ -7,6 +7,7 @@ use React\Http\Client\Client;
 use React\Http\Io\ClientConnectionManager;
 use React\Http\Message\Request;
 use React\Promise\Deferred;
+use React\Promise\Promise;
 use React\Promise\Stream;
 use React\Socket\ConnectionInterface;
 use React\Socket\Connector;
@@ -50,6 +51,30 @@ class FunctionalIntegrationTest extends TestCase
         $request = $client->request(new Request('GET', 'http://localhost:' . $port, array(), '', '1.0'));
 
         $promise = Stream\first($request, 'close');
+        $request->end();
+
+        \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT_LOCAL));
+    }
+
+    public function testRequestToLocalhostWillConnectAndCloseConnectionAfterResponseUntilKeepAliveIsActuallySupported()
+    {
+        $socket = new SocketServer('127.0.0.1:0');
+        $socket->on('connection', $this->expectCallableOnce());
+
+        $promise = new Promise(function ($resolve) use ($socket) {
+            $socket->on('connection', function (ConnectionInterface $conn) use ($socket, $resolve) {
+                $conn->write("HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK");
+                $conn->on('close', function () use ($resolve) {
+                    $resolve(null);
+                });
+                $socket->close();
+            });
+        });
+        $port = parse_url($socket->getAddress(), PHP_URL_PORT);
+
+        $client = new Client(new ClientConnectionManager(new Connector()));
+        $request = $client->request(new Request('GET', 'http://localhost:' . $port, array(), '', '1.1'));
+
         $request->end();
 
         \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT_LOCAL));

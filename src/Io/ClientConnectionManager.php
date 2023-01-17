@@ -42,4 +42,12 @@ class ClientConnectionManager
 
         return $this->connector->connect(($scheme === 'https' ? 'tls://' : '') . $uri->getHost() . ':' . $port);
     }
+
+    /**
+     * @return void
+     */
+    public function handBack(ConnectionInterface $connection)
+    {
+        $connection->close();
+    }
 }

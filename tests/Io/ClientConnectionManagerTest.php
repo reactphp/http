@@ -80,4 +80,16 @@ class ClientConnectionManagerTest extends TestCase
         $this->assertInstanceOf('InvalidArgumentException', $exception);
         $this->assertEquals('Invalid request URL given', $exception->getMessage());
     }
+
+    public function testHandBackWillCloseGivenConnectionUntilKeepAliveIsActuallySupported()
+    {
+        $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
+
+        $connectionManager = new ClientConnectionManager($connector);
+
+        $connection = $this->getMockBuilder('React\Socket\ConnectionInterface')->getMock();
+        $connection->expects($this->once())->method('close');
+
+        $connectionManager->handBack($connection);
+    }
 }

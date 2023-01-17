@@ -3,6 +3,7 @@
 namespace React\Http\Io;
 
 use Evenement\EventEmitter;
+use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\RequestInterface;
 use React\Http\Message\Response;
 use React\Socket\ConnectionInterface;
@@ -171,11 +172,20 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
             $this->connection = null;
             $this->buffer = '';
 
-            // take control over connection handling and close connection once response body closes
+            // take control over connection handling and check if we can reuse the connection once response body closes
             $that = $this;
+            $request = $this->request;
+            $connectionManager = $this->connectionManager;
+            $successfulEndReceived = false;
             $input = $body = new CloseProtectionStream($connection);
-            $input->on('close', function () use ($connection, $that) {
-                $connection->close();
+            $input->on('close', function () use ($connection, $that, $connectionManager, $request, $response, &$successfulEndReceived) {
+                // only reuse connection after successful response and both request and response allow keep alive
+                if ($successfulEndReceived && $connection->isReadable() && $that->hasMessageKeepAliveEnabled($response) && $that->hasMessageKeepAliveEnabled($request)) {
+                    $connectionManager->handBack($connection);
+                } else {
+                    $connection->close();
+                }
+
                 $that->close();
             });
 
@@ -190,6 +200,9 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
                 $length = (int) $response->getHeaderLine('Content-Length');
             }
             $response = $response->withBody($body = new ReadableBodyStream($body, $length));
+            $body->on('end', function () use (&$successfulEndReceived) {
+                $successfulEndReceived = true;
+            });
 
             // emit response with streaming response body (see `Sender`)
             $this->emit('response', array($response, $body));
@@ -248,5 +261,30 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
 
         $this->emit('close');
         $this->removeAllListeners();
+    }
+
+    /**
+     * @internal
+     * @return bool
+     * @link https://www.rfc-editor.org/rfc/rfc9112#section-9.3
+     * @link https://www.rfc-editor.org/rfc/rfc7230#section-6.1
+     */
+    public function hasMessageKeepAliveEnabled(MessageInterface $message)
+    {
+        $connectionOptions = \RingCentral\Psr7\normalize_header(\strtolower($message->getHeaderLine('Connection')));
+
+        if (\in_array('close', $connectionOptions, true)) {
+            return false;
+        }
+
+        if ($message->getProtocolVersion() === '1.1') {
+            return true;
+        }
+
+        if (\in_array('keep-alive', $connectionOptions, true)) {
+            return true;
+        }
+
+        return false;
     }
 }

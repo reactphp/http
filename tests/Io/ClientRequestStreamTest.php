@@ -479,6 +479,240 @@ class ClientRequestStreamTest extends TestCase
         call_user_func($endEvent); // $endEvent() (PHP 5.4+)
     }
 
+    public function testStreamShouldReuseConnectionForHttp11ByDefault()
+    {
+        $connection = $this->getMockBuilder('React\Socket\ConnectionInterface')->getMock();
+        $connection->expects($this->once())->method('write')->with("GET / HTTP/1.1\r\nHost: www.example.com\r\n\r\n");
+        $connection->expects($this->once())->method('isReadable')->willReturn(true);
+        $connection->expects($this->never())->method('close');
+
+        $connectionManager = $this->getMockBuilder('React\Http\Io\ClientConnectionManager')->disableOriginalConstructor()->getMock();
+        $connectionManager->expects($this->once())->method('connect')->willReturn(\React\Promise\resolve($connection));
+        $connectionManager->expects($this->once())->method('handBack')->with($connection);
+
+        $requestData = new Request('GET', 'http://www.example.com', array(), '', '1.1');
+        $request = new ClientRequestStream($connectionManager, $requestData);
+
+        $request->on('close', $this->expectCallableOnce());
+
+        $request->end();
+
+        $request->handleData("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n");
+    }
+
+    public function testStreamShouldNotReuseConnectionWhenResponseContainsConnectionClose()
+    {
+        $connection = $this->getMockBuilder('React\Socket\ConnectionInterface')->getMock();
+        $connection->expects($this->once())->method('write')->with("GET / HTTP/1.1\r\nHost: www.example.com\r\n\r\n");
+        $connection->expects($this->once())->method('isReadable')->willReturn(true);
+        $connection->expects($this->once())->method('close');
+
+        $connectionManager = $this->getMockBuilder('React\Http\Io\ClientConnectionManager')->disableOriginalConstructor()->getMock();
+        $connectionManager->expects($this->once())->method('connect')->willReturn(\React\Promise\resolve($connection));
+
+        $requestData = new Request('GET', 'http://www.example.com', array(), '', '1.1');
+        $request = new ClientRequestStream($connectionManager, $requestData);
+
+        $request->on('close', $this->expectCallableOnce());
+
+        $request->end();
+
+        $request->handleData("HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+    }
+
+    public function testStreamShouldNotReuseConnectionWhenRequestContainsConnectionCloseWithAdditionalOptions()
+    {
+        $connection = $this->getMockBuilder('React\Socket\ConnectionInterface')->getMock();
+        $connection->expects($this->once())->method('write')->with("GET / HTTP/1.1\r\nHost: www.example.com\r\nConnection: FOO, CLOSE, BAR\r\n\r\n");
+        $connection->expects($this->once())->method('isReadable')->willReturn(true);
+        $connection->expects($this->once())->method('close');
+
+        $connectionManager = $this->getMockBuilder('React\Http\Io\ClientConnectionManager')->disableOriginalConstructor()->getMock();
+        $connectionManager->expects($this->once())->method('connect')->willReturn(\React\Promise\resolve($connection));
+
+        $requestData = new Request('GET', 'http://www.example.com', array('Connection' => 'FOO, CLOSE, BAR'), '', '1.1');
+        $request = new ClientRequestStream($connectionManager, $requestData);
+
+        $request->on('close', $this->expectCallableOnce());
+
+        $request->end();
+
+        $request->handleData("HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: Foo, Close, Bar\r\n\r\n");
+    }
+
+    public function testStreamShouldNotReuseConnectionForHttp10ByDefault()
+    {
+        $connection = $this->getMockBuilder('React\Socket\ConnectionInterface')->getMock();
+        $connection->expects($this->once())->method('write')->with("GET / HTTP/1.0\r\nHost: www.example.com\r\n\r\n");
+        $connection->expects($this->once())->method('isReadable')->willReturn(true);
+        $connection->expects($this->once())->method('close');
+
+        $connectionManager = $this->getMockBuilder('React\Http\Io\ClientConnectionManager')->disableOriginalConstructor()->getMock();
+        $connectionManager->expects($this->once())->method('connect')->willReturn(\React\Promise\resolve($connection));
+
+        $requestData = new Request('GET', 'http://www.example.com', array(), '', '1.0');
+        $request = new ClientRequestStream($connectionManager, $requestData);
+
+        $request->on('close', $this->expectCallableOnce());
+
+        $request->end();
+
+        $request->handleData("HTTP/1.0 200 OK\r\nContent-Length: 0\r\n\r\n");
+    }
+
+    public function testStreamShouldReuseConnectionForHttp10WhenBothRequestAndResponseContainConnectionKeepAlive()
+    {
+        $connection = $this->getMockBuilder('React\Socket\ConnectionInterface')->getMock();
+        $connection->expects($this->once())->method('write')->with("GET / HTTP/1.0\r\nHost: www.example.com\r\nConnection: keep-alive\r\n\r\n");
+        $connection->expects($this->once())->method('isReadable')->willReturn(true);
+        $connection->expects($this->never())->method('close');
+
+        $connectionManager = $this->getMockBuilder('React\Http\Io\ClientConnectionManager')->disableOriginalConstructor()->getMock();
+        $connectionManager->expects($this->once())->method('connect')->willReturn(\React\Promise\resolve($connection));
+        $connectionManager->expects($this->once())->method('handBack')->with($connection);
+
+        $requestData = new Request('GET', 'http://www.example.com', array('Connection' => 'keep-alive'), '', '1.0');
+        $request = new ClientRequestStream($connectionManager, $requestData);
+
+        $request->on('close', $this->expectCallableOnce());
+
+        $request->end();
+
+        $request->handleData("HTTP/1.0 200 OK\r\nContent-Length: 0\r\nConnection: keep-alive\r\n\r\n");
+    }
+
+    public function testStreamShouldReuseConnectionForHttp10WhenBothRequestAndResponseContainConnectionKeepAliveWithAdditionalOptions()
+    {
+        $connection = $this->getMockBuilder('React\Socket\ConnectionInterface')->getMock();
+        $connection->expects($this->once())->method('write')->with("GET / HTTP/1.0\r\nHost: www.example.com\r\nConnection: FOO, KEEP-ALIVE, BAR\r\n\r\n");
+        $connection->expects($this->once())->method('isReadable')->willReturn(true);
+        $connection->expects($this->never())->method('close');
+
+        $connectionManager = $this->getMockBuilder('React\Http\Io\ClientConnectionManager')->disableOriginalConstructor()->getMock();
+        $connectionManager->expects($this->once())->method('connect')->willReturn(\React\Promise\resolve($connection));
+        $connectionManager->expects($this->once())->method('handBack')->with($connection);
+
+        $requestData = new Request('GET', 'http://www.example.com', array('Connection' => 'FOO, KEEP-ALIVE, BAR'), '', '1.0');
+        $request = new ClientRequestStream($connectionManager, $requestData);
+
+        $request->on('close', $this->expectCallableOnce());
+
+        $request->end();
+
+        $request->handleData("HTTP/1.0 200 OK\r\nContent-Length: 0\r\nConnection: Foo, Keep-Alive, Bar\r\n\r\n");
+    }
+
+    public function testStreamShouldNotReuseConnectionWhenResponseContainsNoContentLengthAndResponseBodyTerminatedByConnectionEndEvent()
+    {
+        $connection = $this->getMockBuilder('React\Socket\ConnectionInterface')->getMock();
+        $connection->expects($this->once())->method('write')->with("GET / HTTP/1.1\r\nHost: www.example.com\r\n\r\n");
+        $connection->expects($this->once())->method('isReadable')->willReturn(false);
+        $connection->expects($this->once())->method('close');
+
+        $endEvent = null;
+        $eventName = null;
+        $connection->expects($this->any())->method('on')->with($this->callback(function ($name) use (&$eventName) {
+            $eventName = $name;
+            return true;
+        }), $this->callback(function ($cb) use (&$endEvent, &$eventName) {
+            if ($eventName === 'end') {
+                $endEvent = $cb;
+            }
+            return true;
+        }));
+
+        $connectionManager = $this->getMockBuilder('React\Http\Io\ClientConnectionManager')->disableOriginalConstructor()->getMock();
+        $connectionManager->expects($this->once())->method('connect')->willReturn(\React\Promise\resolve($connection));
+
+        $requestData = new Request('GET', 'http://www.example.com', array(), '', '1.1');
+        $request = new ClientRequestStream($connectionManager, $requestData);
+
+        $request->on('close', $this->expectCallableOnce());
+
+        $request->end();
+
+        $request->handleData("HTTP/1.1 200 OK\r\n\r\n");
+
+        $this->assertNotNull($endEvent);
+        call_user_func($endEvent); // $endEvent() (PHP 5.4+)
+    }
+
+    public function testStreamShouldNotReuseConnectionWhenResponseContainsContentLengthButIsTerminatedByUnexpectedCloseEvent()
+    {
+        $connection = $this->getMockBuilder('React\Socket\ConnectionInterface')->getMock();
+        $connection->expects($this->once())->method('write')->with("GET / HTTP/1.1\r\nHost: www.example.com\r\n\r\n");
+        $connection->expects($this->atMost(1))->method('isReadable')->willReturn(false);
+        $connection->expects($this->once())->method('close');
+
+        $closeEvent = null;
+        $eventName = null;
+        $connection->expects($this->any())->method('on')->with($this->callback(function ($name) use (&$eventName) {
+            $eventName = $name;
+            return true;
+        }), $this->callback(function ($cb) use (&$closeEvent, &$eventName) {
+            if ($eventName === 'close') {
+                $closeEvent = $cb;
+            }
+            return true;
+        }));
+
+        $connectionManager = $this->getMockBuilder('React\Http\Io\ClientConnectionManager')->disableOriginalConstructor()->getMock();
+        $connectionManager->expects($this->once())->method('connect')->willReturn(\React\Promise\resolve($connection));
+
+        $requestData = new Request('GET', 'http://www.example.com', array(), '', '1.1');
+        $request = new ClientRequestStream($connectionManager, $requestData);
+
+        $request->on('close', $this->expectCallableOnce());
+
+        $request->end();
+
+        $request->handleData("HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\n");
+
+        $this->assertNotNull($closeEvent);
+        call_user_func($closeEvent); // $closeEvent() (PHP 5.4+)
+    }
+
+    public function testStreamShouldReuseConnectionWhenResponseContainsTransferEncodingChunkedAndResponseBody()
+    {
+        $connection = $this->getMockBuilder('React\Socket\ConnectionInterface')->getMock();
+        $connection->expects($this->once())->method('write')->with("GET / HTTP/1.1\r\nHost: www.example.com\r\n\r\n");
+        $connection->expects($this->once())->method('isReadable')->willReturn(true);
+        $connection->expects($this->never())->method('close');
+
+        $connectionManager = $this->getMockBuilder('React\Http\Io\ClientConnectionManager')->disableOriginalConstructor()->getMock();
+        $connectionManager->expects($this->once())->method('connect')->willReturn(\React\Promise\resolve($connection));
+        $connectionManager->expects($this->once())->method('handBack')->with($connection);
+
+        $requestData = new Request('GET', 'http://www.example.com', array(), '', '1.1');
+        $request = new ClientRequestStream($connectionManager, $requestData);
+
+        $request->on('close', $this->expectCallableOnce());
+
+        $request->end();
+
+        $request->handleData("HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n2\r\nOK\r\n0\r\n\r\n");
+    }
+
+    public function testStreamShouldNotReuseConnectionWhenResponseContainsTransferEncodingChunkedAndResponseBodyContainsInvalidData()
+    {
+        $connection = $this->getMockBuilder('React\Socket\ConnectionInterface')->getMock();
+        $connection->expects($this->once())->method('write')->with("GET / HTTP/1.1\r\nHost: www.example.com\r\n\r\n");
+        $connection->expects($this->atMost(1))->method('isReadable')->willReturn(true);
+        $connection->expects($this->once())->method('close');
+
+        $connectionManager = $this->getMockBuilder('React\Http\Io\ClientConnectionManager')->disableOriginalConstructor()->getMock();
+        $connectionManager->expects($this->once())->method('connect')->willReturn(\React\Promise\resolve($connection));
+
+        $requestData = new Request('GET', 'http://www.example.com', array(), '', '1.1');
+        $request = new ClientRequestStream($connectionManager, $requestData);
+
+        $request->on('close', $this->expectCallableOnce());
+
+        $request->end();
+
+        $request->handleData("HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\nINVALID\r\n");
+    }
+
     /** @test */
     public function postRequestShouldSendAPostRequest()
     {
