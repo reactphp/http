@@ -25,7 +25,7 @@ $browser = new Browser($connector);
 
 // demo fetching HTTP headers (or bail out otherwise)
 $browser->get('https://www.google.com/')->then(function (ResponseInterface $response) {
-    echo RingCentral\Psr7\str($response);
+    echo React\Http\Psr7\str($response);
 }, function (Exception $e) {
     echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });

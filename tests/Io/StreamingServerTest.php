@@ -117,7 +117,7 @@ class StreamingServerTest extends TestCase
         $serverParams = $requestAssertion->getServerParams();
 
         $this->assertSame(1, $i);
-        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertInstanceOf('React\Http\Psr7\Request', $requestAssertion);
         $this->assertSame('GET', $requestAssertion->getMethod());
         $this->assertSame('/', $requestAssertion->getRequestTarget());
         $this->assertSame('/', $requestAssertion->getUri()->getPath());
@@ -150,7 +150,7 @@ class StreamingServerTest extends TestCase
         $serverParams = $requestAssertion->getServerParams();
 
         $this->assertSame(1, $i);
-        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertInstanceOf('React\Http\Psr7\Request', $requestAssertion);
         $this->assertSame('GET', $requestAssertion->getMethod());
         $this->assertSame('/', $requestAssertion->getRequestTarget());
         $this->assertSame('/', $requestAssertion->getUri()->getPath());
@@ -173,7 +173,7 @@ class StreamingServerTest extends TestCase
         $data = "GET / HTTP/1.1\r\nHost: example.com:8080\r\n\r\n";
         $this->connection->emit('data', array($data));
 
-        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertInstanceOf('React\Http\Psr7\Request', $requestAssertion);
         $this->assertSame('GET', $requestAssertion->getMethod());
         $this->assertSame('/', $requestAssertion->getRequestTarget());
         $this->assertSame('/', $requestAssertion->getUri()->getPath());
@@ -195,7 +195,7 @@ class StreamingServerTest extends TestCase
         $data = "GET / HTTP/1.1\r\nHost: example.com:443\r\n\r\n";
         $this->connection->emit('data', array($data));
 
-        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertInstanceOf('React\Http\Psr7\Request', $requestAssertion);
         $this->assertSame('GET', $requestAssertion->getMethod());
         $this->assertSame('/', $requestAssertion->getRequestTarget());
         $this->assertSame('/', $requestAssertion->getUri()->getPath());
@@ -217,7 +217,7 @@ class StreamingServerTest extends TestCase
         $data = "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n";
         $this->connection->emit('data', array($data));
 
-        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertInstanceOf('React\Http\Psr7\Request', $requestAssertion);
         $this->assertSame('GET', $requestAssertion->getMethod());
         $this->assertSame('/', $requestAssertion->getRequestTarget());
         $this->assertSame('/', $requestAssertion->getUri()->getPath());
@@ -239,7 +239,7 @@ class StreamingServerTest extends TestCase
         $data = "GET / HTTP/1.0\r\n\r\n";
         $this->connection->emit('data', array($data));
 
-        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertInstanceOf('React\Http\Psr7\Request', $requestAssertion);
         $this->assertSame('GET', $requestAssertion->getMethod());
         $this->assertSame('/', $requestAssertion->getRequestTarget());
         $this->assertSame('/', $requestAssertion->getUri()->getPath());
@@ -274,7 +274,7 @@ class StreamingServerTest extends TestCase
         $data = "OPTIONS * HTTP/1.1\r\nHost: example.com\r\n\r\n";
         $this->connection->emit('data', array($data));
 
-        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertInstanceOf('React\Http\Psr7\Request', $requestAssertion);
         $this->assertSame('OPTIONS', $requestAssertion->getMethod());
         $this->assertSame('*', $requestAssertion->getRequestTarget());
         $this->assertSame('', $requestAssertion->getUri()->getPath());
@@ -307,7 +307,7 @@ class StreamingServerTest extends TestCase
         $data = "CONNECT example.com:443 HTTP/1.1\r\nHost: example.com:443\r\n\r\n";
         $this->connection->emit('data', array($data));
 
-        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertInstanceOf('React\Http\Psr7\Request', $requestAssertion);
         $this->assertSame('CONNECT', $requestAssertion->getMethod());
         $this->assertSame('example.com:443', $requestAssertion->getRequestTarget());
         $this->assertSame('', $requestAssertion->getUri()->getPath());
@@ -329,7 +329,7 @@ class StreamingServerTest extends TestCase
         $data = "CONNECT example.com:443 HTTP/1.1\r\n\r\n";
         $this->connection->emit('data', array($data));
 
-        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertInstanceOf('React\Http\Psr7\Request', $requestAssertion);
         $this->assertSame('CONNECT', $requestAssertion->getMethod());
         $this->assertSame('example.com:443', $requestAssertion->getRequestTarget());
         $this->assertSame('', $requestAssertion->getUri()->getPath());
@@ -351,7 +351,7 @@ class StreamingServerTest extends TestCase
         $data = "CONNECT example.com:80 HTTP/1.1\r\nHost: example.com:80\r\n\r\n";
         $this->connection->emit('data', array($data));
 
-        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertInstanceOf('React\Http\Psr7\Request', $requestAssertion);
         $this->assertSame('CONNECT', $requestAssertion->getMethod());
         $this->assertSame('example.com:80', $requestAssertion->getRequestTarget());
         $this->assertSame('', $requestAssertion->getUri()->getPath());
@@ -373,7 +373,7 @@ class StreamingServerTest extends TestCase
         $data = "CONNECT example.com:80 HTTP/1.1\r\nHost: other.example.org\r\n\r\n";
         $this->connection->emit('data', array($data));
 
-        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertInstanceOf('React\Http\Psr7\Request', $requestAssertion);
         $this->assertSame('CONNECT', $requestAssertion->getMethod());
         $this->assertSame('example.com:80', $requestAssertion->getRequestTarget());
         $this->assertSame('', $requestAssertion->getUri()->getPath());
@@ -425,7 +425,7 @@ class StreamingServerTest extends TestCase
         $data = "GET /test HTTP/1.0\r\n\r\n";
         $this->connection->emit('data', array($data));
 
-        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertInstanceOf('React\Http\Psr7\Request', $requestAssertion);
         $this->assertSame('GET', $requestAssertion->getMethod());
         $this->assertSame('/test', $requestAssertion->getRequestTarget());
         $this->assertEquals('http://127.0.0.1/test', $requestAssertion->getUri());
@@ -446,7 +446,7 @@ class StreamingServerTest extends TestCase
         $data = "GET http://example.com/test HTTP/1.1\r\nHost: example.com\r\n\r\n";
         $this->connection->emit('data', array($data));
 
-        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertInstanceOf('React\Http\Psr7\Request', $requestAssertion);
         $this->assertSame('GET', $requestAssertion->getMethod());
         $this->assertSame('http://example.com/test', $requestAssertion->getRequestTarget());
         $this->assertEquals('http://example.com/test', $requestAssertion->getUri());
@@ -468,7 +468,7 @@ class StreamingServerTest extends TestCase
         $data = "GET http://example.com/test HTTP/1.1\r\nHost: other.example.org\r\n\r\n";
         $this->connection->emit('data', array($data));
 
-        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertInstanceOf('React\Http\Psr7\Request', $requestAssertion);
         $this->assertSame('GET', $requestAssertion->getMethod());
         $this->assertSame('http://example.com/test', $requestAssertion->getRequestTarget());
         $this->assertEquals('http://example.com/test', $requestAssertion->getUri());
@@ -502,7 +502,7 @@ class StreamingServerTest extends TestCase
         $data = "OPTIONS * HTTP/1.1\r\nHost: example.com\r\n\r\n";
         $this->connection->emit('data', array($data));
 
-        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertInstanceOf('React\Http\Psr7\Request', $requestAssertion);
         $this->assertSame('OPTIONS', $requestAssertion->getMethod());
         $this->assertSame('*', $requestAssertion->getRequestTarget());
         $this->assertEquals('http://example.com', $requestAssertion->getUri());
@@ -524,7 +524,7 @@ class StreamingServerTest extends TestCase
         $data = "OPTIONS http://example.com HTTP/1.1\r\nHost: example.com\r\n\r\n";
         $this->connection->emit('data', array($data));
 
-        $this->assertInstanceOf('RingCentral\Psr7\Request', $requestAssertion);
+        $this->assertInstanceOf('React\Http\Psr7\Request', $requestAssertion);
         $this->assertSame('OPTIONS', $requestAssertion->getMethod());
         $this->assertSame('http://example.com', $requestAssertion->getRequestTarget());
         $this->assertEquals('http://example.com', $requestAssertion->getUri());

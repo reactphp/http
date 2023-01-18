@@ -8,9 +8,9 @@ use React\Http\Io\HttpBodyStream;
 use React\Http\Message\Response;
 use React\Http\Message\ServerRequest;
 use React\Http\Middleware\RequestBodyBufferMiddleware;
+use React\Http\Psr7\BufferStream;
 use React\Stream\ThroughStream;
 use React\Tests\Http\TestCase;
-use RingCentral\Psr7\BufferStream;
 
 final class RequestBodyBufferMiddlewareTest extends TestCase
 {

@@ -3,7 +3,6 @@
 use Psr\Http\Message\ResponseInterface;
 use React\Http\Browser;
 use React\Stream\ReadableResourceStream;
-use RingCentral\Psr7;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -20,7 +19,7 @@ $url = isset($argv[1]) ? $argv[1] : 'https://httpbin.org/post';
 echo 'Sending STDIN as POST to ' . $url . '…' . PHP_EOL;
 
 $client->post($url, array(), $in)->then(function (ResponseInterface $response) {
-    echo 'Received' . PHP_EOL . Psr7\str($response);
+    echo 'Received' . PHP_EOL . React\Http\Psr7\str($response);
 }, function (Exception $e) {
     echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });

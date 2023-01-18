@@ -6,8 +6,8 @@ use Fig\Http\Message\StatusCodeInterface;
 use Psr\Http\Message\StreamInterface;
 use React\Http\Io\BufferedBody;
 use React\Http\Io\HttpBodyStream;
+use React\Http\Psr7\Response as Psr7Response;
 use React\Stream\ReadableStreamInterface;
-use RingCentral\Psr7\Response as Psr7Response;
 
 /**
  * Represents an outgoing server response message.

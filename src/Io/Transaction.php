@@ -8,11 +8,11 @@ use Psr\Http\Message\UriInterface;
 use React\EventLoop\LoopInterface;
 use React\Http\Message\Response;
 use React\Http\Message\ResponseException;
+use React\Http\Psr7\Uri;
 use React\Promise\Deferred;
 use React\Promise\Promise;
 use React\Promise\PromiseInterface;
 use React\Stream\ReadableStreamInterface;
-use RingCentral\Psr7\Uri;
 
 /**
  * @internal

@@ -7,11 +7,11 @@ use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
 use React\Http\Io\BufferedBody;
 use React\Http\Io\HttpBodyStream;
+use React\Http\Psr7\Request as BaseRequest;
 use React\Stream\ReadableStreamInterface;
-use RingCentral\Psr7\Request as BaseRequest;
 
 /**
- * Respresents an incoming server request message.
+ * Represents an incoming server request message.
  *
  * This class implements the
  * [PSR-7 `ServerRequestInterface`](https://www.php-fig.org/psr/psr-7/#321-psrhttpmessageserverrequestinterface)

@@ -30,7 +30,7 @@ echo 'Requesting ' . $url . '…' . PHP_EOL;
 
 $client->requestStreaming('GET', $url)->then(function (ResponseInterface $response) {
     echo 'Headers received' . PHP_EOL;
-    echo RingCentral\Psr7\str($response);
+    echo React\Http\Psr7\str($response);
 
     $stream = $response->getBody();
     assert($stream instanceof ReadableStreamInterface);

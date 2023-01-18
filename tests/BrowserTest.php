@@ -5,7 +5,6 @@ namespace React\Tests\Http;
 use Psr\Http\Message\RequestInterface;
 use React\Http\Browser;
 use React\Promise\Promise;
-use RingCentral\Psr7\Uri;
 
 class BrowserTest extends TestCase
 {

@@ -7,11 +7,11 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Io\MiddlewareRunner;
 use React\Http\Message\ServerRequest;
+use React\Http\Psr7\Response;
 use React\Promise;
 use React\Promise\PromiseInterface;
 use React\Tests\Http\Middleware\ProcessStack;
 use React\Tests\Http\TestCase;
-use RingCentral\Psr7\Response;
 
 final class MiddlewareRunnerTest extends TestCase
 {

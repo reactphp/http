@@ -28,7 +28,7 @@ $http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterf
     // left up as an exercise: use an HTTP client to send the outgoing request
     // and forward the incoming response to the original client request
     return React\Http\Message\Response::plaintext(
-        RingCentral\Psr7\str($outgoing)
+        React\Http\Psr7\str($outgoing)
     );
 });
 

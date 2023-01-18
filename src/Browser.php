@@ -2,17 +2,17 @@
 
 namespace React\Http;
 
+use InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
-use RingCentral\Psr7\Uri;
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
 use React\Http\Io\Sender;
 use React\Http\Io\Transaction;
 use React\Http\Message\Request;
+use React\Http\Psr7\Uri;
 use React\Promise\PromiseInterface;
 use React\Socket\ConnectorInterface;
 use React\Stream\ReadableStreamInterface;
-use InvalidArgumentException;
 
 /**
  * @final This class is final and shouldn't be extended as it is likely to be marked final in a future release.

@@ -4,13 +4,12 @@ namespace React\Http\Io;
 
 use Evenement\EventEmitter;
 use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
 use React\Http\Message\Response;
+use React\Http\Psr7\Utils;
 use React\Promise;
 use React\Socket\ConnectionInterface;
 use React\Socket\ConnectorInterface;
 use React\Stream\WritableStreamInterface;
-use RingCentral\Psr7 as gPsr;
 
 /**
  * @event response
@@ -156,7 +155,7 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
         // buffer until double CRLF (or double LF for compatibility with legacy servers)
         if (false !== strpos($this->buffer, "\r\n\r\n") || false !== strpos($this->buffer, "\n\n")) {
             try {
-                $response = gPsr\parse_response($this->buffer);
+                $response = Utils::parseResponse($this->buffer);
                 $bodyChunk = (string) $response->getBody();
             } catch (\InvalidArgumentException $exception) {
                 $this->closeError($exception);
