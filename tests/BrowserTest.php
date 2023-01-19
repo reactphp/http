@@ -556,6 +556,8 @@ class BrowserTest extends TestCase
                 'user-Agent' => array('ABC'),
                 'another-header' => array('value'),
                 'custom-header' => array('data'),
+
+                'Connection' => array('close')
             );
 
             $that->assertEquals($expectedHeaders, $request->getHeaders());
@@ -578,6 +580,32 @@ class BrowserTest extends TestCase
         $that = $this;
         $this->sender->expects($this->once())->method('send')->with($this->callback(function (RequestInterface $request) use ($that) {
             $that->assertEquals(array(), $request->getHeader('user-agent'));
+            return true;
+        }))->willReturn(new Promise(function () { }));
+
+        $this->browser->get('http://example.com/');
+    }
+
+    public function testWithoutHeaderConnectionShouldRemoveDefaultConnectionHeader()
+    {
+        $this->browser = $this->browser->withoutHeader('Connection');
+
+        $that = $this;
+        $this->sender->expects($this->once())->method('send')->with($this->callback(function (RequestInterface $request) use ($that) {
+            $that->assertEquals(array(), $request->getHeader('Connection'));
+            return true;
+        }))->willReturn(new Promise(function () { }));
+
+        $this->browser->get('http://example.com/');
+    }
+
+    public function testWithHeaderConnectionShouldOverwriteDefaultConnectionHeader()
+    {
+        $this->browser = $this->browser->withHeader('Connection', 'keep-alive');
+
+        $that = $this;
+        $this->sender->expects($this->once())->method('send')->with($this->callback(function (RequestInterface $request) use ($that) {
+            $that->assertEquals(array('keep-alive'), $request->getHeader('Connection'));
             return true;
         }))->willReturn(new Promise(function () { }));
 

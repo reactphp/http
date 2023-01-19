@@ -23,6 +23,7 @@ class Browser
     private $baseUrl;
     private $protocolVersion = '1.1';
     private $defaultHeaders = array(
+        'Connection' => 'close',
         'User-Agent' => 'ReactPHP/1'
     );
 

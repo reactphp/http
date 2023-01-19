@@ -291,62 +291,6 @@ class SenderTest extends TestCase
     }
 
     /** @test */
-    public function getHttp10RequestShouldSendAGetRequestWithoutConnectionHeaderByDefault()
-    {
-        $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
-        $client->expects($this->once())->method('request')->with($this->callback(function (RequestInterface $request) {
-            return !$request->hasHeader('Connection');
-        }))->willReturn($this->getMockBuilder('React\Http\Io\ClientRequestStream')->disableOriginalConstructor()->getMock());
-
-        $sender = new Sender($client);
-
-        $request = new Request('GET', 'http://www.example.com', array(), '', '1.0');
-        $sender->send($request);
-    }
-
-    /** @test */
-    public function getHttp10RequestShouldSendAGetRequestWithoutConnectionHeaderEvenWhenConnectionKeepAliveHeaderIsSpecified()
-    {
-        $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
-        $client->expects($this->once())->method('request')->with($this->callback(function (RequestInterface $request) {
-            return !$request->hasHeader('Connection');
-        }))->willReturn($this->getMockBuilder('React\Http\Io\ClientRequestStream')->disableOriginalConstructor()->getMock());
-
-        $sender = new Sender($client);
-
-        $request = new Request('GET', 'http://www.example.com', array('Connection' => 'keep-alive'), '', '1.0');
-        $sender->send($request);
-    }
-
-    /** @test */
-    public function getHttp11RequestShouldSendAGetRequestWithConnectionCloseHeaderByDefault()
-    {
-        $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
-        $client->expects($this->once())->method('request')->with($this->callback(function (RequestInterface $request) {
-            return $request->getHeaderLine('Connection') === 'close';
-        }))->willReturn($this->getMockBuilder('React\Http\Io\ClientRequestStream')->disableOriginalConstructor()->getMock());
-
-        $sender = new Sender($client);
-
-        $request = new Request('GET', 'http://www.example.com', array(), '', '1.1');
-        $sender->send($request);
-    }
-
-    /** @test */
-    public function getHttp11RequestShouldSendAGetRequestWithConnectionCloseHeaderEvenWhenConnectionKeepAliveHeaderIsSpecified()
-    {
-        $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
-        $client->expects($this->once())->method('request')->with($this->callback(function (RequestInterface $request) {
-            return $request->getHeaderLine('Connection') === 'close';
-        }))->willReturn($this->getMockBuilder('React\Http\Io\ClientRequestStream')->disableOriginalConstructor()->getMock());
-
-        $sender = new Sender($client);
-
-        $request = new Request('GET', 'http://www.example.com', array('Connection' => 'keep-alive'), '', '1.1');
-        $sender->send($request);
-    }
-
-    /** @test */
     public function getRequestWithUserAndPassShouldSendAGetRequestWithBasicAuthorizationHeader()
     {
         $client = $this->getMockBuilder('React\Http\Client\Client')->disableOriginalConstructor()->getMock();
