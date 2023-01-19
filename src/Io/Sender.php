@@ -6,7 +6,6 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use React\EventLoop\LoopInterface;
 use React\Http\Client\Client as HttpClient;
-use React\Http\Message\Response;
 use React\Promise\PromiseInterface;
 use React\Promise\Deferred;
 use React\Socket\ConnectorInterface;
@@ -95,8 +94,10 @@ class Sender
         }
 
         // automatically add `Connection: close` request header for HTTP/1.1 requests to avoid connection reuse
-        if ($request->getProtocolVersion() === '1.1' && !$request->hasHeader('Connection')) {
+        if ($request->getProtocolVersion() === '1.1') {
             $request = $request->withHeader('Connection', 'close');
+        } else {
+            $request = $request->withoutHeader('Connection');
         }
 
         // automatically add `Authorization: Basic …` request header if URL includes `user:pass@host`
@@ -116,18 +117,8 @@ class Sender
             $deferred->reject($error);
         });
 
-        $requestStream->on('response', function (ResponseInterface $response, ReadableStreamInterface $body) use ($deferred, $request) {
-            $length = null;
-            $code = $response->getStatusCode();
-            if ($request->getMethod() === 'HEAD' || ($code >= 100 && $code < 200) || $code == Response::STATUS_NO_CONTENT || $code == Response::STATUS_NOT_MODIFIED) {
-                $length = 0;
-            } elseif (\strtolower($response->getHeaderLine('Transfer-Encoding')) === 'chunked') {
-                $body = new ChunkedDecoder($body);
-            } elseif ($response->hasHeader('Content-Length')) {
-                $length = (int) $response->getHeaderLine('Content-Length');
-            }
-
-            $deferred->resolve($response->withBody(new ReadableBodyStream($body, $length)));
+        $requestStream->on('response', function (ResponseInterface $response) use ($deferred, $request) {
+            $deferred->resolve($response);
         });
 
         if ($body instanceof ReadableStreamInterface) {
