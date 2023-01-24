@@ -345,7 +345,7 @@ class Browser
      * @param string                         $url      URL for the request
      * @param array                          $headers  Additional request headers
      * @param string|ReadableStreamInterface $body     HTTP request body contents
-     * @return PromiseInterface<ResponseInterface,\Exception>
+     * @return PromiseInterface<ResponseInterface>
      */
     public function request($method, $url, array $headers = array(), $body = '')
     {
@@ -418,7 +418,7 @@ class Browser
      * @param string                         $url      URL for the request
      * @param array                          $headers  Additional request headers
      * @param string|ReadableStreamInterface $body     HTTP request body contents
-     * @return PromiseInterface<ResponseInterface,\Exception>
+     * @return PromiseInterface<ResponseInterface>
      */
     public function requestStreaming($method, $url, $headers = array(), $body = '')
     {
@@ -829,7 +829,7 @@ class Browser
      * @param string                         $url
      * @param array                          $headers
      * @param string|ReadableStreamInterface $body
-     * @return PromiseInterface<ResponseInterface,\Exception>
+     * @return PromiseInterface<ResponseInterface>
      */
     private function requestMayBeStreaming($method, $url, array $headers = array(), $body = '')
     {
