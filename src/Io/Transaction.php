@@ -302,7 +302,7 @@ class Transaction
                 ->withMethod($request->getMethod() === 'HEAD' ? 'HEAD' : 'GET')
                 ->withoutHeader('Content-Type')
                 ->withoutHeader('Content-Length')
-                ->withBody(new EmptyBodyStream());
+                ->withBody(new BufferedBody(''));
         }
 
         return $request;

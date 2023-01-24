@@ -553,6 +553,60 @@ class FunctionalBrowserTest extends TestCase
         $socket->close();
     }
 
+    public function testRequestWillCreateNewConnectionForSecondRequestByDefaultEvenWhenServerKeepsConnectionOpen()
+    {
+        $twice = $this->expectCallableOnce();
+        $socket = new SocketServer('127.0.0.1:0');
+        $socket->on('connection', function (\React\Socket\ConnectionInterface $connection) use ($socket, $twice) {
+            $connection->on('data', function () use ($connection) {
+                $connection->write("HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nhello");
+            });
+
+            $socket->on('connection', $twice);
+            $socket->on('connection', function () use ($socket) {
+                $socket->close();
+            });
+        });
+
+        $this->base = str_replace('tcp:', 'http:', $socket->getAddress()) . '/';
+
+        $response = \React\Async\await($this->browser->get($this->base . 'get'));
+        assert($response instanceof ResponseInterface);
+        $this->assertEquals('hello', (string)$response->getBody());
+
+        $response = \React\Async\await($this->browser->get($this->base . 'get'));
+        assert($response instanceof ResponseInterface);
+        $this->assertEquals('hello', (string)$response->getBody());
+    }
+
+    public function testRequestWithoutConnectionHeaderWillReuseExistingConnectionForSecondRequest()
+    {
+        $this->socket->on('connection', $this->expectCallableOnce());
+
+        // remove default `Connection: close` request header to enable keep-alive
+        $this->browser = $this->browser->withoutHeader('Connection');
+
+        $response = \React\Async\await($this->browser->get($this->base . 'get'));
+        assert($response instanceof ResponseInterface);
+        $this->assertEquals('hello', (string)$response->getBody());
+
+        $response = \React\Async\await($this->browser->get($this->base . 'get'));
+        assert($response instanceof ResponseInterface);
+        $this->assertEquals('hello', (string)$response->getBody());
+    }
+
+    public function testRequestWithoutConnectionHeaderWillReuseExistingConnectionForRedirectedRequest()
+    {
+        $this->socket->on('connection', $this->expectCallableOnce());
+
+        // remove default `Connection: close` request header to enable keep-alive
+        $this->browser = $this->browser->withoutHeader('Connection');
+
+        $response = \React\Async\await($this->browser->get($this->base . 'redirect-to?url=get'));
+        assert($response instanceof ResponseInterface);
+        $this->assertEquals('hello', (string)$response->getBody());
+    }
+
     public function testPostStreamChunked()
     {
         $stream = new ThroughStream();

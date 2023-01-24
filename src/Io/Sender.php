@@ -8,6 +8,7 @@ use React\EventLoop\LoopInterface;
 use React\Http\Client\Client as HttpClient;
 use React\Promise\PromiseInterface;
 use React\Promise\Deferred;
+use React\Socket\Connector;
 use React\Socket\ConnectorInterface;
 use React\Stream\ReadableStreamInterface;
 
@@ -49,7 +50,11 @@ class Sender
      */
     public static function createFromLoop(LoopInterface $loop, ConnectorInterface $connector = null)
     {
-        return new self(new HttpClient($loop, $connector));
+        if ($connector === null) {
+            $connector = new Connector(array(), $loop);
+        }
+
+        return new self(new HttpClient(new ClientConnectionManager($connector, $loop)));
     }
 
     private $http;
@@ -91,13 +96,6 @@ class Sender
         } else {
             // do not use chunked encoding if size is known or if this is an empty request body
             $size = 0;
-        }
-
-        // automatically add `Connection: close` request header for HTTP/1.1 requests to avoid connection reuse
-        if ($request->getProtocolVersion() === '1.1') {
-            $request = $request->withHeader('Connection', 'close');
-        } else {
-            $request = $request->withoutHeader('Connection');
         }
 
         // automatically add `Authorization: Basic …` request header if URL includes `user:pass@host`

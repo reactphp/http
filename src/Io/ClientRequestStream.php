@@ -3,12 +3,10 @@
 namespace React\Http\Io;
 
 use Evenement\EventEmitter;
+use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
 use React\Http\Message\Response;
-use React\Promise;
 use React\Socket\ConnectionInterface;
-use React\Socket\ConnectorInterface;
 use React\Stream\WritableStreamInterface;
 use RingCentral\Psr7 as gPsr;
 
@@ -26,8 +24,8 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
     const STATE_HEAD_WRITTEN = 2;
     const STATE_END = 3;
 
-    /** @var ConnectorInterface */
-    private $connector;
+    /** @var ClientConnectionManager */
+    private $connectionManager;
 
     /** @var RequestInterface */
     private $request;
@@ -44,9 +42,9 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
 
     private $pendingWrites = '';
 
-    public function __construct(ConnectorInterface $connector, RequestInterface $request)
+    public function __construct(ClientConnectionManager $connectionManager, RequestInterface $request)
     {
-        $this->connector = $connector;
+        $this->connectionManager = $connectionManager;
         $this->request = $request;
     }
 
@@ -65,7 +63,7 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
         $pendingWrites = &$this->pendingWrites;
         $that = $this;
 
-        $promise = $this->connect();
+        $promise = $this->connectionManager->connect($this->request->getUri());
         $promise->then(
             function (ConnectionInterface $connection) use ($request, &$connectionRef, &$stateRef, &$pendingWrites, $that) {
                 $connectionRef = $connection;
@@ -174,11 +172,20 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
             $this->connection = null;
             $this->buffer = '';
 
-            // take control over connection handling and close connection once response body closes
+            // take control over connection handling and check if we can reuse the connection once response body closes
             $that = $this;
+            $request = $this->request;
+            $connectionManager = $this->connectionManager;
+            $successfulEndReceived = false;
             $input = $body = new CloseProtectionStream($connection);
-            $input->on('close', function () use ($connection, $that) {
-                $connection->close();
+            $input->on('close', function () use ($connection, $that, $connectionManager, $request, $response, &$successfulEndReceived) {
+                // only reuse connection after successful response and both request and response allow keep alive
+                if ($successfulEndReceived && $connection->isReadable() && $that->hasMessageKeepAliveEnabled($response) && $that->hasMessageKeepAliveEnabled($request)) {
+                    $connectionManager->keepAlive($request->getUri(), $connection);
+                } else {
+                    $connection->close();
+                }
+
                 $that->close();
             });
 
@@ -193,6 +200,9 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
                 $length = (int) $response->getHeaderLine('Content-Length');
             }
             $response = $response->withBody($body = new ReadableBodyStream($body, $length));
+            $body->on('end', function () use (&$successfulEndReceived) {
+                $successfulEndReceived = true;
+            });
 
             // emit response with streaming response body (see `Sender`)
             $this->emit('response', array($response, $body));
@@ -253,27 +263,28 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
         $this->removeAllListeners();
     }
 
-    protected function connect()
+    /**
+     * @internal
+     * @return bool
+     * @link https://www.rfc-editor.org/rfc/rfc9112#section-9.3
+     * @link https://www.rfc-editor.org/rfc/rfc7230#section-6.1
+     */
+    public function hasMessageKeepAliveEnabled(MessageInterface $message)
     {
-        $scheme = $this->request->getUri()->getScheme();
-        if ($scheme !== 'https' && $scheme !== 'http') {
-            return Promise\reject(
-                new \InvalidArgumentException('Invalid request URL given')
-            );
+        $connectionOptions = \RingCentral\Psr7\normalize_header(\strtolower($message->getHeaderLine('Connection')));
+
+        if (\in_array('close', $connectionOptions, true)) {
+            return false;
         }
 
-        $host = $this->request->getUri()->getHost();
-        $port = $this->request->getUri()->getPort();
-
-        if ($scheme === 'https') {
-            $host = 'tls://' . $host;
+        if ($message->getProtocolVersion() === '1.1') {
+            return true;
         }
 
-        if ($port === null) {
-            $port = $scheme === 'https' ? 443 : 80;
+        if (\in_array('keep-alive', $connectionOptions, true)) {
+            return true;
         }
 
-        return $this->connector
-            ->connect($host . ':' . $port);
+        return false;
     }
 }
