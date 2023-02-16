@@ -1026,4 +1026,29 @@ final class MultipartParserTest extends TestCase
         $this->assertTrue(isset($files['file4']));
         $this->assertSame(UPLOAD_ERR_OK, $files['file4']->getError());
     }
+
+    public function testWeOnlyParseTheAmountOfMultiPartChunksWeConfigured()
+    {
+        $boundary = "---------------------------12758086162038677464950549563";
+
+        $chunk = "--$boundary\r\n";
+        $chunk .= "Content-Disposition: form-data; name=\"f\"\r\n";
+        $chunk .= "\r\n";
+        $chunk .= "u\r\n";
+        $data = '';
+        for ($i = 0; $i < 5000000; $i++) {
+            $data .= $chunk;
+        }
+        $data .= "--$boundary--\r\n";
+
+        $request = new ServerRequest('POST', 'http://example.com/', array(
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
+        ), $data, 1.1);
+
+        $parser = new MultipartParser();
+        $startTime = microtime(true);
+        $parser->parse($request);
+        $runTime = microtime(true) - $startTime;
+        $this->assertLessThan(1, $runTime);
+    }
 }
