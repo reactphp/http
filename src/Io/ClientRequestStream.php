@@ -156,6 +156,13 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
             try {
                 $response = gPsr\parse_response($this->buffer);
                 $bodyChunk = (string) $response->getBody();
+
+                if ($this->responseIsAnUpgradeResponse($response)) {
+                    $this->connection->removeListener('data', array($this, 'handleData'));
+
+                    $this->emit('upgrade', array($this->connection, $response, $this));
+                    return;
+                }
             } catch (\InvalidArgumentException $exception) {
                 $this->closeError($exception);
                 return;
@@ -214,6 +221,14 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
                 $input->handleEnd();
             }
         }
+    }
+
+    protected function responseIsAnUpgradeResponse($response)
+    {
+        return
+            $response->hasHeader('Connection') &&
+            (in_array('upgrade', array_map('strtolower', $response->getHeader('Connection')))) &&
+            (int) $response->getStatusCode() === 101;
     }
 
     /** @internal */
