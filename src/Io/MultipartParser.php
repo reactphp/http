@@ -27,6 +27,13 @@ final class MultipartParser
     private $maxFileSize;
 
     /**
+     * Based on $maxInputVars and $maxFileUploads
+     *
+     * @var int
+     */
+    private $maxMultipartBodyParts;
+
+    /**
      * ini setting "max_input_vars"
      *
      * Does not exist in PHP < 5.3.9 or HHVM, so assume PHP's default 1000 here.
@@ -62,6 +69,7 @@ final class MultipartParser
      */
     private $maxFileUploads;
 
+    private $multipartBodyPartCount = 0;
     private $postCount = 0;
     private $filesCount = 0;
     private $emptyCount = 0;
@@ -87,6 +95,8 @@ final class MultipartParser
 
         $this->uploadMaxFilesize = IniUtil::iniSizeToBytes($uploadMaxFilesize);
         $this->maxFileUploads = $maxFileUploads === null ? (\ini_get('file_uploads') === '' ? 0 : (int)\ini_get('max_file_uploads')) : (int)$maxFileUploads;
+
+        $this->maxMultipartBodyParts = $this->maxInputVars + $this->maxFileUploads;
     }
 
     public function parse(ServerRequestInterface $request)
@@ -101,6 +111,7 @@ final class MultipartParser
 
         $request = $this->request;
         $this->request = null;
+        $this->multipartBodyPartCount = 0;
         $this->postCount = 0;
         $this->filesCount = 0;
         $this->emptyCount = 0;
@@ -128,6 +139,10 @@ final class MultipartParser
             // parse one part and continue searching for next
             $this->parsePart(\substr($buffer, $start, $end - $start));
             $start = $end;
+
+            if (++$this->multipartBodyPartCount > $this->maxMultipartBodyParts) {
+                break;
+            }
         }
     }
 
