@@ -73,6 +73,7 @@ final class MultipartParser
     private $postCount = 0;
     private $filesCount = 0;
     private $emptyCount = 0;
+    private $cursor = 0;
 
     /**
      * @param int|string|null $uploadMaxFilesize
@@ -112,6 +113,7 @@ final class MultipartParser
         $request = $this->request;
         $this->request = null;
         $this->multipartBodyPartCount = 0;
+        $this->cursor = 0;
         $this->postCount = 0;
         $this->filesCount = 0;
         $this->emptyCount = 0;
@@ -125,20 +127,20 @@ final class MultipartParser
         $len = \strlen($boundary);
 
         // ignore everything before initial boundary (SHOULD be empty)
-        $start = \strpos($buffer, $boundary . "\r\n");
+        $this->cursor = \strpos($buffer, $boundary . "\r\n");
 
-        while ($start !== false) {
+        while ($this->cursor !== false) {
             // search following boundary (preceded by newline)
             // ignore last if not followed by boundary (SHOULD end with "--")
-            $start += $len + 2;
-            $end = \strpos($buffer, "\r\n" . $boundary, $start);
+            $this->cursor += $len + 2;
+            $end = \strpos($buffer, "\r\n" . $boundary, $this->cursor);
             if ($end === false) {
                 break;
             }
 
             // parse one part and continue searching for next
-            $this->parsePart(\substr($buffer, $start, $end - $start));
-            $start = $end;
+            $this->parsePart(\substr($buffer, $this->cursor, $end - $this->cursor));
+            $this->cursor = $end;
 
             if (++$this->multipartBodyPartCount > $this->maxMultipartBodyParts) {
                 break;
