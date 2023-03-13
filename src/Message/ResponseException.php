@@ -2,6 +2,7 @@
 
 namespace React\Http\Message;
 
+use Psr\Http\Message\RequestInterface;
 use RuntimeException;
 use Psr\Http\Message\ResponseInterface;
 
