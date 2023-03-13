@@ -18,8 +18,15 @@ final class ResponseException extends RuntimeException
 {
     private $response;
 
-    public function __construct(ResponseInterface $response, $message = null, $code = null, $previous = null)
-    {
+    private $request;
+
+    public function __construct(
+        ResponseInterface $response,
+        RequestInterface $request,
+        $message = null,
+        $code = null,
+        $previous = null
+    ) {
         if ($message === null) {
             $message = 'HTTP status code ' . $response->getStatusCode() . ' (' . $response->getReasonPhrase() . ')';
         }
@@ -29,6 +36,7 @@ final class ResponseException extends RuntimeException
         parent::__construct($message, $code, $previous);
 
         $this->response = $response;
+        $this->request = $request;
     }
 
     /**
@@ -39,5 +47,13 @@ final class ResponseException extends RuntimeException
     public function getResponse()
     {
         return $this->response;
+    }
+
+    /**
+     * @return RequestInterface
+     */
+    public function getRequest()
+    {
+        return $this->request;
     }
 }

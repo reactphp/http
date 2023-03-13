@@ -246,7 +246,7 @@ class Transaction
 
         // only status codes 200-399 are considered to be valid, reject otherwise
         if ($this->obeySuccessCode && ($response->getStatusCode() < 200 || $response->getStatusCode() >= 400)) {
-            throw new ResponseException($response);
+            throw new ResponseException($response, $request);
         }
 
         // resolve our initial promise
