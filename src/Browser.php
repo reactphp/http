@@ -3,6 +3,8 @@
 namespace React\Http;
 
 use Psr\Http\Message\ResponseInterface;
+use React\Http\Browser\MiddlewareInterface;
+use React\Http\Browser\MiddlewareRunner;
 use RingCentral\Psr7\Uri;
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
@@ -26,6 +28,9 @@ class Browser
         'Connection' => 'close',
         'User-Agent' => 'ReactPHP/1'
     );
+
+    /** @var MiddlewareInterface[] */
+    private $middlewares = array();
 
     /**
      * The `Browser` is responsible for sending HTTP requests to your HTTP server
@@ -851,8 +856,21 @@ class Browser
             }
         }
 
-        return $this->transaction->send(
-            new Request($method, $url, $headers, $body, $this->protocolVersion)
-        );
+        $request = new Request($method, $url, $headers, $body, $this->protocolVersion);
+
+        $middlewareRunner = new MiddlewareRunner($this->middlewares, $this->transaction);
+        return $middlewareRunner($request);
+    }
+
+    /**
+     * @param MiddlewareInterface $middleware
+     * @return Browser
+     */
+    public function withMiddleware(MiddlewareInterface $middleware)
+    {
+        $browser = clone $this;
+        $browser->middlewares[] = $middleware;
+
+        return $browser;
     }
 }
