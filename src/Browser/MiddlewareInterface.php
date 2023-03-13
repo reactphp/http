@@ -11,7 +11,7 @@ interface MiddlewareInterface
     /**
      * @param RequestInterface $request
      * @param callable $next
-     * @return PromiseInterface<ResponseInterface>
+     * @return PromiseInterface<ResponseInterface>|ResponseInterface
      */
     public function __invoke(RequestInterface $request, callable $next);
 }
