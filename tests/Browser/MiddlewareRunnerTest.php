@@ -18,7 +18,9 @@ final class MiddlewareRunnerTest extends TestCase
         $request = new Request('GET', 'https://example.com/');
 
         /** @var Transaction&MockObject $transaction */
-        $transaction = $this->createMock('\React\Http\Io\Transaction');
+        $transaction = $this->getMockBuilder('\React\Http\Io\Transaction')
+            ->disableOriginalConstructor()
+            ->getMock();
         $response = new Response();
         $transaction->expects(static::once())->method('send')->with($request)->willReturn($response);
 
@@ -32,7 +34,9 @@ final class MiddlewareRunnerTest extends TestCase
     public function testWithMiddleware()
     {
         /** @var Transaction&MockObject $transaction */
-        $transaction = $this->createMock('\React\Http\Io\Transaction');
+        $transaction = $this->getMockBuilder('\React\Http\Io\Transaction')
+            ->disableOriginalConstructor()
+            ->getMock();
         $transaction->expects(static::never())->method('send');
 
         $response = new Response();
