@@ -1029,6 +1029,7 @@ final class MultipartParserTest extends TestCase
 
     public function testWeOnlyParseTheAmountOfMultiPartChunksWeConfigured()
     {
+        $chunkCount = 5000000;
         $boundary = "---------------------------12758086162038677464950549563";
 
         $chunk = "--$boundary\r\n";
@@ -1036,9 +1037,7 @@ final class MultipartParserTest extends TestCase
         $chunk .= "\r\n";
         $chunk .= "u\r\n";
         $data = '';
-        for ($i = 0; $i < 5000000; $i++) {
-            $data .= $chunk;
-        }
+        $data .= str_repeat($chunk, $chunkCount);
         $data .= "--$boundary--\r\n";
 
         $request = new ServerRequest('POST', 'http://example.com/', array(
@@ -1046,9 +1045,25 @@ final class MultipartParserTest extends TestCase
         ), $data, 1.1);
 
         $parser = new MultipartParser();
-        $startTime = microtime(true);
-        $parser->parse($request);
-        $runTime = microtime(true) - $startTime;
-        $this->assertLessThan(1, $runTime);
+
+        $reflectecClass = new \ReflectionClass('\React\Http\Io\MultipartParser');
+        $requestProperty = $reflectecClass->getProperty('request');
+        $requestProperty->setAccessible(true);
+        $cursorProperty = $reflectecClass->getProperty('cursor');
+        $cursorProperty->setAccessible(true);
+        $multipartBodyPartCountProperty = $reflectecClass->getProperty('multipartBodyPartCount');
+        $multipartBodyPartCountProperty->setAccessible(true);
+        $maxMultipartBodyPartsProperty = $reflectecClass->getProperty('maxMultipartBodyParts');
+        $maxMultipartBodyPartsProperty->setAccessible(true);
+        $parseBodyMethod = $reflectecClass->getMethod('parseBody');
+        $parseBodyMethod->setAccessible(true);
+
+        $this->assertSame(0, $cursorProperty->getValue($parser));
+
+        $requestProperty->setValue($parser, $request);
+        $parseBodyMethod->invoke($parser, '--' . $boundary, $data);
+
+        $this->assertSame(strlen(str_repeat($chunk, $multipartBodyPartCountProperty->getValue($parser))), $cursorProperty->getValue($parser) + 2);
+        $this->assertSame($multipartBodyPartCountProperty->getValue($parser), $maxMultipartBodyPartsProperty->getValue($parser) + 1);
     }
 }
