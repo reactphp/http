@@ -556,8 +556,6 @@ class BrowserTest extends TestCase
                 'user-Agent' => array('ABC'),
                 'another-header' => array('value'),
                 'custom-header' => array('data'),
-
-                'Connection' => array('close')
             );
 
             $that->assertEquals($expectedHeaders, $request->getHeaders());

@@ -553,7 +553,7 @@ class FunctionalBrowserTest extends TestCase
         $socket->close();
     }
 
-    public function testRequestWillCreateNewConnectionForSecondRequestByDefaultEvenWhenServerKeepsConnectionOpen()
+    public function testRequestWithConnectionCloseHeaderWillCreateNewConnectionForSecondRequestEvenWhenServerKeepsConnectionOpen()
     {
         $twice = $this->expectCallableOnce();
         $socket = new SocketServer('127.0.0.1:0');
@@ -570,6 +570,9 @@ class FunctionalBrowserTest extends TestCase
 
         $this->base = str_replace('tcp:', 'http:', $socket->getAddress()) . '/';
 
+        // add `Connection: close` request header to disable HTTP keep-alive
+        $this->browser = $this->browser->withHeader('Connection', 'close');
+
         $response = \React\Async\await($this->browser->get($this->base . 'get'));
         assert($response instanceof ResponseInterface);
         $this->assertEquals('hello', (string)$response->getBody());
@@ -579,12 +582,54 @@ class FunctionalBrowserTest extends TestCase
         $this->assertEquals('hello', (string)$response->getBody());
     }
 
-    public function testRequestWithoutConnectionHeaderWillReuseExistingConnectionForSecondRequest()
+    public function testRequestWithHttp10WillCreateNewConnectionForSecondRequestEvenWhenServerKeepsConnectionOpen()
+    {
+        $twice = $this->expectCallableOnce();
+        $socket = new SocketServer('127.0.0.1:0');
+        $socket->on('connection', function (\React\Socket\ConnectionInterface $connection) use ($socket, $twice) {
+            $connection->on('data', function () use ($connection) {
+                $connection->write("HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nhello");
+            });
+
+            $socket->on('connection', $twice);
+            $socket->on('connection', function () use ($socket) {
+                $socket->close();
+            });
+        });
+
+        $this->base = str_replace('tcp:', 'http:', $socket->getAddress()) . '/';
+
+        // use HTTP/1.0 to disable HTTP keep-alive
+        $this->browser = $this->browser->withProtocolVersion('1.0');
+
+        $response = \React\Async\await($this->browser->get($this->base . 'get'));
+        assert($response instanceof ResponseInterface);
+        $this->assertEquals('hello', (string)$response->getBody());
+
+        $response = \React\Async\await($this->browser->get($this->base . 'get'));
+        assert($response instanceof ResponseInterface);
+        $this->assertEquals('hello', (string)$response->getBody());
+    }
+
+    public function testRequestWillReuseExistingConnectionForSecondRequestByDefault()
     {
         $this->socket->on('connection', $this->expectCallableOnce());
 
-        // remove default `Connection: close` request header to enable keep-alive
-        $this->browser = $this->browser->withoutHeader('Connection');
+        $response = \React\Async\await($this->browser->get($this->base . 'get'));
+        assert($response instanceof ResponseInterface);
+        $this->assertEquals('hello', (string)$response->getBody());
+
+        $response = \React\Async\await($this->browser->get($this->base . 'get'));
+        assert($response instanceof ResponseInterface);
+        $this->assertEquals('hello', (string)$response->getBody());
+    }
+
+    public function testRequestWithHttp10AndConnectionKeepAliveHeaderWillReuseExistingConnectionForSecondRequest()
+    {
+        $this->socket->on('connection', $this->expectCallableOnce());
+
+        $this->browser = $this->browser->withProtocolVersion('1.0');
+        $this->browser = $this->browser->withHeader('Connection', 'keep-alive');
 
         $response = \React\Async\await($this->browser->get($this->base . 'get'));
         assert($response instanceof ResponseInterface);
