@@ -2976,7 +2976,7 @@ This project follows [SemVer](https://semver.org/).
 This will install the latest supported version:
 
 ```bash
-composer require react/http:^1.8
+composer require react/http:^1.9
 ```
 
 See also the [CHANGELOG](CHANGELOG.md) for details about version upgrades.
