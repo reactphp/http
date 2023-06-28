@@ -64,7 +64,10 @@ final class LimitConcurrentRequestsMiddlewareTest extends TestCase
         $this->assertFalse($calledB);
         $this->assertFalse($calledC);
 
-        $limitHandlers($requestB, $nextB);
+        $promise = $limitHandlers($requestB, $nextB);
+
+        assert($promise instanceof PromiseInterface);
+        $promise->then(null, $this->expectCallableOnce()); // avoid reporting unhandled rejection
 
         $this->assertTrue($calledA);
         $this->assertFalse($calledB);
@@ -188,9 +191,12 @@ final class LimitConcurrentRequestsMiddlewareTest extends TestCase
         $limitHandlers = new LimitConcurrentRequestsMiddleware(1);
 
         $deferred = new Deferred();
-        $limitHandlers(new ServerRequest('GET', 'https://example.com'), function () use ($deferred) {
+        $promise = $limitHandlers(new ServerRequest('GET', 'https://example.com'), function () use ($deferred) {
             return $deferred->promise();
         });
+
+        assert($promise instanceof PromiseInterface);
+        $promise->then(null, $this->expectCallableOnce()); // avoid reporting unhandled rejection
 
         $limitHandlers(new ServerRequest('GET', 'https://example.com/', array(), $body), function () {});
 
@@ -283,9 +289,12 @@ final class LimitConcurrentRequestsMiddlewareTest extends TestCase
 
         $deferred = new Deferred();
         $middleware = new LimitConcurrentRequestsMiddleware(1);
-        $middleware($request, function () use ($deferred) {
+        $promise = $middleware($request, function () use ($deferred) {
             return $deferred->promise();
         });
+
+        assert($promise instanceof PromiseInterface);
+        $promise->then(null, $this->expectCallableOnce()); // avoid reporting unhandled rejection
 
         $deferred->reject(new \RuntimeException());
 
@@ -303,9 +312,12 @@ final class LimitConcurrentRequestsMiddlewareTest extends TestCase
 
         $deferred = new Deferred();
         $middleware = new LimitConcurrentRequestsMiddleware(1);
-        $middleware($request, function () use ($deferred) {
+        $promise = $middleware($request, function () use ($deferred) {
             return $deferred->promise();
         });
+
+        assert($promise instanceof PromiseInterface);
+        $promise->then(null, $this->expectCallableOnce()); // avoid reporting unhandled rejection
 
         $second = $middleware($request, function () {
             throw new \RuntimeException();
@@ -443,9 +455,12 @@ final class LimitConcurrentRequestsMiddlewareTest extends TestCase
         $middleware = new LimitConcurrentRequestsMiddleware(1);
 
         $deferred = new Deferred();
-        $middleware(new ServerRequest('GET', 'https://example.com/'), function () use ($deferred) {
+        $promise = $middleware(new ServerRequest('GET', 'https://example.com/'), function () use ($deferred) {
             return $deferred->promise();
         });
+
+        assert($promise instanceof PromiseInterface);
+        $promise->then(null, $this->expectCallableOnce()); // avoid reporting unhandled rejection
 
         $req = null;
         $middleware($request, function (ServerRequestInterface $request) use (&$req) {
@@ -471,9 +486,12 @@ final class LimitConcurrentRequestsMiddlewareTest extends TestCase
     {
         $deferred = new Deferred();
         $middleware = new LimitConcurrentRequestsMiddleware(1);
-        $middleware(new ServerRequest('GET', 'http://example.com/'), function () use ($deferred) {
+        $promise = $middleware(new ServerRequest('GET', 'http://example.com/'), function () use ($deferred) {
             return $deferred->promise();
         });
+
+        assert($promise instanceof PromiseInterface);
+        $promise->then(null, $this->expectCallableOnce()); // avoid reporting unhandled rejection
 
         $stream = new ThroughStream();
         $request = new ServerRequest(
@@ -498,9 +516,12 @@ final class LimitConcurrentRequestsMiddlewareTest extends TestCase
     {
         $deferred = new Deferred();
         $middleware = new LimitConcurrentRequestsMiddleware(1);
-        $middleware(new ServerRequest('GET', 'http://example.com/'), function () use ($deferred) {
+        $promise = $middleware(new ServerRequest('GET', 'http://example.com/'), function () use ($deferred) {
             return $deferred->promise();
         });
+
+        assert($promise instanceof PromiseInterface);
+        $promise->then(null, $this->expectCallableOnce()); // avoid reporting unhandled rejection
 
         $stream = new ThroughStream();
         $request = new ServerRequest(
@@ -526,9 +547,12 @@ final class LimitConcurrentRequestsMiddlewareTest extends TestCase
     {
         $deferred = new Deferred();
         $middleware = new LimitConcurrentRequestsMiddleware(1);
-        $middleware(new ServerRequest('GET', 'http://example.com/'), function () use ($deferred) {
+        $promise = $middleware(new ServerRequest('GET', 'http://example.com/'), function () use ($deferred) {
             return $deferred->promise();
         });
+
+        assert($promise instanceof PromiseInterface);
+        $promise->then(null, $this->expectCallableOnce()); // avoid reporting unhandled rejection
 
         $stream = new ThroughStream();
         $request = new ServerRequest(
@@ -554,9 +578,12 @@ final class LimitConcurrentRequestsMiddlewareTest extends TestCase
     {
         $deferred = new Deferred();
         $middleware = new LimitConcurrentRequestsMiddleware(1);
-        $middleware(new ServerRequest('GET', 'http://example.com/'), function () use ($deferred) {
+        $promise = $middleware(new ServerRequest('GET', 'http://example.com/'), function () use ($deferred) {
             return $deferred->promise();
         });
+
+        assert($promise instanceof PromiseInterface);
+        $promise->then(null, $this->expectCallableOnce()); // avoid reporting unhandled rejection
 
         $stream = new ThroughStream();
         $request = new ServerRequest(

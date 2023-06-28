@@ -321,6 +321,8 @@ class TransactionTest extends TestCase
         $stream->close();
 
         $this->assertInstanceOf('React\Promise\PromiseInterface', $promise);
+
+        $promise->then(null, $this->expectCallableOnce()); // avoid reporting unhandled rejection
     }
 
     public function testTimeoutExplicitOptionWillRejectWhenTimerFiresAfterStreamingRequestBodyCloses()
