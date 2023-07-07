@@ -230,7 +230,7 @@ class FunctionalBrowserTest extends TestCase
 
     /**
      * ```bash
-     * $ curl -vL "http://httpbin.org/redirect-to?url=http://user:pass@httpbin.org/basic-auth/user/pass"
+     * $ curl -vL "http://httpbingo.org/redirect-to?url=http://user:pass@httpbingo.org/basic-auth/user/pass"
      * ```
      *
      * @doesNotPerformAssertions
@@ -244,7 +244,7 @@ class FunctionalBrowserTest extends TestCase
 
     /**
      * ```bash
-     * $ curl -vL "http://unknown:invalid@httpbin.org/redirect-to?url=http://user:pass@httpbin.org/basic-auth/user/pass"
+     * $ curl -vL "http://unknown:invalid@httpbingo.org/redirect-to?url=http://user:pass@httpbingo.org/basic-auth/user/pass"
      * ```
      *
      * @doesNotPerformAssertions

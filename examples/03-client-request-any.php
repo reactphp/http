@@ -12,10 +12,10 @@ $client = new Browser();
 
 $promises = array(
     $client->head('http://www.github.com/clue/http-react'),
-    $client->get('https://httpbin.org/'),
+    $client->get('https://httpbingo.org/'),
     $client->get('https://google.com'),
     $client->get('http://www.lueck.tv/psocksd'),
-    $client->get('http://www.httpbin.org/absolute-redirect/5')
+    $client->get('http://httpbingo.org/absolute-redirect/5')
 );
 
 React\Promise\any($promises)->then(function (ResponseInterface $response) use ($promises) {

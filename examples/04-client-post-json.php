@@ -16,7 +16,7 @@ $data = array(
 );
 
 $client->post(
-    'https://httpbin.org/post',
+    'https://httpbingo.org/post',
     array(
         'Content-Type' => 'application/json'
     ),

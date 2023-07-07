@@ -13,7 +13,7 @@ $child->alias = 'clue';
 $child->name = 'Christian Lück';
 
 $client->put(
-    'https://httpbin.org/put',
+    'https://httpbingo.org/put',
     array(
         'Content-Type' => 'text/xml'
     ),
