@@ -5,10 +5,10 @@ namespace React\Http\Message;
 use Fig\Http\Message\StatusCodeInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
+use React\Http\Io\AbstractMessage;
 use React\Http\Io\BufferedBody;
 use React\Http\Io\HttpBodyStream;
 use React\Stream\ReadableStreamInterface;
-use RingCentral\Psr7\MessageTrait;
 
 /**
  * Represents an outgoing server response message.
@@ -35,13 +35,12 @@ use RingCentral\Psr7\MessageTrait;
  * `404 Not Found` status codes can used as `Response::STATUS_OK` and
  * `Response::STATUS_NOT_FOUND` respectively.
  *
- * > Internally, this implementation builds on top of an existing incoming
- *   response message and only adds required streaming support. This base class is
+ * > Internally, this implementation builds on top a base class which is
  *   considered an implementation detail that may change in the future.
  *
  * @see \Psr\Http\Message\ResponseInterface
  */
-final class Response extends MessageTrait implements ResponseInterface, StatusCodeInterface
+final class Response extends AbstractMessage implements ResponseInterface, StatusCodeInterface
 {
     /**
      * Create an HTML response
@@ -316,9 +315,7 @@ final class Response extends MessageTrait implements ResponseInterface, StatusCo
             throw new \InvalidArgumentException('Invalid response body given');
         }
 
-        $this->protocol = (string) $version;
-        $this->setHeaders($headers);
-        $this->stream = $body;
+        parent::__construct($version, $headers, $body);
 
         $this->statusCode = (int) $status;
         $this->reasonPhrase = ($reason !== '' && $reason !== null) ? (string) $reason : self::getReasonPhraseForStatusCode($status);

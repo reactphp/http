@@ -2,9 +2,9 @@
 
 namespace React\Tests\Http\Message;
 
+use React\Http\Message\Response;
 use React\Http\Message\ResponseException;
 use PHPUnit\Framework\TestCase;
-use RingCentral\Psr7\Response;
 
 class ResponseExceptionTest extends TestCase
 {
