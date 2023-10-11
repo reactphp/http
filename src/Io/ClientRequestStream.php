@@ -225,7 +225,7 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
     }
 
     /** @internal */
-    public function handleError(\Exception $error)
+    public function handleError(\Throwable $error)
     {
         $this->closeError(new \RuntimeException(
             "An error occurred in the underlying stream",
@@ -235,7 +235,7 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
     }
 
     /** @internal */
-    public function closeError(\Exception $error)
+    public function closeError(\Throwable $error)
     {
         if (self::STATE_END <= $this->state) {
             return;
