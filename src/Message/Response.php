@@ -145,7 +145,7 @@ final class Response extends Psr7Response implements StatusCodeInterface
      * @return self
      * @throws \InvalidArgumentException when encoding fails
      */
-    public static function json($data, int $status = 200)
+    public static function json($data, $status = null)
     {
         $json = @\json_encode(
             $data,
@@ -160,7 +160,7 @@ final class Response extends Psr7Response implements StatusCodeInterface
             );
         }
 
-        return new self($status, array('Content-Type' => 'application/json'), $json . "\n");
+        return new self($status ? $status : self::STATUS_OK, array('Content-Type' => 'application/json'), $json . "\n");
     }
 
     /**
