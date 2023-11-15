@@ -141,10 +141,11 @@ final class Response extends Psr7Response implements StatusCodeInterface
      * ```
      *
      * @param mixed $data
+     * @param int $status
      * @return self
      * @throws \InvalidArgumentException when encoding fails
      */
-    public static function json($data)
+    public static function json($data, int $status = 200)
     {
         $json = @\json_encode(
             $data,
@@ -159,7 +160,7 @@ final class Response extends Psr7Response implements StatusCodeInterface
             );
         }
 
-        return new self(self::STATUS_OK, array('Content-Type' => 'application/json'), $json . "\n");
+        return new self($status, array('Content-Type' => 'application/json'), $json . "\n");
     }
 
     /**
