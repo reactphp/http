@@ -2661,8 +2661,7 @@ This is mostly used internally to represent each incoming request message.
 Likewise, you can also use this class in test cases to test how your web
 application reacts to certain HTTP requests.
 
-> Internally, this implementation builds on top of an existing outgoing
-  request message and only adds required server methods. This base class is
+> Internally, this implementation builds on top of a base class which is
   considered an implementation detail that may change in the future.
 
 #### ResponseException
