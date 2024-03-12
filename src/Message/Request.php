@@ -5,10 +5,10 @@ namespace React\Http\Message;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
+use React\Http\Io\AbstractRequest;
 use React\Http\Io\BufferedBody;
 use React\Http\Io\ReadableBodyStream;
 use React\Stream\ReadableStreamInterface;
-use RingCentral\Psr7\Request as BaseRequest;
 
 /**
  * Respresents an outgoing HTTP request message.
@@ -22,13 +22,12 @@ use RingCentral\Psr7\Request as BaseRequest;
  * message for the HTTP client implementation. Likewise, you can also use this
  * class with other HTTP client implementations and for tests.
  *
- * > Internally, this implementation builds on top of an existing outgoing
- *   request message and only adds support for streaming. This base class is
+ * > Internally, this implementation builds on top of a base class which is
  *   considered an implementation detail that may change in the future.
  *
  * @see RequestInterface
  */
-final class Request extends BaseRequest implements RequestInterface
+final class Request extends AbstractRequest implements RequestInterface
 {
     /**
      * @param string                                         $method  HTTP method for the request.

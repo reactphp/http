@@ -2642,8 +2642,7 @@ This is mostly used internally to represent each outgoing HTTP request
 message for the HTTP client implementation. Likewise, you can also use this
 class with other HTTP client implementations and for tests.
 
-> Internally, this implementation builds on top of an existing outgoing
-  request message and only adds support for streaming. This base class is
+> Internally, this implementation builds on top of a base class which is
   considered an implementation detail that may change in the future.
 
 #### ServerRequest
