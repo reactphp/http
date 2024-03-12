@@ -157,10 +157,17 @@ final class StreamingServer extends EventEmitter
         }
 
         // cancel pending promise once connection closes
+        $connectionOnCloseResponseCancelerHandler = function () {};
         if ($response instanceof PromiseInterface && \method_exists($response, 'cancel')) {
-            $conn->on('close', function () use ($response) {
+            $connectionOnCloseResponseCanceler = function () use ($response) {
                 $response->cancel();
-            });
+            };
+            $connectionOnCloseResponseCancelerHandler = function () use ($connectionOnCloseResponseCanceler, $conn) {
+                if ($connectionOnCloseResponseCanceler !== null) {
+                    $conn->removeListener('close', $connectionOnCloseResponseCanceler);
+                }
+            };
+            $conn->on('close', $connectionOnCloseResponseCanceler);
         }
 
         // happy path: response returned, handle and return immediately
@@ -201,7 +208,7 @@ final class StreamingServer extends EventEmitter
                 $that->emit('error', array($exception));
                 return $that->writeError($conn, Response::STATUS_INTERNAL_SERVER_ERROR, $request);
             }
-        );
+        )->then($connectionOnCloseResponseCancelerHandler, $connectionOnCloseResponseCancelerHandler);
     }
 
     /** @internal */

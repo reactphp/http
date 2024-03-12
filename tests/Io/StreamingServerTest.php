@@ -25,9 +25,17 @@ class StreamingServerTest extends TestCase
      */
     public function setUpConnectionMockAndSocket()
     {
-        $this->connection = $this->getMockBuilder('React\Socket\Connection')
+        $this->connection = $this->mockConnection();
+
+        $this->socket = new SocketServerStub();
+    }
+
+
+    private function mockConnection(array $additionalMethods = null)
+    {
+        $connection = $this->getMockBuilder('React\Socket\Connection')
             ->disableOriginalConstructor()
-            ->setMethods(
+            ->setMethods(array_merge(
                 array(
                     'write',
                     'end',
@@ -39,14 +47,15 @@ class StreamingServerTest extends TestCase
                     'getRemoteAddress',
                     'getLocalAddress',
                     'pipe'
-                )
-            )
+                ),
+                (is_array($additionalMethods) ? $additionalMethods : array())
+            ))
             ->getMock();
 
-        $this->connection->method('isWritable')->willReturn(true);
-        $this->connection->method('isReadable')->willReturn(true);
+        $connection->method('isWritable')->willReturn(true);
+        $connection->method('isReadable')->willReturn(true);
 
-        $this->socket = new SocketServerStub();
+        return $connection;
     }
 
     public function testRequestEventWillNotBeEmittedForIncompleteHeaders()
@@ -3243,6 +3252,25 @@ class StreamingServerTest extends TestCase
         $this->assertCount(2, $this->connection->listeners('close'));
         $body->end();
         $this->assertCount(1, $this->connection->listeners('close'));
+    }
+
+    public function testCompletingARequestWillRemoveConnectionOnCloseListener()
+    {
+        $connection = $this->mockConnection(array('removeListener'));
+
+        $request = new ServerRequest('GET', 'http://localhost/');
+
+        $server = new StreamingServer(Loop::get(), function () {
+            return \React\Promise\resolve(new Response());
+        });
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($connection));
+
+        $connection->expects($this->once())->method('removeListener');
+
+        // pretend parser just finished parsing
+        $server->handleRequest($connection, $request);
     }
 
     private function createGetRequest()
