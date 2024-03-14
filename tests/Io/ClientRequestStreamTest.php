@@ -3,9 +3,9 @@
 namespace React\Tests\Http\Io;
 
 use Psr\Http\Message\ResponseInterface;
-use RingCentral\Psr7\Uri;
 use React\Http\Io\ClientRequestStream;
 use React\Http\Message\Request;
+use React\Http\Message\Uri;
 use React\Promise\Deferred;
 use React\Promise\Promise;
 use React\Stream\DuplexResourceStream;
