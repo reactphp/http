@@ -2448,8 +2448,7 @@ constants with the `STATUS_*` prefix. For instance, the `200 OK` and
 `404 Not Found` status codes can used as `Response::STATUS_OK` and
 `Response::STATUS_NOT_FOUND` respectively.
 
-> Internally, this implementation builds on top of an existing incoming
-  response message and only adds required streaming support. This base class is
+> Internally, this implementation builds on top of a base class which is
   considered an implementation detail that may change in the future.
 
 ##### html()
