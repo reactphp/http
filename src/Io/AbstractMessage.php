@@ -13,6 +13,14 @@ use Psr\Http\Message\StreamInterface;
  */
 abstract class AbstractMessage implements MessageInterface
 {
+    /**
+     * [Internal] Regex used to match all request header fields into an array, thanks to @kelunik for checking the HTTP specs and coming up with this regex
+     *
+     * @internal
+     * @var string
+     */
+    const REGEX_HEADERS = '/^([^()<>@,;:\\\"\/\[\]?={}\x01-\x20\x7F]++):[\x20\x09]*+((?:[\x20\x09]*+[\x21-\x7E\x80-\xFF]++)*+)[\x20\x09]*+[\r]?+\n/m';
+
     /** @var array<string,string[]> */
     private $headers = array();
 
