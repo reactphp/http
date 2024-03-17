@@ -5,10 +5,10 @@ namespace React\Http\Message;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
+use React\Http\Io\AbstractRequest;
 use React\Http\Io\BufferedBody;
 use React\Http\Io\HttpBodyStream;
 use React\Stream\ReadableStreamInterface;
-use RingCentral\Psr7\Request as BaseRequest;
 
 /**
  * Respresents an incoming server request message.
@@ -24,13 +24,12 @@ use RingCentral\Psr7\Request as BaseRequest;
  * Likewise, you can also use this class in test cases to test how your web
  * application reacts to certain HTTP requests.
  *
- * > Internally, this implementation builds on top of an existing outgoing
- *   request message and only adds required server methods. This base class is
+ * > Internally, this implementation builds on top of a base class which is
  *   considered an implementation detail that may change in the future.
  *
  * @see ServerRequestInterface
  */
-final class ServerRequest extends BaseRequest implements ServerRequestInterface
+final class ServerRequest extends AbstractRequest implements ServerRequestInterface
 {
     private $attributes = array();
 
@@ -57,26 +56,22 @@ final class ServerRequest extends BaseRequest implements ServerRequestInterface
         $version = '1.1',
         $serverParams = array()
     ) {
-        $stream = null;
         if (\is_string($body)) {
             $body = new BufferedBody($body);
         } elseif ($body instanceof ReadableStreamInterface && !$body instanceof StreamInterface) {
-            $stream = $body;
-            $body = null;
+            $temp = new self($method, '', $headers);
+            $size = (int) $temp->getHeaderLine('Content-Length');
+            if (\strtolower($temp->getHeaderLine('Transfer-Encoding')) === 'chunked') {
+                $size = null;
+            }
+            $body = new HttpBodyStream($body, $size);
         } elseif (!$body instanceof StreamInterface) {
             throw new \InvalidArgumentException('Invalid server request body given');
         }
 
-        $this->serverParams = $serverParams;
         parent::__construct($method, $url, $headers, $body, $version);
 
-        if ($stream !== null) {
-            $size = (int) $this->getHeaderLine('Content-Length');
-            if (\strtolower($this->getHeaderLine('Transfer-Encoding')) === 'chunked') {
-                $size = null;
-            }
-            $this->stream = new HttpBodyStream($stream, $size);
-        }
+        $this->serverParams = $serverParams;
 
         $query = $this->getUri()->getQuery();
         if ($query !== '') {
