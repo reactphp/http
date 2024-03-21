@@ -157,4 +157,98 @@ class ResponseTest extends TestCase
         $this->assertEquals('application/xml', $response->getHeaderLine('Content-Type'));
         $this->assertEquals('<?xml version="1.0" encoding="utf-8"?><body>Hello wörld!</body>', (string) $response->getBody());
     }
+
+    public function testParseMessageWithMinimalOkResponse()
+    {
+        $response = Response::parseMessage("HTTP/1.1 200 OK\r\n");
+
+        $this->assertEquals('1.1', $response->getProtocolVersion());
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals('OK', $response->getReasonPhrase());
+        $this->assertEquals(array(), $response->getHeaders());
+    }
+
+    public function testParseMessageWithSimpleOkResponse()
+    {
+        $response = Response::parseMessage("HTTP/1.1 200 OK\r\nServer: demo\r\n");
+
+        $this->assertEquals('1.1', $response->getProtocolVersion());
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals('OK', $response->getReasonPhrase());
+        $this->assertEquals(array('Server' => array('demo')), $response->getHeaders());
+    }
+
+    public function testParseMessageWithSimpleOkResponseWithCustomReasonPhrase()
+    {
+        $response = Response::parseMessage("HTTP/1.1 200 Mostly Okay\r\nServer: demo\r\n");
+
+        $this->assertEquals('1.1', $response->getProtocolVersion());
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals('Mostly Okay', $response->getReasonPhrase());
+        $this->assertEquals(array('Server' => array('demo')), $response->getHeaders());
+    }
+
+    public function testParseMessageWithSimpleOkResponseWithEmptyReasonPhraseAppliesDefault()
+    {
+        $response = Response::parseMessage("HTTP/1.1 200 \r\nServer: demo\r\n");
+
+        $this->assertEquals('1.1', $response->getProtocolVersion());
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals('OK', $response->getReasonPhrase());
+        $this->assertEquals(array('Server' => array('demo')), $response->getHeaders());
+    }
+
+    public function testParseMessageWithSimpleOkResponseWithoutReasonPhraseAndWhitespaceSeparatorAppliesDefault()
+    {
+        $response = Response::parseMessage("HTTP/1.1 200\r\nServer: demo\r\n");
+
+        $this->assertEquals('1.1', $response->getProtocolVersion());
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals('OK', $response->getReasonPhrase());
+        $this->assertEquals(array('Server' => array('demo')), $response->getHeaders());
+    }
+
+    public function testParseMessageWithHttp10SimpleOkResponse()
+    {
+        $response = Response::parseMessage("HTTP/1.0 200 OK\r\nServer: demo\r\n");
+
+        $this->assertEquals('1.0', $response->getProtocolVersion());
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals('OK', $response->getReasonPhrase());
+        $this->assertEquals(array('Server' => array('demo')), $response->getHeaders());
+    }
+
+    public function testParseMessageWithHttp10SimpleOkResponseWithLegacyNewlines()
+    {
+        $response = Response::parseMessage("HTTP/1.0 200 OK\nServer: demo\r\n");
+
+        $this->assertEquals('1.0', $response->getProtocolVersion());
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals('OK', $response->getReasonPhrase());
+        $this->assertEquals(array('Server' => array('demo')), $response->getHeaders());
+    }
+
+    public function testParseMessageWithInvalidHttpProtocolVersion12Throws()
+    {
+        $this->setExpectedException('InvalidArgumentException');
+        Response::parseMessage("HTTP/1.2 200 OK\r\n");
+    }
+
+    public function testParseMessageWithInvalidHttpProtocolVersion2Throws()
+    {
+        $this->setExpectedException('InvalidArgumentException');
+        Response::parseMessage("HTTP/2 200 OK\r\n");
+    }
+
+    public function testParseMessageWithInvalidStatusCodeUnderflowThrows()
+    {
+        $this->setExpectedException('InvalidArgumentException');
+        Response::parseMessage("HTTP/1.1 99 OK\r\n");
+    }
+
+    public function testParseMessageWithInvalidResponseHeaderFieldThrows()
+    {
+        $this->setExpectedException('InvalidArgumentException');
+        Response::parseMessage("HTTP/1.1 200 OK\r\nServer\r\n");
+    }
 }
