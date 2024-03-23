@@ -4,13 +4,13 @@ namespace React\Tests\Http\Middleware;
 
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Loop;
+use React\Http\Io\BufferedBody;
 use React\Http\Io\HttpBodyStream;
 use React\Http\Message\Response;
 use React\Http\Message\ServerRequest;
 use React\Http\Middleware\RequestBodyBufferMiddleware;
 use React\Stream\ThroughStream;
 use React\Tests\Http\TestCase;
-use RingCentral\Psr7\BufferStream;
 
 final class RequestBodyBufferMiddlewareTest extends TestCase
 {
@@ -45,8 +45,7 @@ final class RequestBodyBufferMiddlewareTest extends TestCase
     {
         $size = 1024;
         $body = str_repeat('x', $size);
-        $stream = new BufferStream(1024);
-        $stream->write($body);
+        $stream = new BufferedBody($body);
         $serverRequest = new ServerRequest(
             'GET',
             'https://example.com/',
