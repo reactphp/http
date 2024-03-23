@@ -578,4 +578,128 @@ class UriTest extends TestCase
         $this->assertSame($uri, $new);
         $this->assertEquals('section%20new%20text!', $uri->getFragment());
     }
+
+    public static function provideResolveUris()
+    {
+        return array(
+            array(
+                'http://localhost/',
+                '',
+                'http://localhost/'
+            ),
+            array(
+                'http://localhost/',
+                'http://example.com/',
+                'http://example.com/'
+            ),
+            array(
+                'http://localhost/',
+                'path',
+                'http://localhost/path'
+            ),
+            array(
+                'http://localhost/',
+                'path/',
+                'http://localhost/path/'
+            ),
+            array(
+                'http://localhost/',
+                'path//',
+                'http://localhost/path/'
+            ),
+            array(
+                'http://localhost',
+                'path',
+                'http://localhost/path'
+            ),
+            array(
+                'http://localhost/a/b',
+                '/path',
+                'http://localhost/path'
+            ),
+            array(
+                'http://localhost/',
+                '/a/b/c',
+                'http://localhost/a/b/c'
+            ),
+            array(
+                'http://localhost/a/path',
+                'b/c',
+                'http://localhost/a/b/c'
+            ),
+            array(
+                'http://localhost/a/path',
+                '/b/c',
+                'http://localhost/b/c'
+            ),
+            array(
+                'http://localhost/a/path/',
+                'b/c',
+                'http://localhost/a/path/b/c'
+            ),
+            array(
+                'http://localhost/a/path/',
+                '../b/c',
+                'http://localhost/a/b/c'
+            ),
+            array(
+                'http://localhost',
+                '../../../a/b',
+                'http://localhost/a/b'
+            ),
+            array(
+                'http://localhost/path',
+                '?query',
+                'http://localhost/path?query'
+            ),
+            array(
+                'http://localhost/path',
+                '#fragment',
+                'http://localhost/path#fragment'
+            ),
+            array(
+                'http://localhost/path',
+                'http://localhost',
+                'http://localhost'
+            ),
+            array(
+                'http://localhost/path',
+                'http://localhost/?query#fragment',
+                'http://localhost/?query#fragment'
+            ),
+            array(
+                'http://localhost/path/?a#fragment',
+                '?b',
+                'http://localhost/path/?b'
+            ),
+            array(
+                'http://localhost/path',
+                '//localhost',
+                'http://localhost'
+            ),
+            array(
+                'http://localhost/path',
+                '//localhost/a?query',
+                'http://localhost/a?query'
+            ),
+            array(
+                'http://localhost/path',
+                '//LOCALHOST',
+                'http://localhost'
+            )
+        );
+    }
+
+    /**
+     * @dataProvider provideResolveUris
+     * @param string $base
+     * @param string $rel
+     * @param string $expected
+     */
+    public function testResolveReturnsResolvedUri($base, $rel, $expected)
+    {
+        $uri = Uri::resolve(new Uri($base), new Uri($rel));
+
+        $this->assertEquals($expected, (string) $uri);
+    }
 }

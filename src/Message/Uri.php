@@ -289,4 +289,68 @@ final class Uri implements UriInterface
             $part
         );
     }
+
+    /**
+     * [Internal] Resolve URI relative to base URI and return new absolute URI
+     *
+     * @internal
+     * @param UriInterface $base
+     * @param UriInterface $rel
+     * @return UriInterface
+     * @throws void
+     */
+    public static function resolve(UriInterface $base, UriInterface $rel)
+    {
+        if ($rel->getScheme() !== '') {
+            return $rel->getPath() === '' ? $rel : $rel->withPath(self::removeDotSegments($rel->getPath()));
+        }
+
+        $reset = false;
+        $new = $base;
+        if ($rel->getAuthority() !== '') {
+            $reset = true;
+            $userInfo = \explode(':', $rel->getUserInfo(), 2);
+            $new = $base->withUserInfo($userInfo[0], isset($userInfo[1]) ? $userInfo[1]: null)->withHost($rel->getHost())->withPort($rel->getPort());
+        }
+
+        if ($reset && $rel->getPath() === '') {
+            $new = $new->withPath('');
+        } elseif (($path = $rel->getPath()) !== '') {
+            $start = '';
+            if ($path === '' || $path[0] !== '/') {
+                $start = $base->getPath();
+                if (\substr($start, -1) !== '/') {
+                    $start .= '/../';
+                }
+            }
+            $reset = true;
+            $new = $new->withPath(self::removeDotSegments($start . $path));
+        }
+        if ($reset || $rel->getQuery() !== '') {
+            $reset = true;
+            $new = $new->withQuery($rel->getQuery());
+        }
+        if ($reset || $rel->getFragment() !== '') {
+            $new = $new->withFragment($rel->getFragment());
+        }
+
+        return $new;
+    }
+
+    /**
+     * @param string $path
+     * @return string
+     */
+    private static function removeDotSegments($path)
+    {
+        $segments = array();
+        foreach (\explode('/', $path) as $segment) {
+            if ($segment === '..') {
+                \array_pop($segments);
+            } elseif ($segment !== '.' && $segment !== '') {
+                $segments[] = $segment;
+            }
+        }
+        return '/' . \implode('/', $segments) . ($path !== '/' && \substr($path, -1) === '/' ? '/' : '');
+    }
 }

@@ -8,11 +8,11 @@ use Psr\Http\Message\UriInterface;
 use React\EventLoop\LoopInterface;
 use React\Http\Message\Response;
 use React\Http\Message\ResponseException;
+use React\Http\Message\Uri;
 use React\Promise\Deferred;
 use React\Promise\Promise;
 use React\Promise\PromiseInterface;
 use React\Stream\ReadableStreamInterface;
-use RingCentral\Psr7\Uri;
 
 /**
  * @internal
@@ -264,7 +264,7 @@ class Transaction
     private function onResponseRedirect(ResponseInterface $response, RequestInterface $request, Deferred $deferred, ClientRequestState $state)
     {
         // resolve location relative to last request URI
-        $location = Uri::resolve($request->getUri(), $response->getHeaderLine('Location'));
+        $location = Uri::resolve($request->getUri(), new Uri($response->getHeaderLine('Location')));
 
         $request = $this->makeRedirectRequest($request, $location, $response->getStatusCode());
         $this->progress('redirect', array($request));
