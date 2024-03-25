@@ -8,7 +8,6 @@ use Psr\Http\Message\RequestInterface;
 use React\Http\Message\Response;
 use React\Socket\ConnectionInterface;
 use React\Stream\WritableStreamInterface;
-use RingCentral\Psr7 as gPsr;
 
 /**
  * @event response
@@ -152,10 +151,17 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
         $this->buffer .= $data;
 
         // buffer until double CRLF (or double LF for compatibility with legacy servers)
-        if (false !== strpos($this->buffer, "\r\n\r\n") || false !== strpos($this->buffer, "\n\n")) {
+        $eom = \strpos($this->buffer, "\r\n\r\n");
+        $eomLegacy = \strpos($this->buffer, "\n\n");
+        if ($eom !== false || $eomLegacy !== false) {
             try {
-                $response = gPsr\parse_response($this->buffer);
-                $bodyChunk = (string) $response->getBody();
+                if ($eom !== false && ($eomLegacy === false || $eom < $eomLegacy)) {
+                    $response = Response::parseMessage(\substr($this->buffer, 0, $eom + 2));
+                    $bodyChunk = (string) \substr($this->buffer, $eom + 4);
+                } else {
+                    $response = Response::parseMessage(\substr($this->buffer, 0, $eomLegacy + 1));
+                    $bodyChunk = (string) \substr($this->buffer, $eomLegacy + 2);
+                }
             } catch (\InvalidArgumentException $exception) {
                 $this->closeError($exception);
                 return;

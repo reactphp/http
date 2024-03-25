@@ -362,4 +362,126 @@ class ServerRequestTest extends TestCase
             tmpfile()
         );
     }
+
+    public function testParseMessageWithSimpleGetRequest()
+    {
+        $request = ServerRequest::parseMessage("GET / HTTP/1.1\r\nHost: example.com\r\n", array());
+
+        $this->assertEquals('GET', $request->getMethod());
+        $this->assertEquals('http://example.com/', (string) $request->getUri());
+        $this->assertEquals('1.1', $request->getProtocolVersion());
+    }
+
+    public function testParseMessageWithHttp10RequestWithoutHost()
+    {
+        $request = ServerRequest::parseMessage("GET / HTTP/1.0\r\n", array());
+
+        $this->assertEquals('GET', $request->getMethod());
+        $this->assertEquals('http://127.0.0.1/', (string) $request->getUri());
+        $this->assertEquals('1.0', $request->getProtocolVersion());
+    }
+
+    public function testParseMessageWithOptionsMethodWithAsteriskFormRequestTarget()
+    {
+        $request = ServerRequest::parseMessage("OPTIONS * HTTP/1.1\r\nHost: example.com\r\n", array());
+
+        $this->assertEquals('OPTIONS', $request->getMethod());
+        $this->assertEquals('*', $request->getRequestTarget());
+        $this->assertEquals('1.1', $request->getProtocolVersion());
+        $this->assertEquals('http://example.com', (string) $request->getUri());
+    }
+
+    public function testParseMessageWithConnectMethodWithAuthorityFormRequestTarget()
+    {
+        $request = ServerRequest::parseMessage("CONNECT example.com:80 HTTP/1.1\r\nHost: example.com:80\r\n", array());
+
+        $this->assertEquals('CONNECT', $request->getMethod());
+        $this->assertEquals('example.com:80', $request->getRequestTarget());
+        $this->assertEquals('1.1', $request->getProtocolVersion());
+        $this->assertEquals('http://example.com', (string) $request->getUri());
+    }
+
+    public function testParseMessageWithInvalidHttp11RequestWithoutHostThrows()
+    {
+        $this->setExpectedException('InvalidArgumentException');
+        ServerRequest::parseMessage("GET / HTTP/1.1\r\n", array());
+    }
+
+    public function testParseMessageWithInvalidHttpProtocolVersionThrows()
+    {
+        $this->setExpectedException('InvalidArgumentException');
+        ServerRequest::parseMessage("GET / HTTP/1.2\r\n", array());
+    }
+
+    public function testParseMessageWithInvalidProtocolThrows()
+    {
+        $this->setExpectedException('InvalidArgumentException');
+        ServerRequest::parseMessage("GET / CUSTOM/1.1\r\n", array());
+    }
+
+    public function testParseMessageWithInvalidHostHeaderWithoutValueThrows()
+    {
+        $this->setExpectedException('InvalidArgumentException');
+        ServerRequest::parseMessage("GET / HTTP/1.1\r\nHost\r\n", array());
+    }
+
+    public function testParseMessageWithInvalidHostHeaderSyntaxThrows()
+    {
+        $this->setExpectedException('InvalidArgumentException');
+        ServerRequest::parseMessage("GET / HTTP/1.1\r\nHost: ///\r\n", array());
+    }
+
+    public function testParseMessageWithInvalidHostHeaderWithSchemeThrows()
+    {
+        $this->setExpectedException('InvalidArgumentException');
+        ServerRequest::parseMessage("GET / HTTP/1.1\r\nHost: http://localhost\r\n", array());
+    }
+
+    public function testParseMessageWithInvalidHostHeaderWithQueryThrows()
+    {
+        $this->setExpectedException('InvalidArgumentException');
+        ServerRequest::parseMessage("GET / HTTP/1.1\r\nHost: localhost?foo\r\n", array());
+    }
+
+    public function testParseMessageWithInvalidHostHeaderWithFragmentThrows()
+    {
+        $this->setExpectedException('InvalidArgumentException');
+        ServerRequest::parseMessage("GET / HTTP/1.1\r\nHost: localhost#foo\r\n", array());
+    }
+
+    public function testParseMessageWithInvalidContentLengthHeaderThrows()
+    {
+        $this->setExpectedException('InvalidArgumentException');
+        ServerRequest::parseMessage("GET / HTTP/1.1\r\nHost: localhost\r\nContent-Length:\r\n", array());
+    }
+
+    public function testParseMessageWithInvalidTransferEncodingHeaderThrows()
+    {
+        $this->setExpectedException('InvalidArgumentException');
+        ServerRequest::parseMessage("GET / HTTP/1.1\r\nHost: localhost\r\nTransfer-Encoding:\r\n", array());
+    }
+
+    public function testParseMessageWithInvalidBothContentLengthHeaderAndTransferEncodingHeaderThrows()
+    {
+        $this->setExpectedException('InvalidArgumentException');
+        ServerRequest::parseMessage("GET / HTTP/1.1\r\nHost: localhost\r\nContent-Length: 0\r\nTransfer-Encoding: chunked\r\n", array());
+    }
+
+    public function testParseMessageWithInvalidEmptyHostHeaderWithAbsoluteFormRequestTargetThrows()
+    {
+        $this->setExpectedException('InvalidArgumentException');
+        ServerRequest::parseMessage("GET http://example.com/ HTTP/1.1\r\nHost: \r\n", array());
+    }
+
+    public function testParseMessageWithInvalidConnectMethodNotUsingAuthorityFormThrows()
+    {
+        $this->setExpectedException('InvalidArgumentException');
+        ServerRequest::parseMessage("CONNECT / HTTP/1.1\r\nHost: localhost\r\n", array());
+    }
+
+    public function testParseMessageWithInvalidRequestTargetAsteriskFormThrows()
+    {
+        $this->setExpectedException('InvalidArgumentException');
+        ServerRequest::parseMessage("GET * HTTP/1.1\r\nHost: localhost\r\n", array());
+    }
 }

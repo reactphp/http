@@ -369,4 +369,46 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
 
         return isset(self::$phrasesMap[$code]) ? self::$phrasesMap[$code] : '';
     }
+
+    /**
+     * [Internal] Parse incoming HTTP protocol message
+     *
+     * @internal
+     * @param string $message
+     * @return self
+     * @throws \InvalidArgumentException if given $message is not a valid HTTP response message
+     */
+    public static function parseMessage($message)
+    {
+        $start = array();
+        if (!\preg_match('#^HTTP/(?<version>\d\.\d) (?<status>\d{3})(?: (?<reason>[^\r\n]*+))?[\r]?+\n#m', $message, $start)) {
+            throw new \InvalidArgumentException('Unable to parse invalid status-line');
+        }
+
+        // only support HTTP/1.1 and HTTP/1.0 requests
+        if ($start['version'] !== '1.1' && $start['version'] !== '1.0') {
+            throw new \InvalidArgumentException('Received response with invalid protocol version');
+        }
+
+        // check number of valid header fields matches number of lines + status line
+        $matches = array();
+        $n = \preg_match_all(self::REGEX_HEADERS, $message, $matches, \PREG_SET_ORDER);
+        if (\substr_count($message, "\n") !== $n + 1) {
+            throw new \InvalidArgumentException('Unable to parse invalid response header fields');
+        }
+
+        // format all header fields into associative array
+        $headers = array();
+        foreach ($matches as $match) {
+            $headers[$match[1]][] = $match[2];
+        }
+
+        return new self(
+            (int) $start['status'],
+            $headers,
+            '',
+            $start['version'],
+            isset($start['reason']) ? $start['reason'] : ''
+        );
+    }
 }
