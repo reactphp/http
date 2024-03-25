@@ -3,6 +3,7 @@
 namespace React\Tests\Http\Io;
 
 use Psr\Http\Message\ServerRequestInterface;
+use React\Http\Io\Clock;
 use React\Http\Io\RequestHeaderParser;
 use React\Tests\Http\TestCase;
 
@@ -12,7 +13,7 @@ class RequestHeaderParserTest extends TestCase
     {
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
         $parser->on('headers', $this->expectCallableNever());
 
         $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(null)->getMock();
@@ -33,7 +34,7 @@ class RequestHeaderParserTest extends TestCase
     {
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
         $parser->on('headers', $this->expectCallableOnce());
 
         $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(null)->getMock();
@@ -47,7 +48,7 @@ class RequestHeaderParserTest extends TestCase
     {
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
 
         $called = 0;
         $parser->on('headers', function () use (&$called) {
@@ -73,7 +74,7 @@ class RequestHeaderParserTest extends TestCase
 
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
         $parser->on('headers', function ($parsedRequest, $connection) use (&$request, &$conn) {
             $request = $parsedRequest;
             $conn = $connection;
@@ -98,7 +99,7 @@ class RequestHeaderParserTest extends TestCase
     {
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
 
         $ended = false;
         $that = $this;
@@ -124,7 +125,7 @@ class RequestHeaderParserTest extends TestCase
     {
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
 
         $buffer = '';
         $that = $this;
@@ -154,7 +155,7 @@ class RequestHeaderParserTest extends TestCase
     {
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
 
         $buffer = '';
         $that = $this;
@@ -182,7 +183,7 @@ class RequestHeaderParserTest extends TestCase
     {
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
 
         $buffer = '';
         $that = $this;
@@ -209,7 +210,7 @@ class RequestHeaderParserTest extends TestCase
     {
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
 
         $buffer = '';
         $that = $this;
@@ -238,7 +239,7 @@ class RequestHeaderParserTest extends TestCase
 
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
         $parser->on('headers', function ($parsedRequest) use (&$request) {
             $request = $parsedRequest;
         });
@@ -267,7 +268,7 @@ class RequestHeaderParserTest extends TestCase
 
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
         $parser->on('headers', function ($parsedRequest) use (&$request) {
             $request = $parsedRequest;
         });
@@ -288,7 +289,7 @@ class RequestHeaderParserTest extends TestCase
 
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
         $parser->on('headers', function ($parsedRequest) use (&$request) {
             $request = $parsedRequest;
         });
@@ -310,7 +311,7 @@ class RequestHeaderParserTest extends TestCase
 
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
         $parser->on('headers', $this->expectCallableNever());
         $parser->on('error', function ($message, $connection) use (&$error, &$passedConnection) {
             $error = $message;
@@ -334,7 +335,7 @@ class RequestHeaderParserTest extends TestCase
 
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
         $parser->on('headers', $this->expectCallableNever());
         $parser->on('error', function ($message) use (&$error) {
             $error = $message;
@@ -355,7 +356,7 @@ class RequestHeaderParserTest extends TestCase
 
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
         $parser->on('headers', $this->expectCallableNever());
         $parser->on('error', function ($message) use (&$error) {
             $error = $message;
@@ -376,7 +377,7 @@ class RequestHeaderParserTest extends TestCase
 
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
         $parser->on('headers', $this->expectCallableNever());
         $parser->on('error', function ($message) use (&$error) {
             $error = $message;
@@ -397,7 +398,7 @@ class RequestHeaderParserTest extends TestCase
 
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
         $parser->on('headers', $this->expectCallableNever());
         $parser->on('error', function ($message) use (&$error) {
             $error = $message;
@@ -418,7 +419,7 @@ class RequestHeaderParserTest extends TestCase
 
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
         $parser->on('headers', $this->expectCallableNever());
         $parser->on('error', function ($message) use (&$error) {
             $error = $message;
@@ -439,7 +440,7 @@ class RequestHeaderParserTest extends TestCase
 
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
         $parser->on('error', $this->expectCallableNever());
         $parser->on('headers', function ($parsedRequest, $parsedBodyBuffer) use (&$request) {
             $request = $parsedRequest;
@@ -466,7 +467,7 @@ class RequestHeaderParserTest extends TestCase
 
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
         $parser->on('headers', $this->expectCallableNever());
         $parser->on('error', function ($message) use (&$error) {
             $error = $message;
@@ -487,7 +488,7 @@ class RequestHeaderParserTest extends TestCase
 
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
         $parser->on('headers', $this->expectCallableNever());
         $parser->on('error', function ($message) use (&$error) {
             $error = $message;
@@ -508,7 +509,7 @@ class RequestHeaderParserTest extends TestCase
 
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
         $parser->on('headers', $this->expectCallableNever());
         $parser->on('error', function ($message) use (&$error) {
             $error = $message;
@@ -529,7 +530,7 @@ class RequestHeaderParserTest extends TestCase
 
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
         $parser->on('headers', $this->expectCallableNever());
         $parser->on('error', function ($message) use (&$error) {
             $error = $message;
@@ -550,7 +551,7 @@ class RequestHeaderParserTest extends TestCase
 
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
         $parser->on('headers', $this->expectCallableNever());
         $parser->on('error', function ($message) use (&$error) {
             $error = $message;
@@ -571,7 +572,7 @@ class RequestHeaderParserTest extends TestCase
 
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
         $parser->on('headers', $this->expectCallableNever());
         $parser->on('error', function ($message) use (&$error) {
             $error = $message;
@@ -593,7 +594,7 @@ class RequestHeaderParserTest extends TestCase
 
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
         $parser->on('headers', $this->expectCallableNever());
         $parser->on('error', function ($message) use (&$error) {
             $error = $message;
@@ -615,7 +616,7 @@ class RequestHeaderParserTest extends TestCase
 
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
         $parser->on('headers', $this->expectCallableNever());
         $parser->on('error', function ($message) use (&$error) {
             $error = $message;
@@ -637,7 +638,7 @@ class RequestHeaderParserTest extends TestCase
 
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
         $parser->on('headers', $this->expectCallableNever());
         $parser->on('error', function ($message) use (&$error) {
             $error = $message;
@@ -659,7 +660,7 @@ class RequestHeaderParserTest extends TestCase
 
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
         $parser->on('headers', $this->expectCallableNever());
         $parser->on('error', function ($message) use (&$error) {
             $error = $message;
@@ -682,7 +683,7 @@ class RequestHeaderParserTest extends TestCase
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
         $clock->expects($this->once())->method('now')->willReturn(1652972091.3958);
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
 
         $parser->on('headers', function ($parsedRequest) use (&$request) {
             $request = $parsedRequest;
@@ -715,7 +716,7 @@ class RequestHeaderParserTest extends TestCase
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
         $clock->expects($this->once())->method('now')->willReturn(1652972091.3958);
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
 
         $parser->on('headers', function ($parsedRequest) use (&$request) {
             $request = $parsedRequest;
@@ -748,7 +749,7 @@ class RequestHeaderParserTest extends TestCase
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
         $clock->expects($this->once())->method('now')->willReturn(1652972091.3958);
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
 
         $parser->on('headers', function ($parsedRequest) use (&$request) {
             $request = $parsedRequest;
@@ -785,7 +786,7 @@ class RequestHeaderParserTest extends TestCase
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
         $clock->expects($this->once())->method('now')->willReturn(1652972091.3958);
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
 
         $parser->on('headers', function ($parsedRequest) use (&$request) {
             $request = $parsedRequest;
@@ -864,13 +865,13 @@ class RequestHeaderParserTest extends TestCase
         $this->assertEquals(array(), $ref->getValue($parser));
     }
 
-    public function testQueryParmetersWillBeSet()
+    public function testQueryParametersWillBeSet()
     {
         $request = null;
 
         $clock = $this->getMockBuilder('React\Http\Io\Clock')->disableOriginalConstructor()->getMock();
 
-        $parser = new RequestHeaderParser($clock);
+        $parser = $this->createRequestHeaderParser($clock);
 
         $parser->on('headers', function ($parsedRequest) use (&$request) {
             $request = $parsedRequest;
@@ -906,5 +907,10 @@ class RequestHeaderParserTest extends TestCase
         $data .= "\r\n";
 
         return $data;
+    }
+
+    private function createRequestHeaderParser(Clock $clock)
+    {
+        return new RequestHeaderParser($clock);
     }
 }
