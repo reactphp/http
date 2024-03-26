@@ -5,8 +5,8 @@ namespace React\Tests\Http\Io;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
 use React\Http\Io\AbstractRequest;
+use React\Http\Message\Uri;
 use React\Tests\Http\TestCase;
-use RingCentral\Psr7\Uri;
 
 class RequestMock extends AbstractRequest
 {

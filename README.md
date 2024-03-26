@@ -79,6 +79,7 @@ multiple concurrent HTTP requests without blocking.
             * [xml()](#xml)
         * [Request](#request-1)
         * [ServerRequest](#serverrequest)
+        * [Uri](#uri)
         * [ResponseException](#responseexception)
     * [React\Http\Middleware](#reacthttpmiddleware)
         * [StreamingRequestMiddleware](#streamingrequestmiddleware)
@@ -2663,6 +2664,18 @@ application reacts to certain HTTP requests.
 
 > Internally, this implementation builds on top of a base class which is
   considered an implementation detail that may change in the future.
+
+#### Uri
+
+The `React\Http\Message\Uri` class can be used to
+respresent a URI (or URL).
+
+This class implements the
+[PSR-7 `UriInterface`](https://www.php-fig.org/psr/psr-7/#35-psrhttpmessageuriinterface).
+
+This is mostly used internally to represent the URI of each HTTP request
+message for our HTTP client and server implementations. Likewise, you may
+also use this class with other HTTP implementations and for tests.
 
 #### ResponseException
 

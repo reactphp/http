@@ -2,8 +2,8 @@
 
 namespace React\Tests\Http\Io;
 
-use RingCentral\Psr7\Uri;
 use React\Http\Io\ClientConnectionManager;
+use React\Http\Message\Uri;
 use React\Promise\Promise;
 use React\Promise\PromiseInterface;
 use React\Tests\Http\TestCase;
