@@ -4,7 +4,6 @@ use Psr\Http\Message\ResponseInterface;
 use React\Http\Browser;
 use React\Socket\FixedUriConnector;
 use React\Socket\UnixConnector;
-use RingCentral\Psr7;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -18,7 +17,7 @@ $browser = new Browser($connector);
 
 // demo fetching HTTP headers (or bail out otherwise)
 $browser->get('http://localhost/info')->then(function (ResponseInterface $response) {
-    echo Psr7\str($response);
+    echo (string) $response->getBody();
 }, function (Exception $e) {
     echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });

@@ -277,7 +277,8 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
      */
     public function hasMessageKeepAliveEnabled(MessageInterface $message)
     {
-        $connectionOptions = \RingCentral\Psr7\normalize_header(\strtolower($message->getHeaderLine('Connection')));
+        // @link https://www.rfc-editor.org/rfc/rfc9110#section-7.6.1
+        $connectionOptions = \array_map('trim', \explode(',', \strtolower($message->getHeaderLine('Connection'))));
 
         if (\in_array('close', $connectionOptions, true)) {
             return false;

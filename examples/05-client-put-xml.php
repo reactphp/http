@@ -19,7 +19,7 @@ $client->put(
     ),
     $xml->asXML()
 )->then(function (ResponseInterface $response) {
-    echo (string)$response->getBody();
+    echo (string) $response->getBody();
 }, function (Exception $e) {
     echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
