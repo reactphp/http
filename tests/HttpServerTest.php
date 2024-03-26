@@ -6,6 +6,8 @@ use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Loop;
 use React\Http\HttpServer;
 use React\Http\Io\IniUtil;
+use React\Http\Io\StreamingServer;
+use React\Http\Middleware\InactiveConnectionTimeoutMiddleware;
 use React\Http\Middleware\StreamingRequestMiddleware;
 use React\Promise;
 use React\Promise\Deferred;
@@ -59,6 +61,10 @@ final class HttpServerTest extends TestCase
         $ref = new \ReflectionProperty($streamingServer, 'clock');
         $ref->setAccessible(true);
         $clock = $ref->getValue($streamingServer);
+
+        $ref = new \ReflectionProperty($streamingServer, 'parser');
+        $ref->setAccessible(true);
+        $parser = $ref->getValue($streamingServer);
 
         $ref = new \ReflectionProperty($clock, 'loop');
         $ref->setAccessible(true);
@@ -257,6 +263,18 @@ final class HttpServerTest extends TestCase
         $this->assertEquals(true, $streaming);
     }
 
+    public function testIdleConnectionWillBeClosedAfterConfiguredTimeout()
+    {
+        $this->connection->expects($this->once())->method('close');
+
+        $http = new HttpServer(Loop::get(), new InactiveConnectionTimeoutMiddleware(0.1), $this->expectCallableNever());
+
+        $http->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        Loop::run();
+    }
+
     public function testForwardErrors()
     {
         $exception = new \Exception();
@@ -439,7 +457,7 @@ final class HttpServerTest extends TestCase
 
     public function testConstructFiltersOutConfigurationMiddlewareBefore()
     {
-        $http = new HttpServer(new StreamingRequestMiddleware(), function () { });
+        $http = new HttpServer(new InactiveConnectionTimeoutMiddleware(0), new StreamingRequestMiddleware(), function () { });
 
         $ref = new \ReflectionProperty($http, 'streamingServer');
         $ref->setAccessible(true);
