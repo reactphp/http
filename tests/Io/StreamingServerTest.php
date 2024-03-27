@@ -2,6 +2,7 @@
 
 namespace React\Tests\Http\Io;
 
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Loop;
 use React\Http\Io\StreamingServer;
@@ -2511,7 +2512,7 @@ class StreamingServerTest extends TestCase
     public function testInvalidCallbackFunctionLeadsToException()
     {
         $this->setExpectedException('InvalidArgumentException');
-        $server = new StreamingServer(Loop::get(), 'invalid');
+        new StreamingServer(Loop::get(), 'invalid');
     }
 
     public function testResponseBodyStreamWillStreamDataWithChunkedTransferEncoding()
@@ -2924,6 +2925,91 @@ class StreamingServerTest extends TestCase
 
         $this->assertContainsString("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
         $this->assertInstanceOf('RuntimeException', $exception);
+    }
+
+    public static function provideInvalidResponse()
+    {
+        $response = new Response(200, array(), '', '1.1', 'OK');
+
+        return array(
+            array(
+                $response->withStatus(99, 'OK')
+            ),
+            array(
+                $response->withStatus(1000, 'OK')
+            ),
+            array(
+                $response->withStatus(200, "Invald\r\nReason: Yes")
+            ),
+            array(
+                $response->withHeader('Invalid', "Yes\r\n")
+            ),
+            array(
+                $response->withHeader('Invalid', "Yes\n")
+            ),
+            array(
+                $response->withHeader('Invalid', "Yes\r")
+            ),
+            array(
+                $response->withHeader("Inva\r\nlid", 'Yes')
+            ),
+            array(
+                $response->withHeader("Inva\nlid", 'Yes')
+            ),
+            array(
+                $response->withHeader("Inva\rlid", 'Yes')
+            ),
+            array(
+                $response->withHeader('Inva Lid', 'Yes')
+            ),
+            array(
+                $response->withHeader('Inva:Lid', 'Yes')
+            ),
+            array(
+                $response->withHeader('Invalid', "Val\0ue")
+            ),
+            array(
+                $response->withHeader("Inva\0lid", 'Yes')
+            )
+        );
+    }
+
+    /**
+     * @dataProvider provideInvalidResponse
+     * @param ResponseInterface $response
+     */
+    public function testInvalidResponseObjectWillResultInErrorMessage(ResponseInterface $response)
+    {
+        $server = new StreamingServer(Loop::get(), function (ServerRequestInterface $request) use ($response) {
+            return $response;
+        });
+
+        $exception = null;
+        $server->on('error', function (\Exception $ex) use (&$exception) {
+            $exception = $ex;
+        });
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->any())
+            ->method('write')
+            ->will(
+                $this->returnCallback(
+                    function ($data) use (&$buffer) {
+                        $buffer .= $data;
+                    }
+                )
+            );
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', array($this->connection));
+
+        $data = $this->createGetRequest();
+
+        $this->connection->emit('data', array($data));
+
+        $this->assertContainsString("HTTP/1.1 500 Internal Server Error\r\n", $buffer);
+        $this->assertInstanceOf('InvalidArgumentException', $exception);
     }
 
     public function testRequestServerRequestParams()

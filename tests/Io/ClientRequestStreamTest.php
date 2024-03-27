@@ -2,6 +2,7 @@
 
 namespace React\Tests\Http\Io;
 
+use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use React\Http\Io\ClientRequestStream;
 use React\Http\Message\Request;
@@ -98,6 +99,67 @@ class ClientRequestStreamTest extends TestCase
 
         $request->end();
         $request->handleError(new \Exception('test'));
+    }
+
+    public static function provideInvalidRequest()
+    {
+        $request = new Request('GET' , "http://localhost/");
+
+        return array(
+            array(
+                $request->withMethod("INVA\r\nLID", '')
+            ),
+            array(
+                $request->withRequestTarget('/inva lid')
+            ),
+            array(
+                $request->withHeader('Invalid', "Yes\r\n")
+            ),
+            array(
+                $request->withHeader('Invalid', "Yes\n")
+            ),
+            array(
+                $request->withHeader('Invalid', "Yes\r")
+            ),
+            array(
+                $request->withHeader("Inva\r\nlid", 'Yes')
+            ),
+            array(
+                $request->withHeader("Inva\nlid", 'Yes')
+            ),
+            array(
+                $request->withHeader("Inva\rlid", 'Yes')
+            ),
+            array(
+                $request->withHeader('Inva Lid', 'Yes')
+            ),
+            array(
+                $request->withHeader('Inva:Lid', 'Yes')
+            ),
+            array(
+                $request->withHeader('Invalid', "Val\0ue")
+            ),
+            array(
+                $request->withHeader("Inva\0lid", 'Yes')
+            )
+        );
+    }
+
+    /**
+     * @dataProvider provideInvalidRequest
+     * @param RequestInterface $request
+     */
+    public function testStreamShouldEmitErrorBeforeCreatingConnectionWhenRequestIsInvalid(RequestInterface $request)
+    {
+        $connectionManager = $this->getMockBuilder('React\Http\Io\ClientConnectionManager')->disableOriginalConstructor()->getMock();
+        $connectionManager->expects($this->never())->method('connect');
+
+        $stream = new ClientRequestStream($connectionManager, $request);
+
+        $stream->on('error', $this->expectCallableOnceWith($this->isInstanceOf('InvalidArgumentException')));
+        $stream->on('close', $this->expectCallableOnce());
+
+        $stream->end();
     }
 
     /** @test */
