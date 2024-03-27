@@ -141,10 +141,11 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
      * ```
      *
      * @param mixed $data
+     * @param int|null $status
      * @return self
      * @throws \InvalidArgumentException when encoding fails
      */
-    public static function json($data)
+    public static function json($data, $status = self::STATUS_OK)
     {
         $json = @\json_encode(
             $data,
@@ -159,7 +160,7 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
             );
         }
 
-        return new self(self::STATUS_OK, array('Content-Type' => 'application/json'), $json . "\n");
+        return new self($status ? $status : self::STATUS_OK, array('Content-Type' => 'application/json'), $json . "\n");
     }
 
     /**
