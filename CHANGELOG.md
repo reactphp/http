@@ -1,5 +1,37 @@
 # Changelog
 
+## 1.10.0 (2024-03-27)
+
+*   Feature: Add new PSR-7 implementation and remove dated RingCentral PSR-7 dependency.
+    (#518, #519, #520 and #522 by @clue)
+
+    This changeset allows us to maintain our own PSR-7 implementation and reduce
+    dependencies on external projects. It also improves performance slightly and
+    does not otherwise affect our public API. If you want to explicitly install
+    the old RingCentral PSR-7 dependency, you can still install it like this:
+
+    ```bash
+    composer require ringcentral/psr7
+    ```
+
+*   Feature: Add new `Uri` class for new PSR-7 implementation.
+    (#521 by @clue)
+
+*   Feature: Validate outgoing HTTP message headers and reject invalid messages.
+    (#523 by @clue)
+
+*   Feature: Full PHP 8.3 compatibility.
+    (#508 by @clue)
+
+*   Fix: Fix HTTP client to omit `Transfer-Encoding: chunked` when streaming empty request body.
+    (#516 by @clue)
+
+*   Fix: Ensure connection close handler is cleaned up for each request.
+    (#515 by @WyriHaximus)
+
+*   Update test suite and avoid unhandled promise rejections.
+    (#501 and #502 by @clue)
+
 ## 1.9.0 (2023-04-26)
 
 This is a **SECURITY** and feature release for the 1.x series of ReactPHP's HTTP component.
