@@ -42,7 +42,8 @@
         "phpunit/phpunit": "^9.6 || ^7.5",
         "react/async": "^4 || ^3",
         "react/promise-stream": "^1.4",
-        "react/promise-timer": "^1.9"
+        "react/promise-timer": "^1.9",
+        "phpstan/phpstan": "^1.4"
     },
     "autoload": {
         "psr-4": {
@@ -53,5 +54,9 @@
         "psr-4": {
             "React\\Tests\\Http\\": "tests/"
         }
+    },
+    "scripts": {
+        "phpstan": "vendor/bin/phpstan analyse src",
+        "phpstan tests": "vendor/bin/phpstan analyse tests"
     }
 }
