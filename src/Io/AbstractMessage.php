@@ -108,8 +108,9 @@ abstract class AbstractMessage implements MessageInterface
 
     /**
      * @inheritdoc
+     * @param string $name
      */
-    public function getHeader(string $name): array
+    public function getHeader($name): array
     {
         $lower = \strtolower($name);
         return isset($this->headerNamesLowerCase[$lower]) ? $this->headers[$this->headerNamesLowerCase[$lower]] : array();
@@ -117,16 +118,18 @@ abstract class AbstractMessage implements MessageInterface
 
     /**
      * @inheritdoc
+     * @param string $name
      */
-    public function getHeaderLine(string $name): string
+    public function getHeaderLine($name): string
     {
         return \implode(', ', $this->getHeader($name));
     }
 
     /**
      * @inheritdoc
+     * @param string $name
      */
-    public function withHeader(string $name, $value): self
+    public function withHeader($name, $value): self
     {
         if ($value === array()) {
             return $this->withoutHeader($name);
@@ -156,8 +159,9 @@ abstract class AbstractMessage implements MessageInterface
 
     /**
      * @inheritdoc
+     * @param string $name
      */
-    public function withAddedHeader(string $name, $value): self
+    public function withAddedHeader($name, $value): self
     {
         if ($value === array()) {
             return $this;
@@ -168,8 +172,9 @@ abstract class AbstractMessage implements MessageInterface
 
     /**
      * @inheritdoc
+     * @param string $name
      */
-    public function withoutHeader(string $name): self
+    public function withoutHeader($name): self
     {
         $lower = \strtolower($name);
         if (!isset($this->headerNamesLowerCase[$lower])) {
