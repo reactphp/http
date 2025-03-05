@@ -99,8 +99,9 @@ abstract class AbstractMessage implements MessageInterface
 
     /**
      * @inheritdoc
+     * @param string $name
      */
-    public function hasHeader(string $name): bool
+    public function hasHeader($name): bool
     {
         return isset($this->headerNamesLowerCase[\strtolower($name)]);
     }
