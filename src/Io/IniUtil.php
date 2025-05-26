@@ -19,6 +19,14 @@ final class IniUtil
             return (int)$size;
         }
 
+        // ini size values might be specified via environment variables, e.g.: memory_limit=${PHP_MEMORY_LIMIT}
+        $matches = [];
+        $envVarUsed = preg_match('#^\$(?|(\w+)|\{(\w+)})$#', $size, $matches);
+        $envVarName = $matches[1] ?? false;
+        if ($envVarUsed && $envVarName && array_key_exists($envVarName, $_ENV)) {
+            $size = (string)$_ENV[$envVarName];
+        }
+
         $suffix = \strtoupper(\substr($size, -1));
         $strippedSize = \substr($size, 0, -1);
 

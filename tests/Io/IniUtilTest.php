@@ -74,4 +74,48 @@ class IniUtilTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         IniUtil::iniSizeToBytes($input);
     }
+
+    public function testIniSizeViaEnvVariableWorks()
+    {
+        self::assertArrayNotHasKey('INIUTIL_ENV_VAR_WITH_PHP_SIZE_VALUE', $_ENV);
+        $_ENV['INIUTIL_ENV_VAR_WITH_PHP_SIZE_VALUE'] = '23M';
+        $this->assertSame(23 * 1024 * 1024, IniUtil::iniSizeToBytes('${INIUTIL_ENV_VAR_WITH_PHP_SIZE_VALUE}'));
+    }
+
+    public function testIniSizeViaSimpleEnvVariableWorks()
+    {
+        self::assertArrayNotHasKey('INIUTIL_SIMPLE_ENV_VAR_WITH_PHP_SIZE_VALUE', $_ENV);
+        $_ENV['INIUTIL_SIMPLE_ENV_VAR_WITH_PHP_SIZE_VALUE'] = '42M';
+        $this->assertSame(42 * 1024 * 1024, IniUtil::iniSizeToBytes('$INIUTIL_SIMPLE_ENV_VAR_WITH_PHP_SIZE_VALUE'));
+    }
+
+    public function testIniSizeViaEnvVariableFailsForNonSizeValue()
+    {
+        self::assertArrayNotHasKey('INIUTIL_ENV_VAR_WITHOUT_PHP_SIZE_VALUE', $_ENV);
+        $_ENV['INIUTIL_ENV_VAR_WITHOUT_PHP_SIZE_VALUE'] = 'no-size';
+        $this->expectException(\InvalidArgumentException::class);
+        IniUtil::iniSizeToBytes('${INIUTIL_ENV_VAR_WITHOUT_PHP_SIZE_VALUE}');
+    }
+
+    public function testIniSizeViaEnvVariableIgnoresInvalidSizeModifier()
+    {
+        self::assertArrayNotHasKey('INIUTIL_ENV_VAR_WITH_PHP_SIZE_VALUE_AND_INVALID_MODIFIER', $_ENV);
+        $_ENV['INIUTIL_ENV_VAR_WITH_PHP_SIZE_VALUE_AND_INVALID_MODIFIER'] = '1337V';
+        $this->assertSame(1337, IniUtil::iniSizeToBytes('${INIUTIL_ENV_VAR_WITH_PHP_SIZE_VALUE_AND_INVALID_MODIFIER}'));
+    }
+
+    public function testIniSizeViaEnvVariableFailsForNonNumericValue()
+    {
+        self::assertArrayNotHasKey('INIUTIL_ENV_VAR_WITH_NON_NUMERIC_PHP_SIZE_VALUE', $_ENV);
+        $_ENV['INIUTIL_ENV_VAR_WITH_NON_NUMERIC_PHP_SIZE_VALUE'] = 'V1337V';
+        $this->expectException(\InvalidArgumentException::class);
+        IniUtil::iniSizeToBytes('${INIUTIL_ENV_VAR_WITH_NON_NUMERIC_PHP_SIZE_VALUE}');
+    }
+
+    public function testIniSizeViaMissingEnvVariableFails()
+    {
+        self::assertArrayNotHasKey('INIUTIL_ENV_VAR_MISSING_WITH_NON_NUMERIC_PHP_SIZE_VALUE', $_ENV);
+        $this->expectException(\InvalidArgumentException::class);
+        IniUtil::iniSizeToBytes('${INIUTIL_ENV_VAR_MISSING_WITH_NON_NUMERIC_PHP_SIZE_VALUE}');
+    }
 }
