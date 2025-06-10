@@ -23,7 +23,7 @@ class BufferedBody implements StreamInterface
         $this->buffer = $buffer;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         if ($this->closed) {
             return '';
@@ -34,7 +34,7 @@ class BufferedBody implements StreamInterface
         return $this->getContents();
     }
 
-    public function close()
+    public function close(): void
     {
         $this->buffer = '';
         $this->position = 0;
@@ -48,12 +48,12 @@ class BufferedBody implements StreamInterface
         return null;
     }
 
-    public function getSize()
+    public function getSize(): ?int
     {
         return $this->closed ? null : \strlen($this->buffer);
     }
 
-    public function tell()
+    public function tell(): int
     {
         if ($this->closed) {
             throw new \RuntimeException('Unable to tell position of closed stream');
@@ -62,17 +62,17 @@ class BufferedBody implements StreamInterface
         return $this->position;
     }
 
-    public function eof()
+    public function eof(): bool
     {
         return $this->position >= \strlen($this->buffer);
     }
 
-    public function isSeekable()
+    public function isSeekable(): bool
     {
         return !$this->closed;
     }
 
-    public function seek($offset, $whence = \SEEK_SET)
+    public function seek($offset, $whence = \SEEK_SET): void
     {
         if ($this->closed) {
             throw new \RuntimeException('Unable to seek on closed stream');
@@ -96,17 +96,17 @@ class BufferedBody implements StreamInterface
         }
     }
 
-    public function rewind()
+    public function rewind(): void
     {
         $this->seek(0);
     }
 
-    public function isWritable()
+    public function isWritable(): bool
     {
         return !$this->closed;
     }
 
-    public function write($string)
+    public function write(string $string): int
     {
         if ($this->closed) {
             throw new \RuntimeException('Unable to write to closed stream');
@@ -127,12 +127,12 @@ class BufferedBody implements StreamInterface
         return $len;
     }
 
-    public function isReadable()
+    public function isReadable(): bool
     {
         return !$this->closed;
     }
 
-    public function read($length)
+    public function read(int $length): string
     {
         if ($this->closed) {
             throw new \RuntimeException('Unable to read from closed stream');
@@ -156,7 +156,7 @@ class BufferedBody implements StreamInterface
         return \substr($this->buffer, $pos, $length);
     }
 
-    public function getContents()
+    public function getContents(): string
     {
         if ($this->closed) {
             throw new \RuntimeException('Unable to read from closed stream');

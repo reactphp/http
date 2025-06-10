@@ -10,7 +10,10 @@ use React\Tests\Http\TestCase;
 
 class HttpBodyStreamTest extends TestCase
 {
+    /** @var ThroughStream */
     private $input;
+
+    /** @var HttpBodyStream */
     private $bodyStream;
 
     /**
@@ -133,7 +136,7 @@ class HttpBodyStreamTest extends TestCase
     public function testRead()
     {
         $this->expectException(\BadMethodCallException::class);
-        $this->bodyStream->read('');
+        $this->bodyStream->read(0);
     }
 
     public function testGetContents()
