@@ -53,15 +53,21 @@ final class HttpServerTest extends TestCase
         $http = new HttpServer(function () { });
 
         $ref = new \ReflectionProperty($http, 'streamingServer');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $streamingServer = $ref->getValue($http);
 
         $ref = new \ReflectionProperty($streamingServer, 'clock');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $clock = $ref->getValue($streamingServer);
 
         $ref = new \ReflectionProperty($clock, 'loop');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $loop = $ref->getValue($clock);
 
         $this->assertInstanceOf('React\EventLoop\LoopInterface', $loop);
@@ -332,7 +338,9 @@ final class HttpServerTest extends TestCase
         $http = new HttpServer(function () { });
 
         $ref = new \ReflectionMethod($http, 'getConcurrentRequestsLimit');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
 
         $value = $ref->invoke($http, $memory_limit, $post_max_size);
 
@@ -344,7 +352,9 @@ final class HttpServerTest extends TestCase
         $http = new HttpServer(function () { });
 
         $ref = new \ReflectionMethod($http, 'getMaxRequestSize');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
 
         $value = $ref->invoke($http, '1k');
 
@@ -356,7 +366,9 @@ final class HttpServerTest extends TestCase
         $http = new HttpServer(function () { });
 
         $ref = new \ReflectionMethod($http, 'getMaxRequestSize');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
 
         $value = $ref->invoke($http, '1M');
 
@@ -372,7 +384,9 @@ final class HttpServerTest extends TestCase
         $http = new HttpServer(function () { });
 
         $ref = new \ReflectionMethod($http, 'getMaxRequestSize');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
 
         $value = $ref->invoke($http);
 
@@ -389,17 +403,23 @@ final class HttpServerTest extends TestCase
         ini_set('memory_limit', $old);
 
         $ref = new \ReflectionProperty($http, 'streamingServer');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
 
         $streamingServer = $ref->getValue($http);
 
         $ref = new \ReflectionProperty($streamingServer, 'callback');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
 
         $middlewareRunner = $ref->getValue($streamingServer);
 
         $ref = new \ReflectionProperty($middlewareRunner, 'middleware');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
 
         $middleware = $ref->getValue($middlewareRunner);
 
@@ -419,17 +439,23 @@ final class HttpServerTest extends TestCase
         ini_set('memory_limit', $old);
 
         $ref = new \ReflectionProperty($http, 'streamingServer');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
 
         $streamingServer = $ref->getValue($http);
 
         $ref = new \ReflectionProperty($streamingServer, 'callback');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
 
         $middlewareRunner = $ref->getValue($streamingServer);
 
         $ref = new \ReflectionProperty($middlewareRunner, 'middleware');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
 
         $middleware = $ref->getValue($middlewareRunner);
 
@@ -442,17 +468,23 @@ final class HttpServerTest extends TestCase
         $http = new HttpServer(new StreamingRequestMiddleware(), function () { });
 
         $ref = new \ReflectionProperty($http, 'streamingServer');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
 
         $streamingServer = $ref->getValue($http);
 
         $ref = new \ReflectionProperty($streamingServer, 'callback');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
 
         $middlewareRunner = $ref->getValue($streamingServer);
 
         $ref = new \ReflectionProperty($middlewareRunner, 'middleware');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
 
         $middleware = $ref->getValue($middlewareRunner);
 
