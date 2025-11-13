@@ -33,7 +33,9 @@ class ClockTest extends TestCase
         $now = $clock->now();
 
         $ref = new \ReflectionProperty($clock, 'now');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $this->assertEquals($now, $ref->getValue($clock));
 
         $this->assertNotNull($tick);

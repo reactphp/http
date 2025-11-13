@@ -851,7 +851,9 @@ class RequestHeaderParserTest extends TestCase
         $connection->emit('data', ["GET /foo HTTP/1.0\r\nHost: example.com\r\n\r\n"]);
 
         $ref = new \ReflectionProperty($parser, 'connectionParams');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
 
         $this->assertCount(1, $ref->getValue($parser));
 

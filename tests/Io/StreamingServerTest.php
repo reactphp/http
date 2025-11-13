@@ -2251,11 +2251,15 @@ class StreamingServerTest extends TestCase
         });
 
         $ref = new \ReflectionProperty($server, 'clock');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $clock = $ref->getValue($server);
 
         $ref = new \ReflectionProperty($clock, 'now');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $ref->setValue($clock, 1652972091.3958);
 
         $buffer = '';
@@ -3052,7 +3056,9 @@ class StreamingServerTest extends TestCase
         $parser->expects($this->once())->method('handle');
 
         $ref = new \ReflectionProperty($server, 'parser');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $ref->setValue($server, $parser);
 
         $server->listen($this->socket);
@@ -3069,7 +3075,9 @@ class StreamingServerTest extends TestCase
         $parser->expects($this->once())->method('handle');
 
         $ref = new \ReflectionProperty($server, 'parser');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $ref->setValue($server, $parser);
 
         $server->listen($this->socket);
@@ -3092,7 +3100,9 @@ class StreamingServerTest extends TestCase
         $parser->expects($this->once())->method('handle');
 
         $ref = new \ReflectionProperty($server, 'parser');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $ref->setValue($server, $parser);
 
         $server->listen($this->socket);
@@ -3117,7 +3127,9 @@ class StreamingServerTest extends TestCase
         $parser->expects($this->once())->method('handle');
 
         $ref = new \ReflectionProperty($server, 'parser');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $ref->setValue($server, $parser);
 
         $server->listen($this->socket);
@@ -3142,7 +3154,9 @@ class StreamingServerTest extends TestCase
         $parser->expects($this->exactly(2))->method('handle');
 
         $ref = new \ReflectionProperty($server, 'parser');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $ref->setValue($server, $parser);
 
         $server->listen($this->socket);
@@ -3167,7 +3181,9 @@ class StreamingServerTest extends TestCase
         $parser->expects($this->exactly(2))->method('handle');
 
         $ref = new \ReflectionProperty($server, 'parser');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $ref->setValue($server, $parser);
 
         $server->listen($this->socket);
@@ -3193,7 +3209,9 @@ class StreamingServerTest extends TestCase
         $parser->expects($this->once())->method('handle');
 
         $ref = new \ReflectionProperty($server, 'parser');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $ref->setValue($server, $parser);
 
         $server->listen($this->socket);
@@ -3219,7 +3237,9 @@ class StreamingServerTest extends TestCase
         $parser->expects($this->exactly(2))->method('handle');
 
         $ref = new \ReflectionProperty($server, 'parser');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $ref->setValue($server, $parser);
 
         $server->listen($this->socket);
