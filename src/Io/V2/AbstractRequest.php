@@ -1,14 +1,12 @@
 <?php
 
-namespace React\Http\Io;
+namespace React\Http\Io\V2;
 
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
 use React\Http\Message\Uri;
 
-$reflectedMethod = new \ReflectionMethod('\Psr\Http\Message\RequestInterface','withRequestTarget');
-if (!(PHP_VERSION_ID >= 70000 && $reflectedMethod->hasReturnType())) {
 /**
  * [Internal] Abstract HTTP request base class (PSR-7)
  *
@@ -73,7 +71,7 @@ abstract class AbstractRequest extends AbstractMessage implements RequestInterfa
         $this->uri = $uri;
     }
 
-    public function getRequestTarget()
+    public function getRequestTarget(): string
     {
         if ($this->requestTarget !== null) {
             return $this->requestTarget;
@@ -90,7 +88,7 @@ abstract class AbstractRequest extends AbstractMessage implements RequestInterfa
         return $target;
     }
 
-    public function withRequestTarget($requestTarget)
+    public function withRequestTarget(string $requestTarget): RequestInterface
     {
         if ((string) $requestTarget === $this->requestTarget) {
             return $this;
@@ -102,12 +100,12 @@ abstract class AbstractRequest extends AbstractMessage implements RequestInterfa
         return $request;
     }
 
-    public function getMethod()
+    public function getMethod(): string
     {
         return $this->method;
     }
 
-    public function withMethod($method)
+    public function withMethod(string $method): RequestInterface
     {
         if ((string) $method === $this->method) {
             return $this;
@@ -119,12 +117,12 @@ abstract class AbstractRequest extends AbstractMessage implements RequestInterfa
         return $request;
     }
 
-    public function getUri()
+    public function getUri(): UriInterface
     {
         return $this->uri;
     }
 
-    public function withUri(UriInterface $uri, $preserveHost = false)
+    public function withUri(UriInterface $uri, bool $preserveHost = false): RequestInterface
     {
         if ($uri === $this->uri) {
             return $this;
@@ -154,10 +152,5 @@ abstract class AbstractRequest extends AbstractMessage implements RequestInterfa
         }
 
         return $request;
-    }
-}
-} else {
-    abstract class AbstractRequest extends V2\AbstractRequest
-    {
     }
 }

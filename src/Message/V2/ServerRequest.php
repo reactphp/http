@@ -1,6 +1,6 @@
 <?php
 
-namespace React\Http\Message;
+namespace React\Http\Message\V2;
 
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
@@ -10,8 +10,6 @@ use React\Http\Io\BufferedBody;
 use React\Http\Io\HttpBodyStream;
 use React\Stream\ReadableStreamInterface;
 
-$reflectedMethod = new \ReflectionMethod('\Psr\Http\Message\ServerRequestInterface','getServerParams');
-if (!(PHP_VERSION_ID >= 70000 && $reflectedMethod->hasReturnType())) {
 /**
  * Respresents an incoming server request message.
  *
@@ -61,7 +59,7 @@ final class ServerRequest extends AbstractRequest implements ServerRequestInterf
         if (\is_string($body)) {
             $body = new BufferedBody($body);
         } elseif ($body instanceof ReadableStreamInterface && !$body instanceof StreamInterface) {
-            $temp = new self($method, '', $headers);
+            $temp = new static($method, '', $headers);
             $size = (int) $temp->getHeaderLine('Content-Length');
             if (\strtolower($temp->getHeaderLine('Transfer-Encoding')) === 'chunked') {
                 $size = null;
@@ -89,41 +87,41 @@ final class ServerRequest extends AbstractRequest implements ServerRequestInterf
         }
     }
 
-    public function getServerParams()
+    public function getServerParams(): array
     {
         return $this->serverParams;
     }
 
-    public function getCookieParams()
+    public function getCookieParams(): array
     {
         return $this->cookies;
     }
 
-    public function withCookieParams(array $cookies)
+    public function withCookieParams(array $cookies): ServerRequestInterface
     {
         $new = clone $this;
         $new->cookies = $cookies;
         return $new;
     }
 
-    public function getQueryParams()
+    public function getQueryParams(): array
     {
         return $this->queryParams;
     }
 
-    public function withQueryParams(array $query)
+    public function withQueryParams(array $query): ServerRequestInterface
     {
         $new = clone $this;
         $new->queryParams = $query;
         return $new;
     }
 
-    public function getUploadedFiles()
+    public function getUploadedFiles(): array
     {
         return $this->fileParams;
     }
 
-    public function withUploadedFiles(array $uploadedFiles)
+    public function withUploadedFiles(array $uploadedFiles): ServerRequestInterface
     {
         $new = clone $this;
         $new->fileParams = $uploadedFiles;
@@ -135,19 +133,19 @@ final class ServerRequest extends AbstractRequest implements ServerRequestInterf
         return $this->parsedBody;
     }
 
-    public function withParsedBody($data)
+    public function withParsedBody($data): ServerRequestInterface
     {
         $new = clone $this;
         $new->parsedBody = $data;
         return $new;
     }
 
-    public function getAttributes()
+    public function getAttributes(): array
     {
         return $this->attributes;
     }
 
-    public function getAttribute($name, $default = null)
+    public function getAttribute(string $name, $default = null)
     {
         if (!\array_key_exists($name, $this->attributes)) {
             return $default;
@@ -155,14 +153,14 @@ final class ServerRequest extends AbstractRequest implements ServerRequestInterf
         return $this->attributes[$name];
     }
 
-    public function withAttribute($name, $value)
+    public function withAttribute(string $name, $value): ServerRequestInterface
     {
         $new = clone $this;
         $new->attributes[$name] = $value;
         return $new;
     }
 
-    public function withoutAttribute($name)
+    public function withoutAttribute(string $name): ServerRequestInterface
     {
         $new = clone $this;
         unset($new->attributes[$name]);
@@ -198,7 +196,7 @@ final class ServerRequest extends AbstractRequest implements ServerRequestInterf
      * @internal
      * @param string $message
      * @param array<string,string|int|float> $serverParams
-     * @return self
+     * @return static
      * @throws \InvalidArgumentException if given $message is not a valid HTTP request message
      */
     public static function parseMessage($message, array $serverParams)
@@ -216,7 +214,7 @@ final class ServerRequest extends AbstractRequest implements ServerRequestInterf
 
         // check number of valid header fields matches number of lines + request line
         $matches = array();
-        $n = \preg_match_all(self::REGEX_HEADERS, $message, $matches, \PREG_SET_ORDER);
+        $n = \preg_match_all(static::REGEX_HEADERS, $message, $matches, \PREG_SET_ORDER);
         if (\substr_count($message, "\n") !== $n + 1) {
             throw new \InvalidArgumentException('Unable to parse invalid request header fields');
         }
@@ -270,7 +268,7 @@ final class ServerRequest extends AbstractRequest implements ServerRequestInterf
             }
         }
 
-        $request = new self(
+        $request = new static(
             $start['method'],
             $uri,
             $headers,
@@ -330,7 +328,4 @@ final class ServerRequest extends AbstractRequest implements ServerRequestInterf
 
         return $request;
     }
-}
-} else {
-    class_alias(__NAMESPACE__ . '\\V2\\ServerRequest', __NAMESPACE__ . '\\ServerRequest');
 }

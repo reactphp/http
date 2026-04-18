@@ -1,6 +1,6 @@
 <?php
 
-namespace React\Http\Io;
+namespace React\Http\Io\V2;
 
 use Evenement\EventEmitter;
 use Psr\Http\Message\StreamInterface;
@@ -8,8 +8,6 @@ use React\Stream\ReadableStreamInterface;
 use React\Stream\Util;
 use React\Stream\WritableStreamInterface;
 
-$reflectedMethod = new \ReflectionMethod('\Psr\Http\Message\StreamInterface','eof');
-if (!(PHP_VERSION_ID >= 70000 && $reflectedMethod->hasReturnType())) {
 /**
  * [Internal] Bridge between StreamInterface from PSR-7 and ReadableStreamInterface from ReactPHP
  *
@@ -26,7 +24,7 @@ if (!(PHP_VERSION_ID >= 70000 && $reflectedMethod->hasReturnType())) {
  * @see ReadableStreamInterface
  * @internal
  */
-class HttpBodyStream extends EventEmitter implements StreamInterface, ReadableStreamInterface
+abstract class HttpBodyStream extends EventEmitter implements StreamInterface, ReadableStreamInterface
 {
     public $input;
     private $closed = false;
@@ -47,7 +45,7 @@ class HttpBodyStream extends EventEmitter implements StreamInterface, ReadableSt
         $this->input->on('close', array($this, 'close'));
     }
 
-    public function isReadable()
+    public function isReadable(): bool
     {
         return !$this->closed && $this->input->isReadable();
     }
@@ -69,7 +67,7 @@ class HttpBodyStream extends EventEmitter implements StreamInterface, ReadableSt
         return $dest;
     }
 
-    public function close()
+    public function close(): void
     {
         if ($this->closed) {
             return;
@@ -83,13 +81,13 @@ class HttpBodyStream extends EventEmitter implements StreamInterface, ReadableSt
         $this->removeAllListeners();
     }
 
-    public function getSize()
+    public function getSize(): ?int
     {
         return $this->size;
     }
 
     /** @ignore */
-    public function __toString()
+    public function __toString(): string
     {
         return '';
     }
@@ -101,55 +99,55 @@ class HttpBodyStream extends EventEmitter implements StreamInterface, ReadableSt
     }
 
     /** @ignore */
-    public function tell()
+    public function tell(): int
     {
         throw new \BadMethodCallException();
     }
 
     /** @ignore */
-    public function eof()
+    public function eof(): bool
     {
         throw new \BadMethodCallException();
     }
 
     /** @ignore */
-    public function isSeekable()
+    public function isSeekable(): bool
     {
         return false;
     }
 
     /** @ignore */
-    public function seek($offset, $whence = SEEK_SET)
+    public function seek(int $offset, int $whence = SEEK_SET): void
     {
         throw new \BadMethodCallException();
     }
 
     /** @ignore */
-    public function rewind()
+    public function rewind(): void
     {
         throw new \BadMethodCallException();
     }
 
     /** @ignore */
-    public function isWritable()
+    public function isWritable(): bool
     {
         return false;
     }
 
     /** @ignore */
-    public function write($string)
+    public function write(string $string): int
     {
         throw new \BadMethodCallException();
     }
 
     /** @ignore */
-    public function read($length)
+    public function read(int $length): string
     {
         throw new \BadMethodCallException();
     }
 
     /** @ignore */
-    public function getContents()
+    public function getContents(): string
     {
         return '';
     }
@@ -180,10 +178,5 @@ class HttpBodyStream extends EventEmitter implements StreamInterface, ReadableSt
             $this->emit('end');
             $this->close();
         }
-    }
-}
-} else {
-    class HttpBodyStream extends V2\HttpBodyStream
-    {
     }
 }

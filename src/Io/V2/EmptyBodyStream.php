@@ -1,6 +1,6 @@
 <?php
 
-namespace React\Http\Io;
+namespace React\Http\Io\V2;
 
 use Evenement\EventEmitter;
 use Psr\Http\Message\StreamInterface;
@@ -8,8 +8,6 @@ use React\Stream\ReadableStreamInterface;
 use React\Stream\Util;
 use React\Stream\WritableStreamInterface;
 
-$reflectedMethod = new \ReflectionMethod('\Psr\Http\Message\StreamInterface','eof');
-if (!(PHP_VERSION_ID >= 70000 && $reflectedMethod->hasReturnType())) {
 /**
  * [Internal] Bridge between an empty StreamInterface from PSR-7 and ReadableStreamInterface from ReactPHP
  *
@@ -31,7 +29,7 @@ class EmptyBodyStream extends EventEmitter implements StreamInterface, ReadableS
 {
     private $closed = false;
 
-    public function isReadable()
+    public function isReadable(): bool
     {
         return !$this->closed;
     }
@@ -53,7 +51,7 @@ class EmptyBodyStream extends EventEmitter implements StreamInterface, ReadableS
         return $dest;
     }
 
-    public function close()
+    public function close(): void
     {
         if ($this->closed) {
             return;
@@ -65,13 +63,13 @@ class EmptyBodyStream extends EventEmitter implements StreamInterface, ReadableS
         $this->removeAllListeners();
     }
 
-    public function getSize()
+    public function getSize(): ?int
     {
         return 0;
     }
 
     /** @ignore */
-    public function __toString()
+    public function __toString(): string
     {
         return '';
     }
@@ -83,55 +81,55 @@ class EmptyBodyStream extends EventEmitter implements StreamInterface, ReadableS
     }
 
     /** @ignore */
-    public function tell()
+    public function tell(): int
     {
         throw new \BadMethodCallException();
     }
 
     /** @ignore */
-    public function eof()
+    public function eof(): bool
     {
         throw new \BadMethodCallException();
     }
 
     /** @ignore */
-    public function isSeekable()
+    public function isSeekable(): bool
     {
         return false;
     }
 
     /** @ignore */
-    public function seek($offset, $whence = SEEK_SET)
+    public function seek(int $offset, int $whence = SEEK_SET): void
     {
         throw new \BadMethodCallException();
     }
 
     /** @ignore */
-    public function rewind()
+    public function rewind(): void
     {
         throw new \BadMethodCallException();
     }
 
     /** @ignore */
-    public function isWritable()
+    public function isWritable(): bool
     {
         return false;
     }
 
     /** @ignore */
-    public function write($string)
+    public function write(string $string): int
     {
         throw new \BadMethodCallException();
     }
 
     /** @ignore */
-    public function read($length)
+    public function read(int $length): string
     {
         throw new \BadMethodCallException();
     }
 
     /** @ignore */
-    public function getContents()
+    public function getContents(): string
     {
         return '';
     }
@@ -140,10 +138,5 @@ class EmptyBodyStream extends EventEmitter implements StreamInterface, ReadableS
     public function getMetadata($key = null)
     {
         return ($key === null) ? array() : null;
-    }
-}
-} else {
-    class EmptyBodyStream extends V2\EmptyBodyStream
-    {
     }
 }
