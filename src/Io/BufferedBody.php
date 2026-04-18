@@ -4,6 +4,8 @@ namespace React\Http\Io;
 
 use Psr\Http\Message\StreamInterface;
 
+$reflectionMethod = new \ReflectionMethod('\Psr\Http\Message\StreamInterface', 'eof');
+if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
 /**
  * [Internal] PSR-7 message body implementation using an in-memory buffer
  *
@@ -176,4 +178,7 @@ class BufferedBody implements StreamInterface
     {
         return $key === null ? [] : null;
     }
+}
+} else {
+    class_alias(__NAMESPACE__ . '\\V2\\BufferedBody', __NAMESPACE__ . '\\BufferedBody');
 }

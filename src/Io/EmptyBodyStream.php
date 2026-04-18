@@ -8,6 +8,8 @@ use React\Stream\ReadableStreamInterface;
 use React\Stream\Util;
 use React\Stream\WritableStreamInterface;
 
+$reflectionMethod = new \ReflectionMethod('\Psr\Http\Message\StreamInterface', 'eof');
+if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
 /**
  * [Internal] Bridge between an empty StreamInterface from PSR-7 and ReadableStreamInterface from ReactPHP
  *
@@ -139,4 +141,7 @@ class EmptyBodyStream extends EventEmitter implements StreamInterface, ReadableS
     {
         return ($key === null) ? [] : null;
     }
+}
+} else {
+    class_alias(__NAMESPACE__ . '\\V2\\EmptyBodyStream', __NAMESPACE__ . '\\EmptyBodyStream');
 }

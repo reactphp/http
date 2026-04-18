@@ -7,6 +7,8 @@ use Psr\Http\Message\UploadedFileInterface;
 use InvalidArgumentException;
 use RuntimeException;
 
+$reflectionMethod = new \ReflectionMethod('\Psr\Http\Message\UploadedFileInterface', 'getStream');
+if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
 /**
  * [Internal] Implementation of the PSR-7 `UploadedFileInterface`
  *
@@ -127,4 +129,7 @@ final class UploadedFile implements UploadedFileInterface
     {
         return $this->mediaType;
     }
+}
+} else {
+    class_alias(__NAMESPACE__ . '\\V2\\UploadedFile', __NAMESPACE__ . '\\UploadedFile');
 }

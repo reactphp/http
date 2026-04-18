@@ -4,6 +4,8 @@ namespace React\Http\Message;
 
 use Psr\Http\Message\UriInterface;
 
+$reflectionMethod = new \ReflectionMethod('\Psr\Http\Message\UriInterface', 'getScheme');
+if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
 /**
  * Respresents a URI (or URL).
  *
@@ -344,4 +346,7 @@ final class Uri implements UriInterface
         }
         return '/' . \implode('/', $segments) . ($path !== '/' && \substr($path, -1) === '/' ? '/' : '');
     }
+}
+} else {
+    class_alias(__NAMESPACE__ . '\\V2\\Uri', __NAMESPACE__ . '\\Uri');
 }

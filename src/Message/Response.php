@@ -10,6 +10,8 @@ use React\Http\Io\BufferedBody;
 use React\Http\Io\HttpBodyStream;
 use React\Stream\ReadableStreamInterface;
 
+$reflectionMethod = new \ReflectionMethod('\Psr\Http\Message\ResponseInterface', 'getStatusCode');
+if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
 /**
  * Represents an outgoing server response message.
  *
@@ -257,9 +259,9 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
 
     /**
      * @var bool
-     * @see self::$phrasesMap
+     * @see static::$phrasesMap
      */
-    private static $phrasesInitialized = false;
+    protected static $phrasesInitialized = false;
 
     /**
      * Map of standard HTTP status codes to standard reason phrases.
@@ -409,4 +411,7 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
             $start['reason'] ?? ''
         );
     }
+}
+} else {
+    class_alias(__NAMESPACE__ . '\\V2\\Response', __NAMESPACE__ . '\\Response');
 }

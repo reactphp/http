@@ -10,6 +10,8 @@ use React\Http\Io\BufferedBody;
 use React\Http\Io\HttpBodyStream;
 use React\Stream\ReadableStreamInterface;
 
+$reflectionMethod = new \ReflectionMethod('\Psr\Http\Message\ServerRequestInterface', 'getServerParams');
+if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
 /**
  * Respresents an incoming server request message.
  *
@@ -328,4 +330,7 @@ final class ServerRequest extends AbstractRequest implements ServerRequestInterf
 
         return $request;
     }
+}
+} else {
+    class_alias(__NAMESPACE__ . '\\V2\\ServerRequest', __NAMESPACE__ . '\\ServerRequest');
 }

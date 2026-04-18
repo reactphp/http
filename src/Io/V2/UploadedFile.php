@@ -1,0 +1,137 @@
+<?php
+
+namespace React\Http\Io\V2;
+
+use Psr\Http\Message\StreamInterface;
+use Psr\Http\Message\UploadedFileInterface;
+use InvalidArgumentException;
+use RuntimeException;
+
+/**
+ * [Internal] Implementation of the PSR-7 `UploadedFileInterface`
+ *
+ * This is used internally to represent each incoming file upload.
+ *
+ * Note that this is an internal class only and nothing you should usually care
+ * about. See the `UploadedFileInterface` for more details.
+ *
+ * @see UploadedFileInterface
+ * @internal
+ *
+ * @deprecated Do not reference this FQCN directly. Not a runtime deprecation:
+ *  when psr/http-message v2 is installed this class is the
+ *  implementation behind the public name. Marked deprecated so
+ *  tooling suggests the aliased class instead (see sibling file).
+ * @see \React\Http\Io\UploadedFile
+ * @see ../UploadedFile.php
+ */
+class UploadedFile implements UploadedFileInterface
+{
+    /**
+     * @var StreamInterface
+     */
+    private $stream;
+
+    /**
+     * @var int
+     */
+    private $size;
+
+    /**
+     * @var int
+     */
+    private $error;
+
+    /**
+     * @var string
+     */
+    private $filename;
+
+    /**
+     * @var string
+     */
+    private $mediaType;
+
+    /**
+     * @param StreamInterface $stream
+     * @param int $size
+     * @param int $error
+     * @param string $filename
+     * @param string $mediaType
+     */
+    public function __construct(StreamInterface $stream, $size, $error, $filename, $mediaType)
+    {
+        $this->stream = $stream;
+        $this->size = $size;
+
+        if (!\is_int($error) || !\in_array($error, [
+            \UPLOAD_ERR_OK,
+            \UPLOAD_ERR_INI_SIZE,
+            \UPLOAD_ERR_FORM_SIZE,
+            \UPLOAD_ERR_PARTIAL,
+            \UPLOAD_ERR_NO_FILE,
+            \UPLOAD_ERR_NO_TMP_DIR,
+            \UPLOAD_ERR_CANT_WRITE,
+            \UPLOAD_ERR_EXTENSION,
+        ])) {
+            throw new InvalidArgumentException(
+                'Invalid error code, must be an UPLOAD_ERR_* constant'
+            );
+        }
+        $this->error = $error;
+        $this->filename = $filename;
+        $this->mediaType = $mediaType;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getStream(): StreamInterface
+    {
+        if ($this->error !== \UPLOAD_ERR_OK) {
+            throw new RuntimeException('Cannot retrieve stream due to upload error');
+        }
+
+        return $this->stream;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function moveTo(string $targetPath): void
+    {
+       throw new RuntimeException('Not implemented');
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSize(): ?int
+    {
+        return $this->size;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getError(): int
+    {
+        return $this->error;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getClientFilename(): ?string
+    {
+        return $this->filename;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getClientMediaType(): ?string
+    {
+        return $this->mediaType;
+    }
+}

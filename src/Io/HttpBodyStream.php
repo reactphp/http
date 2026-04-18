@@ -8,6 +8,8 @@ use React\Stream\ReadableStreamInterface;
 use React\Stream\Util;
 use React\Stream\WritableStreamInterface;
 
+$reflectionMethod = new \ReflectionMethod('\Psr\Http\Message\StreamInterface', 'eof');
+if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
 /**
  * [Internal] Bridge between StreamInterface from PSR-7 and ReadableStreamInterface from ReactPHP
  *
@@ -179,4 +181,7 @@ class HttpBodyStream extends EventEmitter implements StreamInterface, ReadableSt
             $this->close();
         }
     }
+}
+} else {
+    class_alias(__NAMESPACE__ . '\\V2\\HttpBodyStream', __NAMESPACE__ . '\\HttpBodyStream');
 }

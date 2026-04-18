@@ -10,6 +10,8 @@ use React\Http\Io\BufferedBody;
 use React\Http\Io\ReadableBodyStream;
 use React\Stream\ReadableStreamInterface;
 
+$reflectionMethod = new \ReflectionMethod('\Psr\Http\Message\StreamInterface', 'eof');
+if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
 /**
  * Respresents an outgoing HTTP request message.
  *
@@ -54,4 +56,7 @@ final class Request extends AbstractRequest implements RequestInterface
 
         parent::__construct($method, $url, $headers, $body, $version);
     }
+}
+} else {
+    class_alias(__NAMESPACE__ . '\\V2\\Request', __NAMESPACE__ . '\\Request');
 }

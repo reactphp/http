@@ -5,6 +5,9 @@ namespace React\Http\Io;
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\StreamInterface;
 
+
+$reflectionMethod = new \ReflectionMethod('\Psr\Http\Message\MessageInterface', 'withProtocolVersion');
+if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
 /**
  * [Internal] Abstract HTTP message base class (PSR-7)
  *
@@ -169,4 +172,7 @@ abstract class AbstractMessage implements MessageInterface
 
         return $message;
     }
+}
+} else {
+    class_alias(__NAMESPACE__ . '\\V2\\AbstractMessage', __NAMESPACE__ . '\\AbstractMessage');
 }
