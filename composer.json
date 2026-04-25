@@ -39,7 +39,7 @@
         "clue/http-proxy-react": "^1.8",
         "clue/reactphp-ssh-proxy": "^1.4",
         "clue/socks-react": "^1.4",
-        "phpunit/phpunit": "^9.6 || ^7.5",
+        "phpunit/phpunit": "^9.6 || ^8.5 || ^7.5",
         "react/async": "^4.2 || ^3",
         "react/promise-stream": "^1.4",
         "react/promise-timer": "^1.11"
