@@ -500,6 +500,41 @@ class ChunkedDecoderTest extends TestCase
         $this->input->emit('data', array("0\r\nFoo: a\r\nBar: b\r\nBaz: c\r\n\r\n"));
     }
 
+    public function testEndChunkWithIncompleteTrailerWithoutCrlfWillWaitForAdditionalDataAndNotCauseInfiniteLoop()
+    {
+        $this->parser->on('data', $this->expectCallableNever());
+        $this->parser->on('error', $this->expectCallableNever());
+        $this->parser->on('end', $this->expectCallableNever());
+        $this->parser->on('close', $this->expectCallableNever());
+
+        // malformed end chunk with trailing data but without a terminating CRLF
+        // must not loop forever, but wait for additional data
+        $this->input->emit('data', array("0\r\nab"));
+    }
+
+    public function testEndChunkWithIncompleteTrailerWillEndOnceTrailerIsCompleted()
+    {
+        $this->parser->on('data', $this->expectCallableNever());
+        $this->parser->on('error', $this->expectCallableNever());
+        $this->parser->on('end', $this->expectCallableOnce());
+        $this->parser->on('close', $this->expectCallableOnce());
+
+        $this->input->emit('data', array("0\r\nab"));
+        $this->input->emit('data', array("\r\n\r\n"));
+    }
+
+    public function testChunkFollowedByExactlyTwoNonCrlfBytesWillErrorAndNotCauseInfiniteLoop()
+    {
+        $this->parser->on('data', $this->expectCallableOnceWith('ab'));
+        $this->parser->on('error', $this->expectCallableOnce());
+        $this->parser->on('end', $this->expectCallableNever());
+        $this->parser->on('close', $this->expectCallableOnce());
+
+        // completed chunk followed by exactly two bytes that are not a CRLF must not
+        // loop forever, but report an invalid chunk terminator
+        $this->input->emit('data', array("2\r\nabXY"));
+    }
+
     public function testLeadingZerosInInvalidChunk()
     {
         $this->parser->on('data', $this->expectCallableNever());
