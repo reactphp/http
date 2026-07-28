@@ -180,6 +180,43 @@ class ClientRequestStreamTest extends TestCase
         $request->handleData("\r\n\r\n");
     }
 
+    public static function provideResponseHeaderOverflow()
+    {
+        $data = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nX-Data: ";
+        $data .= str_repeat('A', 65537 - strlen($data)) . "\r\n\r\n";
+
+        $legacy = "HTTP/1.1 200 OK\r\n";
+        $legacy .= str_repeat('A', 65537 - strlen($legacy)) . "\n\n";
+
+        return array(
+            'without end of message' => array(str_repeat('A', 65537)),
+            'with end of message' => array($data),
+            'with legacy end of message' => array($legacy),
+        );
+    }
+
+    /**
+     * @dataProvider provideResponseHeaderOverflow
+     * @param string $data
+     */
+    public function testRequestShouldEmitErrorWhenResponseHeadersExceedMaximumSize($data)
+    {
+        $connection = $this->getMockBuilder('React\Socket\ConnectionInterface')->getMock();
+
+        $connectionManager = $this->getMockBuilder('React\Http\Io\ClientConnectionManager')->disableOriginalConstructor()->getMock();
+        $connectionManager->expects($this->once())->method('connect')->willReturn(\React\Promise\resolve($connection));
+
+        $requestData = new Request('GET', 'http://www.example.com');
+        $request = new ClientRequestStream($connectionManager, $requestData);
+
+        $request->on('response', $this->expectCallableNever());
+        $request->on('error', $this->expectCallableOnceWith($this->isInstanceOf('OverflowException')));
+        $request->on('close', $this->expectCallableOnce());
+
+        $request->end();
+        $request->handleData($data);
+    }
+
     /** @test */
     public function getRequestShouldSendAGetRequest()
     {
