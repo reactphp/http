@@ -523,6 +523,22 @@ class ChunkedDecoderTest extends TestCase
         $this->input->emit('data', array("\r\n\r\n"));
     }
 
+    public function testEndChunkWithIncompleteTrailerIsTooBig()
+    {
+        $this->parser->on('data', $this->expectCallableNever());
+        $this->parser->on('close', $this->expectCallableOnce());
+        $this->parser->on('end', $this->expectCallableNever());
+        $this->parser->on('error', $this->expectCallableOnce());
+
+        $data = '';
+        for ($i = 0; $i < 1025; $i++) {
+            $data .= 'a';
+        }
+
+        // incomplete trailer must not be buffered without any limit
+        $this->input->emit('data', array("0\r\n" . $data));
+    }
+
     public function testChunkFollowedByExactlyTwoNonCrlfBytesWillErrorAndNotCauseInfiniteLoop()
     {
         $this->parser->on('data', $this->expectCallableOnceWith('ab'));
