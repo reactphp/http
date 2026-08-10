@@ -158,6 +158,10 @@ class ChunkedDecoder extends EventEmitter implements ReadableStreamInterface
             } elseif ($this->chunkSize === 0) {
                 if ($positionCrlf === false) {
                     // end chunk received, but trailer is incomplete
+                    // trailer shouldn't be bigger than 1024 bytes
+                    if (isset($this->buffer[static::MAX_CHUNK_HEADER_SIZE])) {
+                        $this->handleError(new Exception('Trailer size bigger than ' . static::MAX_CHUNK_HEADER_SIZE . ' bytes'));
+                    }
                     return;
                 }
                 // end chunk received, skip all trailer data
