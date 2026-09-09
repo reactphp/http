@@ -82,6 +82,7 @@ multiple concurrent HTTP requests without blocking.
         * [Uri](#uri)
         * [ResponseException](#responseexception)
     * [React\Http\Middleware](#reacthttpmiddleware)
+        * [InactiveConnectionTimeoutMiddleware](#inactiveconnectiontimeoutmiddleware)
         * [StreamingRequestMiddleware](#streamingrequestmiddleware)
         * [LimitConcurrentRequestsMiddleware](#limitconcurrentrequestsmiddleware)
         * [RequestBodyBufferMiddleware](#requestbodybuffermiddleware)
@@ -2691,6 +2692,25 @@ The `getResponse(): ResponseInterface` method can be used to
 access its underlying response object.
 
 ### React\Http\Middleware
+
+#### InactiveConnectionTimeoutMiddleware
+
+The `React\Http\Middleware\InactiveConnectionTimeoutMiddleware` is purely a configuration middleware to configure the
+`HttpServer` to close any inactive connections between requests to close the connection and not leave them needlessly 
+open. The default is `60` seconds of inactivity and should only be changed if you know what you are doing.
+
+The following example configures the `HttpServer` to close any inactive connections after one and a half second:
+
+```php
+$http = new React\Http\HttpServer(
+    new React\Http\Middleware\InactiveConnectionTimeoutMiddleware(1.5),
+    $handler
+);
+```
+> Internally, this class is used as a "value object" to override the default timeout of one minute.
+  As such it doesn't have any behavior internally, that is all in the internal "StreamingServer". 
+  This timeout is only in effect if we expect data from the client, not when we are writing data to
+  the client.
 
 #### StreamingRequestMiddleware
 
