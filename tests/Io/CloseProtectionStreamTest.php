@@ -48,7 +48,7 @@ class CloseProtectionStreamTest extends TestCase
     {
         $input = $this->getMockBuilder('React\Stream\ReadableStreamInterface')->getMock();
         $input->expects($this->once())->method('pause');
-        $input->expects($this->once())->method('resume');
+        $input->expects($this->never())->method('resume');
 
         $protection = new CloseProtectionStream($input);
         $protection->pause();
