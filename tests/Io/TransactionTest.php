@@ -30,7 +30,9 @@ class TransactionTest extends TestCase
         $this->assertNotSame($transaction, $new);
 
         $ref = new \ReflectionProperty($new, 'followRedirects');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
 
         $this->assertFalse($ref->getValue($new));
     }
@@ -44,7 +46,9 @@ class TransactionTest extends TestCase
         $transaction->withOptions(array('followRedirects' => false));
 
         $ref = new \ReflectionProperty($transaction, 'followRedirects');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
 
         $this->assertTrue($ref->getValue($transaction));
     }
@@ -59,7 +63,9 @@ class TransactionTest extends TestCase
         $transaction = $transaction->withOptions(array('followRedirects' => null));
 
         $ref = new \ReflectionProperty($transaction, 'followRedirects');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
 
         $this->assertTrue($ref->getValue($transaction));
     }

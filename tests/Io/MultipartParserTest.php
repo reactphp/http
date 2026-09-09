@@ -1048,15 +1048,25 @@ final class MultipartParserTest extends TestCase
 
         $reflectecClass = new \ReflectionClass('\React\Http\Io\MultipartParser');
         $requestProperty = $reflectecClass->getProperty('request');
-        $requestProperty->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $requestProperty->setAccessible(true);
+        }
         $cursorProperty = $reflectecClass->getProperty('cursor');
-        $cursorProperty->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $cursorProperty->setAccessible(true);
+        }
         $multipartBodyPartCountProperty = $reflectecClass->getProperty('multipartBodyPartCount');
-        $multipartBodyPartCountProperty->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $multipartBodyPartCountProperty->setAccessible(true);
+        }
         $maxMultipartBodyPartsProperty = $reflectecClass->getProperty('maxMultipartBodyParts');
-        $maxMultipartBodyPartsProperty->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $maxMultipartBodyPartsProperty->setAccessible(true);
+        }
         $parseBodyMethod = $reflectecClass->getMethod('parseBody');
-        $parseBodyMethod->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $parseBodyMethod->setAccessible(true);
+        }
 
         $this->assertSame(0, $cursorProperty->getValue($parser));
 
