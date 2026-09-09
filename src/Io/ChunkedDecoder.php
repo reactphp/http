@@ -156,12 +156,20 @@ class ChunkedDecoder extends EventEmitter implements ReadableStreamInterface
                 $this->transferredSize = 0;
                 $this->buffer = (string)\substr($this->buffer, 2);
             } elseif ($this->chunkSize === 0) {
+                if ($positionCrlf === false) {
+                    // end chunk received, but trailer is incomplete
+                    // trailer shouldn't be bigger than 1024 bytes
+                    if (isset($this->buffer[static::MAX_CHUNK_HEADER_SIZE])) {
+                        $this->handleError(new Exception('Trailer size bigger than ' . static::MAX_CHUNK_HEADER_SIZE . ' bytes'));
+                    }
+                    return;
+                }
                 // end chunk received, skip all trailer data
                 $this->buffer = (string)\substr($this->buffer, $positionCrlf);
             }
 
-            if ($positionCrlf !== 0 && $this->chunkSize !== 0 && $this->chunkSize === $this->transferredSize && \strlen($this->buffer) > 2) {
-                // the first 2 characters are not CRLF, send error event
+            if ($positionCrlf !== 0 && $this->chunkSize !== 0 && $this->chunkSize === $this->transferredSize && \strlen($this->buffer) >= 2) {
+                // chunk is completely transferred, but the following two bytes are not a CRLF, send error event
                 $this->handleError(new Exception('Chunk does not end with a CRLF'));
                 return;
             }
