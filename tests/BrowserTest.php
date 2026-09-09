@@ -25,7 +25,9 @@ class BrowserTest extends TestCase
         $this->browser = new Browser(null, $this->loop);
 
         $ref = new \ReflectionProperty($this->browser, 'transaction');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $ref->setValue($this->browser, $this->sender);
     }
 
@@ -34,11 +36,15 @@ class BrowserTest extends TestCase
         $browser = new Browser();
 
         $ref = new \ReflectionProperty($browser, 'transaction');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $transaction = $ref->getValue($browser);
 
         $ref = new \ReflectionProperty($transaction, 'loop');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $loop = $ref->getValue($transaction);
 
         $this->assertInstanceOf(LoopInterface::class, $loop);
@@ -51,23 +57,33 @@ class BrowserTest extends TestCase
         $browser = new Browser($connector);
 
         $ref = new \ReflectionProperty($browser, 'transaction');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $transaction = $ref->getValue($browser);
 
         $ref = new \ReflectionProperty($transaction, 'sender');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $sender = $ref->getValue($transaction);
 
         $ref = new \ReflectionProperty($sender, 'http');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $client = $ref->getValue($sender);
 
         $ref = new \ReflectionProperty($client, 'connectionManager');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $connectionManager = $ref->getValue($client);
 
         $ref = new \ReflectionProperty($connectionManager, 'connector');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $ret = $ref->getValue($connectionManager);
 
         $this->assertSame($connector, $ret);
@@ -78,11 +94,15 @@ class BrowserTest extends TestCase
         $browser = new Browser(null, $this->loop);
 
         $ref = new \ReflectionProperty($browser, 'transaction');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $transaction = $ref->getValue($browser);
 
         $ref = new \ReflectionProperty($transaction, 'loop');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $loop = $ref->getValue($transaction);
 
         $this->assertSame($this->loop, $loop);
