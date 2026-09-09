@@ -23,6 +23,8 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
     const STATE_HEAD_WRITTEN = 2;
     const STATE_END = 3;
 
+    private $maxHeaderSize = 65536;
+
     /** @var ClientConnectionManager */
     private $connectionManager;
 
@@ -163,6 +165,19 @@ class ClientRequestStream extends EventEmitter implements WritableStreamInterfac
         // buffer until double CRLF (or double LF for compatibility with legacy servers)
         $eom = \strpos($this->buffer, "\r\n\r\n");
         $eomLegacy = \strpos($this->buffer, "\n\n");
+        $eomMaxHeaderSize = $eom;
+        if ($eomLegacy !== false && ($eom === false || $eomLegacy < $eom)) {
+            $eomMaxHeaderSize = $eomLegacy;
+        }
+
+        // reject response if buffer size is exceeded
+        if ($eomMaxHeaderSize > $this->maxHeaderSize || ($eomMaxHeaderSize === false && isset($this->buffer[$this->maxHeaderSize]))) {
+            $this->closeError(
+                new \OverflowException('Maximum response header size of ' . $this->maxHeaderSize . ' bytes exceeded.')
+            );
+            return;
+        }
+
         if ($eom !== false || $eomLegacy !== false) {
             try {
                 if ($eom !== false && ($eomLegacy === false || $eom < $eomLegacy)) {
