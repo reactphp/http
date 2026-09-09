@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.11.1 (2026-09-09)
+
+*   Security fix: This release fixes a high severity security issue in ReactPHP's HTTP client and server components
+    that affects all versions between `v0.6.0` and `v1.11.0`. All users are encouraged to upgrade immediately.
+    (GHSA-x424-64qh-5j54 reported and fixed by @jsifuentes)
+
+*   Security fix: This release fixes a high severity security issue in ReactPHP's HTTP client component
+    that affects all versions between `v1.0.0` and `v1.11.0`. All users are encouraged to upgrade immediately.
+    (GHSA-g4f2-2pf3-2pwj reported by @EQSTLab and fixed by @WyriHaximus)
+    
+ *  Feature: Improve test suite PHP 8.4 and 8.5 compatibility.
+    (#546, #547, and #551 by @WyriHaximus)
+
 ## 1.11.0 (2024-11-20)
 
 *   Feature: Improve PHP 8.4+ support by avoiding implicitly nullable types.
