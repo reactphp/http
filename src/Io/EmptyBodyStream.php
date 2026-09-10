@@ -29,7 +29,7 @@ class EmptyBodyStream extends EventEmitter implements StreamInterface, ReadableS
 {
     private $closed = false;
 
-    public function isReadable()
+    public function isReadable(): bool
     {
         return !$this->closed;
     }
@@ -51,7 +51,7 @@ class EmptyBodyStream extends EventEmitter implements StreamInterface, ReadableS
         return $dest;
     }
 
-    public function close()
+    public function close(): void
     {
         if ($this->closed) {
             return;
@@ -63,13 +63,13 @@ class EmptyBodyStream extends EventEmitter implements StreamInterface, ReadableS
         $this->removeAllListeners();
     }
 
-    public function getSize()
+    public function getSize(): ?int
     {
         return 0;
     }
 
     /** @ignore */
-    public function __toString()
+    public function __toString(): string
     {
         return '';
     }
@@ -81,55 +81,55 @@ class EmptyBodyStream extends EventEmitter implements StreamInterface, ReadableS
     }
 
     /** @ignore */
-    public function tell()
+    public function tell(): int
     {
         throw new \BadMethodCallException();
     }
 
     /** @ignore */
-    public function eof()
+    public function eof(): bool
     {
         throw new \BadMethodCallException();
     }
 
     /** @ignore */
-    public function isSeekable()
+    public function isSeekable(): bool
     {
         return false;
     }
 
     /** @ignore */
-    public function seek($offset, $whence = SEEK_SET)
+    public function seek($offset, $whence = SEEK_SET): void
     {
         throw new \BadMethodCallException();
     }
 
     /** @ignore */
-    public function rewind()
+    public function rewind(): void
     {
         throw new \BadMethodCallException();
     }
 
     /** @ignore */
-    public function isWritable()
+    public function isWritable(): bool
     {
         return false;
     }
 
     /** @ignore */
-    public function write($string)
+    public function write($string): int
     {
         throw new \BadMethodCallException();
     }
 
     /** @ignore */
-    public function read($length)
+    public function read($length): string
     {
         throw new \BadMethodCallException();
     }
 
     /** @ignore */
-    public function getContents()
+    public function getContents(): string
     {
         return '';
     }
