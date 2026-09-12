@@ -1,14 +1,12 @@
 <?php
 
-namespace React\Http\Io;
+namespace React\Http\Io\V2;
 
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UploadedFileInterface;
 use InvalidArgumentException;
 use RuntimeException;
 
-$reflectedMethod = new \ReflectionMethod('\Psr\Http\Message\UploadedFileInterface','getStream');
-if (!(PHP_VERSION_ID >= 70000 && $reflectedMethod->hasReturnType())) {
 /**
  * [Internal] Implementation of the PSR-7 `UploadedFileInterface`
  *
@@ -20,7 +18,7 @@ if (!(PHP_VERSION_ID >= 70000 && $reflectedMethod->hasReturnType())) {
  * @see UploadedFileInterface
  * @internal
  */
-class UploadedFile implements UploadedFileInterface
+abstract class UploadedFile implements UploadedFileInterface
 {
     /**
      * @var StreamInterface
@@ -81,7 +79,7 @@ class UploadedFile implements UploadedFileInterface
     /**
      * {@inheritdoc}
      */
-    public function getStream()
+    public function getStream(): StreamInterface
     {
         if ($this->error !== \UPLOAD_ERR_OK) {
             throw new RuntimeException('Cannot retrieve stream due to upload error');
@@ -93,7 +91,7 @@ class UploadedFile implements UploadedFileInterface
     /**
      * {@inheritdoc}
      */
-    public function moveTo($targetPath)
+    public function moveTo(string $targetPath): void
     {
        throw new RuntimeException('Not implemented');
     }
@@ -101,7 +99,7 @@ class UploadedFile implements UploadedFileInterface
     /**
      * {@inheritdoc}
      */
-    public function getSize()
+    public function getSize(): ?int
     {
         return $this->size;
     }
@@ -109,7 +107,7 @@ class UploadedFile implements UploadedFileInterface
     /**
      * {@inheritdoc}
      */
-    public function getError()
+    public function getError(): int
     {
         return $this->error;
     }
@@ -117,7 +115,7 @@ class UploadedFile implements UploadedFileInterface
     /**
      * {@inheritdoc}
      */
-    public function getClientFilename()
+    public function getClientFilename(): ?string
     {
         return $this->filename;
     }
@@ -125,13 +123,8 @@ class UploadedFile implements UploadedFileInterface
     /**
      * {@inheritdoc}
      */
-    public function getClientMediaType()
+    public function getClientMediaType(): ?string
     {
         return $this->mediaType;
-    }
-}
-} else {
-    final class UploadedFile extends V2\UploadedFile
-    {
     }
 }

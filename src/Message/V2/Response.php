@@ -1,6 +1,6 @@
 <?php
 
-namespace React\Http\Message;
+namespace React\Http\Message\V2;
 
 use Fig\Http\Message\StatusCodeInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -10,8 +10,6 @@ use React\Http\Io\BufferedBody;
 use React\Http\Io\HttpBodyStream;
 use React\Stream\ReadableStreamInterface;
 
-$reflectedMethod = new \ReflectionMethod('\Psr\Http\Message\ResponseInterface','getStatusCode');
-if (!(PHP_VERSION_ID >= 70000 && $reflectedMethod->hasReturnType())) {
 /**
  * Represents an outgoing server response message.
  *
@@ -88,11 +86,11 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
      * ```
      *
      * @param string $html
-     * @return self
+     * @return static
      */
     public static function html($html)
     {
-        return new self(self::STATUS_OK, array('Content-Type' => 'text/html; charset=utf-8'), $html);
+        return new static(static::STATUS_OK, array('Content-Type' => 'text/html; charset=utf-8'), $html);
     }
 
     /**
@@ -143,7 +141,7 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
      * ```
      *
      * @param mixed $data
-     * @return self
+     * @return static
      * @throws \InvalidArgumentException when encoding fails
      */
     public static function json($data)
@@ -161,7 +159,7 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
             );
         }
 
-        return new self(self::STATUS_OK, array('Content-Type' => 'application/json'), $json . "\n");
+        return new static(static::STATUS_OK, array('Content-Type' => 'application/json'), $json . "\n");
     }
 
     /**
@@ -200,11 +198,11 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
      * ```
      *
      * @param string $text
-     * @return self
+     * @return static
      */
     public static function plaintext($text)
     {
-        return new self(self::STATUS_OK, array('Content-Type' => 'text/plain; charset=utf-8'), $text);
+        return new static(static::STATUS_OK, array('Content-Type' => 'text/plain; charset=utf-8'), $text);
     }
 
     /**
@@ -252,18 +250,18 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
      * ```
      *
      * @param string $xml
-     * @return self
+     * @return static
      */
     public static function xml($xml)
     {
-        return new self(self::STATUS_OK, array('Content-Type' => 'application/xml'), $xml);
+        return new static(static::STATUS_OK, array('Content-Type' => 'application/xml'), $xml);
     }
 
     /**
      * @var bool
      * @see static::$phrasesMap
      */
-    protected static $phrasesInitialized = false;
+    private static $phrasesInitialized = false;
 
     /**
      * Map of standard HTTP status codes to standard reason phrases.
@@ -271,12 +269,12 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
      * This map will be fully populated with all standard reason phrases on
      * first access. By default, it only contains a subset of HTTP status codes
      * that have a custom mapping to reason phrases (such as those with dashes
-     * and all caps words). See `self::STATUS_*` for all possible status code
+     * and all caps words). See `static::STATUS_*` for all possible status code
      * constants.
      *
      * @var array<int,string>
-     * @see self::STATUS_*
-     * @see self::getReasonPhraseForStatusCode()
+     * @see static::STATUS_*
+     * @see static::getReasonPhraseForStatusCode()
      */
     private static $phrasesMap = array(
         200 => 'OK',
@@ -295,7 +293,7 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
     private $reasonPhrase;
 
     /**
-     * @param int                                            $status  HTTP status code (e.g. 200/404), see `self::STATUS_*` constants
+     * @param int                                            $status  HTTP status code (e.g. 200/404), see `static::STATUS_*` constants
      * @param array<string,string|string[]>                  $headers additional response headers
      * @param string|ReadableStreamInterface|StreamInterface $body    response body
      * @param string                                         $version HTTP protocol version (e.g. 1.1/1.0)
@@ -320,18 +318,18 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
         parent::__construct($version, $headers, $body);
 
         $this->statusCode = (int) $status;
-        $this->reasonPhrase = ($reason !== '' && $reason !== null) ? (string) $reason : self::getReasonPhraseForStatusCode($status);
+        $this->reasonPhrase = ($reason !== '' && $reason !== null) ? (string) $reason : static::getReasonPhraseForStatusCode($status);
     }
 
-    public function getStatusCode()
+    public function getStatusCode(): int
     {
         return $this->statusCode;
     }
 
-    public function withStatus($code, $reasonPhrase = '')
+    public function withStatus(int $code, string $reasonPhrase = ''): ResponseInterface
     {
         if ((string) $reasonPhrase === '') {
-            $reasonPhrase = self::getReasonPhraseForStatusCode($code);
+            $reasonPhrase = static::getReasonPhraseForStatusCode($code);
         }
 
         if ($this->statusCode === (int) $code && $this->reasonPhrase === (string) $reasonPhrase) {
@@ -345,7 +343,7 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
         return $response;
     }
 
-    public function getReasonPhrase()
+    public function getReasonPhrase(): string
     {
         return $this->reasonPhrase;
     }
@@ -356,20 +354,20 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
      */
     private static function getReasonPhraseForStatusCode($code)
     {
-        if (!self::$phrasesInitialized) {
-            self::$phrasesInitialized = true;
+        if (!static::$phrasesInitialized) {
+            static::$phrasesInitialized = true;
 
-            // map all `self::STATUS_` constants from status code to reason phrase
-            // e.g. `self::STATUS_NOT_FOUND = 404` will be mapped to `404 Not Found`
+            // map all `static::STATUS_` constants from status code to reason phrase
+            // e.g. `static::STATUS_NOT_FOUND = 404` will be mapped to `404 Not Found`
             $ref = new \ReflectionClass(__CLASS__);
             foreach ($ref->getConstants() as $name => $value) {
-                if (!isset(self::$phrasesMap[$value]) && \strpos($name, 'STATUS_') === 0) {
-                    self::$phrasesMap[$value] = \ucwords(\strtolower(\str_replace('_', ' ', \substr($name, 7))));
+                if (!isset(static::$phrasesMap[$value]) && \strpos($name, 'STATUS_') === 0) {
+                    static::$phrasesMap[$value] = \ucwords(\strtolower(\str_replace('_', ' ', \substr($name, 7))));
                 }
             }
         }
 
-        return isset(self::$phrasesMap[$code]) ? self::$phrasesMap[$code] : '';
+        return isset(static::$phrasesMap[$code]) ? static::$phrasesMap[$code] : '';
     }
 
     /**
@@ -377,7 +375,7 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
      *
      * @internal
      * @param string $message
-     * @return self
+     * @return static
      * @throws \InvalidArgumentException if given $message is not a valid HTTP response message
      */
     public static function parseMessage($message)
@@ -394,7 +392,7 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
 
         // check number of valid header fields matches number of lines + status line
         $matches = array();
-        $n = \preg_match_all(self::REGEX_HEADERS, $message, $matches, \PREG_SET_ORDER);
+        $n = \preg_match_all(static::REGEX_HEADERS, $message, $matches, \PREG_SET_ORDER);
         if (\substr_count($message, "\n") !== $n + 1) {
             throw new \InvalidArgumentException('Unable to parse invalid response header fields');
         }
@@ -405,7 +403,7 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
             $headers[$match[1]][] = $match[2];
         }
 
-        return new self(
+        return new static(
             (int) $start['status'],
             $headers,
             '',
@@ -413,7 +411,4 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
             isset($start['reason']) ? $start['reason'] : ''
         );
     }
-}
-} else {
-    class_alias(__NAMESPACE__ . '\\V2\\Response', __NAMESPACE__ . '\\Response');
 }

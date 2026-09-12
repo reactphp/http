@@ -2,6 +2,7 @@
 
 namespace React\Tests\Http\Io;
 
+use Composer\InstalledVersions;
 use React\Http\Io\EmptyBodyStream;
 use React\Tests\Http\TestCase;
 
@@ -126,7 +127,12 @@ class EmptyBodyStreamTest extends TestCase
 
     public function testSeek()
     {
-        $this->setExpectedException('BadMethodCallException');
+        if (version_compare(InstalledVersions::getVersion('psr/http-message'), '2.0.0', '<')) {
+            $this->setExpectedException('BadMethodCallException');
+        } else {
+            $this->setExpectedException('TypeError');
+        }
+
         $this->bodyStream->seek('');
     }
 

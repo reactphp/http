@@ -2,6 +2,7 @@
 
 namespace React\Tests\Http\Io;
 
+use Composer\InstalledVersions;
 use React\Http\Io\HttpBodyStream;
 use React\Stream\ThroughStream;
 use React\Tests\Http\TestCase;
@@ -130,7 +131,12 @@ class HttpBodyStreamTest extends TestCase
 
     public function testRead()
     {
-        $this->setExpectedException('BadMethodCallException');
+        if (version_compare(InstalledVersions::getVersion('psr/http-message'), '2.0.0', '<')) {
+            $this->setExpectedException('BadMethodCallException');
+        } else {
+            $this->setExpectedException('TypeError');
+        }
+
         $this->bodyStream->read('');
     }
 
@@ -151,7 +157,12 @@ class HttpBodyStreamTest extends TestCase
 
     public function testSeek()
     {
-        $this->setExpectedException('BadMethodCallException');
+        if (version_compare(InstalledVersions::getVersion('psr/http-message'), '2.0.0', '<')) {
+            $this->setExpectedException('BadMethodCallException');
+        } else {
+            $this->setExpectedException('TypeError');
+        }
+
         $this->bodyStream->seek('');
     }
 

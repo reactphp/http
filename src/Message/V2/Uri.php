@@ -1,11 +1,9 @@
 <?php
 
-namespace React\Http\Message;
+namespace React\Http\Message\V2;
 
 use Psr\Http\Message\UriInterface;
 
-$reflectedMethod = new \ReflectionMethod('\Psr\Http\Message\UriInterface','getScheme');
-if (!(PHP_VERSION_ID >= 70000 && $reflectedMethod->hasReturnType())) {
 /**
  * Respresents a URI (or URL).
  *
@@ -90,12 +88,12 @@ final class Uri implements UriInterface
         }
     }
 
-    public function getScheme()
+    public function getScheme(): string
     {
         return $this->scheme;
     }
 
-    public function getAuthority()
+    public function getAuthority(): string
     {
         if ($this->host === '') {
             return '';
@@ -104,37 +102,37 @@ final class Uri implements UriInterface
         return ($this->userInfo !== '' ? $this->userInfo . '@' : '') . $this->host . ($this->port !== null ? ':' . $this->port : '');
     }
 
-    public function getUserInfo()
+    public function getUserInfo(): string
     {
         return $this->userInfo;
     }
 
-    public function getHost()
+    public function getHost(): string
     {
         return $this->host;
     }
 
-    public function getPort()
+    public function getPort(): ?int
     {
         return $this->port;
     }
 
-    public function getPath()
+    public function getPath(): string
     {
         return $this->path;
     }
 
-    public function getQuery()
+    public function getQuery(): string
     {
         return $this->query;
     }
 
-    public function getFragment()
+    public function getFragment(): string
     {
         return $this->fragment;
     }
 
-    public function withScheme($scheme)
+    public function withScheme(string $scheme): UriInterface
     {
         $scheme = \strtolower($scheme);
         if ($scheme === $this->scheme) {
@@ -155,7 +153,7 @@ final class Uri implements UriInterface
         return $new;
     }
 
-    public function withUserInfo($user, $password = null)
+    public function withUserInfo(string $user, ?string $password = null): UriInterface
     {
         $userInfo = $this->encode($user, \PHP_URL_USER) . ($password !== null ? ':' . $this->encode($password, \PHP_URL_PASS) : '');
         if ($userInfo === $this->userInfo) {
@@ -168,7 +166,7 @@ final class Uri implements UriInterface
         return $new;
     }
 
-    public function withHost($host)
+    public function withHost(string $host): UriInterface
     {
         $host = \strtolower($host);
         if ($host === $this->host) {
@@ -185,7 +183,7 @@ final class Uri implements UriInterface
         return $new;
     }
 
-    public function withPort($port)
+    public function withPort(?int $port): UriInterface
     {
         $port = $port === null ? null : (int) $port;
         if (($port === 80 && $this->scheme === 'http') || ($port === 443 && $this->scheme === 'https')) {
@@ -206,7 +204,7 @@ final class Uri implements UriInterface
         return $new;
     }
 
-    public function withPath($path)
+    public function withPath(string $path): UriInterface
     {
         $path = $this->encode($path, \PHP_URL_PATH);
         if ($path === $this->path) {
@@ -219,7 +217,7 @@ final class Uri implements UriInterface
         return $new;
     }
 
-    public function withQuery($query)
+    public function withQuery(string $query): UriInterface
     {
         $query = $this->encode($query, \PHP_URL_QUERY);
         if ($query === $this->query) {
@@ -232,7 +230,7 @@ final class Uri implements UriInterface
         return $new;
     }
 
-    public function withFragment($fragment)
+    public function withFragment(string $fragment): UriInterface
     {
         $fragment = $this->encode($fragment, \PHP_URL_FRAGMENT);
         if ($fragment === $this->fragment) {
@@ -245,7 +243,7 @@ final class Uri implements UriInterface
         return $new;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         $uri = '';
         if ($this->scheme !== '') {
@@ -276,12 +274,7 @@ final class Uri implements UriInterface
         return $uri;
     }
 
-    /**
-     * @param string $part
-     * @param int $component
-     * @return string
-     */
-    private function encode($part, $component)
+    private function encode(string $part, int $component): string
     {
         return \preg_replace_callback(
             '/(?:[^a-z0-9_\-\.~!\$&\'\(\)\*\+,;=' . ($component === \PHP_URL_PATH ? ':@\/' : ($component === \PHP_URL_QUERY || $component === \PHP_URL_FRAGMENT ? ':@\/\?' : '')) . '%]++|%(?![a-f0-9]{2}))/i',
@@ -296,15 +289,12 @@ final class Uri implements UriInterface
      * [Internal] Resolve URI relative to base URI and return new absolute URI
      *
      * @internal
-     * @param UriInterface $base
-     * @param UriInterface $rel
-     * @return UriInterface
      * @throws void
      */
-    public static function resolve(UriInterface $base, UriInterface $rel)
+    public static function resolve(UriInterface $base, UriInterface $rel): UriInterface
     {
         if ($rel->getScheme() !== '') {
-            return $rel->getPath() === '' ? $rel : $rel->withPath(self::removeDotSegments($rel->getPath()));
+            return $rel->getPath() === '' ? $rel : $rel->withPath(static::removeDotSegments($rel->getPath()));
         }
 
         $reset = false;
@@ -326,7 +316,7 @@ final class Uri implements UriInterface
                 }
             }
             $reset = true;
-            $new = $new->withPath(self::removeDotSegments($start . $path));
+            $new = $new->withPath(static::removeDotSegments($start . $path));
         }
         if ($reset || $rel->getQuery() !== '') {
             $reset = true;
@@ -339,11 +329,7 @@ final class Uri implements UriInterface
         return $new;
     }
 
-    /**
-     * @param string $path
-     * @return string
-     */
-    private static function removeDotSegments($path)
+    private static function removeDotSegments(string $path): string
     {
         $segments = array();
         foreach (\explode('/', $path) as $segment) {
@@ -355,7 +341,4 @@ final class Uri implements UriInterface
         }
         return '/' . \implode('/', $segments) . ($path !== '/' && \substr($path, -1) === '/' ? '/' : '');
     }
-}
-} else {
-    class_alias(__NAMESPACE__ . '\\V2\\Uri', __NAMESPACE__ . '\\Uri');
 }
