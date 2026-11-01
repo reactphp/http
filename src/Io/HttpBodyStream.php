@@ -8,10 +8,14 @@ use React\Stream\ReadableStreamInterface;
 use React\Stream\Util;
 use React\Stream\WritableStreamInterface;
 
-$reflectionMethod = new \ReflectionMethod('\Psr\Http\Message\StreamInterface', 'eof');
-if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
+if (!(new \ReflectionParameter([StreamInterface::class, 'seek'], 0))->hasType()) {
+    // load legacy class for psr/http-message v1.0 without native parameter types
+    require __DIR__ . '/HttpBodyStream.v1.php';
+} else {
+    // use class with native types like `seek(int $offset, int $whence = SEEK_SET): void`
+
 /**
- * [Internal] Bridge between StreamInterface from PSR-7 and ReadableStreamInterface from ReactPHP
+ * [Internal] Bridge between StreamInterface from PSR-7 v2 and ReadableStreamInterface from ReactPHP
  *
  * This class is used in the server to stream the body of an incoming response
  * from the client. This allows us to stream big amounts of data without having
@@ -25,6 +29,7 @@ if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
  * @see StreamInterface
  * @see ReadableStreamInterface
  * @internal
+ * @see HttpBodyStream.v1.php (PSR-7 v1)
  */
 class HttpBodyStream extends EventEmitter implements StreamInterface, ReadableStreamInterface
 {
@@ -47,7 +52,7 @@ class HttpBodyStream extends EventEmitter implements StreamInterface, ReadableSt
         $this->input->on('close', [$this, 'close']);
     }
 
-    public function isReadable()
+    public function isReadable(): bool
     {
         return !$this->closed && $this->input->isReadable();
     }
@@ -69,7 +74,7 @@ class HttpBodyStream extends EventEmitter implements StreamInterface, ReadableSt
         return $dest;
     }
 
-    public function close()
+    public function close(): void
     {
         if ($this->closed) {
             return;
@@ -83,13 +88,13 @@ class HttpBodyStream extends EventEmitter implements StreamInterface, ReadableSt
         $this->removeAllListeners();
     }
 
-    public function getSize()
+    public function getSize(): ?int
     {
         return $this->size;
     }
 
     /** @ignore */
-    public function __toString()
+    public function __toString(): string
     {
         return '';
     }
@@ -101,61 +106,61 @@ class HttpBodyStream extends EventEmitter implements StreamInterface, ReadableSt
     }
 
     /** @ignore */
-    public function tell()
+    public function tell(): int
     {
         throw new \BadMethodCallException();
     }
 
     /** @ignore */
-    public function eof()
+    public function eof(): bool
     {
         throw new \BadMethodCallException();
     }
 
     /** @ignore */
-    public function isSeekable()
+    public function isSeekable(): bool
     {
         return false;
     }
 
     /** @ignore */
-    public function seek($offset, $whence = SEEK_SET)
+    public function seek(int $offset, int $whence = SEEK_SET): void
     {
         throw new \BadMethodCallException();
     }
 
     /** @ignore */
-    public function rewind()
+    public function rewind(): void
     {
         throw new \BadMethodCallException();
     }
 
     /** @ignore */
-    public function isWritable()
+    public function isWritable(): bool
     {
         return false;
     }
 
     /** @ignore */
-    public function write($string)
+    public function write(string $string): int
     {
         throw new \BadMethodCallException();
     }
 
     /** @ignore */
-    public function read($length)
+    public function read(int $length): string
     {
         throw new \BadMethodCallException();
     }
 
     /** @ignore */
-    public function getContents()
+    public function getContents(): string
     {
         return '';
     }
 
     /** @ignore */
-    public function getMetadata($key = null)
+    public function getMetadata(?string $key = null)
     {
         return null;
     }
@@ -182,6 +187,4 @@ class HttpBodyStream extends EventEmitter implements StreamInterface, ReadableSt
         }
     }
 }
-} else {
-    class_alias(__NAMESPACE__ . '\\V2\\HttpBodyStream', __NAMESPACE__ . '\\HttpBodyStream');
 }

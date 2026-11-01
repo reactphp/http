@@ -1,6 +1,6 @@
 <?php
 
-namespace React\Http\Io\V2;
+namespace React\Http\Io;
 
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UploadedFileInterface;
@@ -8,7 +8,7 @@ use InvalidArgumentException;
 use RuntimeException;
 
 /**
- * [Internal] Implementation of the PSR-7 `UploadedFileInterface`
+ * [Internal] Implementation of the PSR-7 v1 `UploadedFileInterface`
  *
  * This is used internally to represent each incoming file upload.
  *
@@ -17,15 +17,9 @@ use RuntimeException;
  *
  * @see UploadedFileInterface
  * @internal
- *
- * @deprecated Do not reference this FQCN directly. Not a runtime deprecation:
- *  when psr/http-message v2 is installed this class is the
- *  implementation behind the public name. Marked deprecated so
- *  tooling suggests the aliased class instead (see sibling file).
- * @see \React\Http\Io\UploadedFile
- * @see ../UploadedFile.php
+ * @see UploadedFile.php (PSR-7 v2)
  */
-class UploadedFile implements UploadedFileInterface
+final class UploadedFile implements UploadedFileInterface
 {
     /**
      * @var StreamInterface
@@ -98,7 +92,7 @@ class UploadedFile implements UploadedFileInterface
     /**
      * {@inheritdoc}
      */
-    public function moveTo(string $targetPath): void
+    public function moveTo($targetPath): void
     {
        throw new RuntimeException('Not implemented');
     }

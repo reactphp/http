@@ -1,22 +1,16 @@
 <?php
 
-namespace React\Http\Io\V2;
+namespace React\Http\Io;
 
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\StreamInterface;
 
 /**
- * [Internal] Abstract HTTP message base class (PSR-7)
+ * [Internal] Abstract HTTP message base class (PSR-7 v1)
  *
  * @internal
  * @see MessageInterface
- *
- * @deprecated Do not reference this FQCN directly. Not a runtime deprecation:
- *  when psr/http-message v2 is installed this class is the
- *  implementation behind the public name. Marked deprecated so
- *  tooling suggests the aliased class instead (see sibling file).
- * @see \React\Http\Io\AbstractMessage
- * @see ../AbstractMessage.php
+ * @see AbstractMessage.php (PSR-7 v2)
  */
 abstract class AbstractMessage implements MessageInterface
 {
@@ -77,7 +71,7 @@ abstract class AbstractMessage implements MessageInterface
         return $this->protocolVersion;
     }
 
-    public function withProtocolVersion(string $version): MessageInterface
+    public function withProtocolVersion($version): MessageInterface
     {
         if ((string) $version === $this->protocolVersion) {
             return $this;
@@ -94,23 +88,23 @@ abstract class AbstractMessage implements MessageInterface
         return $this->headers;
     }
 
-    public function hasHeader(string $name): bool
+    public function hasHeader($name): bool
     {
         return isset($this->headerNamesLowerCase[\strtolower($name)]);
     }
 
-    public function getHeader(string $name): array
+    public function getHeader($name): array
     {
         $lower = \strtolower($name);
         return isset($this->headerNamesLowerCase[$lower]) ? $this->headers[$this->headerNamesLowerCase[$lower]] : [];
     }
 
-    public function getHeaderLine(string $name): string
+    public function getHeaderLine($name): string
     {
         return \implode(', ', $this->getHeader($name));
     }
 
-    public function withHeader(string $name, $value): MessageInterface
+    public function withHeader($name, $value): MessageInterface
     {
         if ($value === []) {
             return $this->withoutHeader($name);
@@ -138,7 +132,7 @@ abstract class AbstractMessage implements MessageInterface
         return $message;
     }
 
-    public function withAddedHeader(string $name, $value): MessageInterface
+    public function withAddedHeader($name, $value): MessageInterface
     {
         if ($value === []) {
             return $this;
@@ -147,7 +141,7 @@ abstract class AbstractMessage implements MessageInterface
         return $this->withHeader($name, \array_merge($this->getHeader($name), \is_array($value) ? $value : [$value]));
     }
 
-    public function withoutHeader(string $name): MessageInterface
+    public function withoutHeader($name): MessageInterface
     {
         $lower = \strtolower($name);
         if (!isset($this->headerNamesLowerCase[$lower])) {

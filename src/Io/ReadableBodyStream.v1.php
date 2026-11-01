@@ -1,6 +1,6 @@
 <?php
 
-namespace React\Http\Io\V2;
+namespace React\Http\Io;
 
 use Evenement\EventEmitter;
 use Psr\Http\Message\StreamInterface;
@@ -9,14 +9,10 @@ use React\Stream\Util;
 use React\Stream\WritableStreamInterface;
 
 /**
- * @internal
+ * [Internal] Bridge between ReadableStreamInterface from ReactPHP and StreamInterface from PSR-7 v1
  *
- * @deprecated Do not reference this FQCN directly. Not a runtime deprecation:
- *  when psr/http-message v2 is installed this class is the
- *  implementation behind the public name. Marked deprecated so
- *  tooling suggests the aliased class instead (see sibling file).
- * @see \React\Http\Io\ReadableBodyStream
- * @see ../ReadableBodyStream.php
+ * @internal
+ * @see ReadableBodyStream.php (PSR-7 v2)
  */
 class ReadableBodyStream extends EventEmitter implements ReadableStreamInterface, StreamInterface
 {
@@ -99,7 +95,7 @@ class ReadableBodyStream extends EventEmitter implements ReadableStreamInterface
         return $this->size;
     }
 
-    public function tell():int
+    public function tell(): int
     {
         throw new \BadMethodCallException();
     }
@@ -109,7 +105,7 @@ class ReadableBodyStream extends EventEmitter implements ReadableStreamInterface
         return false;
     }
 
-    public function seek(int $offset, int $whence = SEEK_SET): void
+    public function seek($offset, $whence = SEEK_SET): void
     {
         throw new \BadMethodCallException();
     }
@@ -124,12 +120,12 @@ class ReadableBodyStream extends EventEmitter implements ReadableStreamInterface
         return false;
     }
 
-    public function write(string $string): int
+    public function write($string): int
     {
         throw new \BadMethodCallException();
     }
 
-    public function read(int $length): string
+    public function read($length): string
     {
         throw new \BadMethodCallException();
     }
@@ -139,7 +135,7 @@ class ReadableBodyStream extends EventEmitter implements ReadableStreamInterface
         throw new \BadMethodCallException();
     }
 
-    public function getMetadata(?string $key = null)
+    public function getMetadata($key = null)
     {
         return ($key === null) ? [] : null;
     }

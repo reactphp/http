@@ -1,20 +1,14 @@
 <?php
 
-namespace React\Http\Io\V2;
+namespace React\Http\Io;
 
 use Psr\Http\Message\StreamInterface;
 
 /**
- * [Internal] PSR-7 message body implementation using an in-memory buffer
+ * [Internal] PSR-7 v1 message body implementation using an in-memory buffer
  *
  * @internal
- *
- * @deprecated Do not reference this FQCN directly. Not a runtime deprecation:
- *  when psr/http-message v2 is installed this class is the
- *  implementation behind the public name. Marked deprecated so
- *  tooling suggests the aliased class instead (see sibling file).
- * @see \React\Http\Io\BufferedBody
- * @see ../BufferedBody.php
+ * @see BufferedBody.php (PSR-7 v2)
  */
 class BufferedBody implements StreamInterface
 {
@@ -79,7 +73,7 @@ class BufferedBody implements StreamInterface
         return !$this->closed;
     }
 
-    public function seek(int $offset, int $whence = \SEEK_SET): void
+    public function seek($offset, $whence = \SEEK_SET): void
     {
         if ($this->closed) {
             throw new \RuntimeException('Unable to seek on closed stream');
@@ -113,7 +107,7 @@ class BufferedBody implements StreamInterface
         return !$this->closed;
     }
 
-    public function write(string $string): int
+    public function write($string): int
     {
         if ($this->closed) {
             throw new \RuntimeException('Unable to write to closed stream');
@@ -139,7 +133,7 @@ class BufferedBody implements StreamInterface
         return !$this->closed;
     }
 
-    public function read(int $length): string
+    public function read($length): string
     {
         if ($this->closed) {
             throw new \RuntimeException('Unable to read from closed stream');
@@ -179,7 +173,7 @@ class BufferedBody implements StreamInterface
         return \substr($this->buffer, $pos);
     }
 
-    public function getMetadata(?string $key = null)
+    public function getMetadata($key = null)
     {
         return $key === null ? [] : null;
     }

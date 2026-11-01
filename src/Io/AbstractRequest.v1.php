@@ -1,6 +1,6 @@
 <?php
 
-namespace React\Http\Io\V2;
+namespace React\Http\Io;
 
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamInterface;
@@ -8,17 +8,11 @@ use Psr\Http\Message\UriInterface;
 use React\Http\Message\Uri;
 
 /**
- * [Internal] Abstract HTTP request base class (PSR-7)
+ * [Internal] Abstract HTTP request base class (PSR-7 v1)
  *
  * @internal
  * @see RequestInterface
- *
- * @deprecated Do not reference this FQCN directly. Not a runtime deprecation:
- *  when psr/http-message v2 is installed this class is the
- *  implementation behind the public name. Marked deprecated so
- *  tooling suggests the aliased class instead (see sibling file).
- * @see \React\Http\Io\AbstractRequest
- * @see ../AbstractRequest.php
+ * @see AbstractRequest.php (PSR-7 v2)
  */
 abstract class AbstractRequest extends AbstractMessage implements RequestInterface
 {
@@ -95,7 +89,7 @@ abstract class AbstractRequest extends AbstractMessage implements RequestInterfa
         return $target;
     }
 
-    public function withRequestTarget(string $requestTarget): RequestInterface
+    public function withRequestTarget($requestTarget): RequestInterface
     {
         if ((string) $requestTarget === $this->requestTarget) {
             return $this;
@@ -112,7 +106,7 @@ abstract class AbstractRequest extends AbstractMessage implements RequestInterfa
         return $this->method;
     }
 
-    public function withMethod(string $method): RequestInterface
+    public function withMethod($method): RequestInterface
     {
         if ((string) $method === $this->method) {
             return $this;
@@ -129,7 +123,7 @@ abstract class AbstractRequest extends AbstractMessage implements RequestInterfa
         return $this->uri;
     }
 
-    public function withUri(UriInterface $uri, bool $preserveHost = false): RequestInterface
+    public function withUri(UriInterface $uri, $preserveHost = false): RequestInterface
     {
         if ($uri === $this->uri) {
             return $this;

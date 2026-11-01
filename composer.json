@@ -47,7 +47,10 @@
     "autoload": {
         "psr-4": {
             "React\\Http\\": "src/"
-        }
+        },
+        "exclude-from-classmap": [
+            "src/**.v1.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

@@ -10,10 +10,14 @@ use React\Http\Io\BufferedBody;
 use React\Http\Io\HttpBodyStream;
 use React\Stream\ReadableStreamInterface;
 
-$reflectionMethod = new \ReflectionMethod('\Psr\Http\Message\ResponseInterface', 'getStatusCode');
-if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
+if (!(new \ReflectionParameter([ResponseInterface::class, 'withStatus'], 0))->hasType()) {
+    // load legacy class for psr/http-message v1.0 without native parameter types
+    require __DIR__ . '/Response.v1.php';
+} else {
+    // use class with native types like `withStatus(int $code, string $reasonPhrase = ''): ResponseInterface`
+
 /**
- * Represents an outgoing server response message.
+ * Represents an outgoing server response message (PSR-7 v2).
  *
  * ```php
  * $response = new React\Http\Message\Response(
@@ -41,6 +45,7 @@ if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
  *   considered an implementation detail that may change in the future.
  *
  * @see \Psr\Http\Message\ResponseInterface
+ * @see Response.v1.php (PSR-7 v1)
  */
 final class Response extends AbstractMessage implements ResponseInterface, StatusCodeInterface
 {
@@ -259,9 +264,9 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
 
     /**
      * @var bool
-     * @see static::$phrasesMap
+     * @see self::$phrasesMap
      */
-    protected static $phrasesInitialized = false;
+    private static $phrasesInitialized = false;
 
     /**
      * Map of standard HTTP status codes to standard reason phrases.
@@ -321,12 +326,12 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
         $this->reasonPhrase = ($reason !== '' && $reason !== null) ? (string) $reason : self::getReasonPhraseForStatusCode($status);
     }
 
-    public function getStatusCode()
+    public function getStatusCode(): int
     {
         return $this->statusCode;
     }
 
-    public function withStatus($code, $reasonPhrase = '')
+    public function withStatus(int $code, string $reasonPhrase = ''): ResponseInterface
     {
         if ((string) $reasonPhrase === '') {
             $reasonPhrase = self::getReasonPhraseForStatusCode($code);
@@ -343,7 +348,7 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
         return $response;
     }
 
-    public function getReasonPhrase()
+    public function getReasonPhrase(): string
     {
         return $this->reasonPhrase;
     }
@@ -412,6 +417,4 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
         );
     }
 }
-} else {
-    class_alias(__NAMESPACE__ . '\\V2\\Response', __NAMESPACE__ . '\\Response');
 }

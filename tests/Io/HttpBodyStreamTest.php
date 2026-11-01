@@ -2,6 +2,7 @@
 
 namespace React\Tests\Http\Io;
 
+use Psr\Http\Message\StreamInterface;
 use React\Http\Io\HttpBodyStream;
 use React\Stream\ReadableStreamInterface;
 use React\Stream\ThroughStream;
@@ -132,8 +133,8 @@ class HttpBodyStreamTest extends TestCase
 
     public function testRead()
     {
-        $reflectionMethod = new \ReflectionMethod('\Psr\Http\Message\StreamInterface', 'eof');
-        if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
+        $reflectionParameter = new \ReflectionParameter([StreamInterface::class, 'seek'], 0);
+        if (!$reflectionParameter->hasType()) {
             $this->expectException(\BadMethodCallException::class);
         } else {
             $this->expectException(\TypeError::class);
@@ -159,8 +160,8 @@ class HttpBodyStreamTest extends TestCase
 
     public function testSeek()
     {
-        $reflectionMethod = new \ReflectionMethod('\Psr\Http\Message\StreamInterface', 'eof');
-        if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
+        $reflectionParameter = new \ReflectionParameter([StreamInterface::class, 'seek'], 0);
+        if (!$reflectionParameter->hasType()) {
             $this->expectException(\BadMethodCallException::class);
         } else {
             $this->expectException(\TypeError::class);

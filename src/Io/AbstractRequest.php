@@ -7,13 +7,18 @@ use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
 use React\Http\Message\Uri;
 
-$reflectionMethod = new \ReflectionMethod('\Psr\Http\Message\RequestInterface', 'withRequestTarget');
-if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
+if (!(new \ReflectionParameter([RequestInterface::class, 'withMethod'], 0))->hasType()) {
+    // load legacy class for psr/http-message v1.0 without native parameter types
+    require __DIR__ . '/AbstractRequest.v1.php';
+} else {
+    // use class with native types like `withMethod(string $method): RequestInterface`
+
 /**
- * [Internal] Abstract HTTP request base class (PSR-7)
+ * [Internal] Abstract HTTP request base class (PSR-7 v2)
  *
  * @internal
  * @see RequestInterface
+ * @see AbstractRequest.v1.php (PSR-7 v1)
  */
 abstract class AbstractRequest extends AbstractMessage implements RequestInterface
 {
@@ -73,7 +78,7 @@ abstract class AbstractRequest extends AbstractMessage implements RequestInterfa
         $this->uri = $uri;
     }
 
-    public function getRequestTarget()
+    public function getRequestTarget(): string
     {
         if ($this->requestTarget !== null) {
             return $this->requestTarget;
@@ -90,7 +95,7 @@ abstract class AbstractRequest extends AbstractMessage implements RequestInterfa
         return $target;
     }
 
-    public function withRequestTarget($requestTarget)
+    public function withRequestTarget(string $requestTarget): RequestInterface
     {
         if ((string) $requestTarget === $this->requestTarget) {
             return $this;
@@ -102,12 +107,12 @@ abstract class AbstractRequest extends AbstractMessage implements RequestInterfa
         return $request;
     }
 
-    public function getMethod()
+    public function getMethod(): string
     {
         return $this->method;
     }
 
-    public function withMethod($method)
+    public function withMethod(string $method): RequestInterface
     {
         if ((string) $method === $this->method) {
             return $this;
@@ -119,12 +124,12 @@ abstract class AbstractRequest extends AbstractMessage implements RequestInterfa
         return $request;
     }
 
-    public function getUri()
+    public function getUri(): UriInterface
     {
         return $this->uri;
     }
 
-    public function withUri(UriInterface $uri, $preserveHost = false)
+    public function withUri(UriInterface $uri, bool $preserveHost = false): RequestInterface
     {
         if ($uri === $this->uri) {
             return $this;
@@ -156,6 +161,4 @@ abstract class AbstractRequest extends AbstractMessage implements RequestInterfa
         return $request;
     }
 }
-} else {
-    class_alias(__NAMESPACE__ . '\\V2\\AbstractRequest', __NAMESPACE__ . '\\AbstractRequest');
 }

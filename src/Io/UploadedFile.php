@@ -7,10 +7,14 @@ use Psr\Http\Message\UploadedFileInterface;
 use InvalidArgumentException;
 use RuntimeException;
 
-$reflectionMethod = new \ReflectionMethod('\Psr\Http\Message\UploadedFileInterface', 'getStream');
-if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
+if (!(new \ReflectionParameter([UploadedFileInterface::class, 'moveTo'], 0))->hasType()) {
+    // load legacy class for psr/http-message v1.0 without native parameter types
+    require __DIR__ . '/UploadedFile.v1.php';
+} else {
+    // use class with native types like `moveTo(string $targetPath): void`
+
 /**
- * [Internal] Implementation of the PSR-7 `UploadedFileInterface`
+ * [Internal] Implementation of the PSR-7 v2 `UploadedFileInterface`
  *
  * This is used internally to represent each incoming file upload.
  *
@@ -19,6 +23,7 @@ if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
  *
  * @see UploadedFileInterface
  * @internal
+ * @see UploadedFile.v1.php (PSR-7 v1)
  */
 final class UploadedFile implements UploadedFileInterface
 {
@@ -81,7 +86,7 @@ final class UploadedFile implements UploadedFileInterface
     /**
      * {@inheritdoc}
      */
-    public function getStream()
+    public function getStream(): StreamInterface
     {
         if ($this->error !== \UPLOAD_ERR_OK) {
             throw new RuntimeException('Cannot retrieve stream due to upload error');
@@ -93,7 +98,7 @@ final class UploadedFile implements UploadedFileInterface
     /**
      * {@inheritdoc}
      */
-    public function moveTo($targetPath)
+    public function moveTo(string $targetPath): void
     {
        throw new RuntimeException('Not implemented');
     }
@@ -101,7 +106,7 @@ final class UploadedFile implements UploadedFileInterface
     /**
      * {@inheritdoc}
      */
-    public function getSize()
+    public function getSize(): ?int
     {
         return $this->size;
     }
@@ -109,7 +114,7 @@ final class UploadedFile implements UploadedFileInterface
     /**
      * {@inheritdoc}
      */
-    public function getError()
+    public function getError(): int
     {
         return $this->error;
     }
@@ -117,7 +122,7 @@ final class UploadedFile implements UploadedFileInterface
     /**
      * {@inheritdoc}
      */
-    public function getClientFilename()
+    public function getClientFilename(): ?string
     {
         return $this->filename;
     }
@@ -125,11 +130,9 @@ final class UploadedFile implements UploadedFileInterface
     /**
      * {@inheritdoc}
      */
-    public function getClientMediaType()
+    public function getClientMediaType(): ?string
     {
         return $this->mediaType;
     }
 }
-} else {
-    class_alias(__NAMESPACE__ . '\\V2\\UploadedFile', __NAMESPACE__ . '\\UploadedFile');
 }

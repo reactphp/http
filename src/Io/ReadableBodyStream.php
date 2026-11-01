@@ -8,10 +8,17 @@ use React\Stream\ReadableStreamInterface;
 use React\Stream\Util;
 use React\Stream\WritableStreamInterface;
 
-$reflectedMethod = new \ReflectionMethod('\Psr\Http\Message\StreamInterface','eof');
-if (!(PHP_VERSION_ID >= 70000 && $reflectedMethod->hasReturnType())) {
+if (!(new \ReflectionParameter([StreamInterface::class, 'seek'], 0))->hasType()) {
+    // load legacy class for psr/http-message v1.0 without native parameter types
+    require __DIR__ . '/ReadableBodyStream.v1.php';
+} else {
+    // use class with native types like `seek(int $offset, int $whence = SEEK_SET): void`
+
 /**
+ * [Internal] Bridge between ReadableStreamInterface from ReactPHP and StreamInterface from PSR-7 v2
+ *
  * @internal
+ * @see ReadableBodyStream.v1.php (PSR-7 v1)
  */
 class ReadableBodyStream extends EventEmitter implements ReadableStreamInterface, StreamInterface
 {
@@ -41,7 +48,7 @@ class ReadableBodyStream extends EventEmitter implements ReadableStreamInterface
         $input->on('close', [$this, 'close']);
     }
 
-    public function close()
+    public function close(): void
     {
         if (!$this->closed) {
             $this->closed = true;
@@ -52,7 +59,7 @@ class ReadableBodyStream extends EventEmitter implements ReadableStreamInterface
         }
     }
 
-    public function isReadable()
+    public function isReadable(): bool
     {
         return $this->input->isReadable();
     }
@@ -74,12 +81,12 @@ class ReadableBodyStream extends EventEmitter implements ReadableStreamInterface
         return $dest;
     }
 
-    public function eof()
+    public function eof(): bool
     {
         return !$this->isReadable();
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         return '';
     }
@@ -89,52 +96,52 @@ class ReadableBodyStream extends EventEmitter implements ReadableStreamInterface
         throw new \BadMethodCallException();
     }
 
-    public function getSize()
+    public function getSize(): ?int
     {
         return $this->size;
     }
 
-    public function tell()
+    public function tell(): int
     {
         throw new \BadMethodCallException();
     }
 
-    public function isSeekable()
+    public function isSeekable(): bool
     {
         return false;
     }
 
-    public function seek($offset, $whence = SEEK_SET)
+    public function seek(int $offset, int $whence = SEEK_SET): void
     {
         throw new \BadMethodCallException();
     }
 
-    public function rewind()
+    public function rewind(): void
     {
         throw new \BadMethodCallException();
     }
 
-    public function isWritable()
+    public function isWritable(): bool
     {
         return false;
     }
 
-    public function write($string)
+    public function write(string $string): int
     {
         throw new \BadMethodCallException();
     }
 
-    public function read($length)
+    public function read(int $length): string
     {
         throw new \BadMethodCallException();
     }
 
-    public function getContents()
+    public function getContents(): string
     {
         throw new \BadMethodCallException();
     }
 
-    public function getMetadata($key = null)
+    public function getMetadata(?string $key = null)
     {
         return ($key === null) ? [] : null;
     }
@@ -151,6 +158,4 @@ class ReadableBodyStream extends EventEmitter implements ReadableStreamInterface
         $this->close();
     }
 }
-} else {
-    class_alias(__NAMESPACE__ . '\\V2\\ReadableBodyStream', __NAMESPACE__ . '\\ReadableBodyStream');
 }

@@ -10,10 +10,14 @@ use React\Http\Io\BufferedBody;
 use React\Http\Io\HttpBodyStream;
 use React\Stream\ReadableStreamInterface;
 
-$reflectionMethod = new \ReflectionMethod('\Psr\Http\Message\ServerRequestInterface', 'getServerParams');
-if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
+if (!(new \ReflectionParameter([ServerRequestInterface::class, 'withAttribute'], 0))->hasType()) {
+    // load legacy class for psr/http-message v1.0 without native parameter types
+    require __DIR__ . '/ServerRequest.v1.php';
+} else {
+    // use class with native types like `withAttribute(string $name, $value): ServerRequestInterface`
+
 /**
- * Respresents an incoming server request message.
+ * Represents an incoming server request message (PSR-7 v2).
  *
  * This class implements the
  * [PSR-7 `ServerRequestInterface`](https://www.php-fig.org/psr/psr-7/#321-psrhttpmessageserverrequestinterface)
@@ -30,6 +34,7 @@ if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
  *   considered an implementation detail that may change in the future.
  *
  * @see ServerRequestInterface
+ * @see ServerRequest.v1.php (PSR-7 v1)
  */
 final class ServerRequest extends AbstractRequest implements ServerRequestInterface
 {
@@ -89,41 +94,41 @@ final class ServerRequest extends AbstractRequest implements ServerRequestInterf
         }
     }
 
-    public function getServerParams()
+    public function getServerParams(): array
     {
         return $this->serverParams;
     }
 
-    public function getCookieParams()
+    public function getCookieParams(): array
     {
         return $this->cookies;
     }
 
-    public function withCookieParams(array $cookies)
+    public function withCookieParams(array $cookies): ServerRequestInterface
     {
         $new = clone $this;
         $new->cookies = $cookies;
         return $new;
     }
 
-    public function getQueryParams()
+    public function getQueryParams(): array
     {
         return $this->queryParams;
     }
 
-    public function withQueryParams(array $query)
+    public function withQueryParams(array $query): ServerRequestInterface
     {
         $new = clone $this;
         $new->queryParams = $query;
         return $new;
     }
 
-    public function getUploadedFiles()
+    public function getUploadedFiles(): array
     {
         return $this->fileParams;
     }
 
-    public function withUploadedFiles(array $uploadedFiles)
+    public function withUploadedFiles(array $uploadedFiles): ServerRequestInterface
     {
         $new = clone $this;
         $new->fileParams = $uploadedFiles;
@@ -135,19 +140,19 @@ final class ServerRequest extends AbstractRequest implements ServerRequestInterf
         return $this->parsedBody;
     }
 
-    public function withParsedBody($data)
+    public function withParsedBody($data): ServerRequestInterface
     {
         $new = clone $this;
         $new->parsedBody = $data;
         return $new;
     }
 
-    public function getAttributes()
+    public function getAttributes(): array
     {
         return $this->attributes;
     }
 
-    public function getAttribute($name, $default = null)
+    public function getAttribute(string $name, $default = null)
     {
         if (!\array_key_exists($name, $this->attributes)) {
             return $default;
@@ -155,14 +160,14 @@ final class ServerRequest extends AbstractRequest implements ServerRequestInterf
         return $this->attributes[$name];
     }
 
-    public function withAttribute($name, $value)
+    public function withAttribute(string $name, $value): ServerRequestInterface
     {
         $new = clone $this;
         $new->attributes[$name] = $value;
         return $new;
     }
 
-    public function withoutAttribute($name)
+    public function withoutAttribute(string $name): ServerRequestInterface
     {
         $new = clone $this;
         unset($new->attributes[$name]);
@@ -331,6 +336,4 @@ final class ServerRequest extends AbstractRequest implements ServerRequestInterf
         return $request;
     }
 }
-} else {
-    class_alias(__NAMESPACE__ . '\\V2\\ServerRequest', __NAMESPACE__ . '\\ServerRequest');
 }

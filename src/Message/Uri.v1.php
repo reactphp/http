@@ -1,11 +1,11 @@
 <?php
 
-namespace React\Http\Message\V2;
+namespace React\Http\Message;
 
 use Psr\Http\Message\UriInterface;
 
 /**
- * Respresents a URI (or URL).
+ * Represents a URI or URL (PSR-7 v1).
  *
  * This class implements the
  * [PSR-7 `UriInterface`](https://www.php-fig.org/psr/psr-7/#35-psrhttpmessageuriinterface).
@@ -15,15 +15,7 @@ use Psr\Http\Message\UriInterface;
  * also use this class with other HTTP implementations and for tests.
  *
  * @see UriInterface
- *
- * @internal
- *
- * @deprecated Do not reference this FQCN directly. Not a runtime deprecation:
- * when psr/http-message v2 is installed this class is the
- * implementation behind the public name. Marked deprecated so
- * tooling suggests the aliased class instead (see sibling file).
- * @see \React\Http\Io\Uri
- * @see ../Uri.php
+ * @see Uri.php (PSR-7 v2)
  */
 final class Uri implements UriInterface
 {
@@ -132,7 +124,7 @@ final class Uri implements UriInterface
         return $this->fragment;
     }
 
-    public function withScheme(string $scheme): UriInterface
+    public function withScheme($scheme): UriInterface
     {
         $scheme = \strtolower($scheme);
         if ($scheme === $this->scheme) {
@@ -153,7 +145,7 @@ final class Uri implements UriInterface
         return $new;
     }
 
-    public function withUserInfo(string $user, ?string $password = null): UriInterface
+    public function withUserInfo($user, $password = null): UriInterface
     {
         $userInfo = $this->encode($user, \PHP_URL_USER) . ($password !== null ? ':' . $this->encode($password, \PHP_URL_PASS) : '');
         if ($userInfo === $this->userInfo) {
@@ -166,7 +158,7 @@ final class Uri implements UriInterface
         return $new;
     }
 
-    public function withHost(string $host): UriInterface
+    public function withHost($host): UriInterface
     {
         $host = \strtolower($host);
         if ($host === $this->host) {
@@ -183,7 +175,7 @@ final class Uri implements UriInterface
         return $new;
     }
 
-    public function withPort(?int $port): UriInterface
+    public function withPort($port): UriInterface
     {
         $port = $port === null ? null : (int) $port;
         if (($port === 80 && $this->scheme === 'http') || ($port === 443 && $this->scheme === 'https')) {
@@ -204,7 +196,7 @@ final class Uri implements UriInterface
         return $new;
     }
 
-    public function withPath(string $path): UriInterface
+    public function withPath($path): UriInterface
     {
         $path = $this->encode($path, \PHP_URL_PATH);
         if ($path === $this->path) {
@@ -217,7 +209,7 @@ final class Uri implements UriInterface
         return $new;
     }
 
-    public function withQuery(string $query): UriInterface
+    public function withQuery($query): UriInterface
     {
         $query = $this->encode($query, \PHP_URL_QUERY);
         if ($query === $this->query) {
@@ -230,7 +222,7 @@ final class Uri implements UriInterface
         return $new;
     }
 
-    public function withFragment(string $fragment): UriInterface
+    public function withFragment($fragment): UriInterface
     {
         $fragment = $this->encode($fragment, \PHP_URL_FRAGMENT);
         if ($fragment === $this->fragment) {
@@ -274,6 +266,11 @@ final class Uri implements UriInterface
         return $uri;
     }
 
+    /**
+     * @param string $part
+     * @param int $component
+     * @return string
+     */
     private function encode(string $part, int $component): string
     {
         return \preg_replace_callback(
@@ -289,12 +286,15 @@ final class Uri implements UriInterface
      * [Internal] Resolve URI relative to base URI and return new absolute URI
      *
      * @internal
+     * @param UriInterface $base
+     * @param UriInterface $rel
+     * @return UriInterface
      * @throws void
      */
     public static function resolve(UriInterface $base, UriInterface $rel): UriInterface
     {
         if ($rel->getScheme() !== '') {
-            return $rel->getPath() === '' ? $rel : $rel->withPath(static::removeDotSegments($rel->getPath()));
+            return $rel->getPath() === '' ? $rel : $rel->withPath(self::removeDotSegments($rel->getPath()));
         }
 
         $reset = false;
@@ -316,7 +316,7 @@ final class Uri implements UriInterface
                 }
             }
             $reset = true;
-            $new = $new->withPath(static::removeDotSegments($start . $path));
+            $new = $new->withPath(self::removeDotSegments($start . $path));
         }
         if ($reset || $rel->getQuery() !== '') {
             $reset = true;
@@ -329,6 +329,10 @@ final class Uri implements UriInterface
         return $new;
     }
 
+    /**
+     * @param string $path
+     * @return string
+     */
     private static function removeDotSegments(string $path): string
     {
         $segments = [];

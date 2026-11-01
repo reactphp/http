@@ -2,6 +2,7 @@
 
 namespace React\Tests\Http\Io;
 
+use Psr\Http\Message\StreamInterface;
 use React\Http\Io\EmptyBodyStream;
 use React\Stream\WritableStreamInterface;
 use React\Tests\Http\TestCase;
@@ -127,8 +128,8 @@ class EmptyBodyStreamTest extends TestCase
 
     public function testSeek()
     {
-        $reflectionMethod = new \ReflectionMethod('\Psr\Http\Message\StreamInterface', 'eof');
-        if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
+        $reflectionParameter = new \ReflectionParameter([StreamInterface::class, 'seek'], 0);
+        if (!$reflectionParameter->hasType()) {
             $this->expectException(\BadMethodCallException::class);
         } else {
             $this->expectException(\TypeError::class);
