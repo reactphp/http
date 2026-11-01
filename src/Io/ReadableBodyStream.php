@@ -8,10 +8,17 @@ use React\Stream\ReadableStreamInterface;
 use React\Stream\Util;
 use React\Stream\WritableStreamInterface;
 
-$reflectedMethod = new \ReflectionMethod('\Psr\Http\Message\StreamInterface','eof');
-if (!(PHP_VERSION_ID >= 70000 && $reflectedMethod->hasReturnType())) {
+if (\PHP_VERSION_ID >= 70000 && \call_user_func(array(new \ReflectionMethod('\Psr\Http\Message\StreamInterface', 'eof'), 'hasReturnType'))) {
+    // load class for psr/http-message v2 using native types like `eof(): bool`
+    require __DIR__ . '/ReadableBodyStream.v2.php';
+} else {
+    // fall back to class without native types
+
 /**
+ * [Internal] Bridge between ReadableStreamInterface from ReactPHP and StreamInterface from PSR-7 v1
+ *
  * @internal
+ * @see ReadableBodyStream.v2.php (PSR-7 v2)
  */
 class ReadableBodyStream extends EventEmitter implements ReadableStreamInterface, StreamInterface
 {
@@ -153,6 +160,4 @@ class ReadableBodyStream extends EventEmitter implements ReadableStreamInterface
         $this->close();
     }
 }
-} else {
-    class_alias(__NAMESPACE__ . '\\V2\\ReadableBodyStream', __NAMESPACE__ . '\\ReadableBodyStream');
 }

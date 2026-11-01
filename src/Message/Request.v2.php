@@ -1,6 +1,6 @@
 <?php
 
-namespace React\Http\Message\V2;
+namespace React\Http\Message;
 
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamInterface;
@@ -11,7 +11,7 @@ use React\Http\Io\ReadableBodyStream;
 use React\Stream\ReadableStreamInterface;
 
 /**
- * Respresents an outgoing HTTP request message.
+ * Represents an outgoing HTTP request message (PSR-7 v2).
  *
  * This class implements the
  * [PSR-7 `RequestInterface`](https://www.php-fig.org/psr/psr-7/#32-psrhttpmessagerequestinterface)
@@ -26,15 +26,7 @@ use React\Stream\ReadableStreamInterface;
  *   considered an implementation detail that may change in the future.
  *
  * @see RequestInterface
- *
- * @internal
- *
- * @deprecated Do not reference this FQCN directly. Not a runtime deprecation:
- * when psr/http-message v2 is installed this class is the
- * implementation behind the public name. Marked deprecated so
- * tooling suggests the aliased class instead (see sibling file).
- * @see \React\Http\Io\Request
- * @see ../Request.php
+ * @see Request.php (PSR-7 v1)
  */
 final class Request extends AbstractRequest implements RequestInterface
 {

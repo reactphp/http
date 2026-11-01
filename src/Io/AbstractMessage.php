@@ -6,13 +6,18 @@ use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\StreamInterface;
 
 
-$reflectionMethod = new \ReflectionMethod('\Psr\Http\Message\MessageInterface', 'withProtocolVersion');
-if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
+if (\PHP_VERSION_ID >= 70000 && \call_user_func(array(new \ReflectionMethod('\Psr\Http\Message\MessageInterface', 'getProtocolVersion'), 'hasReturnType'))) {
+    // load class for psr/http-message v2 using native types like `getProtocolVersion(): string`
+    require __DIR__ . '/AbstractMessage.v2.php';
+} else {
+    // fall back to class without native types
+
 /**
- * [Internal] Abstract HTTP message base class (PSR-7)
+ * [Internal] Abstract HTTP message base class (PSR-7 v1)
  *
  * @internal
  * @see MessageInterface
+ * @see AbstractMessage.v2.php (PSR-7 v2)
  */
 abstract class AbstractMessage implements MessageInterface
 {
@@ -173,6 +178,4 @@ abstract class AbstractMessage implements MessageInterface
         return $message;
     }
 }
-} else {
-    class_alias(__NAMESPACE__ . '\\V2\\AbstractMessage', __NAMESPACE__ . '\\AbstractMessage');
 }

@@ -10,10 +10,14 @@ use React\Http\Io\BufferedBody;
 use React\Http\Io\HttpBodyStream;
 use React\Stream\ReadableStreamInterface;
 
-$reflectionMethod = new \ReflectionMethod('\Psr\Http\Message\ResponseInterface', 'getStatusCode');
-if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
+if (\PHP_VERSION_ID >= 70000 && \call_user_func(array(new \ReflectionMethod('\Psr\Http\Message\ResponseInterface', 'getStatusCode'), 'hasReturnType'))) {
+    // load class for psr/http-message v2 using native types like `getStatusCode(): int`
+    require __DIR__ . '/Response.v2.php';
+} else {
+    // fall back to class without native types
+
 /**
- * Represents an outgoing server response message.
+ * Represents an outgoing server response message (PSR-7 v1).
  *
  * ```php
  * $response = new React\Http\Message\Response(
@@ -41,6 +45,7 @@ if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
  *   considered an implementation detail that may change in the future.
  *
  * @see \Psr\Http\Message\ResponseInterface
+ * @see Response.v2.php (PSR-7 v2)
  */
 final class Response extends AbstractMessage implements ResponseInterface, StatusCodeInterface
 {
@@ -261,9 +266,9 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
 
     /**
      * @var bool
-     * @see static::$phrasesMap
+     * @see self::$phrasesMap
      */
-    protected static $phrasesInitialized = false;
+    private static $phrasesInitialized = false;
 
     /**
      * Map of standard HTTP status codes to standard reason phrases.
@@ -414,6 +419,4 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
         );
     }
 }
-} else {
-    class_alias(__NAMESPACE__ . '\\V2\\Response', __NAMESPACE__ . '\\Response');
 }

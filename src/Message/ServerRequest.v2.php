@@ -1,6 +1,6 @@
 <?php
 
-namespace React\Http\Message\V2;
+namespace React\Http\Message;
 
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
@@ -11,7 +11,7 @@ use React\Http\Io\HttpBodyStream;
 use React\Stream\ReadableStreamInterface;
 
 /**
- * Respresents an incoming server request message.
+ * Represents an incoming server request message (PSR-7 v2).
  *
  * This class implements the
  * [PSR-7 `ServerRequestInterface`](https://www.php-fig.org/psr/psr-7/#321-psrhttpmessageserverrequestinterface)
@@ -28,15 +28,7 @@ use React\Stream\ReadableStreamInterface;
  *   considered an implementation detail that may change in the future.
  *
  * @see ServerRequestInterface
- *
- * @internal
- *
- * @deprecated Do not reference this FQCN directly. Not a runtime deprecation:
- * when psr/http-message v2 is installed this class is the
- * implementation behind the public name. Marked deprecated so
- * tooling suggests the aliased class instead (see sibling file).
- * @see \React\Http\Io\ServerRequest
- * @see ../ServerRequest.php
+ * @see ServerRequest.php (PSR-7 v1)
  */
 final class ServerRequest extends AbstractRequest implements ServerRequestInterface
 {
@@ -68,7 +60,7 @@ final class ServerRequest extends AbstractRequest implements ServerRequestInterf
         if (\is_string($body)) {
             $body = new BufferedBody($body);
         } elseif ($body instanceof ReadableStreamInterface && !$body instanceof StreamInterface) {
-            $temp = new static($method, '', $headers);
+            $temp = new self($method, '', $headers);
             $size = (int) $temp->getHeaderLine('Content-Length');
             if (\strtolower($temp->getHeaderLine('Transfer-Encoding')) === 'chunked') {
                 $size = null;
@@ -205,7 +197,7 @@ final class ServerRequest extends AbstractRequest implements ServerRequestInterf
      * @internal
      * @param string $message
      * @param array<string,string|int|float> $serverParams
-     * @return static
+     * @return self
      * @throws \InvalidArgumentException if given $message is not a valid HTTP request message
      */
     public static function parseMessage($message, array $serverParams)
@@ -223,7 +215,7 @@ final class ServerRequest extends AbstractRequest implements ServerRequestInterf
 
         // check number of valid header fields matches number of lines + request line
         $matches = array();
-        $n = \preg_match_all(static::REGEX_HEADERS, $message, $matches, \PREG_SET_ORDER);
+        $n = \preg_match_all(self::REGEX_HEADERS, $message, $matches, \PREG_SET_ORDER);
         if (\substr_count($message, "\n") !== $n + 1) {
             throw new \InvalidArgumentException('Unable to parse invalid request header fields');
         }
@@ -277,7 +269,7 @@ final class ServerRequest extends AbstractRequest implements ServerRequestInterf
             }
         }
 
-        $request = new static(
+        $request = new self(
             $start['method'],
             $uri,
             $headers,

@@ -4,12 +4,17 @@ namespace React\Http\Io;
 
 use Psr\Http\Message\StreamInterface;
 
-$reflectionMethod = new \ReflectionMethod('\Psr\Http\Message\StreamInterface', 'eof');
-if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
+if (\PHP_VERSION_ID >= 70000 && \call_user_func(array(new \ReflectionMethod('\Psr\Http\Message\StreamInterface', 'eof'), 'hasReturnType'))) {
+    // load class for psr/http-message v2 using native types like `eof(): bool`
+    require __DIR__ . '/BufferedBody.v2.php';
+} else {
+    // fall back to class without native types
+
 /**
- * [Internal] PSR-7 message body implementation using an in-memory buffer
+ * [Internal] PSR-7 v1 message body implementation using an in-memory buffer
  *
  * @internal
+ * @see BufferedBody.v2.php (PSR-7 v2)
  */
 class BufferedBody implements StreamInterface
 {
@@ -179,6 +184,4 @@ class BufferedBody implements StreamInterface
         return $key === null ? array() : null;
     }
 }
-} else {
-    class_alias(__NAMESPACE__ . '\\V2\\BufferedBody', __NAMESPACE__ . '\\BufferedBody');
 }

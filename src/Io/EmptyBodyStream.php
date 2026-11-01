@@ -8,10 +8,14 @@ use React\Stream\ReadableStreamInterface;
 use React\Stream\Util;
 use React\Stream\WritableStreamInterface;
 
-$reflectionMethod = new \ReflectionMethod('\Psr\Http\Message\StreamInterface', 'eof');
-if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
+if (\PHP_VERSION_ID >= 70000 && \call_user_func(array(new \ReflectionMethod('\Psr\Http\Message\StreamInterface', 'eof'), 'hasReturnType'))) {
+    // load class for psr/http-message v2 using native types like `eof(): bool`
+    require __DIR__ . '/EmptyBodyStream.v2.php';
+} else {
+    // fall back to class without native types
+
 /**
- * [Internal] Bridge between an empty StreamInterface from PSR-7 and ReadableStreamInterface from ReactPHP
+ * [Internal] Bridge between an empty StreamInterface from PSR-7 v1 and ReadableStreamInterface from ReactPHP
  *
  * This class is used in the server to represent an empty body stream of an
  * incoming response from the client. This is similar to the `HttpBodyStream`,
@@ -26,6 +30,7 @@ if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
  * @see StreamInterface
  * @see ReadableStreamInterface
  * @internal
+ * @see EmptyBodyStream.v2.php (PSR-7 v2)
  */
 class EmptyBodyStream extends EventEmitter implements StreamInterface, ReadableStreamInterface
 {
@@ -142,6 +147,4 @@ class EmptyBodyStream extends EventEmitter implements StreamInterface, ReadableS
         return ($key === null) ? array() : null;
     }
 }
-} else {
-    class_alias(__NAMESPACE__ . '\\V2\\EmptyBodyStream', __NAMESPACE__ . '\\EmptyBodyStream');
 }

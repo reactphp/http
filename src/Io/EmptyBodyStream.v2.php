@@ -1,6 +1,6 @@
 <?php
 
-namespace React\Http\Io\V2;
+namespace React\Http\Io;
 
 use Evenement\EventEmitter;
 use Psr\Http\Message\StreamInterface;
@@ -9,7 +9,7 @@ use React\Stream\Util;
 use React\Stream\WritableStreamInterface;
 
 /**
- * [Internal] Bridge between an empty StreamInterface from PSR-7 and ReadableStreamInterface from ReactPHP
+ * [Internal] Bridge between an empty StreamInterface from PSR-7 v2 and ReadableStreamInterface from ReactPHP
  *
  * This class is used in the server to represent an empty body stream of an
  * incoming response from the client. This is similar to the `HttpBodyStream`,
@@ -24,13 +24,7 @@ use React\Stream\WritableStreamInterface;
  * @see StreamInterface
  * @see ReadableStreamInterface
  * @internal
- *
- * @deprecated Do not reference this FQCN directly. Not a runtime deprecation:
- *  when psr/http-message v2 is installed this class is the
- *  implementation behind the public name. Marked deprecated so
- *  tooling suggests the aliased class instead (see sibling file).
- * @see \React\Http\Io\EmptyBodyStream
- * @see ../EmptyBodyStream.php
+ * @see EmptyBodyStream.php (PSR-7 v1)
  */
 class EmptyBodyStream extends EventEmitter implements StreamInterface, ReadableStreamInterface
 {

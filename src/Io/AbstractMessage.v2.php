@@ -1,22 +1,16 @@
 <?php
 
-namespace React\Http\Io\V2;
+namespace React\Http\Io;
 
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\StreamInterface;
 
 /**
- * [Internal] Abstract HTTP message base class (PSR-7)
+ * [Internal] Abstract HTTP message base class (PSR-7 v2)
  *
  * @internal
  * @see MessageInterface
- *
- * @deprecated Do not reference this FQCN directly. Not a runtime deprecation:
- *  when psr/http-message v2 is installed this class is the
- *  implementation behind the public name. Marked deprecated so
- *  tooling suggests the aliased class instead (see sibling file).
- * @see \React\Http\Io\AbstractMessage
- * @see ../AbstractMessage.php
+ * @see AbstractMessage.php (PSR-7 v1)
  */
 abstract class AbstractMessage implements MessageInterface
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace React\Http\Io\V2;
+namespace React\Http\Io;
 
 use Evenement\EventEmitter;
 use Psr\Http\Message\StreamInterface;
@@ -9,14 +9,10 @@ use React\Stream\Util;
 use React\Stream\WritableStreamInterface;
 
 /**
- * @internal
+ * [Internal] Bridge between ReadableStreamInterface from ReactPHP and StreamInterface from PSR-7 v2
  *
- * @deprecated Do not reference this FQCN directly. Not a runtime deprecation:
- *  when psr/http-message v2 is installed this class is the
- *  implementation behind the public name. Marked deprecated so
- *  tooling suggests the aliased class instead (see sibling file).
- * @see \React\Http\Io\ReadableBodyStream
- * @see ../ReadableBodyStream.php
+ * @internal
+ * @see ReadableBodyStream.php (PSR-7 v1)
  */
 class ReadableBodyStream extends EventEmitter implements ReadableStreamInterface, StreamInterface
 {
@@ -101,7 +97,7 @@ class ReadableBodyStream extends EventEmitter implements ReadableStreamInterface
         return $this->size;
     }
 
-    public function tell():int
+    public function tell(): int
     {
         throw new \BadMethodCallException();
     }

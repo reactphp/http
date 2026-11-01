@@ -7,10 +7,14 @@ use Psr\Http\Message\UploadedFileInterface;
 use InvalidArgumentException;
 use RuntimeException;
 
-$reflectionMethod = new \ReflectionMethod('\Psr\Http\Message\UploadedFileInterface', 'getStream');
-if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
+if (\PHP_VERSION_ID >= 70000 && \call_user_func(array(new \ReflectionMethod('\Psr\Http\Message\UploadedFileInterface', 'getStream'), 'hasReturnType'))) {
+    // load class for psr/http-message v2 using native types like `getStream(): StreamInterface`
+    require __DIR__ . '/UploadedFile.v2.php';
+} else {
+    // fall back to class without native types
+
 /**
- * [Internal] Implementation of the PSR-7 `UploadedFileInterface`
+ * [Internal] Implementation of the PSR-7 v1 `UploadedFileInterface`
  *
  * This is used internally to represent each incoming file upload.
  *
@@ -19,6 +23,7 @@ if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
  *
  * @see UploadedFileInterface
  * @internal
+ * @see UploadedFile.v2.php (PSR-7 v2)
  */
 final class UploadedFile implements UploadedFileInterface
 {
@@ -130,6 +135,4 @@ final class UploadedFile implements UploadedFileInterface
         return $this->mediaType;
     }
 }
-} else {
-    class_alias(__NAMESPACE__ . '\\V2\\UploadedFile', __NAMESPACE__ . '\\UploadedFile');
 }
