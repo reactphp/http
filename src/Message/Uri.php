@@ -4,8 +4,14 @@ namespace React\Http\Message;
 
 use Psr\Http\Message\UriInterface;
 
+if (\PHP_VERSION_ID >= 70000 && \call_user_func(array(new \ReflectionMethod('\Psr\Http\Message\UriInterface', 'getScheme'), 'hasReturnType'))) {
+    // load class for psr/http-message v2 using native types like `getScheme(): string`
+    require __DIR__ . '/Uri.v2.php';
+} else {
+    // fall back to class without native types
+
 /**
- * Respresents a URI (or URL).
+ * Represents a URI or URL (PSR-7 v1).
  *
  * This class implements the
  * [PSR-7 `UriInterface`](https://www.php-fig.org/psr/psr-7/#35-psrhttpmessageuriinterface).
@@ -15,6 +21,7 @@ use Psr\Http\Message\UriInterface;
  * also use this class with other HTTP implementations and for tests.
  *
  * @see UriInterface
+ * @see Uri.v2.php (PSR-7 v2)
  */
 final class Uri implements UriInterface
 {
@@ -353,4 +360,5 @@ final class Uri implements UriInterface
         }
         return '/' . \implode('/', $segments) . ($path !== '/' && \substr($path, -1) === '/' ? '/' : '');
     }
+}
 }

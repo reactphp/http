@@ -10,8 +10,14 @@ use React\Http\Io\BufferedBody;
 use React\Http\Io\HttpBodyStream;
 use React\Stream\ReadableStreamInterface;
 
+if (\PHP_VERSION_ID >= 70000 && \call_user_func(array(new \ReflectionMethod('\Psr\Http\Message\ServerRequestInterface', 'getServerParams'), 'hasReturnType'))) {
+    // load class for psr/http-message v2 using native types like `getServerParams(): array`
+    require __DIR__ . '/ServerRequest.v2.php';
+} else {
+    // fall back to class without native types
+
 /**
- * Respresents an incoming server request message.
+ * Represents an incoming server request message (PSR-7 v1).
  *
  * This class implements the
  * [PSR-7 `ServerRequestInterface`](https://www.php-fig.org/psr/psr-7/#321-psrhttpmessageserverrequestinterface)
@@ -28,6 +34,7 @@ use React\Stream\ReadableStreamInterface;
  *   considered an implementation detail that may change in the future.
  *
  * @see ServerRequestInterface
+ * @see ServerRequest.v2.php (PSR-7 v2)
  */
 final class ServerRequest extends AbstractRequest implements ServerRequestInterface
 {
@@ -328,4 +335,5 @@ final class ServerRequest extends AbstractRequest implements ServerRequestInterf
 
         return $request;
     }
+}
 }

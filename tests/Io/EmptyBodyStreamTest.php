@@ -126,7 +126,13 @@ class EmptyBodyStreamTest extends TestCase
 
     public function testSeek()
     {
-        $this->setExpectedException('BadMethodCallException');
+        $reflectionMethod = new \ReflectionMethod('\Psr\Http\Message\StreamInterface', 'eof');
+        if (PHP_VERSION_ID < 70000 || !$reflectionMethod->hasReturnType()) {
+            $this->setExpectedException('BadMethodCallException');
+        } else {
+            $this->setExpectedException('TypeError');
+        }
+
         $this->bodyStream->seek('');
     }
 

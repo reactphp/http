@@ -10,8 +10,14 @@ use React\Http\Io\BufferedBody;
 use React\Http\Io\ReadableBodyStream;
 use React\Stream\ReadableStreamInterface;
 
+if (\PHP_VERSION_ID >= 70000 && \call_user_func(array(new \ReflectionMethod('\Psr\Http\Message\RequestInterface', 'getMethod'), 'hasReturnType'))) {
+    // load class for psr/http-message v2 using native types like `getMethod(): string`
+    require __DIR__ . '/Request.v2.php';
+} else {
+    // fall back to class without native types
+
 /**
- * Respresents an outgoing HTTP request message.
+ * Represents an outgoing HTTP request message (PSR-7 v1).
  *
  * This class implements the
  * [PSR-7 `RequestInterface`](https://www.php-fig.org/psr/psr-7/#32-psrhttpmessagerequestinterface)
@@ -26,6 +32,7 @@ use React\Stream\ReadableStreamInterface;
  *   considered an implementation detail that may change in the future.
  *
  * @see RequestInterface
+ * @see Request.v2.php (PSR-7 v2)
  */
 final class Request extends AbstractRequest implements RequestInterface
 {
@@ -54,4 +61,5 @@ final class Request extends AbstractRequest implements RequestInterface
 
         parent::__construct($method, $url, $headers, $body, $version);
     }
+}
 }

@@ -8,8 +8,14 @@ use React\Stream\ReadableStreamInterface;
 use React\Stream\Util;
 use React\Stream\WritableStreamInterface;
 
+if (\PHP_VERSION_ID >= 70000 && \call_user_func(array(new \ReflectionMethod('\Psr\Http\Message\StreamInterface', 'eof'), 'hasReturnType'))) {
+    // load class for psr/http-message v2 using native types like `eof(): bool`
+    require __DIR__ . '/HttpBodyStream.v2.php';
+} else {
+    // fall back to class without native types
+
 /**
- * [Internal] Bridge between StreamInterface from PSR-7 and ReadableStreamInterface from ReactPHP
+ * [Internal] Bridge between StreamInterface from PSR-7 v1 and ReadableStreamInterface from ReactPHP
  *
  * This class is used in the server to stream the body of an incoming response
  * from the client. This allows us to stream big amounts of data without having
@@ -23,6 +29,7 @@ use React\Stream\WritableStreamInterface;
  * @see StreamInterface
  * @see ReadableStreamInterface
  * @internal
+ * @see HttpBodyStream.v2.php (PSR-7 v2)
  */
 class HttpBodyStream extends EventEmitter implements StreamInterface, ReadableStreamInterface
 {
@@ -179,4 +186,5 @@ class HttpBodyStream extends EventEmitter implements StreamInterface, ReadableSt
             $this->close();
         }
     }
+}
 }

@@ -7,11 +7,18 @@ use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
 use React\Http\Message\Uri;
 
+if (\PHP_VERSION_ID >= 70000 && \call_user_func(array(new \ReflectionMethod('\Psr\Http\Message\RequestInterface', 'getRequestTarget'), 'hasReturnType'))) {
+    // load class for psr/http-message v2 using native types like `getRequestTarget(): string`
+    require __DIR__ . '/AbstractRequest.v2.php';
+} else {
+    // fall back to class without native types
+
 /**
- * [Internal] Abstract HTTP request base class (PSR-7)
+ * [Internal] Abstract HTTP request base class (PSR-7 v1)
  *
  * @internal
  * @see RequestInterface
+ * @see AbstractRequest.v2.php (PSR-7 v2)
  */
 abstract class AbstractRequest extends AbstractMessage implements RequestInterface
 {
@@ -153,4 +160,5 @@ abstract class AbstractRequest extends AbstractMessage implements RequestInterfa
 
         return $request;
     }
+}
 }
