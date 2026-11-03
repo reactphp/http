@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.12.0 (2026-11-03)
+
+*   Feature: Support PSR-7 v2 along side v1
+    (#549 by @WyriHaximus)
+
 ## 1.11.1 (2026-09-09)
 
 *   Security fix: This release fixes a high severity security issue in ReactPHP's HTTP client and server components
