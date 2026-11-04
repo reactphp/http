@@ -9,6 +9,7 @@ use React\Http\Browser;
 use React\Http\HttpServer;
 use React\Http\Message\Response;
 use React\Http\Message\ResponseException;
+use React\Http\Middleware\InactiveConnectionTimeoutMiddleware;
 use React\Http\Middleware\StreamingRequestMiddleware;
 use React\Promise\Promise;
 use React\Promise\Stream;
@@ -32,7 +33,7 @@ class FunctionalBrowserTest extends TestCase
     {
         $this->browser = new Browser();
 
-        $http = new HttpServer(new StreamingRequestMiddleware(), function (ServerRequestInterface $request) {
+        $http = new HttpServer(new InactiveConnectionTimeoutMiddleware(0.2), new StreamingRequestMiddleware(), function (ServerRequestInterface $request) {
             $path = $request->getUri()->getPath();
 
             $headers = array();
@@ -687,7 +688,7 @@ class FunctionalBrowserTest extends TestCase
      */
     public function testPostStreamWillStartSendingRequestEvenWhenBodyDoesNotEmitData()
     {
-        $http = new HttpServer(new StreamingRequestMiddleware(), function (ServerRequestInterface $request) {
+        $http = new HttpServer(new InactiveConnectionTimeoutMiddleware(0.1), new StreamingRequestMiddleware(), function (ServerRequestInterface $request) {
             return new Response(200);
         });
         $socket = new SocketServer('127.0.0.1:0');
@@ -714,7 +715,7 @@ class FunctionalBrowserTest extends TestCase
 
     public function testSendsHttp11ByDefault()
     {
-        $http = new HttpServer(function (ServerRequestInterface $request) {
+        $http = new HttpServer(new InactiveConnectionTimeoutMiddleware(0.1), function (ServerRequestInterface $request) {
             return new Response(
                 200,
                 array(),
@@ -734,7 +735,7 @@ class FunctionalBrowserTest extends TestCase
 
     public function testSendsExplicitHttp10Request()
     {
-        $http = new HttpServer(function (ServerRequestInterface $request) {
+        $http = new HttpServer(new InactiveConnectionTimeoutMiddleware(0.1), function (ServerRequestInterface $request) {
             return new Response(
                 200,
                 array(),
