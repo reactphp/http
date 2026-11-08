@@ -10,8 +10,14 @@ use React\Http\Io\BufferedBody;
 use React\Http\Io\HttpBodyStream;
 use React\Stream\ReadableStreamInterface;
 
+if (!(new \ReflectionParameter([ResponseInterface::class, 'withStatus'], 0))->hasType()) {
+    // load legacy class for psr/http-message v1.0 without native parameter types
+    require __DIR__ . '/Response.v1.php';
+} else {
+    // use class with native types like `withStatus(int $code, string $reasonPhrase = ''): ResponseInterface`
+
 /**
- * Represents an outgoing server response message.
+ * Represents an outgoing server response message (PSR-7 v2).
  *
  * ```php
  * $response = new React\Http\Message\Response(
@@ -39,6 +45,7 @@ use React\Stream\ReadableStreamInterface;
  *   considered an implementation detail that may change in the future.
  *
  * @see \Psr\Http\Message\ResponseInterface
+ * @see Response.v1.php (PSR-7 v1)
  */
 final class Response extends AbstractMessage implements ResponseInterface, StatusCodeInterface
 {
@@ -319,12 +326,12 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
         $this->reasonPhrase = ($reason !== '' && $reason !== null) ? (string) $reason : self::getReasonPhraseForStatusCode($status);
     }
 
-    public function getStatusCode()
+    public function getStatusCode(): int
     {
         return $this->statusCode;
     }
 
-    public function withStatus($code, $reasonPhrase = '')
+    public function withStatus(int $code, string $reasonPhrase = ''): ResponseInterface
     {
         if ((string) $reasonPhrase === '') {
             $reasonPhrase = self::getReasonPhraseForStatusCode($code);
@@ -341,7 +348,7 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
         return $response;
     }
 
-    public function getReasonPhrase()
+    public function getReasonPhrase(): string
     {
         return $this->reasonPhrase;
     }
@@ -409,4 +416,5 @@ final class Response extends AbstractMessage implements ResponseInterface, Statu
             $start['reason'] ?? ''
         );
     }
+}
 }

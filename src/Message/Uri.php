@@ -4,8 +4,14 @@ namespace React\Http\Message;
 
 use Psr\Http\Message\UriInterface;
 
+if (!(new \ReflectionParameter([UriInterface::class, 'withScheme'], 0))->hasType()) {
+    // load legacy class for psr/http-message v1.0 without native parameter types
+    require __DIR__ . '/Uri.v1.php';
+} else {
+    // use class with native types like `withScheme(string $scheme): UriInterface`
+
 /**
- * Respresents a URI (or URL).
+ * Represents a URI or URL (PSR-7 v2).
  *
  * This class implements the
  * [PSR-7 `UriInterface`](https://www.php-fig.org/psr/psr-7/#35-psrhttpmessageuriinterface).
@@ -15,6 +21,7 @@ use Psr\Http\Message\UriInterface;
  * also use this class with other HTTP implementations and for tests.
  *
  * @see UriInterface
+ * @see Uri.v1.php (PSR-7 v1)
  */
 final class Uri implements UriInterface
 {
@@ -79,12 +86,12 @@ final class Uri implements UriInterface
         }
     }
 
-    public function getScheme()
+    public function getScheme(): string
     {
         return $this->scheme;
     }
 
-    public function getAuthority()
+    public function getAuthority(): string
     {
         if ($this->host === '') {
             return '';
@@ -93,37 +100,37 @@ final class Uri implements UriInterface
         return ($this->userInfo !== '' ? $this->userInfo . '@' : '') . $this->host . ($this->port !== null ? ':' . $this->port : '');
     }
 
-    public function getUserInfo()
+    public function getUserInfo(): string
     {
         return $this->userInfo;
     }
 
-    public function getHost()
+    public function getHost(): string
     {
         return $this->host;
     }
 
-    public function getPort()
+    public function getPort(): ?int
     {
         return $this->port;
     }
 
-    public function getPath()
+    public function getPath(): string
     {
         return $this->path;
     }
 
-    public function getQuery()
+    public function getQuery(): string
     {
         return $this->query;
     }
 
-    public function getFragment()
+    public function getFragment(): string
     {
         return $this->fragment;
     }
 
-    public function withScheme($scheme)
+    public function withScheme(string $scheme): UriInterface
     {
         $scheme = \strtolower($scheme);
         if ($scheme === $this->scheme) {
@@ -144,7 +151,7 @@ final class Uri implements UriInterface
         return $new;
     }
 
-    public function withUserInfo($user, $password = null)
+    public function withUserInfo(string $user, ?string $password = null): UriInterface
     {
         $userInfo = $this->encode($user, \PHP_URL_USER) . ($password !== null ? ':' . $this->encode($password, \PHP_URL_PASS) : '');
         if ($userInfo === $this->userInfo) {
@@ -157,7 +164,7 @@ final class Uri implements UriInterface
         return $new;
     }
 
-    public function withHost($host)
+    public function withHost(string $host): UriInterface
     {
         $host = \strtolower($host);
         if ($host === $this->host) {
@@ -174,7 +181,7 @@ final class Uri implements UriInterface
         return $new;
     }
 
-    public function withPort($port)
+    public function withPort(?int $port): UriInterface
     {
         $port = $port === null ? null : (int) $port;
         if (($port === 80 && $this->scheme === 'http') || ($port === 443 && $this->scheme === 'https')) {
@@ -195,7 +202,7 @@ final class Uri implements UriInterface
         return $new;
     }
 
-    public function withPath($path)
+    public function withPath(string $path): UriInterface
     {
         $path = $this->encode($path, \PHP_URL_PATH);
         if ($path === $this->path) {
@@ -208,7 +215,7 @@ final class Uri implements UriInterface
         return $new;
     }
 
-    public function withQuery($query)
+    public function withQuery(string $query): UriInterface
     {
         $query = $this->encode($query, \PHP_URL_QUERY);
         if ($query === $this->query) {
@@ -221,7 +228,7 @@ final class Uri implements UriInterface
         return $new;
     }
 
-    public function withFragment($fragment)
+    public function withFragment(string $fragment): UriInterface
     {
         $fragment = $this->encode($fragment, \PHP_URL_FRAGMENT);
         if ($fragment === $this->fragment) {
@@ -234,7 +241,7 @@ final class Uri implements UriInterface
         return $new;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         $uri = '';
         if ($this->scheme !== '') {
@@ -270,7 +277,7 @@ final class Uri implements UriInterface
      * @param int $component
      * @return string
      */
-    private function encode($part, $component)
+    private function encode(string $part, int $component): string
     {
         return \preg_replace_callback(
             '/(?:[^a-z0-9_\-\.~!\$&\'\(\)\*\+,;=' . ($component === \PHP_URL_PATH ? ':@\/' : ($component === \PHP_URL_QUERY || $component === \PHP_URL_FRAGMENT ? ':@\/\?' : '')) . '%]++|%(?![a-f0-9]{2}))/i',
@@ -290,7 +297,7 @@ final class Uri implements UriInterface
      * @return UriInterface
      * @throws void
      */
-    public static function resolve(UriInterface $base, UriInterface $rel)
+    public static function resolve(UriInterface $base, UriInterface $rel): UriInterface
     {
         if ($rel->getScheme() !== '') {
             return $rel->getPath() === '' ? $rel : $rel->withPath(self::removeDotSegments($rel->getPath()));
@@ -332,7 +339,7 @@ final class Uri implements UriInterface
      * @param string $path
      * @return string
      */
-    private static function removeDotSegments($path)
+    private static function removeDotSegments(string $path): string
     {
         $segments = [];
         foreach (\explode('/', $path) as $segment) {
@@ -344,4 +351,5 @@ final class Uri implements UriInterface
         }
         return '/' . \implode('/', $segments) . ($path !== '/' && \substr($path, -1) === '/' ? '/' : '');
     }
+}
 }

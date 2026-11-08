@@ -11,7 +11,7 @@ use React\Http\Io\ReadableBodyStream;
 use React\Stream\ReadableStreamInterface;
 
 /**
- * Respresents an outgoing HTTP request message.
+ * Represents an outgoing HTTP request message (PSR-7).
  *
  * This class implements the
  * [PSR-7 `RequestInterface`](https://www.php-fig.org/psr/psr-7/#32-psrhttpmessagerequestinterface)
