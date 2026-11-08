@@ -136,7 +136,7 @@ class EmptyBodyStream extends EventEmitter implements StreamInterface, ReadableS
     }
 
     /** @ignore */
-    public function getMetadata($key = null)
+    public function getMetadata(?string $key = null)
     {
         return ($key === null) ? array() : null;
     }

@@ -154,7 +154,7 @@ class HttpBodyStream extends EventEmitter implements StreamInterface, ReadableSt
     }
 
     /** @ignore */
-    public function getMetadata($key = null)
+    public function getMetadata(?string $key = null)
     {
         return null;
     }
