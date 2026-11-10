@@ -15,7 +15,7 @@ class MessageMock extends AbstractMessage
      */
     public function __construct($protocolVersion, array $headers, StreamInterface $body)
     {
-        return parent::__construct($protocolVersion, $headers, $body);
+        parent::__construct($protocolVersion, $headers, $body);
     }
 }
 
