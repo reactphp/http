@@ -7,10 +7,11 @@ on:
 jobs:
   PHPUnit:
     name: PHPUnit (PHP ${{ matrix.php }})
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     strategy:
       matrix:
         php:
+          - 8.6
           - 8.5
           - 8.4
           - 8.3
@@ -27,7 +28,7 @@ jobs:
           - 5.4
           - 5.3
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
@@ -41,10 +42,10 @@ jobs:
 
   PHPUnit-hhvm:
     name: PHPUnit (HHVM)
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: cp "$(which composer)" composer.phar && ./composer.phar self-update --2.2 # downgrade Composer for HHVM
       - name: Run hhvm composer.phar install
         uses: docker://hhvm/hhvm:3.30-lts-latest
