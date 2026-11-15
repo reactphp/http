@@ -142,6 +142,16 @@ class FunctionalHttpServerTest extends TestCase
         ]]);
         $http->listen($socket);
 
+        // clear OpenSSL errors from closing the server side before the client reads,
+        // as legacy PHP < 7.2 does not (https://bugs.php.net/bug.php?id=78775)
+        $socket->on('connection', function (ConnectionInterface $conn) {
+            $conn->on('close', function () {
+                Loop::futureTick(function () {
+                    while (openssl_error_string() !== false);
+                });
+            });
+        });
+
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\nHost: " . noScheme($conn->getRemoteAddress()) . "\r\n\r\n");
 
@@ -168,6 +178,16 @@ class FunctionalHttpServerTest extends TestCase
 
         $socket = new SocketServer('tls://127.0.0.1:0', ['tls' => ['local_cert' => __DIR__ . '/../examples/localhost.pem']]);
         $http->listen($socket);
+
+        // clear OpenSSL errors from closing the server side before the client reads,
+        // as legacy PHP < 7.2 does not (https://bugs.php.net/bug.php?id=78775)
+        $socket->on('connection', function (ConnectionInterface $conn) {
+            $conn->on('close', function () {
+                Loop::futureTick(function () {
+                    while (openssl_error_string() !== false);
+                });
+            });
+        });
 
         $connector = new Connector(['tls' => [
             'verify_peer' => false
@@ -202,6 +222,16 @@ class FunctionalHttpServerTest extends TestCase
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
         ]]);
         $http->listen($socket);
+
+        // clear OpenSSL errors from closing the server side before the client reads,
+        // as legacy PHP < 7.2 does not (https://bugs.php.net/bug.php?id=78775)
+        $socket->on('connection', function (ConnectionInterface $conn) {
+            $conn->on('close', function () {
+                Loop::futureTick(function () {
+                    while (openssl_error_string() !== false);
+                });
+            });
+        });
 
         $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
             $conn->write("GET / HTTP/1.0\r\n\r\n");
