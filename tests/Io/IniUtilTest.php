@@ -78,4 +78,50 @@ class IniUtilTest extends TestCase
         $this->setExpectedException('InvalidArgumentException');
         IniUtil::iniSizeToBytes($input);
     }
+
+    public function provideIniBooleansEnabled()
+    {
+        return array(
+            array('1'),
+            array('On'),
+            array('on'),
+            array('yes'),
+            array('true'),
+            array('TRUE'),
+            array('2'),
+            array('-1'),
+            array('1abc'),
+        );
+    }
+
+    /**
+     * @dataProvider provideIniBooleansEnabled
+     */
+    public function testIniBooleanReturnsTrueForEnabledValue($input)
+    {
+        $this->assertTrue(IniUtil::iniBoolean($input));
+    }
+
+    public function provideIniBooleansDisabled()
+    {
+        return array(
+            array(''),
+            array('0'),
+            array('Off'),
+            array('off'),
+            array('no'),
+            array('false'),
+            array('none'),
+            array('00'),
+            array('abc'),
+        );
+    }
+
+    /**
+     * @dataProvider provideIniBooleansDisabled
+     */
+    public function testIniBooleanReturnsFalseForDisabledValue($input)
+    {
+        $this->assertFalse(IniUtil::iniBoolean($input));
+    }
 }
