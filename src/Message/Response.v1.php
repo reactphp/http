@@ -32,7 +32,7 @@ use React\Stream\ReadableStreamInterface;
  * [PSR-7 Message Util `StatusCodeInterface`](https://github.com/php-fig/http-message-util/blob/master/src/StatusCodeInterface.php)
  * which means that most common HTTP status codes are available as class
  * constants with the `STATUS_*` prefix. For instance, the `200 OK` and
- * `404 Not Found` status codes can used as `Response::STATUS_OK` and
+ * `404 Not Found` status codes can be used as `Response::STATUS_OK` and
  * `Response::STATUS_NOT_FOUND` respectively.
  *
  * > Internally, this implementation builds on top a base class which is
