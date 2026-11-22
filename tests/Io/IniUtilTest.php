@@ -74,4 +74,46 @@ class IniUtilTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         IniUtil::iniSizeToBytes($input);
     }
+
+    public static function provideIniBooleansEnabled()
+    {
+        yield ['1'];
+        yield ['On'];
+        yield ['on'];
+        yield ['yes'];
+        yield ['true'];
+        yield ['TRUE'];
+        yield ['2'];
+        yield ['-1'];
+        yield ['1abc'];
+    }
+
+    /**
+     * @dataProvider provideIniBooleansEnabled
+     */
+    public function testIniBooleanReturnsTrueForEnabledValue($input)
+    {
+        $this->assertTrue(IniUtil::iniBoolean($input));
+    }
+
+    public static function provideIniBooleansDisabled()
+    {
+        yield [''];
+        yield ['0'];
+        yield ['Off'];
+        yield ['off'];
+        yield ['no'];
+        yield ['false'];
+        yield ['none'];
+        yield ['00'];
+        yield ['abc'];
+    }
+
+    /**
+     * @dataProvider provideIniBooleansDisabled
+     */
+    public function testIniBooleanReturnsFalseForDisabledValue($input)
+    {
+        $this->assertFalse(IniUtil::iniBoolean($input));
+    }
 }
