@@ -45,4 +45,16 @@ final class IniUtil
 
         return (int)$size;
     }
+
+    /**
+     * Convert a ini like boolean to a boolean value just like PHP does.
+     *
+     * @param string $value
+     * @return bool
+     * @link https://github.com/php/php-src/blob/master/Zend/zend_ini.c
+     */
+    public static function iniBoolean($value)
+    {
+        return (int) $value !== 0 || \in_array(\strtolower($value), array('on', 'yes', 'true'), true);
+    }
 }

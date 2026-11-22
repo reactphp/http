@@ -234,13 +234,13 @@ final class HttpServer extends EventEmitter
                 $middleware[] = new LimitConcurrentRequestsMiddleware($concurrency);
             }
             $middleware[] = new RequestBodyBufferMiddleware($maxSize);
-            // Checking for an empty string because that is what a boolean
-            // false is returned as by ini_get depending on the PHP version.
+            // Legacy PHP < 5.4 and HHVM do not support this setting and return
+            // false instead, so only disable when explicitly disabled.
             // @link http://php.net/manual/en/ini.core.php#ini.enable-post-data-reading
             // @link http://php.net/manual/en/function.ini-get.php#refsect1-function.ini-get-notes
             // @link https://3v4l.org/qJtsa
             $enablePostDataReading = \ini_get('enable_post_data_reading');
-            if ($enablePostDataReading !== '') {
+            if ($enablePostDataReading === false || IniUtil::iniBoolean($enablePostDataReading)) {
                 $middleware[] = new RequestBodyParserMiddleware();
             }
         }
