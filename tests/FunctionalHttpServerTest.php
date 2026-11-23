@@ -7,6 +7,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Loop;
 use React\Http\HttpServer;
 use React\Http\Message\Response;
+use React\Http\Middleware\InactiveConnectionTimeoutMiddleware;
 use React\Http\Middleware\LimitConcurrentRequestsMiddleware;
 use React\Http\Middleware\RequestBodyBufferMiddleware;
 use React\Http\Middleware\StreamingRequestMiddleware;
@@ -23,7 +24,7 @@ class FunctionalHttpServerTest extends TestCase
     {
         $connector = new Connector();
 
-        $http = new HttpServer(function (RequestInterface $request) {
+        $http = $this->createServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
@@ -48,7 +49,7 @@ class FunctionalHttpServerTest extends TestCase
     {
         $connector = new Connector();
 
-        $http = new HttpServer(
+        $http = $this->createServer(
             function () {
                 return new Response(404);
             }
@@ -74,7 +75,7 @@ class FunctionalHttpServerTest extends TestCase
     {
         $connector = new Connector();
 
-        $http = new HttpServer(function (RequestInterface $request) {
+        $http = $this->createServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
@@ -99,7 +100,7 @@ class FunctionalHttpServerTest extends TestCase
     {
         $connector = new Connector();
 
-        $http = new HttpServer(function (RequestInterface $request) {
+        $http = $this->createServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
@@ -130,7 +131,7 @@ class FunctionalHttpServerTest extends TestCase
             'tls' => array('verify_peer' => false)
         ));
 
-        $http = new HttpServer(function (RequestInterface $request) {
+        $http = $this->createServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
@@ -169,7 +170,7 @@ class FunctionalHttpServerTest extends TestCase
             $this->markTestSkipped('Not supported on HHVM');
         }
 
-        $http = new HttpServer(function (RequestInterface $request) {
+        $http = $this->createServer(function (RequestInterface $request) {
             return new Response(
                 200,
                 array(),
@@ -221,7 +222,7 @@ class FunctionalHttpServerTest extends TestCase
             'tls' => array('verify_peer' => false)
         ));
 
-        $http = new HttpServer(function (RequestInterface $request) {
+        $http = $this->createServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
@@ -263,7 +264,7 @@ class FunctionalHttpServerTest extends TestCase
         }
         $connector = new Connector();
 
-        $http = new HttpServer(function (RequestInterface $request) {
+        $http = $this->createServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
@@ -292,7 +293,7 @@ class FunctionalHttpServerTest extends TestCase
         }
         $connector = new Connector();
 
-        $http = new HttpServer(function (RequestInterface $request) {
+        $http = $this->createServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
@@ -330,7 +331,7 @@ class FunctionalHttpServerTest extends TestCase
             'tls' => array('verify_peer' => false)
         ));
 
-        $http = new HttpServer(function (RequestInterface $request) {
+        $http = $this->createServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
@@ -368,7 +369,7 @@ class FunctionalHttpServerTest extends TestCase
             'tls' => array('verify_peer' => false)
         ));
 
-        $http = new HttpServer(function (RequestInterface $request) {
+        $http = $this->createServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
@@ -397,7 +398,7 @@ class FunctionalHttpServerTest extends TestCase
         }
         $connector = new Connector();
 
-        $http = new HttpServer(function (RequestInterface $request) {
+        $http = $this->createServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri());
         });
 
@@ -435,7 +436,7 @@ class FunctionalHttpServerTest extends TestCase
             'tls' => array('verify_peer' => false)
         ));
 
-        $http = new HttpServer(function (RequestInterface $request) {
+        $http = $this->createServer(function (RequestInterface $request) {
             return new Response(200, array(), (string)$request->getUri() . 'x' . $request->getHeaderLine('Host'));
         });
 
@@ -462,7 +463,7 @@ class FunctionalHttpServerTest extends TestCase
         $stream = new ThroughStream();
         $stream->close();
 
-        $http = new HttpServer(function (RequestInterface $request) use ($stream) {
+        $http = $this->createServer(function (RequestInterface $request) use ($stream) {
             return new Response(200, array(), $stream);
         });
 
@@ -488,7 +489,7 @@ class FunctionalHttpServerTest extends TestCase
         $connector = new Connector();
 
         $once = $this->expectCallableOnce();
-        $http = new HttpServer(
+        $http = $this->createServer(
             new StreamingRequestMiddleware(),
             function (RequestInterface $request) use ($once) {
                 $request->getBody()->on('close', $once);
@@ -517,7 +518,7 @@ class FunctionalHttpServerTest extends TestCase
 
         $stream = new ThroughStream();
 
-        $http = new HttpServer(
+        $http = $this->createServer(
             new StreamingRequestMiddleware(),
             function (RequestInterface $request) use ($stream) {
                 return new Response(200, array(), $stream);
@@ -549,7 +550,7 @@ class FunctionalHttpServerTest extends TestCase
 
         $stream = new ThroughStream();
 
-        $http = new HttpServer(function (RequestInterface $request) use ($stream) {
+        $http = $this->createServer(function (RequestInterface $request) use ($stream) {
             return new Response(200, array(), $stream);
         });
 
@@ -576,7 +577,7 @@ class FunctionalHttpServerTest extends TestCase
     {
         $connector = new Connector();
 
-        $http = new HttpServer(function (RequestInterface $request) {
+        $http = $this->createServer(function (RequestInterface $request) {
             $stream = new ThroughStream();
 
             Loop::addTimer(0.1, function () use ($stream) {
@@ -612,7 +613,7 @@ class FunctionalHttpServerTest extends TestCase
     {
         $connector = new Connector();
 
-        $http = new HttpServer(function (RequestInterface $request) {
+        $http = $this->createServer(function (RequestInterface $request) {
             $stream = new ThroughStream();
 
             Loop::addTimer(0.1, function () use ($stream) {
@@ -649,7 +650,7 @@ class FunctionalHttpServerTest extends TestCase
     {
         $connector = new Connector();
 
-        $http = new HttpServer(function (RequestInterface $request) {
+        $http = $this->createServer(function (RequestInterface $request) {
             $stream = new ThroughStream();
 
             Loop::addTimer(0.1, function () use ($stream) {
@@ -685,7 +686,7 @@ class FunctionalHttpServerTest extends TestCase
     {
         $connector = new Connector();
 
-        $http = new HttpServer(function (RequestInterface $request) {
+        $http = $this->createServer(function (RequestInterface $request) {
             $stream = new ThroughStream();
 
             Loop::addTimer(0.1, function () use ($stream) {
@@ -725,7 +726,7 @@ class FunctionalHttpServerTest extends TestCase
     {
         $connector = new Connector();
 
-        $http = new HttpServer(function (RequestInterface $request) {
+        $http = $this->createServer(function (RequestInterface $request) {
             $stream = new ThroughStream();
             $stream->close();
 
@@ -762,7 +763,7 @@ class FunctionalHttpServerTest extends TestCase
 
         $connector = new Connector();
 
-        $http = new HttpServer(
+        $http = $this->createServer(
             new LimitConcurrentRequestsMiddleware(5),
             new RequestBodyBufferMiddleware(16 * 1024 * 1024), // 16 MiB
             function (ServerRequestInterface $request, $next) {
@@ -803,6 +804,14 @@ class FunctionalHttpServerTest extends TestCase
         $socket->close();
     }
 
+    private function createServer()
+    {
+        $args = \func_get_args();
+        array_unshift($args, new InactiveConnectionTimeoutMiddleware(1));
+        $serverReflection = new \ReflectionClass('React\Http\HttpServer');
+
+        return $serverReflection->newInstanceArgs($args);
+    }
 }
 
 function noScheme($uri)
