@@ -242,6 +242,7 @@ final class StreamingServer extends EventEmitter
 
         $code = $response->getStatusCode();
         $method = $request->getMethod();
+        $bodyless = $method === 'HEAD' || ($code >= 100 && $code < 200 && $code !== Response::STATUS_SWITCHING_PROTOCOLS) || $code === Response::STATUS_NO_CONTENT || $code === Response::STATUS_NOT_MODIFIED;
 
         // assign HTTP protocol version from request automatically
         $version = $request->getProtocolVersion();
@@ -300,8 +301,8 @@ final class StreamingServer extends EventEmitter
         } elseif ($version === '1.1') {
             // HTTP/1.1 assumes persistent connection support by default, so we don't need to inform client
             $persist = true;
-        } elseif (strtolower($request->getHeaderLine('Connection')) === 'keep-alive') {
-            // obey explicit "Connection: keep-alive" request header and inform client
+        } elseif (strtolower($request->getHeaderLine('Connection')) === 'keep-alive' && ($bodyless || $response->hasHeader('Content-Length') || ($method === 'CONNECT' && $code >= 200 && $code < 300))) {
+            // obey explicit "Connection: keep-alive" request header if response body length is known or no body is expected
             $persist = true;
             $response = $response->withHeader('Connection', 'keep-alive');
         } else {
@@ -349,7 +350,7 @@ final class StreamingServer extends EventEmitter
 
         // response to HEAD and 1xx, 204 and 304 responses MUST NOT include a body
         // exclude status 101 (Switching Protocols) here for Upgrade request handling above
-        if ($method === 'HEAD' || ($code >= 100 && $code < 200 && $code !== Response::STATUS_SWITCHING_PROTOCOLS) || $code === Response::STATUS_NO_CONTENT || $code === Response::STATUS_NOT_MODIFIED) {
+        if ($bodyless) {
             $body->close();
             $body = '';
         }

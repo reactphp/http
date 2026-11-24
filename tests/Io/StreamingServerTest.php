@@ -3196,6 +3196,83 @@ class StreamingServerTest extends TestCase
         $server->handleRequest($this->connection, $request);
     }
 
+    public function testNewConnectionWillCloseConnectionAfterStreamingResponseBodyWithUnknownLengthForHttp10ConnectionKeepAlive()
+    {
+        $request = new ServerRequest('GET', 'http://localhost/', ['Connection' => 'keep-alive'], '', '1.0');
+
+        $body = new ThroughStream();
+        $server = new StreamingServer(Loop::get(), function () use ($body) {
+            return new Response(200, [], $body);
+        });
+
+        $parser = $this->createMock(RequestHeaderParser::class);
+        $parser->expects($this->once())->method('handle');
+
+        $ref = new \ReflectionProperty($server, 'parser');
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
+        $ref->setValue($server, $parser);
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', [$this->connection]);
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->exactly(2))
+            ->method('write')
+            ->willReturnCallback(function ($data) use (&$buffer) {
+                $buffer .= $data;
+            });
+        $this->connection->expects($this->once())->method('end');
+
+        // pretend parser just finished parsing
+        $server->handleRequest($this->connection, $request);
+        $body->end('hello');
+
+        $this->assertStringNotContainsString("Connection: keep-alive", $buffer);
+        $this->assertStringEndsWith("\r\n\r\nhello", $buffer);
+    }
+
+    public function testNewConnectionWillInvokeParserTwiceAfterStreamingResponseBodyWithContentLengthForHttp10ConnectionKeepAlive()
+    {
+        $request = new ServerRequest('GET', 'http://localhost/', ['Connection' => 'keep-alive'], '', '1.0');
+
+        $body = new ThroughStream();
+        $server = new StreamingServer(Loop::get(), function () use ($body) {
+            return new Response(200, ['Content-Length' => 5], $body);
+        });
+
+        $parser = $this->createMock(RequestHeaderParser::class);
+        $parser->expects($this->exactly(2))->method('handle');
+
+        $ref = new \ReflectionProperty($server, 'parser');
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
+        $ref->setValue($server, $parser);
+
+        $server->listen($this->socket);
+        $this->socket->emit('connection', [$this->connection]);
+
+        $buffer = '';
+        $this->connection
+            ->expects($this->exactly(2))
+            ->method('write')
+            ->willReturnCallback(function ($data) use (&$buffer) {
+                $buffer .= $data;
+            });
+        $this->connection->expects($this->never())->method('end');
+
+        // pretend parser just finished parsing
+        $server->handleRequest($this->connection, $request);
+        $body->end('hello');
+
+        $this->assertStringContainsString("Content-Length: 5\r\n", $buffer);
+        $this->assertStringContainsString("Connection: keep-alive\r\n", $buffer);
+        $this->assertStringEndsWith("\r\n\r\nhello", $buffer);
+    }
+
     public function testNewConnectionWillInvokeParserOnceAfterInvokingRequestHandlerWhenStreamingResponseBodyKeepsStreaming()
     {
         $request = new ServerRequest('GET', 'http://localhost/');
