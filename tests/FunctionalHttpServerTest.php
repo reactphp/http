@@ -464,6 +464,40 @@ class FunctionalHttpServerTest extends TestCase
         $socket->close();
     }
 
+    public function testHttp10StreamingResponseWithKeepAliveWillCloseConnectionAfterBody()
+    {
+        $connector = new Connector(['dns' => false]);
+
+        $stream = new ThroughStream();
+
+        $http = new HttpServer(function (RequestInterface $request) use ($stream) {
+            Loop::futureTick(function () use ($stream) {
+                $stream->end("hello\n");
+            });
+
+            return new Response(200, [], $stream);
+        });
+
+        $socket = new SocketServer('127.0.0.1:0');
+        $http->listen($socket);
+
+        try {
+            $result = $connector->connect($socket->getAddress())->then(function (ConnectionInterface $conn) {
+                $conn->write("GET / HTTP/1.0\r\nConnection: keep-alive\r\n\r\n");
+
+                return buffer($conn);
+            });
+
+            $response = await(timeout($result, 1.0));
+        } finally {
+            $socket->close();
+        }
+
+        $this->assertStringStartsWith("HTTP/1.0 200 OK\r\n", $response);
+        $this->assertStringNotContainsString("Connection: keep-alive", $response);
+        $this->assertStringEndsWith("\r\n\r\nhello\n", $response);
+    }
+
     public function testRequestHandlerWithStreamingRequestWillReceiveCloseEventIfConnectionClosesWhileSendingBody()
     {
         $connector = new Connector();
